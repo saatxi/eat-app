@@ -24,7 +24,7 @@ class RestaurantListViewModel(
     private val repository: RestaurantRepository
 ) : ViewModel() {
 
-    private val filters = MutableStateFlow("" to null as Pair<String, Int?>)
+    private val filters = MutableStateFlow<Pair<String, Int?>>("" to null)
 
     val uiState: StateFlow<RestaurantListUiState> = filters
         .flatMapLatest { (query, minRating) ->
