@@ -8,7 +8,8 @@ address, rating, price range, notes, and visit date.
 - List restaurants, searchable by name and filterable by minimum rating
 - View restaurant details (read-only)
 - Refresh restaurant data on demand from a prebuilt SQLite file hosted on
-  GitHub ("Actualizar datos")
+  GitHub ("Refresh Data")
+- View the current app version from the overflow menu ("About")
 
 ## Data source & updating restaurant data
 
@@ -31,9 +32,9 @@ you maintain on a PC and publish to a public GitHub repository.
   local database.
 - Publish the updated `.db` with `git add`/`commit`/`push` to the repo,
   branch, and path configured in
-  [`RemoteConfig.kt`](app/src/main/java/com/albertferran/eatapp/data/sync/RemoteConfig.kt)
+  [`RemoteConfig.kt`](app/src/main/kotlin/com/albertferran/eatapp/data/sync/RemoteConfig.kt)
   (`DATABASE_URL`, currently a placeholder that must be filled in).
-- In the app, tap "Actualizar datos" on the list screen to download and apply
+- In the app, tap "Refresh Data" on the list screen to download and apply
   the latest published file. Sync is entirely manual — there's no
   version/freshness check, and every tap re-downloads and replaces the local
   data. A failed or invalid download leaves existing data untouched and shows
@@ -51,7 +52,7 @@ you maintain on a PC and publish to a public GitHub repository.
 ## Project structure
 
 ```
-app/src/main/java/com/albertferran/eatapp/
+app/src/main/kotlin/com/albertferran/eatapp/
 ├── data/
 │   ├── local/        # Room entity, DAO, database, type converters
 │   ├── repository/   # Repository abstraction over the data source
@@ -76,3 +77,57 @@ app/src/main/java/com/albertferran/eatapp/
 ```
 
 On Windows use `gradlew.bat assembleDebug`.
+
+## Versioning
+
+The app version is derived automatically from git — there is nothing to edit
+by hand in `app/build.gradle.kts`:
+
+- **`versionName`** comes from `git describe --tags`: `1.0.0` when `HEAD` is
+  exactly on a `vX.Y.Z` tag, or `1.0.0-3-gabc1234` when 3 commits ahead of the
+  last tag. If no tag exists yet it falls back to the short commit SHA.
+- **`versionCode`** is the total number of commits on `HEAD`
+  (`git rev-list --count HEAD`), which always increases and satisfies the
+  Play Store's requirement that `versionCode` never decrease between
+  releases.
+
+The resolved version is shown in the app itself: open the three-dot menu on
+the restaurant list screen → **About**.
+
+To check what the current build will resolve to without building an APK:
+
+```
+./gradlew :app:printVersionInfo
+```
+
+## Releasing a new version
+
+1. Make sure all changes for the release are committed (an uncommitted
+   working tree produces a `-dirty` suffix in `versionName`).
+2. Tag the release commit with an **annotated** tag following `vMAJOR.MINOR.PATCH`:
+   ```
+   git tag -a v1.1.0 -m "Describe what changed"
+   git push origin v1.1.0
+   ```
+3. Build the release APK/AAB:
+   ```
+   ./gradlew assembleRelease
+   ```
+   or, for a Play Store upload:
+   ```
+   ./gradlew bundleRelease
+   ```
+4. Verify the packaged version before distributing:
+   ```
+   ./gradlew :app:printVersionInfo
+   ```
+   or inspect the built artifact directly:
+   ```
+   aapt dump badging app/build/outputs/apk/release/app-release.apk
+   ```
+5. Distribute the APK/AAB (sideload, internal testing track, etc.) and
+   confirm the version shown in the app's **About** dialog matches the tag.
+
+If you need to publish a fix without bumping the version number, don't
+retag an existing tag — always cut a new tag (e.g. `v1.1.1`) so
+`versionCode` keeps increasing.
