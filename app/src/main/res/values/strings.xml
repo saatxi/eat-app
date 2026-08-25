@@ -1,15 +1,20 @@
 <resources>
     <string name="app_name">EatApp</string>
 
-    <string name="list_title">Mis restaurantes</string>
-    <string name="list_search_placeholder">Buscar por nombre</string>
-    <string name="list_filter_min_rating">Valoración mínima</string>
-    <string name="list_empty">Todavía no hay restaurantes. Pulsa \"Actualizar datos\" para descargarlos.</string>
-    <string name="list_action_sync">Actualizar datos</string>
-    <string name="list_sync_success">Datos actualizados (%1$d restaurantes)</string>
-    <string name="list_sync_error_network">No se pudo descargar. Revisa tu conexión.</string>
-    <string name="list_sync_error_invalid">El archivo descargado no es válido.</string>
-    <string name="list_sync_error_unknown">No se pudieron actualizar los datos.</string>
+    <string name="list_title">My Restaurants</string>
+    <string name="list_search_placeholder">Search by name</string>
+    <string name="list_filter_min_rating">Minimum rating</string>
+    <string name="list_empty">No restaurants yet. Tap \"Refresh Data\" to download them.</string>
+    <string name="list_action_sync">Refresh Data</string>
+    <string name="list_sync_success">Data refreshed (%1$d restaurants)</string>
+    <string name="list_sync_error_network">Couldn\'t download. Check your connection.</string>
+    <string name="list_sync_error_invalid">The downloaded file is invalid.</string>
+    <string name="list_sync_error_unknown">Couldn\'t refresh the data.</string>
 
-    <string name="action_back">Volver</string>
+    <string name="action_back">Back</string>
+
+    <string name="list_action_more">More options</string>
+    <string name="list_action_about">About</string>
+    <string name="about_version_template">Version %1$s (build %2$d)</string>
+    <string name="action_ok">OK</string>
 </resources>
