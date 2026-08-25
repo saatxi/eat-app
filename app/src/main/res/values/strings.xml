@@ -4,27 +4,12 @@
     <string name="list_title">Mis restaurantes</string>
     <string name="list_search_placeholder">Buscar por nombre</string>
     <string name="list_filter_min_rating">Valoración mínima</string>
-    <string name="list_empty">Todavía no has añadido ningún restaurante</string>
-    <string name="list_add_content_description">Añadir restaurante</string>
-
-    <string name="add_edit_title_new">Nuevo restaurante</string>
-    <string name="add_edit_title_edit">Editar restaurante</string>
-    <string name="add_edit_field_name">Nombre</string>
-    <string name="add_edit_field_cuisine_type">Tipo de cocina</string>
-    <string name="add_edit_field_address">Dirección</string>
-    <string name="add_edit_field_rating">Valoración</string>
-    <string name="add_edit_field_price_range">Precio</string>
-    <string name="add_edit_field_notes">Notas</string>
-    <string name="add_edit_field_visit_date">Fecha de la visita</string>
-    <string name="add_edit_action_save">Guardar</string>
-    <string name="add_edit_error_name_required">El nombre es obligatorio</string>
-
-    <string name="detail_action_edit">Editar</string>
-    <string name="detail_action_delete">Eliminar</string>
-    <string name="detail_delete_confirm_title">Eliminar restaurante</string>
-    <string name="detail_delete_confirm_message">¿Seguro que quieres eliminar este restaurante? Esta acción no se puede deshacer.</string>
-    <string name="detail_delete_confirm_ok">Eliminar</string>
-    <string name="detail_delete_confirm_cancel">Cancelar</string>
+    <string name="list_empty">Todavía no hay restaurantes. Pulsa \"Actualizar datos\" para descargarlos.</string>
+    <string name="list_action_sync">Actualizar datos</string>
+    <string name="list_sync_success">Datos actualizados (%1$d restaurantes)</string>
+    <string name="list_sync_error_network">No se pudo descargar. Revisa tu conexión.</string>
+    <string name="list_sync_error_invalid">El archivo descargado no es válido.</string>
+    <string name="list_sync_error_unknown">No se pudieron actualizar los datos.</string>
 
     <string name="action_back">Volver</string>
 </resources>

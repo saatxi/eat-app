@@ -7,6 +7,5 @@ interface RestaurantRepository {
     fun observeAll(): Flow<List<Restaurant>>
     fun observeFiltered(query: String?, minRating: Int?): Flow<List<Restaurant>>
     fun observeById(id: Long): Flow<Restaurant?>
-    suspend fun upsert(restaurant: Restaurant): Long
-    suspend fun delete(restaurant: Restaurant)
+    suspend fun replaceAll(restaurants: List<Restaurant>)
 }

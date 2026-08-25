@@ -15,13 +15,5 @@ class RoomRestaurantRepository(
 
     override fun observeById(id: Long): Flow<Restaurant?> = dao.observeById(id)
 
-    override suspend fun upsert(restaurant: Restaurant): Long =
-        if (restaurant.id == 0L) {
-            dao.insert(restaurant)
-        } else {
-            dao.update(restaurant)
-            restaurant.id
-        }
-
-    override suspend fun delete(restaurant: Restaurant) = dao.delete(restaurant)
+    override suspend fun replaceAll(restaurants: List<Restaurant>) = dao.replaceAll(restaurants)
 }

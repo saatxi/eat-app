@@ -8,10 +8,9 @@ import com.albertferran.eatapp.data.repository.RestaurantRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 class RestaurantDetailViewModel(
-    private val repository: RestaurantRepository,
+    repository: RestaurantRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -23,12 +22,4 @@ class RestaurantDetailViewModel(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = null
         )
-
-    fun delete(onDeleted: () -> Unit) {
-        val current = restaurant.value ?: return
-        viewModelScope.launch {
-            repository.delete(current)
-            onDeleted()
-        }
-    }
 }

@@ -1,11 +1,10 @@
 package com.albertferran.eatapp.data.local
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -24,12 +23,15 @@ interface RestaurantDao {
     @Query("SELECT * FROM restaurants WHERE id = :id")
     fun observeById(id: Long): Flow<Restaurant?>
 
+    @Query("DELETE FROM restaurants")
+    suspend fun deleteAll()
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(restaurant: Restaurant): Long
+    suspend fun insertAll(restaurants: List<Restaurant>)
 
-    @Update
-    suspend fun update(restaurant: Restaurant)
-
-    @Delete
-    suspend fun delete(restaurant: Restaurant)
+    @Transaction
+    suspend fun replaceAll(restaurants: List<Restaurant>) {
+        deleteAll()
+        insertAll(restaurants)
+    }
 }
