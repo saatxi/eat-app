@@ -105,15 +105,38 @@ class RestaurantDatabaseSyncManager(
                 null
             ).use { cursor ->
                 while (cursor.moveToNext()) {
+                    val name = cursor.getString(1)
+                    val cuisineType = cursor.getString(2)
+                    val notes = cursor.getString(6)
+                    val rating = cursor.getInt(4)
+                    val priceRange = cursor.getInt(5)
+
+                    if (name.isBlank() || cuisineType.isBlank() || notes.isBlank()) {
+                        return ReadOutcome.Error(
+                            DatabaseSyncResult.Failure(
+                                SyncFailureReason.INVALID_FILE,
+                                "row ${cursor.getLong(0)}: name, cuisineType and notes cannot be empty"
+                            )
+                        )
+                    }
+                    if (rating !in 0..5 || priceRange !in 0..4) {
+                        return ReadOutcome.Error(
+                            DatabaseSyncResult.Failure(
+                                SyncFailureReason.INVALID_FILE,
+                                "row ${cursor.getLong(0)}: rating must be 0-5, priceRange must be 0-4"
+                            )
+                        )
+                    }
+
                     restaurants.add(
                         Restaurant(
                             id = cursor.getLong(0),
-                            name = cursor.getString(1),
-                            cuisineType = cursor.getString(2),
+                            name = name,
+                            cuisineType = cuisineType,
                             address = if (cursor.isNull(3)) null else cursor.getString(3),
-                            rating = cursor.getInt(4),
-                            priceRange = cursor.getInt(5),
-                            notes = cursor.getString(6),
+                            rating = rating,
+                            priceRange = priceRange,
+                            notes = notes,
                             visitDate = LocalDate.ofEpochDay(cursor.getLong(7)),
                             photoUri = if (cursor.isNull(8)) null else cursor.getString(8),
                             createdAt = cursor.getLong(9)
