@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
@@ -30,6 +31,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -97,33 +100,36 @@ fun RestaurantListScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.list_title)) },
-                actions = {
-                    if (uiState.isSyncing) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    } else {
-                        IconButton(onClick = viewModel::syncNow) {
-                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.list_action_sync))
+            Column {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.list_title)) },
+                    actions = {
+                        if (uiState.isSyncing) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        } else {
+                            IconButton(onClick = viewModel::syncNow) {
+                                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.list_action_sync))
+                            }
+                        }
+                        IconButton(onClick = { showOverflowMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.list_action_more))
+                        }
+                        DropdownMenu(
+                            expanded = showOverflowMenu,
+                            onDismissRequest = { showOverflowMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.list_action_about)) },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    showAboutDialog = true
+                                }
+                            )
                         }
                     }
-                    IconButton(onClick = { showOverflowMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.list_action_more))
-                    }
-                    DropdownMenu(
-                        expanded = showOverflowMenu,
-                        onDismissRequest = { showOverflowMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.list_action_about)) },
-                            onClick = {
-                                showOverflowMenu = false
-                                showAboutDialog = true
-                            }
-                        )
-                    }
-                }
-            )
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
@@ -132,6 +138,7 @@ fun RestaurantListScreen(
                 value = uiState.searchQuery,
                 onValueChange = viewModel::onSearchQueryChange,
                 label = { Text(stringResource(R.string.list_search_placeholder)) },
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth().padding(16.dp)
             )
 
@@ -153,7 +160,13 @@ fun RestaurantListScreen(
                         onClick = {
                             viewModel.onMinRatingChange(if (uiState.minRating == rating) null else rating)
                         },
-                        label = { Text("$rating+") }
+                        label = { Text("$rating+") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     )
                 }
             }
@@ -316,7 +329,7 @@ private fun RestaurantRow(restaurant: Restaurant, onClick: () -> Unit) {
                     )
                 }
                 Surface(
-                    shape = MaterialTheme.shapes.extraSmall,
+                    shape = RoundedCornerShape(percent = 50),
                     color = MaterialTheme.colorScheme.tertiaryContainer,
                     modifier = Modifier.padding(top = 6.dp)
                 ) {
