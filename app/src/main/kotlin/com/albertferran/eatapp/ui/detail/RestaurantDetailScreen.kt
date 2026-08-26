@@ -42,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.albertferran.eatapp.R
 import com.albertferran.eatapp.ui.AppViewModelProvider
 import com.albertferran.eatapp.ui.common.cuisineIcon
+import com.albertferran.eatapp.ui.common.cuisineLabel
 import com.albertferran.eatapp.ui.common.cuisineTint
 import java.time.format.DateTimeFormatter
 
@@ -121,7 +122,10 @@ fun RestaurantDetailScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
-                            InfoRow(icon = cuisineIcon(current.cuisineType), text = current.cuisineType)
+                            InfoRow(
+                                icon = cuisineIcon(current.cuisineType),
+                                text = cuisineLabel(current.cuisineType)
+                            )
                             current.address?.let { address ->
                                 InfoRow(icon = Icons.Outlined.LocationOn, text = address, topPadding = 10.dp)
                             }

@@ -66,6 +66,7 @@ import com.albertferran.eatapp.data.local.Restaurant
 import com.albertferran.eatapp.data.sync.SyncFailureReason
 import com.albertferran.eatapp.ui.AppViewModelProvider
 import com.albertferran.eatapp.ui.common.cuisineIcon
+import com.albertferran.eatapp.ui.common.cuisineLabel
 import com.albertferran.eatapp.ui.common.cuisineTint
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,63 +143,55 @@ fun RestaurantListScreen(
                 modifier = Modifier.fillMaxWidth().padding(16.dp)
             )
 
-            Text(
-                text = stringResource(R.string.list_filter_min_rating),
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                (1..5).forEach { rating ->
-                    FilterChip(
-                        selected = uiState.minRating == rating,
-                        onClick = {
-                            viewModel.onMinRatingChange(if (uiState.minRating == rating) null else rating)
-                        },
-                        label = { Text("$rating+") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    )
-                }
-            }
-
-            val hasActiveFilter = uiState.searchQuery.isNotBlank() || uiState.minRating != null
-
             PullToRefreshBox(
                 isRefreshing = uiState.isSyncing,
                 onRefresh = viewModel::syncNow,
                 modifier = Modifier.weight(1f).fillMaxWidth()
             ) {
-                if (uiState.restaurants.isEmpty()) {
-                    if (hasActiveFilter) {
-                        EmptyState(
-                            icon = Icons.Outlined.SearchOff,
-                            title = stringResource(R.string.list_empty_no_results_title),
-                            body = stringResource(R.string.list_empty_no_results_body)
-                        )
-                    } else {
-                        EmptyState(
-                            icon = Icons.Outlined.RestaurantMenu,
-                            title = stringResource(R.string.list_empty_first_sync_title),
-                            body = stringResource(R.string.list_empty_first_sync_body),
-                            actionLabel = stringResource(R.string.list_action_sync),
-                            onAction = viewModel::syncNow,
-                            actionEnabled = !uiState.isSyncing
-                        )
-                    }
+                if (uiState.restaurants.isEmpty() && !uiState.hasActiveFilter) {
+                    // Nothing has ever been synced: there are no filters to offer yet.
+                    EmptyState(
+                        icon = Icons.Outlined.RestaurantMenu,
+                        title = stringResource(R.string.list_empty_first_sync_title),
+                        body = stringResource(R.string.list_empty_first_sync_body),
+                        actionLabel = stringResource(R.string.list_action_sync),
+                        onAction = viewModel::syncNow,
+                        actionEnabled = !uiState.isSyncing
+                    )
                 } else {
-                    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(uiState.restaurants, key = { it.id }) { restaurant ->
-                            RestaurantRow(restaurant = restaurant, onClick = { onOpenRestaurant(restaurant.id) })
+                    // The filter controls live inside the list so they scroll away
+                    // instead of permanently eating vertical space — and so they stay
+                    // reachable when a filter matches nothing, which is exactly when
+                    // the user needs them most.
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        item(key = "filters") {
+                            FilterSection(
+                                minRating = uiState.minRating,
+                                onMinRatingChange = viewModel::onMinRatingChange,
+                                cuisineType = uiState.cuisineType,
+                                availableCuisines = uiState.availableCuisines,
+                                onCuisineChange = viewModel::onCuisineChange
+                            )
+                        }
+
+                        if (uiState.restaurants.isEmpty()) {
+                            item(key = "no-results") {
+                                EmptyState(
+                                    icon = Icons.Outlined.SearchOff,
+                                    title = stringResource(R.string.list_empty_no_results_title),
+                                    body = stringResource(R.string.list_empty_no_results_body),
+                                    actionLabel = stringResource(R.string.list_action_clear_filters),
+                                    onAction = viewModel::clearFilters,
+                                    modifier = Modifier.fillParentMaxHeight(0.6f)
+                                )
+                            }
+                        } else {
+                            items(uiState.restaurants, key = { it.id }) { restaurant ->
+                                RestaurantRow(restaurant = restaurant, onClick = { onOpenRestaurant(restaurant.id) })
+                            }
                         }
                     }
                 }
@@ -229,15 +222,92 @@ fun RestaurantListScreen(
 }
 
 @Composable
+private fun FilterSection(
+    minRating: Int?,
+    onMinRatingChange: (Int?) -> Unit,
+    cuisineType: String?,
+    availableCuisines: List<String>,
+    onCuisineChange: (String?) -> Unit
+) {
+    val chipColors = FilterChipDefaults.filterChipColors(
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+    )
+
+    Column {
+        Text(
+            text = stringResource(R.string.list_filter_min_rating),
+            style = MaterialTheme.typography.labelMedium
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            (1..5).forEach { rating ->
+                FilterChip(
+                    selected = minRating == rating,
+                    onClick = { onMinRatingChange(if (minRating == rating) null else rating) },
+                    label = { Text("$rating+") },
+                    colors = chipColors
+                )
+            }
+        }
+
+        // Only the cuisines actually present in the synced data are offered, so the
+        // row stays short instead of listing all 22 vocabulary entries.
+        if (availableCuisines.isNotEmpty()) {
+            val sortedCuisines = availableCuisines
+                .map { key -> key to cuisineLabel(key) }
+                .sortedBy { (_, label) -> label.lowercase() }
+
+            Text(
+                text = stringResource(R.string.list_filter_cuisine),
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                sortedCuisines.forEach { (key, label) ->
+                    FilterChip(
+                        selected = cuisineType == key,
+                        onClick = { onCuisineChange(if (cuisineType == key) null else key) },
+                        label = { Text(label) },
+                        leadingIcon = {
+                            Icon(
+                                cuisineIcon(key),
+                                contentDescription = null,
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        },
+                        colors = chipColors
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun EmptyState(
     icon: ImageVector,
     title: String,
     body: String,
+    modifier: Modifier = Modifier.fillMaxSize(),
     actionLabel: String? = null,
     onAction: () -> Unit = {},
     actionEnabled: Boolean = true
 ) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(32.dp)
@@ -291,7 +361,7 @@ private fun RestaurantRow(restaurant: Restaurant, onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Text(text = restaurant.name, style = MaterialTheme.typography.titleLarge)
                 Text(
-                    text = restaurant.cuisineType,
+                    text = cuisineLabel(restaurant.cuisineType),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -4,8 +4,8 @@ import com.albertferran.eatapp.data.local.Restaurant
 import kotlinx.coroutines.flow.Flow
 
 interface RestaurantRepository {
-    fun observeAll(): Flow<List<Restaurant>>
-    fun observeFiltered(query: String?, minRating: Int?): Flow<List<Restaurant>>
+    fun observeFiltered(query: String?, minRating: Int?, cuisineType: String?): Flow<List<Restaurant>>
+    fun observeCuisineTypes(): Flow<List<String>>
     fun observeById(id: Long): Flow<Restaurant?>
     suspend fun replaceAll(restaurants: List<Restaurant>)
 }

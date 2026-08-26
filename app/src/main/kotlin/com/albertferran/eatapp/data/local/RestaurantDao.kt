@@ -15,10 +15,18 @@ interface RestaurantDao {
         SELECT * FROM restaurants
         WHERE (:query IS NULL OR name LIKE '%' || :query || '%')
           AND (:minRating IS NULL OR rating >= :minRating)
+          AND (:cuisineType IS NULL OR cuisineType = :cuisineType)
         ORDER BY name COLLATE NOCASE ASC
         """
     )
-    fun observeFiltered(query: String?, minRating: Int?): Flow<List<Restaurant>>
+    fun observeFiltered(query: String?, minRating: Int?, cuisineType: String?): Flow<List<Restaurant>>
+
+    /**
+     * The cuisine keys actually present in the data, so the filter row can offer
+     * only those instead of all 22 entries of the vocabulary.
+     */
+    @Query("SELECT DISTINCT cuisineType FROM restaurants")
+    fun observeCuisineTypes(): Flow<List<String>>
 
     @Query("SELECT * FROM restaurants WHERE id = :id")
     fun observeById(id: Long): Flow<Restaurant?>

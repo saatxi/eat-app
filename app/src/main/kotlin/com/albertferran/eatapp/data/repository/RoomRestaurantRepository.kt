@@ -8,10 +8,14 @@ class RoomRestaurantRepository(
     private val dao: RestaurantDao
 ) : RestaurantRepository {
 
-    override fun observeAll(): Flow<List<Restaurant>> = dao.observeFiltered(query = null, minRating = null)
+    override fun observeFiltered(query: String?, minRating: Int?, cuisineType: String?): Flow<List<Restaurant>> =
+        dao.observeFiltered(
+            query = query?.takeIf { it.isNotBlank() },
+            minRating = minRating,
+            cuisineType = cuisineType?.takeIf { it.isNotBlank() }
+        )
 
-    override fun observeFiltered(query: String?, minRating: Int?): Flow<List<Restaurant>> =
-        dao.observeFiltered(query = query?.takeIf { it.isNotBlank() }, minRating = minRating)
+    override fun observeCuisineTypes(): Flow<List<String>> = dao.observeCuisineTypes()
 
     override fun observeById(id: Long): Flow<Restaurant?> = dao.observeById(id)
 

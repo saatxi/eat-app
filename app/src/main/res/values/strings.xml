@@ -4,11 +4,13 @@
     <string name="list_title">My Restaurants</string>
     <string name="list_search_placeholder">Search by name</string>
     <string name="list_filter_min_rating">Minimum rating</string>
+    <string name="list_filter_cuisine">Cuisine</string>
     <string name="list_empty_first_sync_title">No restaurants yet</string>
     <string name="list_empty_first_sync_body">Download your saved restaurants to get started.</string>
     <string name="list_empty_no_results_title">No matches</string>
     <string name="list_empty_no_results_body">Try a different search or rating filter.</string>
     <string name="list_action_sync">Refresh Data</string>
+    <string name="list_action_clear_filters">Clear filters</string>
     <string name="list_sync_success">Data refreshed (%1$d restaurants)</string>
     <string name="list_sync_error_network">Couldn\'t download. Check your connection.</string>
     <string name="list_sync_error_invalid">The downloaded file is invalid.</string>
@@ -25,4 +27,32 @@
     <string name="detail_section_overview">Overview</string>
     <string name="detail_section_visit">Visit details</string>
     <string name="detail_section_notes">Notes</string>
+
+    <!--
+        Display labels for the closed cuisine vocabulary. The `.db` stores the
+        stable key (see Cuisine.kt); only these labels are ever translated, so
+        adding a new language never requires re-editing the data file.
+    -->
+    <string name="cuisine_mediterranean">Mediterranean</string>
+    <string name="cuisine_spanish">Spanish</string>
+    <string name="cuisine_italian">Italian</string>
+    <string name="cuisine_japanese">Japanese</string>
+    <string name="cuisine_chinese">Chinese</string>
+    <string name="cuisine_asian">Asian</string>
+    <string name="cuisine_indian">Indian</string>
+    <string name="cuisine_middle_eastern">Middle Eastern</string>
+    <string name="cuisine_american">American</string>
+    <string name="cuisine_seafood">Seafood</string>
+    <string name="cuisine_bar">Bar</string>
+    <string name="cuisine_beer_bar">Beer bar</string>
+    <string name="cuisine_wine_bar">Wine bar</string>
+    <string name="cuisine_cafe">Cafe</string>
+    <string name="cuisine_bakery">Bakery</string>
+    <string name="cuisine_dessert">Dessert</string>
+    <string name="cuisine_breakfast">Breakfast</string>
+    <string name="cuisine_brunch">Brunch</string>
+    <string name="cuisine_grill">Grill</string>
+    <string name="cuisine_fast_food">Fast food</string>
+    <string name="cuisine_fine_dining">Fine dining</string>
+    <string name="cuisine_vegetarian">Vegetarian</string>
 </resources>

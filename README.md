@@ -5,7 +5,8 @@ address, rating, price range, notes, and visit date.
 
 ## Features
 
-- List restaurants, searchable by name and filterable by minimum rating
+- List restaurants, searchable by name and filterable by minimum rating and
+  cuisine type
 - View restaurant details (read-only)
 - Refresh restaurant data on demand from a prebuilt SQLite file hosted on
   GitHub ("Refresh Data")
@@ -22,6 +23,11 @@ you maintain on a PC and publish to a public GitHub repository.
   table named `restaurants` with columns: `id`, `name`, `cuisineType`,
   `address`, `rating`, `priceRange`, `notes`, `visitDate`, `photoUri`,
   `createdAt`.
+- `cuisineType` must be one of the **cuisine keys** listed below — a stable,
+  language-independent identifier such as `fast_food`, never a display label
+  such as `Fast food`. The app maps the key to both an icon and a translated
+  label, which is what makes adding a second language later a matter of adding
+  `values-es/strings.xml` and nothing else: the data file never has to change.
 - `visitDate` must be stored as **epoch-day** (days since 1970-01-01), not as
   a date string or epoch-millis.
 - `createdAt` is any long value (e.g. milliseconds since epoch at creation
@@ -39,6 +45,35 @@ you maintain on a PC and publish to a public GitHub repository.
   version/freshness check, and every tap re-downloads and replaces the local
   data. A failed or invalid download leaves existing data untouched and shows
   an error.
+
+### Cuisine keys
+
+The valid values for `cuisineType`. Each one has its own icon in the app, and
+the list screen offers a filter chip for every key present in your data.
+
+| Key | Shown as | | Key | Shown as |
+|---|---|---|---|---|
+| `mediterranean` | Mediterranean | | `bar` | Bar |
+| `spanish` | Spanish | | `beer_bar` | Beer bar |
+| `italian` | Italian | | `wine_bar` | Wine bar |
+| `japanese` | Japanese | | `cafe` | Cafe |
+| `chinese` | Chinese | | `bakery` | Bakery |
+| `asian` | Asian | | `dessert` | Dessert |
+| `indian` | Indian | | `breakfast` | Breakfast |
+| `middle_eastern` | Middle Eastern | | `brunch` | Brunch |
+| `american` | American | | `grill` | Grill |
+| `seafood` | Seafood | | `fast_food` | Fast food |
+| | | | `fine_dining` | Fine dining |
+| | | | `vegetarian` | Vegetarian |
+
+An unrecognised value never breaks a sync: the app falls back to a generic
+icon and displays the raw string as-is. That means a data file using a key
+added in a newer release still works on an older build, and a typo costs you
+an icon rather than a failed refresh.
+
+The vocabulary is defined in
+[`Cuisine.kt`](app/src/main/kotlin/com/albertferran/eatapp/data/local/Cuisine.kt) —
+keep this table in sync with it when adding a key.
 
 ## Tech stack
 
