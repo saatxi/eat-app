@@ -3,6 +3,7 @@ package com.albertferran.eatapp.data.sync
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
+import android.util.Log
 import com.albertferran.eatapp.data.local.Restaurant
 import com.albertferran.eatapp.data.repository.RestaurantRepository
 import java.io.File
@@ -22,6 +23,7 @@ private val REQUIRED_COLUMNS = setOf(
 
 private const val CONNECT_TIMEOUT_MS = 15_000
 private const val READ_TIMEOUT_MS = 15_000
+private const val TAG = "EatApp.Sync"
 
 class RestaurantDatabaseSyncManager(
     private val appContext: Context,
@@ -45,6 +47,7 @@ class RestaurantDatabaseSyncManager(
                 repository.replaceAll(restaurants)
                 DatabaseSyncResult.Success(restaurants.size)
             } catch (e: Exception) {
+                Log.e(TAG, "Sync failed with unexpected error: ${e.message}", e)
                 DatabaseSyncResult.Failure(SyncFailureReason.UNKNOWN, e.message)
             } finally {
                 tempFile.delete()
@@ -62,13 +65,16 @@ class RestaurantDatabaseSyncManager(
                 requestMethod = "GET"
             }
             if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                return DatabaseSyncResult.Failure(SyncFailureReason.NETWORK, "HTTP ${connection.responseCode}")
+                val msg = "HTTP ${connection.responseCode}"
+                Log.w(TAG, "Download failed: $msg")
+                return DatabaseSyncResult.Failure(SyncFailureReason.NETWORK, msg)
             }
             connection.inputStream.use { input ->
                 destination.outputStream().use { output -> input.copyTo(output) }
             }
             null
         } catch (e: IOException) {
+            Log.w(TAG, "Download error: ${e.message}", e)
             DatabaseSyncResult.Failure(SyncFailureReason.NETWORK, e.message)
         } finally {
             connection?.disconnect()
@@ -93,7 +99,10 @@ class RestaurantDatabaseSyncManager(
                 }
             }
             if (!columnNames.containsAll(REQUIRED_COLUMNS)) {
-                return ReadOutcome.Error(DatabaseSyncResult.Failure(SyncFailureReason.INVALID_FILE, "missing columns"))
+                val missing = REQUIRED_COLUMNS - columnNames
+                val msg = "missing columns: $missing"
+                Log.w(TAG, msg)
+                return ReadOutcome.Error(DatabaseSyncResult.Failure(SyncFailureReason.INVALID_FILE, msg))
             }
 
             val restaurants = mutableListOf<Restaurant>()
@@ -112,19 +121,17 @@ class RestaurantDatabaseSyncManager(
                     val priceRange = cursor.getInt(5)
 
                     if (name.isBlank() || cuisineType.isBlank() || notes.isBlank()) {
+                        val msg = "row ${cursor.getLong(0)}: name, cuisineType and notes cannot be empty"
+                        Log.w(TAG, msg)
                         return ReadOutcome.Error(
-                            DatabaseSyncResult.Failure(
-                                SyncFailureReason.INVALID_FILE,
-                                "row ${cursor.getLong(0)}: name, cuisineType and notes cannot be empty"
-                            )
+                            DatabaseSyncResult.Failure(SyncFailureReason.INVALID_FILE, msg)
                         )
                     }
                     if (rating !in 0..5 || priceRange !in 0..4) {
+                        val msg = "row ${cursor.getLong(0)}: rating must be 0-5, priceRange must be 0-4 (got rating=$rating, priceRange=$priceRange)"
+                        Log.w(TAG, msg)
                         return ReadOutcome.Error(
-                            DatabaseSyncResult.Failure(
-                                SyncFailureReason.INVALID_FILE,
-                                "row ${cursor.getLong(0)}: rating must be 0-5, priceRange must be 0-4"
-                            )
+                            DatabaseSyncResult.Failure(SyncFailureReason.INVALID_FILE, msg)
                         )
                     }
 
@@ -146,13 +153,17 @@ class RestaurantDatabaseSyncManager(
             }
 
             if (restaurants.isEmpty()) {
-                ReadOutcome.Error(DatabaseSyncResult.Failure(SyncFailureReason.INVALID_FILE, "empty dataset"))
+                Log.w(TAG, "No rows found in restaurants table")
+                ReadOutcome.Error(DatabaseSyncResult.Failure(SyncFailureReason.INVALID_FILE, "no rows in restaurants table"))
             } else {
+                Log.d(TAG, "Loaded ${restaurants.size} restaurants")
                 ReadOutcome.Rows(restaurants)
             }
         } catch (e: SQLiteException) {
+            Log.w(TAG, "SQLite error: ${e.message}", e)
             ReadOutcome.Error(DatabaseSyncResult.Failure(SyncFailureReason.INVALID_FILE, e.message))
         } catch (e: IOException) {
+            Log.w(TAG, "IO error reading database: ${e.message}", e)
             ReadOutcome.Error(DatabaseSyncResult.Failure(SyncFailureReason.IO_ERROR, e.message))
         } finally {
             db?.close()
