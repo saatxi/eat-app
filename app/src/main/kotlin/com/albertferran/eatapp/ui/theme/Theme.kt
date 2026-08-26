@@ -1,45 +1,53 @@
 package com.albertferran.eatapp.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
 private val LightColors = lightColorScheme(
     primary = Terracotta40,
+    onPrimary = Color.White,
+    primaryContainer = Terracotta80,
+    onPrimaryContainer = Terracotta40,
     secondary = Sage40,
-    tertiary = Cream40
+    onSecondary = Color.White,
+    secondaryContainer = Sage80,
+    onSecondaryContainer = Sage40,
+    tertiary = Cream40,
+    onTertiary = Color.White,
+    tertiaryContainer = Cream80,
+    onTertiaryContainer = Cream40
 )
 
 private val DarkColors = darkColorScheme(
     primary = Terracotta80,
+    onPrimary = Terracotta40,
+    primaryContainer = Terracotta40,
+    onPrimaryContainer = Terracotta80,
     secondary = Sage80,
-    tertiary = Cream80
+    onSecondary = Sage40,
+    secondaryContainer = Sage40,
+    onSecondaryContainer = Sage80,
+    tertiary = Cream80,
+    onTertiary = Cream40,
+    tertiaryContainer = Cream40,
+    onTertiaryContainer = Cream80
 )
 
 @Composable
 fun EatAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColors
-        else -> LightColors
-    }
+    val colorScheme = if (darkTheme) DarkColors else LightColors
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = Shapes,
         content = content
     )
 }
