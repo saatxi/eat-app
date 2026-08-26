@@ -60,14 +60,28 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
 import com.albertferran.eatapp.BuildConfig
 import com.albertferran.eatapp.R
 import com.albertferran.eatapp.data.local.Restaurant
+import com.albertferran.eatapp.data.sync.RestaurantDatabaseSyncManager
 import com.albertferran.eatapp.data.sync.SyncFailureReason
 import com.albertferran.eatapp.ui.AppViewModelProvider
 import com.albertferran.eatapp.ui.common.cuisineIcon
 import com.albertferran.eatapp.ui.common.cuisineLabel
 import com.albertferran.eatapp.ui.common.cuisineTint
+
+private fun formatRelativeTime(timestampMs: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestampMs
+    return when {
+        diff < 60_000 -> "just now"
+        diff < 3_600_000 -> "${diff / 60_000} minute${if (diff >= 120_000) "s" else ""} ago"
+        diff < 86_400_000 -> "${diff / 3_600_000} hour${if (diff >= 7_200_000) "s" else ""} ago"
+        else -> "${diff / 86_400_000} day${if (diff >= 172_800_000) "s" else ""} ago"
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -200,6 +214,14 @@ fun RestaurantListScreen(
     }
 
     if (showAboutDialog) {
+        val context = LocalContext.current
+        val lastSyncTime = RestaurantDatabaseSyncManager.getLastSyncTime(context)
+        val lastSyncText = if (lastSyncTime > 0) {
+            "\n\nLast synced: ${formatRelativeTime(lastSyncTime)}"
+        } else {
+            "\n\nNo sync completed yet"
+        }
+
         AlertDialog(
             onDismissRequest = { showAboutDialog = false },
             confirmButton = {
@@ -214,7 +236,7 @@ fun RestaurantListScreen(
                         R.string.about_version_template,
                         BuildConfig.VERSION_NAME,
                         BuildConfig.VERSION_CODE
-                    )
+                    ) + lastSyncText
                 )
             }
         )

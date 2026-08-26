@@ -45,6 +45,7 @@ class RestaurantDatabaseSyncManager(
                 }
 
                 repository.replaceAll(restaurants)
+                recordSyncTimestamp()
                 DatabaseSyncResult.Success(restaurants.size)
             } catch (e: Exception) {
                 Log.e(TAG, "Sync failed with unexpected error: ${e.message}", e)
@@ -52,6 +53,22 @@ class RestaurantDatabaseSyncManager(
             } finally {
                 tempFile.delete()
             }
+        }
+    }
+
+    private fun recordSyncTimestamp() {
+        val prefs = appContext.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+        prefs.edit().putLong(PREF_LAST_SYNC_TIME, System.currentTimeMillis()).apply()
+        Log.d(TAG, "Sync completed successfully")
+    }
+
+    companion object {
+        private const val PREFS_NAME = "com.albertferran.eatapp.sync"
+        private const val PREF_LAST_SYNC_TIME = "lastSyncTime"
+
+        fun getLastSyncTime(context: android.content.Context): Long {
+            val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+            return prefs.getLong(PREF_LAST_SYNC_TIME, 0L)
         }
     }
 
