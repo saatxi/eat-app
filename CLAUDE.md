@@ -73,6 +73,14 @@ app/src/main/kotlin/com/albertferran/eatapp/
 - All in-app strings live in `app/src/main/res/values/strings.xml` and are
   in **English** — no hardcoded UI text in Kotlin, no other language.
   Code comments are in English too.
+- **Cuisine vocabulary**: the `.db` column `cuisineType` stores stable,
+  language-independent keys (`japanese`, `fast_food`, etc.), never display
+  labels. Each key has its own icon in [CuisineVisuals.kt](app/src/main/kotlin/com/albertferran/eatapp/ui/common/CuisineVisuals.kt)
+  and a translatable label in `strings.xml`. This design means adding a
+  second language later is just a new `values-xx/strings.xml` file — the
+  data never changes. The full 22-key vocabulary is in [Cuisine.kt](app/src/main/kotlin/com/albertferran/eatapp/data/local/Cuisine.kt)
+  and documented in the README. An unrecognised key degrades gracefully: the
+  app falls back to a generic icon and shows the raw string.
 - `versionCode`/`versionName` in `app/build.gradle.kts` are derived
   automatically from git (commit count / nearest tag) — never hardcode
   them. See README's "Versioning" section for the full scheme.
