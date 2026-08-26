@@ -21,7 +21,10 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.RestaurantMenu
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,8 +59,7 @@ fun RestaurantDetailScreen(
     onBack: () -> Unit,
     viewModel: RestaurantDetailViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
-    val restaurant by viewModel.restaurant.collectAsState()
-
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
     Scaffold(
@@ -72,142 +74,190 @@ fun RestaurantDetailScreen(
             )
         }
     ) { padding ->
-        val current = restaurant
-        if (current != null) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                val tint = cuisineTint(current.cuisineType)
+        when (val state = uiState) {
+            DetailUiState.Loading -> {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                        .padding(horizontal = 16.dp)
-                        .clip(MaterialTheme.shapes.large)
-                        .background(
-                            brush = Brush.linearGradient(listOf(tint.container, MaterialTheme.colorScheme.surface))
-                        )
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        cuisineIcon(current.cuisineType),
-                        contentDescription = null,
-                        tint = tint.onContainer.copy(alpha = 0.16f),
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(12.dp)
-                            .size(96.dp)
-                    )
+                    CircularProgressIndicator()
+                }
+            }
+
+            DetailUiState.NotFound -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.Bottom
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(32.dp)
                     ) {
-                        Text(
-                            text = current.name,
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = tint.onContainer
+                        Icon(
+                            Icons.Outlined.RestaurantMenu,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Text(
+                            text = "Restaurant not found",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                        Text(
+                            text = "This restaurant was removed or the data was refreshed.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                        Button(onClick = onBack, modifier = Modifier.padding(top = 20.dp)) {
+                            Text("Go back")
+                        }
                     }
                 }
+            }
 
+            is DetailUiState.Loaded -> {
+                val current = state.restaurant
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(top = 16.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                        .fillMaxSize()
+                        .padding(padding)
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                    val tint = cuisineTint(current.cuisineType)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp)
+                            .padding(horizontal = 16.dp)
+                            .clip(MaterialTheme.shapes.large)
+                            .background(
+                                brush = Brush.linearGradient(listOf(tint.container, MaterialTheme.colorScheme.surface))
+                            )
+                    ) {
+                        Icon(
+                            cuisineIcon(current.cuisineType),
+                            contentDescription = null,
+                            tint = tint.onContainer.copy(alpha = 0.16f),
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(12.dp)
+                                .size(96.dp)
+                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.Bottom
+                        ) {
                             Text(
-                                text = stringResource(R.string.detail_section_overview),
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            )
-                            InfoRow(
-                                icon = cuisineIcon(current.cuisineType),
-                                text = cuisineLabel(current.cuisineType)
-                            )
-                            current.address?.let { address ->
-                                InfoRow(
-                                    icon = Icons.Outlined.LocationOn,
-                                    text = address,
-                                    topPadding = 10.dp,
-                                    onClick = {
-                                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                                            data = Uri.parse("geo:0,0?q=${Uri.encode(address)}")
-                                        }
-                                        context.startActivity(intent)
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = stringResource(R.string.detail_section_visit),
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    repeat(5) { index ->
-                                        Icon(
-                                            Icons.Default.Star,
-                                            contentDescription = null,
-                                            tint = if (index < current.rating) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.outlineVariant
-                                            },
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Text(
-                                        text = stringResource(R.string.rating_format, current.rating),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        modifier = Modifier.padding(start = 6.dp)
-                                    )
-                                }
-                                Surface(
-                                    shape = RoundedCornerShape(percent = 50),
-                                    color = MaterialTheme.colorScheme.tertiaryContainer
-                                ) {
-                                    Text(
-                                        text = "$".repeat(current.priceRange),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
-                            InfoRow(
-                                icon = Icons.Outlined.CalendarToday,
-                                text = current.visitDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                                topPadding = 12.dp
+                                text = current.name,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = tint.onContainer
                             )
                         }
                     }
 
-                    if (current.notes.isNotBlank()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(top = 16.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
                         Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = stringResource(R.string.detail_section_notes),
+                                    text = stringResource(R.string.detail_section_overview),
                                     style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.padding(bottom = 8.dp)
+                                    modifier = Modifier.padding(bottom = 12.dp)
                                 )
-                                Text(current.notes, style = MaterialTheme.typography.bodyLarge)
+                                InfoRow(
+                                    icon = cuisineIcon(current.cuisineType),
+                                    text = cuisineLabel(current.cuisineType)
+                                )
+                                current.address?.let { address ->
+                                    InfoRow(
+                                        icon = Icons.Outlined.LocationOn,
+                                        text = address,
+                                        topPadding = 10.dp,
+                                        onClick = {
+                                            val intent = Intent(Intent.ACTION_VIEW).apply {
+                                                data = Uri.parse("geo:0,0?q=${Uri.encode(address)}")
+                                            }
+                                            context.startActivity(intent)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = stringResource(R.string.detail_section_visit),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(bottom = 12.dp)
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        repeat(5) { index ->
+                                            Icon(
+                                                Icons.Default.Star,
+                                                contentDescription = null,
+                                                tint = if (index < current.rating) {
+                                                    MaterialTheme.colorScheme.primary
+                                                } else {
+                                                    MaterialTheme.colorScheme.outlineVariant
+                                                },
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                        Text(
+                                            text = stringResource(R.string.rating_format, current.rating),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            modifier = Modifier.padding(start = 6.dp)
+                                        )
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(percent = 50),
+                                        color = MaterialTheme.colorScheme.tertiaryContainer
+                                    ) {
+                                        Text(
+                                            text = "$".repeat(current.priceRange),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+                                InfoRow(
+                                    icon = Icons.Outlined.CalendarToday,
+                                    text = current.visitDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                                    topPadding = 12.dp
+                                )
+                            }
+                        }
+
+                        if (current.notes.isNotBlank()) {
+                            Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(
+                                        text = stringResource(R.string.detail_section_notes),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                    Text(current.notes, style = MaterialTheme.typography.bodyLarge)
+                                }
                             }
                         }
                     }
