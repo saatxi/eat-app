@@ -13,7 +13,11 @@ interface RestaurantDao {
     @Query(
         """
         SELECT * FROM restaurants
-        WHERE (:query IS NULL OR name LIKE '%' || :query || '%')
+        WHERE (:query IS NULL OR
+               name LIKE '%' || :query || '%' OR
+               cuisineType LIKE '%' || :query || '%' OR
+               address LIKE '%' || :query || '%' OR
+               notes LIKE '%' || :query || '%')
           AND (:minRating IS NULL OR rating >= :minRating)
           AND (:cuisineType IS NULL OR cuisineType = :cuisineType)
         ORDER BY name COLLATE NOCASE ASC
