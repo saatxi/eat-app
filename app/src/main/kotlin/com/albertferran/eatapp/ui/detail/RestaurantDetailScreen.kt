@@ -1,6 +1,9 @@
 package com.albertferran.eatapp.ui.detail
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -53,6 +57,8 @@ fun RestaurantDetailScreen(
     viewModel: RestaurantDetailViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val restaurant by viewModel.restaurant.collectAsState()
+
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -127,7 +133,17 @@ fun RestaurantDetailScreen(
                                 text = cuisineLabel(current.cuisineType)
                             )
                             current.address?.let { address ->
-                                InfoRow(icon = Icons.Outlined.LocationOn, text = address, topPadding = 10.dp)
+                                InfoRow(
+                                    icon = Icons.Outlined.LocationOn,
+                                    text = address,
+                                    topPadding = 10.dp,
+                                    onClick = {
+                                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                                            data = Uri.parse("geo:0,0?q=${Uri.encode(address)}")
+                                        }
+                                        context.startActivity(intent)
+                                    }
+                                )
                             }
                         }
                     }
@@ -205,11 +221,14 @@ fun RestaurantDetailScreen(
 private fun InfoRow(
     icon: ImageVector,
     text: String,
-    topPadding: Dp = 0.dp
+    topPadding: Dp = 0.dp,
+    onClick: (() -> Unit)? = null
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(top = topPadding)
+        modifier = Modifier
+            .padding(top = topPadding)
+            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
     ) {
         Icon(
             icon,
