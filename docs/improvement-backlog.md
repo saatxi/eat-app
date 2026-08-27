@@ -21,7 +21,7 @@ Large-screen and tablet support is deliberately not covered here; see
 If you only do a handful, these in this order:
 
 1. **F-26, F-33, F-34** — the list screen's interaction rough edges.
-2. **F-03, F-04, F-11** — what is left of hardening the sync, minutes each.
+2. **F-03, F-11** — what is left of hardening the sync, minutes each.
 3. **F-45, F-46** — two XS presentation fixes lint already points at.
 4. **F-47** — the dependency set is over a year stale.
 5. **F-50** — CI, now that there is a test suite worth running on every push.
@@ -38,13 +38,6 @@ untrusted input.
 **Where:** [RestaurantDatabaseSyncManager.kt:68](../app/src/main/kotlin/com/albertferran/eatapp/data/sync/RestaurantDatabaseSyncManager.kt#L68)
 **Fix:** cap it (10 MB is generous for this data) and fail as `INVALID_FILE`
 past the cap.
-
-### F-04 · No magic-header check — Low / XS
-
-Any downloaded bytes go straight to `SQLiteDatabase.openDatabase`. It's
-contained — read-only, and `SQLiteException` is caught — but checking the
-16-byte `SQLite format 3\0` header first is nearly free and turns "invalid
-file" into an accurate diagnosis instead of a guess.
 
 ### F-07 · Every refresh re-downloads everything — Medium / S
 
@@ -465,3 +458,15 @@ Four columns removed from the entity, the reader, the UI and `data/eatapp.db`.
 - `./gradlew lint` now reports neither `MonochromeLauncherIcon` nor the unused
   resource; what is left is unrelated (`GradleDependency` / `UseKtx` and
   friends, i.e. F-47 and F-45).
+
+### Sync validation pass
+
+- **F-04 · No magic-header check — Done.** `RestaurantDatabaseReader.read`
+  now reads the first 16 bytes and compares them against `SQLite format 3\0`
+  before the file reaches `SQLiteDatabase.openDatabase`, failing as
+  `INVALID_FILE` with `"not a SQLite database: bad file header"`. Nothing was
+  unsafe before — the file was already read-only and `SQLiteException` was
+  caught — but a truncated download or an HTML error page saved as `.db` used
+  to surface as whatever SQLite happened to say, or as "missing columns" when
+  it opened an empty database anyway. A file shorter than the header (the
+  empty file included) is rejected on the same path.

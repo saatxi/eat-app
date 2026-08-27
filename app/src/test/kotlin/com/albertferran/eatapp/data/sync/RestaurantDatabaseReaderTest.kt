@@ -144,7 +144,28 @@ class RestaurantDatabaseReaderTest {
         val file = tempFolder.newFile("garbage.db")
         file.writeBytes(ByteArray(64) { it.toByte() })
 
-        assertEquals(SyncFailureReason.INVALID_FILE, readErrorOf(file).reason)
+        val failure = readErrorOf(file)
+
+        assertEquals(SyncFailureReason.INVALID_FILE, failure.reason)
+        assertTrue("detail should blame the header: ${failure.detail}", failure.detail!!.contains("header"))
+    }
+
+    @Test
+    fun `rejects a file too short to hold a SQLite header`() {
+        val file = tempFolder.newFile("truncated.db")
+        file.writeBytes("SQLite".toByteArray())
+
+        val failure = readErrorOf(file)
+
+        assertEquals(SyncFailureReason.INVALID_FILE, failure.reason)
+        assertTrue("detail should blame the header: ${failure.detail}", failure.detail!!.contains("header"))
+    }
+
+    @Test
+    fun `rejects an empty file`() {
+        val failure = readErrorOf(tempFolder.newFile("empty.db"))
+
+        assertEquals(SyncFailureReason.INVALID_FILE, failure.reason)
     }
 
     // --- row validation, the F-02 cases -------------------------------------
