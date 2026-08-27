@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.Flow
 interface RestaurantDao {
 
     /**
+     * Ordering is fixed by [sortByRating] rather than interpolated into the SQL:
+     * true puts the highest ratings first (name breaking ties), false leaves the
+     * CASE constant so the name order alone applies.
+     *
      * [query] must already be folded with `normalizeForSearch` and escaped
      * with `escapeLikeWildcards`, since it is matched as a literal substring
      * of the equally folded `searchText` column — the `ESCAPE '\'` clause is
@@ -23,10 +27,17 @@ interface RestaurantDao {
         WHERE (:query IS NULL OR searchText LIKE '%' || :query || '%' ESCAPE '\')
           AND (:minRating IS NULL OR rating >= :minRating)
           AND (:cuisineType IS NULL OR cuisineType = :cuisineType)
-        ORDER BY name COLLATE NOCASE ASC
+        ORDER BY
+          CASE WHEN :sortByRating THEN rating ELSE 0 END DESC,
+          name COLLATE NOCASE ASC
         """
     )
-    fun observeFiltered(query: String?, minRating: Int?, cuisineType: String?): Flow<List<Restaurant>>
+    fun observeFiltered(
+        query: String?,
+        minRating: Int?,
+        cuisineType: String?,
+        sortByRating: Boolean
+    ): Flow<List<Restaurant>>
 
     /**
      * The cuisine keys actually present in the data, so the filter row can offer

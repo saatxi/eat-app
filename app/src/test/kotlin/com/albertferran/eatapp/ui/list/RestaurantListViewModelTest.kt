@@ -1,6 +1,7 @@
 package com.albertferran.eatapp.ui.list
 
 import com.albertferran.eatapp.data.local.Restaurant
+import com.albertferran.eatapp.data.local.RestaurantSort
 import com.albertferran.eatapp.data.repository.RestaurantRepository
 import com.albertferran.eatapp.data.sync.DatabaseSyncManager
 import com.albertferran.eatapp.data.sync.DatabaseSyncResult
@@ -197,6 +198,47 @@ class RestaurantListViewModelTest {
         assertFalse(viewModel.uiState.value.hasActiveFilter)
     }
 
+    // --- F-29: sort order ---------------------------------------------------
+
+    @Test
+    fun `starts sorted by name`() = runTest {
+        observeState()
+
+        assertEquals(RestaurantSort.NAME, viewModel.uiState.value.sort)
+        assertEquals(RestaurantSort.NAME, repository.lastSort)
+    }
+
+    @Test
+    fun `a new sort order lands in the state and in the query`() = runTest {
+        observeState()
+
+        viewModel.onSortChange(RestaurantSort.RATING)
+
+        assertEquals(RestaurantSort.RATING, viewModel.uiState.value.sort)
+        assertEquals(RestaurantSort.RATING, repository.lastSort)
+    }
+
+    @Test
+    fun `the sort order is not a filter, so it does not make one active`() = runTest {
+        observeState()
+
+        viewModel.onSortChange(RestaurantSort.RATING)
+
+        assertFalse(viewModel.uiState.value.hasActiveFilter)
+    }
+
+    @Test
+    fun `clearFilters keeps the chosen sort order`() = runTest {
+        observeState()
+        viewModel.onSortChange(RestaurantSort.RATING)
+        viewModel.onSearchQueryChange("sushi")
+
+        viewModel.clearFilters()
+
+        assertEquals(RestaurantSort.RATING, viewModel.uiState.value.sort)
+        assertEquals(RestaurantSort.RATING, repository.lastSort)
+    }
+
     // --- data flowing the other way ----------------------------------------
 
     @Test
@@ -288,15 +330,19 @@ private class FakeRestaurantRepository(var count: Int = 0) : RestaurantRepositor
         private set
     var lastCuisine: String? = null
         private set
+    var lastSort: RestaurantSort? = null
+        private set
 
     override fun observeFiltered(
         query: String?,
         minRating: Int?,
-        cuisineType: String?
+        cuisineType: String?,
+        sort: RestaurantSort
     ): Flow<List<Restaurant>> {
         lastQuery = query
         lastMinRating = minRating
         lastCuisine = cuisineType
+        lastSort = sort
         return restaurants
     }
 

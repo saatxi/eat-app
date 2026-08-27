@@ -20,24 +20,9 @@ Large-screen and tablet support is deliberately not covered here; see
 
 If you only do a handful, these in this order:
 
-1. **F-26** — the search field is still the list screen's roughest edge.
-2. **F-47** — the dependency set is over a year stale.
-3. **F-50** — CI, now that there is a test suite worth running on every push.
-
----
-
-## E. List screen UX
-
-### F-26 · The search field is bare — Medium / S
-
-No leading search icon, no clear button, not `singleLine` (so Enter inserts a
-newline), no `ImeAction.Search`, and it uses `label` rather than `placeholder`
-so the floating label permanently costs vertical space.
-**Where:** [RestaurantListScreen.kt:138](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt#L138)
-
-### F-29 · No sorting — Medium / M
-
-The list is always alphabetical. Sorting by rating is the obvious want.
+1. **F-47** — the dependency set is over a year stale.
+2. **F-50** — CI, now that there is a test suite worth running on every push.
+3. **F-35** — the detail screen still has no title once the hero scrolls off.
 
 ---
 
@@ -142,6 +127,38 @@ screen, each in light and dark.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### List screen search and sort pass
+
+Section E in full, which retires the section along with F-33 before it.
+
+- **F-26 · The search field is bare — Done.** The field gained a leading
+  search icon, a trailing clear button that only appears once there is
+  something to clear (`list_search_clear`), `singleLine = true` so Enter can
+  no longer insert a newline into a search box, and `ImeAction.Search`, whose
+  action just drops focus — results already follow every keystroke, so there
+  is nothing left for it to submit. `label` became
+  `placeholder`, which is what stops the floating label from permanently
+  costing a row of height. The placeholder text went from "Search by name" to
+  "Search restaurants" while it was being moved: search has covered name,
+  cuisine and address since the unused-column pass, so the old wording
+  undersold it.
+- **F-29 · No sorting — Done.** A `RestaurantSort` enum (`NAME`, `RATING`)
+  runs from a sort menu in the app bar — a check mark on the active order,
+  no vertical space taken from the list — through `RestaurantListUiState.sort`
+  and the ViewModel's `Filters` into the repository. The DAO takes a
+  `sortByRating: Boolean` rather than the enum, so the ordering stays a bound
+  parameter (`ORDER BY CASE WHEN :sortByRating THEN rating ELSE 0 END DESC,
+  name COLLATE NOCASE ASC`) instead of SQL assembled from a value, and the
+  name order remains the tiebreak within a rating so both orders are stable.
+  Sorting is not a filter: it is excluded from `hasActiveFilter`, and
+  `clearFilters()` deliberately preserves it, since that button is reached
+  from the "No matches" state where the user wants their restaurants back,
+  not their chosen order undone.
+- Verified with `./gradlew test assembleDebug lint` — 101 tests green (four
+  new DAO cases for the rating order, its name tiebreak and its interaction
+  with the filters, plus four ViewModel cases for the sort input), lint
+  unchanged.
 
 ### List refresh indicator pass
 

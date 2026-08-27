@@ -60,6 +60,9 @@ class RestaurantDaoTest {
     private suspend fun search(query: String?) =
         repository.observeFiltered(query, null, null).first().map { it.name }
 
+    private suspend fun sortedBy(sort: RestaurantSort) =
+        repository.observeFiltered(null, null, null, sort).first().map { it.name }
+
     // --- ordering and the unfiltered case -----------------------------------
 
     @Test
@@ -74,6 +77,55 @@ class RestaurantDaoTest {
         seed(restaurant(1, "zeta"), restaurant(2, "Alfa"), restaurant(3, "beta"))
 
         assertEquals(listOf("Alfa", "beta", "zeta"), search(null))
+    }
+
+    @Test
+    fun `sorts by rating, highest first, when asked to`() = runTest {
+        seed(
+            restaurant(1, "Alga", rating = 2),
+            restaurant(2, "Bar Nil", rating = 5),
+            restaurant(3, "Can Pep", rating = 3)
+        )
+
+        assertEquals(listOf("Bar Nil", "Can Pep", "Alga"), sortedBy(RestaurantSort.RATING))
+    }
+
+    /** Ties would otherwise come back in whatever order SQLite happened to pick. */
+    @Test
+    fun `breaks equal ratings with the name order`() = runTest {
+        seed(
+            restaurant(1, "zeta", rating = 4),
+            restaurant(2, "Alfa", rating = 4),
+            restaurant(3, "beta", rating = 5)
+        )
+
+        assertEquals(listOf("beta", "Alfa", "zeta"), sortedBy(RestaurantSort.RATING))
+    }
+
+    @Test
+    fun `the name order is unaffected by how the ratings fall`() = runTest {
+        seed(
+            restaurant(1, "zeta", rating = 5),
+            restaurant(2, "Alfa", rating = 1)
+        )
+
+        assertEquals(listOf("Alfa", "zeta"), sortedBy(RestaurantSort.NAME))
+    }
+
+    @Test
+    fun `sorting by rating still respects the filters`() = runTest {
+        seed(
+            restaurant(1, "Alga", rating = 5, cuisineType = "japanese"),
+            restaurant(2, "Bar Nil", rating = 4, cuisineType = "seafood"),
+            restaurant(3, "Can Pep", rating = 3, cuisineType = "seafood")
+        )
+
+        val names = repository
+            .observeFiltered(null, null, "seafood", RestaurantSort.RATING)
+            .first()
+            .map { it.name }
+
+        assertEquals(listOf("Bar Nil", "Can Pep"), names)
     }
 
     @Test

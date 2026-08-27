@@ -2,6 +2,7 @@ package com.albertferran.eatapp.ui.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.albertferran.eatapp.data.local.RestaurantSort
 import com.albertferran.eatapp.data.repository.RestaurantRepository
 import com.albertferran.eatapp.data.sync.DatabaseSyncManager
 import com.albertferran.eatapp.data.sync.DatabaseSyncResult
@@ -27,6 +28,7 @@ data class RestaurantListUiState(
     val searchQuery: String = "",
     val minRating: Int? = null,
     val cuisineType: String? = null,
+    val sort: RestaurantSort = RestaurantSort.NAME,
     val availableCuisines: List<String> = emptyList(),
     val restaurants: List<RestaurantUiModel> = emptyList(),
     // True until the database has emitted for the first time. Without it this
@@ -54,7 +56,10 @@ sealed interface SyncMessage {
 private data class Filters(
     val query: String = "",
     val minRating: Int? = null,
-    val cuisineType: String? = null
+    val cuisineType: String? = null,
+    // Not a filter in the "narrows the list down" sense — it rides along here
+    // because it is the fourth input the repository query is built from.
+    val sort: RestaurantSort = RestaurantSort.NAME
 )
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -86,12 +91,13 @@ class RestaurantListViewModel(
         filters.map { it.query }.debounce { query -> if (query.isBlank()) 0L else SEARCH_DEBOUNCE_MS },
         filters.map { it.minRating }.distinctUntilChanged(),
         filters.map { it.cuisineType }.distinctUntilChanged(),
+        filters.map { it.sort }.distinctUntilChanged(),
         ::Filters
     )
 
     val uiState: StateFlow<RestaurantListUiState> = combine(
         filters,
-        queryFilters.flatMapLatest { repository.observeFiltered(it.query, it.minRating, it.cuisineType) },
+        queryFilters.flatMapLatest { repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort) },
         repository.observeCuisineTypes(),
         isSyncing,
         pendingSyncMessage
@@ -100,6 +106,7 @@ class RestaurantListViewModel(
             searchQuery = activeFilters.query,
             minRating = activeFilters.minRating,
             cuisineType = activeFilters.cuisineType,
+            sort = activeFilters.sort,
             availableCuisines = availableCuisines,
             restaurants = restaurants.map { it.toUiModel() },
             // Reaching this block at all means the database has emitted, since
@@ -126,8 +133,15 @@ class RestaurantListViewModel(
         filters.update { it.copy(cuisineType = cuisineType) }
     }
 
+    fun onSortChange(sort: RestaurantSort) {
+        filters.update { it.copy(sort = sort) }
+    }
+
+    // Deliberately leaves the sort order alone: it is reached from the "no
+    // matches" state, where the user wants their restaurants back, not their
+    // chosen order undone.
     fun clearFilters() {
-        filters.value = Filters()
+        filters.value = Filters(sort = filters.value.sort)
     }
 
     fun syncNow() {

@@ -8,6 +8,7 @@ address, rating and price range.
 - List restaurants, searchable across name, cuisine and address
   (accent- and case-insensitive), and filterable by minimum rating and
   cuisine type
+- Sort the list by name or by rating (highest first), from the app bar
 - View restaurant details (read-only)
 - Refresh restaurant data on demand from a prebuilt SQLite file hosted on
   GitHub ("Refresh Data")
@@ -210,9 +211,12 @@ What is covered:
 - `RestaurantDatabaseReaderTest` — validation of the downloaded `.db`: missing
   columns, NULL and blank fields, out-of-range ratings and price ranges, and
   files that are not SQLite at all.
-- `RestaurantDaoTest` — the filter query against an in-memory Room database.
-- `RestaurantListViewModelTest` — how the three filter inputs combine into one
-  query and one UI state.
+- `RestaurantDaoTest` — the filter query and both sort orders against an
+  in-memory Room database.
+- `RestaurantListViewModelTest` — how the filter and sort inputs combine into
+  one query and one UI state.
+- `RestaurantUiModelTest` — the entity-to-UI-model mapping behind the price,
+  star and address formatting.
 
 ## Versioning
 

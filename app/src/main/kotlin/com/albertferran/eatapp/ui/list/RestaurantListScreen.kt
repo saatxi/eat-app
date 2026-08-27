@@ -16,9 +16,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.RestaurantMenu
@@ -57,8 +63,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -66,6 +74,7 @@ import android.content.Context
 import androidx.compose.ui.platform.LocalContext
 import com.albertferran.eatapp.BuildConfig
 import com.albertferran.eatapp.R
+import com.albertferran.eatapp.data.local.RestaurantSort
 import com.albertferran.eatapp.data.sync.RestaurantDatabaseSyncManager
 import com.albertferran.eatapp.data.sync.SyncFailureReason
 import com.albertferran.eatapp.ui.AppViewModelProvider
@@ -102,9 +111,11 @@ fun RestaurantListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showSortMenu by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
 
     val syncErrorNetwork = stringResource(R.string.list_sync_error_network)
     val syncErrorInvalid = stringResource(R.string.list_sync_error_invalid)
@@ -148,6 +159,33 @@ fun RestaurantListScreen(
                         IconButton(onClick = viewModel::syncNow, enabled = !uiState.isSyncing) {
                             Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.list_action_sync))
                         }
+                        IconButton(onClick = { showSortMenu = true }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Sort,
+                                contentDescription = stringResource(R.string.list_action_sort)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false }
+                        ) {
+                            RestaurantSort.entries.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(sortLabel(option)) },
+                                    onClick = {
+                                        showSortMenu = false
+                                        viewModel.onSortChange(option)
+                                    },
+                                    // The unselected entries keep an empty icon slot rather
+                                    // than none, so the labels stay put as the choice moves.
+                                    leadingIcon = {
+                                        if (option == uiState.sort) {
+                                            Icon(Icons.Default.Check, contentDescription = null)
+                                        }
+                                    }
+                                )
+                            }
+                        }
                         IconButton(onClick = { showOverflowMenu = true }) {
                             Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.list_action_more))
                         }
@@ -174,7 +212,26 @@ fun RestaurantListScreen(
             OutlinedTextField(
                 value = uiState.searchQuery,
                 onValueChange = viewModel::onSearchQueryChange,
-                label = { Text(stringResource(R.string.list_search_placeholder)) },
+                // A placeholder rather than a label: the label would float above the
+                // text for good once the field has content, costing that height on
+                // every screen for a field whose purpose the icon already states.
+                placeholder = { Text(stringResource(R.string.list_search_placeholder)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (uiState.searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(R.string.list_search_clear)
+                            )
+                        }
+                    }
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                // Results already follow every keystroke, so the Search key has
+                // nothing left to submit — it just gets the keyboard out of the way.
+                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth().padding(16.dp)
             )
@@ -284,6 +341,12 @@ fun RestaurantListScreen(
             }
         )
     }
+}
+
+@Composable
+private fun sortLabel(sort: RestaurantSort): String = when (sort) {
+    RestaurantSort.NAME -> stringResource(R.string.list_sort_name)
+    RestaurantSort.RATING -> stringResource(R.string.list_sort_rating)
 }
 
 @Composable
