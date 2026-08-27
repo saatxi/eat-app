@@ -282,4 +282,18 @@ class RestaurantDaoTest {
 
         assertEquals(listOf("Cal\\Ferran"), search("cal\\ferran"))
     }
+
+    // --- count(), which drives F-08's auto-sync-on-empty-database check -----
+
+    @Test
+    fun `count is zero for an empty database`() = runTest {
+        assertEquals(0, dao.count())
+    }
+
+    @Test
+    fun `count reflects every row regardless of filters`() = runTest {
+        seed(restaurant(1, "Alga"), restaurant(2, "Bar Nil"))
+
+        assertEquals(2, dao.count())
+    }
 }

@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.albertferran.eatapp.data.local.Restaurant
 import com.albertferran.eatapp.data.repository.RestaurantRepository
+import com.albertferran.eatapp.data.sync.DatabaseSyncManager
 import com.albertferran.eatapp.data.sync.DatabaseSyncResult
-import com.albertferran.eatapp.data.sync.RestaurantDatabaseSyncManager
 import com.albertferran.eatapp.data.sync.SyncFailureReason
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -41,6 +41,7 @@ data class RestaurantListUiState(
 // onSyncMessageShown() once it has displayed it.
 sealed interface SyncMessage {
     data class Success(val count: Int) : SyncMessage
+    data object UpToDate : SyncMessage
     data class Error(val reason: SyncFailureReason) : SyncMessage
 }
 
@@ -53,12 +54,23 @@ private data class Filters(
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 class RestaurantListViewModel(
     private val repository: RestaurantRepository,
-    private val syncManager: RestaurantDatabaseSyncManager
+    private val syncManager: DatabaseSyncManager
 ) : ViewModel() {
 
     private val filters = MutableStateFlow(Filters())
     private val isSyncing = MutableStateFlow(false)
     private val pendingSyncMessage = MutableStateFlow<SyncMessage?>(null)
+
+    init {
+        // A fresh install has an empty local database and no way to reach it other
+        // than the manual "Refresh Data" button; this is what lets the first launch
+        // fill itself in instead of sitting on the empty state until a tap.
+        viewModelScope.launch {
+            if (repository.count() == 0) {
+                syncNow()
+            }
+        }
+    }
 
     // The search box updates the visible text on every keystroke (via
     // `filters` below), but only debounces the query actually sent to the
@@ -115,6 +127,7 @@ class RestaurantListViewModel(
             isSyncing.value = true
             val message = when (val result = syncManager.sync()) {
                 is DatabaseSyncResult.Success -> SyncMessage.Success(result.importedCount)
+                DatabaseSyncResult.UpToDate -> SyncMessage.UpToDate
                 is DatabaseSyncResult.Failure -> SyncMessage.Error(result.reason)
             }
             isSyncing.value = false

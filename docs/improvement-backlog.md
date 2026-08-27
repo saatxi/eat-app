@@ -21,43 +21,8 @@ Large-screen and tablet support is deliberately not covered here; see
 If you only do a handful, these in this order:
 
 1. **F-26, F-33** — the list screen's interaction rough edges.
-2. **F-03, F-09** — what is left of hardening the sync, minutes each.
-3. **F-47** — the dependency set is over a year stale.
-4. **F-50** — CI, now that there is a test suite worth running on every push.
-
----
-
-## B. Sync robustness
-
-### F-03 · The download has no size limit — Medium / XS
-
-`input.copyTo(output)` will happily write however many gigabytes the server
-sends into `cacheDir`. The project's own security notes call this file
-untrusted input.
-**Where:** [RestaurantDatabaseSyncManager.kt:68](../app/src/main/kotlin/com/albertferran/eatapp/data/sync/RestaurantDatabaseSyncManager.kt#L68)
-**Fix:** cap it (10 MB is generous for this data) and fail as `INVALID_FILE`
-past the cap.
-
-### F-07 · Every refresh re-downloads everything — Medium / S
-
-No `ETag` or `If-Modified-Since`, so tapping refresh twice transfers the file
-twice and wipes/reinserts every row for nothing.
-**Fix:** keep the `ETag` from the previous response, send `If-None-Match`, and
-treat `304` as "already up to date" — which also gives the user a more honest
-message than "Data refreshed (3 restaurants)".
-
-### F-08 · No automatic first sync — Medium / S
-
-A fresh install shows an empty state and waits to be told to download.
-**Fix:** sync automatically when the local database is empty. Optionally also
-when the data is older than a day, which depends on F-06.
-
-### F-09 · No connectivity pre-check — Medium / XS
-
-Offline, the two 15-second timeouts mean up to 30 seconds of spinner before a
-generic failure.
-**Fix:** ask `ConnectivityManager` first and fail immediately with an accurate
-"no connection" message.
+2. **F-47** — the dependency set is over a year stale.
+3. **F-50** — CI, now that there is a test suite worth running on every push.
 
 ---
 
@@ -202,6 +167,46 @@ screen, each in light and dark.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### Sync robustness pass
+
+Section B in full: all four remaining sync-hardening items.
+
+- **F-03 · The download had no size limit — Done.** `download()` now copies
+  through a new `copyUpToLimit(input, output, limit)` instead of raw
+  `input.copyTo(output)`; past 10 MB it stops and the sync fails as
+  `INVALID_FILE` instead of writing an unbounded stream into `cacheDir`.
+  `copyUpToLimit` is a plain function (no Android dependency), so it is
+  covered directly without a network round trip.
+- **F-07 · Every refresh re-downloaded everything — Done.** The manager now
+  persists the response `ETag` alongside the existing last-synced timestamp
+  and sends it back as `If-None-Match`. A `304` short-circuits straight to a
+  new `DatabaseSyncResult.UpToDate` — no file read, no `repository.replaceAll`
+  wiping and reinserting every row for nothing — and the snackbar says
+  "Already up to date" (`list_sync_up_to_date`) instead of claiming a refresh
+  that didn't happen.
+- **F-08 · No automatic first sync — Done.** `RestaurantListViewModel` gained
+  an `init` block that checks the new `RestaurantRepository.count()` /
+  `RestaurantDao.count()` and calls `syncNow()` once when it's zero, so a
+  fresh install fills itself in instead of waiting on the empty state's
+  button. Making this testable without hitting the network on every
+  ViewModel construction is what motivated pulling a `DatabaseSyncManager`
+  interface out of `RestaurantDatabaseSyncManager` (a `fun interface` with
+  just `sync()`); the ViewModel test now runs against a hand-written
+  `FakeDatabaseSyncManager` instead of the real one, which is also why it no
+  longer needs `RobolectricTestRunner` at all. The "older than a day" half of
+  the original idea was left out — it depends on F-06 and wasn't asked for.
+- **F-09 · No connectivity pre-check — Done.** `sync()` now asks
+  `ConnectivityManager` before doing anything else and fails immediately (as
+  `SyncFailureReason.NETWORK`, the same "Couldn't download. Check your
+  connection." message a real timeout would have produced) instead of
+  burning up to 30 seconds across the two connect/read timeouts first. Needs
+  `ACCESS_NETWORK_STATE`, added to the manifest and to CLAUDE.md's permission
+  list — the only other permission besides `INTERNET`.
+- Verified with `./gradlew test assembleDebug lint` — 85 tests green, nothing
+  new in the lint report beyond one more instance of the pre-existing
+  `SharedPreferences.edit` `UseKtx` finding (the new `saveETag`, same pattern
+  as the existing `recordSyncTimestamp`).
 
 ### Low/S cleanup pass
 

@@ -21,5 +21,7 @@ class RoomRestaurantRepository(
 
     override fun observeById(id: Long): Flow<Restaurant?> = dao.observeById(id)
 
+    override suspend fun count(): Int = dao.count()
+
     override suspend fun replaceAll(restaurants: List<Restaurant>) = dao.replaceAll(restaurants)
 }

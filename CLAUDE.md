@@ -115,9 +115,11 @@ app/src/main/kotlin/com/albertferran/eatapp/
   connection, and don't execute SQL built from the file's own content — keep
   using parameterized reads. (An empty `restaurants` table is deliberately
   accepted: it's a valid dataset, not a malformed file.)
-- `INTERNET` is the only Android permission the app declares
-  (`AndroidManifest.xml`). Don't add permissions (location, contacts,
-  storage, etc.) without an explicit, discussed reason.
+- `INTERNET` and `ACCESS_NETWORK_STATE` (the latter used only to skip a sync
+  attempt when there's no connection, per F-09) are the only Android
+  permissions the app declares (`AndroidManifest.xml`). Don't add further
+  permissions (location, contacts, storage, etc.) without an explicit,
+  discussed reason.
 - The app stores no user credentials, no PII beyond what the user
   themselves entered into their own `.db` file, and does no analytics or
   tracking — keep it that way unless the user asks for it explicitly.

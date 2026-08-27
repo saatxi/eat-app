@@ -109,6 +109,7 @@ fun RestaurantListScreen(
     val syncErrorNetwork = stringResource(R.string.list_sync_error_network)
     val syncErrorInvalid = stringResource(R.string.list_sync_error_invalid)
     val syncErrorUnknown = stringResource(R.string.list_sync_error_unknown)
+    val syncUpToDate = stringResource(R.string.list_sync_up_to_date)
     val retryLabel = stringResource(R.string.action_retry)
 
     // Keyed on the message itself (rather than Unit) so a message that arrives
@@ -120,6 +121,7 @@ fun RestaurantListScreen(
         val text = when (message) {
             is SyncMessage.Success ->
                 context.resources.getQuantityString(R.plurals.list_sync_success, message.count, message.count)
+            SyncMessage.UpToDate -> syncUpToDate
             is SyncMessage.Error -> when (message.reason) {
                 SyncFailureReason.NETWORK -> syncErrorNetwork
                 SyncFailureReason.INVALID_FILE -> syncErrorInvalid

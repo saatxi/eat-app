@@ -2,6 +2,9 @@ package com.albertferran.eatapp.data.sync
 
 sealed interface DatabaseSyncResult {
     data class Success(val importedCount: Int) : DatabaseSyncResult
+
+    /** The server confirmed (via a 304) that the local data already matches the remote file. */
+    data object UpToDate : DatabaseSyncResult
     data class Failure(val reason: SyncFailureReason, val detail: String? = null) : DatabaseSyncResult
 }
 

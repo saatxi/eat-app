@@ -15,6 +15,7 @@
         <item quantity="one">Data refreshed (%1$d restaurant)</item>
         <item quantity="other">Data refreshed (%1$d restaurants)</item>
     </plurals>
+    <string name="list_sync_up_to_date">Already up to date</string>
     <string name="list_sync_error_network">Couldn\'t download. Check your connection.</string>
     <string name="list_sync_error_invalid">The downloaded file is invalid.</string>
     <string name="list_sync_error_unknown">Couldn\'t refresh the data.</string>

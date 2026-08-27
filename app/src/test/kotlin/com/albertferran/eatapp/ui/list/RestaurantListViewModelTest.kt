@@ -1,9 +1,9 @@
 package com.albertferran.eatapp.ui.list
 
-import androidx.test.core.app.ApplicationProvider
 import com.albertferran.eatapp.data.local.Restaurant
 import com.albertferran.eatapp.data.repository.RestaurantRepository
-import com.albertferran.eatapp.data.sync.RestaurantDatabaseSyncManager
+import com.albertferran.eatapp.data.sync.DatabaseSyncManager
+import com.albertferran.eatapp.data.sync.DatabaseSyncResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -22,8 +22,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 
 /**
  * The ViewModel's job here is wiring: turning three independent filter inputs
@@ -31,24 +29,22 @@ import org.robolectric.RobolectricTestRunner
  * the DAO and is covered by RestaurantDaoTest.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(RobolectricTestRunner::class)
 class RestaurantListViewModelTest {
 
     private val dispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: FakeRestaurantRepository
+    private lateinit var syncManager: FakeDatabaseSyncManager
     private lateinit var viewModel: RestaurantListViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
-        repository = FakeRestaurantRepository()
-        viewModel = RestaurantListViewModel(
-            repository = repository,
-            syncManager = RestaurantDatabaseSyncManager(
-                ApplicationProvider.getApplicationContext(),
-                repository
-            )
-        )
+        // Non-zero, so the F-08 auto-sync-on-empty behaviour (covered separately
+        // below, against its own fresh repository) doesn't fire for every other
+        // test in this class.
+        repository = FakeRestaurantRepository(count = 1)
+        syncManager = FakeDatabaseSyncManager()
+        viewModel = RestaurantListViewModel(repository = repository, syncManager = syncManager)
     }
 
     @After
@@ -223,13 +219,37 @@ class RestaurantListViewModelTest {
         rating = 3,
         priceRange = 2
     )
+
+    // --- F-08: automatic first sync ------------------------------------------
+    // Each test here builds its own ViewModel against a fresh repository, since
+    // the count the auto-sync check reacts to has to be set before construction.
+
+    @Test
+    fun `syncs automatically on init when the local database is empty`() = runTest {
+        val emptyRepository = FakeRestaurantRepository(count = 0)
+        val freshSyncManager = FakeDatabaseSyncManager()
+
+        RestaurantListViewModel(repository = emptyRepository, syncManager = freshSyncManager)
+
+        assertEquals(1, freshSyncManager.syncCallCount)
+    }
+
+    @Test
+    fun `does not sync automatically when the local database already has data`() = runTest {
+        val nonEmptyRepository = FakeRestaurantRepository(count = 1)
+        val freshSyncManager = FakeDatabaseSyncManager()
+
+        RestaurantListViewModel(repository = nonEmptyRepository, syncManager = freshSyncManager)
+
+        assertEquals(0, freshSyncManager.syncCallCount)
+    }
 }
 
 /**
  * Records the arguments the ViewModel passes down and replays whatever the test
  * pushes into it. It deliberately does not filter: that is the DAO's job.
  */
-private class FakeRestaurantRepository : RestaurantRepository {
+private class FakeRestaurantRepository(var count: Int = 0) : RestaurantRepository {
 
     val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
     val cuisines = MutableStateFlow<List<String>>(emptyList())
@@ -257,7 +277,23 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override fun observeById(id: Long): Flow<Restaurant?> =
         restaurants.map { list -> list.firstOrNull { it.id == id } }
 
+    override suspend fun count(): Int = count
+
     override suspend fun replaceAll(restaurants: List<Restaurant>) {
         this.restaurants.value = restaurants
+    }
+}
+
+/** Never touches the network: records how often sync() was asked for and replays a canned result. */
+private class FakeDatabaseSyncManager(
+    private val result: DatabaseSyncResult = DatabaseSyncResult.Success(0)
+) : DatabaseSyncManager {
+
+    var syncCallCount = 0
+        private set
+
+    override suspend fun sync(): DatabaseSyncResult {
+        syncCallCount++
+        return result
     }
 }

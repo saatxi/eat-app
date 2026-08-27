@@ -38,6 +38,9 @@ interface RestaurantDao {
     @Query("SELECT * FROM restaurants WHERE id = :id")
     fun observeById(id: Long): Flow<Restaurant?>
 
+    @Query("SELECT COUNT(*) FROM restaurants")
+    suspend fun count(): Int
+
     @Query("DELETE FROM restaurants")
     suspend fun deleteAll()
 
