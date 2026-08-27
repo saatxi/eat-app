@@ -287,12 +287,6 @@ every UI tweak needs a full build and deploy to see.
 **Fix:** previews for the restaurant row, both empty states, and the detail
 screen, each in light and dark.
 
-### F-52 · The launcher icon is still the template default — Low / S
-
-The generic Android robot, plus two lint findings: `ic_launcher_round` is
-unused, and there's no `<monochrome>` layer, so the icon can't take part in
-themed icons on Android 13+.
-
 ---
 
 ## Done
@@ -448,3 +442,26 @@ Four columns removed from the entity, the reader, the UI and `data/eatapp.db`.
   now lives in `values/strings.xml`. The `"$".repeat(priceRange)` price marks and
   the `"$rating+"` chip label are deliberately left as Kotlin — they are symbols
   and numbers, not prose; making them readable is F-44's and F-27's job.
+
+### Launcher icon pass
+
+- **F-52 · The launcher icon was still template-grade — Done.** The entry said
+  "the generic Android robot"; what was actually there was a half-finished
+  fork-and-knife. The knife drew, but the fork's tines, and its handle, were
+  written as bare line segments (`M37,28 L37,44`, `M40,54 L40,84`) inside
+  `fillColor` paths — zero-area subpaths, so they contributed nothing and the
+  fork rendered as a solid blob. Both shapes also ran to `y=84`, outside the
+  66dp safe circle a launcher mask is guaranteed to leave alone, so the
+  bottoms were at the mercy of the device's mask. Redrawn as two closed filled
+  outlines — a three-tined fork and a flat-spined knife, paired around the
+  centre and scaled to fill the safe circle without touching it.
+- The two lint findings the entry named are gone with it. `<monochrome>` now
+  points at the same foreground drawable, which is all the themed-icon path
+  needs since it only reads that layer's alpha — and it is why the shapes had
+  to become real filled outlines rather than strokes. `ic_launcher_round.xml`
+  was deleted: `android:roundIcon` already pointed at `@mipmap/ic_launcher`,
+  so nothing referenced it, and the attribute itself went too — with
+  `minSdk = 26` every device gets the adaptive icon and masks it round itself.
+- `./gradlew lint` now reports neither `MonochromeLauncherIcon` nor the unused
+  resource; what is left is unrelated (`GradleDependency` / `UseKtx` and
+  friends, i.e. F-47 and F-45).

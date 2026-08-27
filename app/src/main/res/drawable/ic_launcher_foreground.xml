@@ -1,15 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Fork and knife, drawn as filled outlines so the shapes survive the alpha
+  extraction the <monochrome> layer does. The group scale keeps the pair
+  inside the 66dp safe circle (centre 54,54, radius 33) that every launcher
+  mask is guaranteed to leave visible.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- fork -->
-    <path
-        android:fillColor="#FFF8E7"
-        android:pathData="M34,28 L34,48 C34,52 38,54 40,54 C42,54 46,52 46,48 L46,28 M37,28 L37,44 M43,28 L43,44 M40,28 L40,44 M40,54 L40,84" />
-    <!-- knife -->
-    <path
-        android:fillColor="#FFF8E7"
-        android:pathData="M68,28 C74,28 76,36 76,44 C76,50 72,53 69,54 L69,84 L65,84 L65,54 C65,54 65,30 68,28 Z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="1.15"
+        android:scaleY="1.15">
+        <!-- fork: three tines, a shoulder, and a round-ended handle -->
+        <path
+            android:fillColor="#FFF8E7"
+            android:pathData="M39,31 L42,31 L42,43 L43.5,43 L43.5,31 L46.5,31 L46.5,43 L48,43 L48,31 L51,31 L51,51 L47.5,54 L47.5,75 A2.5,2.5 0 0,1 42.5,75 L42.5,54 L39,51 Z" />
+        <!-- knife: straight spine on the left, curved cutting edge on the right -->
+        <path
+            android:fillColor="#FFF8E7"
+            android:pathData="M64.5,30 C67.5,35 69,41.5 69,48 C69,52 67.5,54.5 65.5,55.5 L65.5,75 A2.5,2.5 0 0,1 60.5,75 L60.5,35.5 C60.5,33 62.5,30.5 64.5,30 Z" />
+    </group>
 </vector>
