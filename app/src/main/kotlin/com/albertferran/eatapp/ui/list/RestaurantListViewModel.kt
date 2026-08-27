@@ -10,12 +10,9 @@ import com.albertferran.eatapp.data.sync.SyncFailureReason
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -31,15 +28,20 @@ data class RestaurantListUiState(
     val cuisineType: String? = null,
     val availableCuisines: List<String> = emptyList(),
     val restaurants: List<Restaurant> = emptyList(),
-    val isSyncing: Boolean = false
+    val isSyncing: Boolean = false,
+    val pendingSyncMessage: SyncMessage? = null
 ) {
     val hasActiveFilter: Boolean
         get() = searchQuery.isNotBlank() || minRating != null || cuisineType != null
 }
 
-sealed interface SyncEvent {
-    data class Success(val count: Int) : SyncEvent
-    data class Error(val reason: SyncFailureReason) : SyncEvent
+// Carried in the UI state rather than a SharedFlow event, so a message
+// survives a config change instead of depending on a collector being
+// attached at the exact moment it is emitted. The screen calls
+// onSyncMessageShown() once it has displayed it.
+sealed interface SyncMessage {
+    data class Success(val count: Int) : SyncMessage
+    data class Error(val reason: SyncFailureReason) : SyncMessage
 }
 
 private data class Filters(
@@ -56,9 +58,7 @@ class RestaurantListViewModel(
 
     private val filters = MutableStateFlow(Filters())
     private val isSyncing = MutableStateFlow(false)
-
-    private val _syncEvents = MutableSharedFlow<SyncEvent>()
-    val syncEvents: SharedFlow<SyncEvent> = _syncEvents.asSharedFlow()
+    private val pendingSyncMessage = MutableStateFlow<SyncMessage?>(null)
 
     // The search box updates the visible text on every keystroke (via
     // `filters` below), but only debounces the query actually sent to the
@@ -75,15 +75,17 @@ class RestaurantListViewModel(
         filters,
         queryFilters.flatMapLatest { repository.observeFiltered(it.query, it.minRating, it.cuisineType) },
         repository.observeCuisineTypes(),
-        isSyncing
-    ) { activeFilters, restaurants, availableCuisines, syncing ->
+        isSyncing,
+        pendingSyncMessage
+    ) { activeFilters, restaurants, availableCuisines, syncing, syncMessage ->
         RestaurantListUiState(
             searchQuery = activeFilters.query,
             minRating = activeFilters.minRating,
             cuisineType = activeFilters.cuisineType,
             availableCuisines = availableCuisines,
             restaurants = restaurants,
-            isSyncing = syncing
+            isSyncing = syncing,
+            pendingSyncMessage = syncMessage
         )
     }.stateIn(
         scope = viewModelScope,
@@ -111,13 +113,18 @@ class RestaurantListViewModel(
         if (isSyncing.value) return
         viewModelScope.launch {
             isSyncing.value = true
-            val event = when (val result = syncManager.sync()) {
-                is DatabaseSyncResult.Success -> SyncEvent.Success(result.importedCount)
-                is DatabaseSyncResult.Failure -> SyncEvent.Error(result.reason)
+            val message = when (val result = syncManager.sync()) {
+                is DatabaseSyncResult.Success -> SyncMessage.Success(result.importedCount)
+                is DatabaseSyncResult.Failure -> SyncMessage.Error(result.reason)
             }
             isSyncing.value = false
-            _syncEvents.emit(event)
+            pendingSyncMessage.value = message
         }
+    }
+
+    /** Called once the screen has displayed the pending message, so it isn't shown again. */
+    fun onSyncMessageShown() {
+        pendingSyncMessage.value = null
     }
 
     private companion object {

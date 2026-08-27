@@ -20,11 +20,10 @@ Large-screen and tablet support is deliberately not covered here; see
 
 If you only do a handful, these in this order:
 
-1. **F-26, F-33, F-34** — the list screen's interaction rough edges.
+1. **F-26, F-33** — the list screen's interaction rough edges.
 2. **F-03, F-09** — what is left of hardening the sync, minutes each.
-3. **F-45, F-46** — two XS presentation fixes lint already points at.
-4. **F-47** — the dependency set is over a year stale.
-5. **F-50** — CI, now that there is a test suite worth running on every push.
+3. **F-47** — the dependency set is over a year stale.
+4. **F-50** — CI, now that there is a test suite worth running on every push.
 
 ---
 
@@ -70,25 +69,11 @@ generic failure.
 so "No restaurants yet" paints for a frame before Room's first emission.
 **Fix:** an `isInitialLoad` flag, cleared on the first emission.
 
-### F-21 · Sync results are fragile across config changes — Low / S
-
-`SyncEvent` goes through a `MutableSharedFlow` with no replay or buffer, so
-delivery depends on a collector being attached at the right moment.
-**Fix:** put the pending message in the UI state and have the screen mark it
-consumed — the standard Compose event pattern.
-
 ### F-22 · The Room entity is used directly as the UI model — Low / M
 
 Screens read `Restaurant` straight from the database, so formatting decisions
 (price string, date format, rating text) live inside composables. Fine at this
 size; worth splitting if the detail screen grows.
-
-### F-24 · The database singleton is duplicated — Low / XS
-
-`EatAppDatabase.getInstance` does double-checked locking, and `EatApplication`
-then wraps it in `by lazy` — two singletons around one object.
-**Fix:** drop the companion-object machinery and let the `Application`'s
-`by lazy` own it.
 
 ---
 
@@ -101,21 +86,9 @@ newline), no `ImeAction.Search`, and it uses `label` rather than `placeholder`
 so the floating label permanently costs vertical space.
 **Where:** [RestaurantListScreen.kt:138](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt#L138)
 
-### F-27 · The "1+" rating chip does nothing — Low / XS
-
-Every restaurant has a rating of at least 1, so the chip filters nothing while
-looking like it should.
-**Fix:** start the range at 2, or switch to star icons where "1 star and up"
-at least reads sensibly.
-
 ### F-29 · No sorting — Medium / M
 
 The list is always alphabetical. Sorting by rating is the obvious want.
-
-### F-31 · No result count — Low / XS
-
-"3 restaurants" is most useful precisely when a filter is active and you want
-to know how much you've narrowed things down.
 
 ### F-33 · Two progress indicators, and a disappearing button — Medium / S
 
@@ -125,11 +98,6 @@ spinners, and the button vanishes and shifts the icons next to it.
 **Where:** [RestaurantListScreen.kt:109](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt#L109)
 **Fix:** keep the button in place and disabled, and let the pull-to-refresh
 indicator be the only spinner.
-
-### F-34 · No retry on the error snackbar — Low / XS
-
-A failed refresh sends you back to hunt for the button. Add a "Retry" action;
-pairs with F-05's "Details".
 
 ---
 
@@ -177,21 +145,6 @@ nodes, so a row is announced as disconnected pieces. `"$$"` is read out as
 "dollar dollar", and the star row on the detail screen is silent.
 **Fix:** set one description on the whole `Card` describing the restaurant,
 and give the price and rating real descriptions ("Price range 2 of 4").
-
-### F-45 · `ArrowBack` is deprecated and not RTL-aware — Low / XS
-
-`Icons.Default.ArrowBack` should be `Icons.AutoMirrored.Filled.ArrowBack`.
-The manifest declares `supportsRtl="true"`, so the arrow currently points the
-wrong way in a right-to-left locale.
-**Where:** [RestaurantDetailScreen.kt:63](../app/src/main/kotlin/com/albertferran/eatapp/ui/detail/RestaurantDetailScreen.kt#L63)
-
-### F-46 · The sync message should be a plural — Low / XS
-
-"Data refreshed (1 restaurants)". Lint flags it as `PluralsCandidate`.
-**Where:** [RestaurantListScreen.kt:91](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt#L91)
-**Fix:** a `<plurals>` resource read with `pluralStringResource`, which also
-removes the `String.format` call that currently formats with the default
-locale.
 
 ### F-53 · Multi-language support — Medium / M
 
@@ -249,6 +202,47 @@ screen, each in light and dark.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### Low/S cleanup pass
+
+Every entry scored **Low / XS** or **Low / S** at the time, done in one pass.
+
+- **F-21 · Sync results are fragile across config changes — Done.** `SyncEvent`
+  and its `MutableSharedFlow` are gone; the pending message now lives in
+  `RestaurantListUiState` as `pendingSyncMessage` (renamed `SyncMessage`, still
+  `Success`/`Error`), fed into the same `combine(...)` that builds the rest of
+  the state. The screen's `LaunchedEffect` is keyed on the message itself and
+  calls the new `onSyncMessageShown()` once it has shown it, which resets the
+  state to null — the standard Compose one-shot-event-via-state pattern. This
+  also gave F-34 (retry) a natural home: see below.
+- **F-24 · The database singleton is duplicated — Done.** `EatAppDatabase`
+  lost its companion object and `getInstance`'s double-checked locking
+  entirely; there is now a single top-level `buildEatAppDatabase(context)`
+  function, and `EatApplication`'s existing `by lazy` is the only thing that
+  ever calls it — one singleton instead of two stacked on each other.
+- **F-27 · The "1+" rating chip did nothing — Done.** Every synced restaurant
+  has a rating of at least 1, so that chip filtered nothing while looking like
+  it should. The row now runs `2..5` instead of `1..5`.
+- **F-31 · No result count — Done.** A `list_result_count` plural renders
+  above the results, but only when a filter is active and the list isn't
+  empty — exactly the moment "12 restaurants" is worth knowing, as opposed to
+  restating the total on an unfiltered list.
+- **F-34 · No retry on the error snackbar — Done.** Folded into F-21's fix:
+  an `Error` message now carries a "Retry" (`action_retry`) snackbar action,
+  and `SnackbarResult.ActionPerformed` calls `syncNow()` directly.
+- **F-45 · `ArrowBack` was deprecated and not RTL-aware — Done.**
+  `Icons.Default.ArrowBack` became `Icons.AutoMirrored.Filled.ArrowBack` on
+  the detail screen's back button; lint's `NotificationActionIcon`/mirroring
+  warning for it is gone from the report.
+- **F-46 · The sync message wasn't a plural — Done.** `list_sync_success`
+  became a `<plurals>` resource (`Data refreshed (%1$d restaurant/s)`), read
+  via `Resources.getQuantityString` from inside the snackbar's
+  `LaunchedEffect` (not `pluralStringResource`, since that call site isn't
+  composable). Lint no longer flags `PluralsCandidate` for it.
+- Verified with `./gradlew test assembleDebug lint` — all green, and the
+  lint report's remaining findings are unrelated to this pass (`GradleDependency`
+  / `NewerVersionAvailable`, i.e. F-47; `UseKtx`; `OldTargetApi`;
+  `ObsoleteSdkInt`).
 
 ### Query layer pass
 

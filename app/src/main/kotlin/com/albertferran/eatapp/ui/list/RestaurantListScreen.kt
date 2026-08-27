@@ -40,6 +40,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -103,24 +104,34 @@ fun RestaurantListScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showOverflowMenu by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     val syncErrorNetwork = stringResource(R.string.list_sync_error_network)
     val syncErrorInvalid = stringResource(R.string.list_sync_error_invalid)
     val syncErrorUnknown = stringResource(R.string.list_sync_error_unknown)
-    val syncSuccessTemplate = stringResource(R.string.list_sync_success)
+    val retryLabel = stringResource(R.string.action_retry)
 
-    LaunchedEffect(Unit) {
-        viewModel.syncEvents.collect { event ->
-            val message = when (event) {
-                is SyncEvent.Success -> String.format(syncSuccessTemplate, event.count)
-                is SyncEvent.Error -> when (event.reason) {
-                    SyncFailureReason.NETWORK -> syncErrorNetwork
-                    SyncFailureReason.INVALID_FILE -> syncErrorInvalid
-                    SyncFailureReason.IO_ERROR, SyncFailureReason.UNKNOWN -> syncErrorUnknown
-                }
+    // Keyed on the message itself (rather than Unit) so a message that arrives
+    // across a config change is still shown. onSyncMessageShown() resets the
+    // state to null once shown, which is what lets the *next* message — even an
+    // identical one — trigger this effect again.
+    LaunchedEffect(uiState.pendingSyncMessage) {
+        val message = uiState.pendingSyncMessage ?: return@LaunchedEffect
+        val text = when (message) {
+            is SyncMessage.Success ->
+                context.resources.getQuantityString(R.plurals.list_sync_success, message.count, message.count)
+            is SyncMessage.Error -> when (message.reason) {
+                SyncFailureReason.NETWORK -> syncErrorNetwork
+                SyncFailureReason.INVALID_FILE -> syncErrorInvalid
+                SyncFailureReason.IO_ERROR, SyncFailureReason.UNKNOWN -> syncErrorUnknown
             }
-            snackbarHostState.showSnackbar(message)
         }
+        val actionLabel = if (message is SyncMessage.Error) retryLabel else null
+        val result = snackbarHostState.showSnackbar(text, actionLabel = actionLabel)
+        if (result == SnackbarResult.ActionPerformed) {
+            viewModel.syncNow()
+        }
+        viewModel.onSyncMessageShown()
     }
 
     Scaffold(
@@ -213,6 +224,21 @@ fun RestaurantListScreen(
                                 )
                             }
                         } else {
+                            // Most useful precisely when a filter has narrowed the list down —
+                            // an unfiltered count adds nothing you can't already see.
+                            if (uiState.hasActiveFilter) {
+                                item(key = "result-count") {
+                                    Text(
+                                        text = pluralStringResource(
+                                            R.plurals.list_result_count,
+                                            uiState.restaurants.size,
+                                            uiState.restaurants.size
+                                        ),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
                             items(uiState.restaurants, key = { it.id }) { restaurant ->
                                 RestaurantRow(restaurant = restaurant, onClick = { onOpenRestaurant(restaurant.id) })
                             }
@@ -224,7 +250,6 @@ fun RestaurantListScreen(
     }
 
     if (showAboutDialog) {
-        val context = LocalContext.current
         val lastSyncTime = RestaurantDatabaseSyncManager.getLastSyncTime(context)
         val lastSyncText = if (lastSyncTime > 0) {
             stringResource(R.string.about_last_synced, formatRelativeTime(lastSyncTime))
@@ -280,7 +305,9 @@ private fun FilterSection(
                 .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            (1..5).forEach { rating ->
+            // Every synced restaurant has a rating of at least 1, so a "1+" chip
+            // would filter nothing; the range starts at 2 for that reason.
+            (2..5).forEach { rating ->
                 FilterChip(
                     selected = minRating == rating,
                     onClick = { onMinRatingChange(if (minRating == rating) null else rating) },
