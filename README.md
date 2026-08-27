@@ -292,6 +292,15 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
    git tag -a v1.1.0 -m "Describe what changed"
    git push origin v1.1.0
    ```
+   [`scripts/release.ps1`](scripts/release.ps1) does exactly that, with a few
+   guard rails: it asks for the version as `X.Y.Z`, refuses a tag that already
+   exists locally or on the remote, warns about an uncommitted working tree,
+   opens your editor for the tag message and then pushes the tag.
+   ```
+   ./scripts/release.ps1                  # asks for the version
+   ./scripts/release.ps1 -Version 1.1.0   # or pass it directly
+   ```
+   Add `-NoPush` to create the tag without pushing it.
 3. Make sure signing is configured (see **Signing releases** above) — without it
    the build succeeds but the artifact is unusable. Then build the release
    APK/AAB:
