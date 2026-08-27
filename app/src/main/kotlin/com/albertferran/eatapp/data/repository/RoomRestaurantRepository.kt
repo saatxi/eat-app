@@ -2,6 +2,7 @@ package com.albertferran.eatapp.data.repository
 
 import com.albertferran.eatapp.data.local.Restaurant
 import com.albertferran.eatapp.data.local.RestaurantDao
+import com.albertferran.eatapp.data.local.normalizeForSearch
 import kotlinx.coroutines.flow.Flow
 
 class RoomRestaurantRepository(
@@ -10,7 +11,7 @@ class RoomRestaurantRepository(
 
     override fun observeFiltered(query: String?, minRating: Int?, cuisineType: String?): Flow<List<Restaurant>> =
         dao.observeFiltered(
-            query = query?.takeIf { it.isNotBlank() },
+            query = query?.takeIf { it.isNotBlank() }?.let(::normalizeForSearch),
             minRating = minRating,
             cuisineType = cuisineType?.takeIf { it.isNotBlank() }
         )

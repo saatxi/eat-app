@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [Restaurant::class], version = 1, exportSchema = false)
+@Database(entities = [Restaurant::class], version = 2, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class EatAppDatabase : RoomDatabase() {
 
@@ -22,7 +22,13 @@ abstract class EatAppDatabase : RoomDatabase() {
                     context.applicationContext,
                     EatAppDatabase::class.java,
                     "eatapp.db"
-                ).build().also { instance = it }
+                )
+                    // The local database is a pure cache of a re-downloadable .db file,
+                    // so discarding it on a schema change and re-syncing is the correct
+                    // behaviour rather than a shortcut.
+                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .build()
+                    .also { instance = it }
             }
     }
 }

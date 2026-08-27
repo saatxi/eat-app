@@ -4,7 +4,7 @@ A single place to look up everything worth improving in this app, so ideas
 don't get lost between sessions. It's a menu, not a plan — nothing here is
 committed to, and items can be picked off in any order.
 
-Every entry has a stable ID (`F-01`…`F-52`). Use those in commit messages and
+Every entry has a stable ID (`F-01`…`F-54`). Use those in commit messages and
 when asking for something to be worked on; they never get renumbered, and
 items that get done stay in the list marked **Done** rather than being
 deleted, so the file keeps a record of what changed and why.
@@ -20,46 +20,13 @@ Large-screen and tablet support is deliberately not covered here; see
 
 If you only do a handful, these in this order:
 
-1. **F-01, F-02** — two ways an unusual `.db` crashes the app.
-2. **F-13, F-14** — search is half-broken for accented text.
-3. **F-36** — tap an address to open it in Maps. Cheapest big win here.
-4. **F-05, F-06** — right now a failed sync is undiagnosable and undated.
-5. **F-19** — the detail screen can go permanently blank.
-6. **F-48** — `assembleRelease` currently produces an *unsigned* APK.
-
----
-
-## A. Crash paths
-
-### F-01 · Negative `priceRange` crashes the screen — High / XS
-
-`"$".repeat(n)` throws `IllegalArgumentException` when `n` is negative, and
-renders a nonsense string for large values. The value is read straight from
-the downloaded `.db` with no range check, so a typo while editing the data
-takes the app down.
-
-**Where:** [RestaurantListScreen.kt:407](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt#L407),
-[RestaurantDetailScreen.kt:171](../app/src/main/kotlin/com/albertferran/eatapp/ui/detail/RestaurantDetailScreen.kt#L171)
-
-**Fix:** coerce on import in `readRestaurants` — `priceRange.coerceIn(0, 4)`,
-`rating.coerceIn(0, 5)` — so bad values can never reach the UI. Fixing it at
-the import boundary rather than at each call site also covers the `repeat(5)`
-star row, which currently shows five stars but the text "7/5".
-
-### F-02 · NULL text columns cause an NPE — High / XS
-
-`cursor.getString(...)` feeds the non-null Kotlin fields `name`,
-`cuisineType` and `notes`. `REQUIRED_COLUMNS` validates that the columns
-*exist*, never that they're `NOT NULL`, so a hand-edited file with a NULL note
-produces an NPE that gets swallowed by the catch-all into a generic
-"Couldn't refresh the data".
-
-**Where:** [RestaurantDatabaseSyncManager.kt:111](../app/src/main/kotlin/com/albertferran/eatapp/data/sync/RestaurantDatabaseSyncManager.kt#L111)
-(and the `REQUIRED_COLUMNS` check at [:18](../app/src/main/kotlin/com/albertferran/eatapp/data/sync/RestaurantDatabaseSyncManager.kt#L18))
-
-**Fix:** read defensively (`?: ""` for `notes`), and reject rows missing a
-`name` or `cuisineType` as `INVALID_FILE` with a message naming the row —
-a real error beats a mystery.
+1. **F-48** — `assembleRelease` currently produces an *unsigned* APK, so there
+   is no way to install or publish a real build.
+2. **F-23** — still no tests; `readRestaurants` validation is the place to start.
+3. **F-54** — the last two features left English text hardcoded in Kotlin.
+4. **F-26, F-33, F-34** — the list screen's interaction rough edges.
+5. **F-03, F-04, F-11** — what is left of hardening the sync, minutes each.
+6. **F-37, F-45, F-46** — three XS presentation fixes lint already points at.
 
 ---
 
@@ -80,23 +47,6 @@ Any downloaded bytes go straight to `SQLiteDatabase.openDatabase`. It's
 contained — read-only, and `SQLiteException` is caught — but checking the
 16-byte `SQLite format 3\0` header first is nearly free and turns "invalid
 file" into an accurate diagnosis instead of a guess.
-
-### F-05 · Failure details are thrown away, and nothing is logged — High / S
-
-`DatabaseSyncResult.Failure` carries a `detail` — `"HTTP 404"`,
-`"missing columns"` — that is captured at every failure site and then never
-read. The app also contains **zero `Log` calls anywhere**. When a refresh
-fails on the phone there is no way to find out why.
-**Fix:** `Log.w` the detail, and offer it behind a "Details" action on the
-error snackbar. Pairs naturally with F-34.
-
-### F-06 · No "last synced" timestamp — High / S
-
-Nothing records when the data last came down, so there's no way to tell
-week-old data from fresh. Since sync is entirely manual this is the single
-most useful missing piece of information.
-**Fix:** store the timestamp on success (SharedPreferences is enough) and show
-it as a relative time under the title, and in the About dialog.
 
 ### F-07 · Every refresh re-downloads everything — Medium / S
 
@@ -145,21 +95,6 @@ Keep the release value hardcoded.
 
 ## C. Query layer
 
-### F-13 · Search only looks at the name — High / S
-
-Typing a cuisine, a street or a word you wrote in the notes finds nothing —
-the query only matches `name`.
-**Where:** [RestaurantDao.kt:16](../app/src/main/kotlin/com/albertferran/eatapp/data/local/RestaurantDao.kt#L16)
-**Fix:** extend the `LIKE` across `cuisineType`, `address` and `notes`.
-
-### F-14 · Accented text never matches — High / M
-
-SQLite's `LIKE` folds case for ASCII only, so searching "Mediterranea" won't
-find "Mediterránea" — and that is exactly the kind of text this data holds.
-**Fix:** store a normalized, accent-stripped shadow column on import
-(`java.text.Normalizer`, NFD, strip combining marks) and search against that.
-Doing it at import keeps the query fast and the index usable.
-
 ### F-15 · `%` and `_` in the search box act as wildcards — Low / XS
 
 They're passed into `LIKE` unescaped.
@@ -170,31 +105,9 @@ They're passed into `LIKE` unescaped.
 Every keystroke re-runs the query through `flatMapLatest`. Harmless at this
 data size, worth a ~250 ms debounce if the list ever grows.
 
-### F-17 · No Room migration strategy — Medium / XS
-
-The database is `version = 1` with `exportSchema = false` and no fallback
-configured, so the first change to the entity crashes every existing install
-on launch.
-**Where:** [EatAppDatabase.kt:9](../app/src/main/kotlin/com/albertferran/eatapp/data/local/EatAppDatabase.kt#L9)
-**Fix:** `fallbackToDestructiveMigration()`. This is a pure cache of a
-re-downloadable file, so throwing it away and re-syncing is the *correct*
-behaviour, not a shortcut — but it has to be declared to be safe.
-
 ---
 
 ## D. State and architecture
-
-### F-19 · The detail screen can show nothing at all — High / S
-
-`RestaurantDetailScreen` renders its body only `if (current != null)`, with no
-`else`. That single null covers two very different situations — still loading,
-and doesn't exist — and both produce a blank screen with a lone back arrow.
-It's reachable in practice: leave the detail open, refresh, and if that
-restaurant is gone from the new data the screen empties out and stays empty.
-**Where:** [RestaurantDetailScreen.kt:70](../app/src/main/kotlin/com/albertferran/eatapp/ui/detail/RestaurantDetailScreen.kt#L70)
-**Fix:** model loading / loaded / missing explicitly in the ViewModel; show a
-spinner for loading and a "no longer available" message with a back action for
-missing.
 
 ### F-20 · Empty state flashes on cold start — Medium / XS
 
@@ -288,14 +201,6 @@ on screen says which restaurant you're looking at.
 **Fix:** a `LargeTopAppBar` whose title collapses into the bar as you scroll —
 it replaces the hand-rolled hero rather than adding to it.
 
-### F-36 · The address is dead text — High / S
-
-You can't open it in Maps, can't copy it, can't share the place. For an app
-whose entire job is remembering where you ate, this is the biggest gap in it.
-**Fix:** make the address row tap to `Intent.ACTION_VIEW` on a
-`geo:0,0?q=<address>` URI, and add a share action to the app bar. Neither
-needs a new permission or a new dependency.
-
 ### F-37 · Dates are shown in ISO format — Medium / XS
 
 `DateTimeFormatter.ISO_LOCAL_DATE` renders `2026-01-15`.
@@ -364,6 +269,19 @@ Note this would need the "all strings in English" rule in
 [CLAUDE.md](../CLAUDE.md) relaxed to "English is the default locale", since
 that rule currently forbids exactly this.
 
+### F-54 · Recent features hardcoded English strings — Medium / XS
+
+`CLAUDE.md` requires every in-app string to live in `strings.xml`, but the
+detail screen's "not found" state (F-19) and the About dialog's "Last synced"
+line (F-06) both went in as Kotlin string literals, and `formatRelativeTime`
+builds its output ("2 days ago") in Kotlin too.
+
+**Where:** [RestaurantDetailScreen.kt:107-118](../app/src/main/kotlin/com/albertferran/eatapp/ui/detail/RestaurantDetailScreen.kt#L107-L118),
+[RestaurantListScreen.kt:220](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt#L220)
+
+**Fix:** move them to `strings.xml`; the relative time is a `<plurals>` job,
+so it pairs with F-46. Blocks F-53 until done.
+
 ---
 
 ## H. Build, release and tooling
@@ -422,9 +340,11 @@ themed icons on Android 13+.
 
 ---
 
-## Done in this pass
+## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### Cuisine vocabulary pass
 
 - **F-18 · Dead code — Done.** `observeAll()` had no callers and was removed
   with the repository change. Still outstanding: the `GIT_COMMIT`
@@ -454,3 +374,44 @@ Recorded here rather than deleted, so the numbering stays stable.
   vocabulary keys and `notes` were translated. Restaurant names and addresses
   were deliberately left alone — `Plaça Santa Anna, Mataró` is a real place,
   not a string to translate. Multi-language support is now tracked as F-53.
+
+### Crash, sync and search pass
+
+- **F-01 · Negative `priceRange` crashed the screen — Done.** Handled by
+  rejecting rather than coercing: `readRestaurants` fails the whole import as
+  `INVALID_FILE` when `rating` is outside 0–5 or `priceRange` outside 0–4, and
+  names the offending row id. A typo in the source data is now a message you
+  can act on instead of a silently clamped value.
+- **F-02 · NULL text columns caused an NPE — Done.** Rows with a blank `name`,
+  `cuisineType` or `notes` are rejected the same way. `address` and `photoUri`
+  go through `cursor.isNull` and stay genuinely optional.
+- **F-05 · Failure details were thrown away — Done (partly).** Every failure
+  site now logs its `detail` under the `EatApp.Sync` tag, so `adb logcat` tells
+  you why a refresh failed. Still outstanding: surfacing that detail in the app
+  behind a "Details" action on the snackbar — folded into F-34.
+- **F-06 · No "last synced" timestamp — Done.** Stored in SharedPreferences on
+  success and read back through `RestaurantDatabaseSyncManager.getLastSyncTime`.
+  It shows in the About dialog only; putting a relative time under the list
+  title, as originally sketched, was not done.
+- **F-13 · Search only looked at the name — Done.** Superseded by F-14, which
+  covers the same four fields through the normalized column.
+- **F-14 · Accented text never matched — Done.** `Restaurant` gained a
+  `searchText` column holding an NFD-folded, accent-stripped, lowercased
+  concatenation of `name`, `cuisineType`, `address` and `notes`. It is a
+  constructor default derived from those fields, so it cannot drift from them
+  and the sync importer needs no changes. The DAO's four `LIKE` clauses
+  collapsed into one against `searchText`, and the repository folds the query
+  with the same `normalizeForSearch` before it reaches Room.
+- **F-17 · No Room migration strategy — Done.** Forced by F-14's schema change:
+  the database is now `version = 2` with
+  `fallbackToDestructiveMigration(dropAllTables = true)`. Correct for a pure
+  cache, but it does mean existing installs come up empty once and have to be
+  refreshed by hand — which makes F-08 (automatic first sync) worth more than
+  it was.
+- **F-19 · The detail screen could show nothing — Done.** `DetailUiState` now
+  distinguishes `Loading`, `NotFound` and the loaded case; missing restaurants
+  get an explanation and a back button instead of a blank screen. The strings
+  went in hardcoded, though — see F-54.
+- **F-36 · The address was dead text — Done (partly).** The address row fires
+  `ACTION_VIEW` on a `geo:0,0?q=<address>` URI. The share action from the same
+  entry was not added and is still worth having.

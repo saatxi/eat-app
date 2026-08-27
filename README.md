@@ -5,7 +5,8 @@ address, rating, price range, notes, and visit date.
 
 ## Features
 
-- List restaurants, searchable by name and filterable by minimum rating and
+- List restaurants, searchable across name, cuisine, address and notes
+  (accent- and case-insensitive), and filterable by minimum rating and
   cuisine type
 - View restaurant details (read-only)
 - Refresh restaurant data on demand from a prebuilt SQLite file hosted on

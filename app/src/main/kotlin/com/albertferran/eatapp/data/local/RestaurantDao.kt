@@ -10,14 +10,14 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface RestaurantDao {
 
+    /**
+     * [query] must already be folded with `normalizeForSearch`, since it is
+     * matched against the equally folded `searchText` column.
+     */
     @Query(
         """
         SELECT * FROM restaurants
-        WHERE (:query IS NULL OR
-               name LIKE '%' || :query || '%' OR
-               cuisineType LIKE '%' || :query || '%' OR
-               address LIKE '%' || :query || '%' OR
-               notes LIKE '%' || :query || '%')
+        WHERE (:query IS NULL OR searchText LIKE '%' || :query || '%')
           AND (:minRating IS NULL OR rating >= :minRating)
           AND (:cuisineType IS NULL OR cuisineType = :cuisineType)
         ORDER BY name COLLATE NOCASE ASC
