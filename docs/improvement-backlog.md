@@ -20,13 +20,12 @@ Large-screen and tablet support is deliberately not covered here; see
 
 If you only do a handful, these in this order:
 
-1. **F-23** — still no tests; `readRestaurants` validation is the place to start.
-2. **F-54** — the last two features left English text hardcoded in Kotlin.
-3. **F-26, F-33, F-34** — the list screen's interaction rough edges.
-4. **F-03, F-04, F-11** — what is left of hardening the sync, minutes each.
-5. **F-37, F-45, F-46** — three XS presentation fixes lint already points at.
-6. **F-47** — the dependency set is over a year stale, and F-50 (CI) is
-   worth little until it builds something current.
+1. **F-54** — the last two features left English text hardcoded in Kotlin.
+2. **F-26, F-33, F-34** — the list screen's interaction rough edges.
+3. **F-03, F-04, F-11** — what is left of hardening the sync, minutes each.
+4. **F-37, F-45, F-46** — three XS presentation fixes lint already points at.
+5. **F-47** — the dependency set is over a year stale.
+6. **F-50** — CI, now that there is a test suite worth running on every push.
 
 ---
 
@@ -127,13 +126,6 @@ consumed — the standard Compose event pattern.
 Screens read `Restaurant` straight from the database, so formatting decisions
 (price string, date format, rating text) live inside composables. Fine at this
 size; worth splitting if the detail screen grows.
-
-### F-23 · No tests at all — High / M
-
-`app/src/test` and `app/src/androidTest` are both empty. The highest-value
-targets, roughly in order: `readRestaurants` validation and its failure modes,
-the DAO filter query, `Cuisine.fromKey`, and the ViewModel's filter
-combination.
 
 ### F-24 · The database singleton is duplicated — Low / XS
 
@@ -420,3 +412,20 @@ Recorded here rather than deleted, so the numbering stays stable.
   `app-release-unsigned.apk` and `apksigner verify` confirmed the signature.
   README gained a "Signing releases" section and the release checklist now
   points at it.
+
+### Test suite pass
+
+- **F-23 · No tests at all — Done.** 69 JUnit4 unit tests under
+  `app/src/test/kotlin/`, all four targets the entry named. Robolectric covers
+  the two that need an Android runtime, so `./gradlew test` runs the whole
+  suite on the JVM with no emulator. `readRestaurants` was extracted from
+  `RestaurantDatabaseSyncManager` into `RestaurantDatabaseReader` so the
+  validation could be exercised against a file without a network round trip.
+  The tests found that **F-02 was only half fixed**: `cursor.getString` returns
+  null for a NULL column, so `name.isBlank()` threw an NPE before the blank
+  check could report anything, and the catch-all in `sync()` turned it into the
+  same generic "Couldn't refresh the data" the entry complained about. Reading
+  the three non-null text columns through `?: ""` makes the check do what it
+  claimed to. Two tests deliberately pin behaviour the backlog calls wrong —
+  F-11 (an empty table is rejected) and F-15 (`%` acts as a wildcard) — so
+  fixing either has an obvious place to start.

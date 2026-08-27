@@ -120,6 +120,14 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        unitTests {
+            // Robolectric needs the merged resources and manifest to bring up a
+            // real Android runtime inside the JVM test task.
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 // Surface a missing keystore at build time rather than at install time, and only
@@ -172,4 +180,9 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.kotlinx.coroutines.android)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

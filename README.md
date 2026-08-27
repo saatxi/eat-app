@@ -114,6 +114,28 @@ app/src/main/kotlin/com/albertferran/eatapp/
 
 On Windows use `gradlew.bat assembleDebug`.
 
+## Tests
+
+```
+./gradlew test
+```
+
+Unit tests live in `app/src/test/kotlin/`, mirroring the main package
+structure. They run on the JVM with no emulator or device: the ones that need
+an Android runtime — the `.db` reader and the Room DAO — use Robolectric, so a
+single command covers everything.
+
+What is covered:
+
+- `SearchNormalizerTest` — the accent and case folding behind the search.
+- `CuisineTest` — resolving `cuisineType` keys, including unknown ones.
+- `RestaurantDatabaseReaderTest` — validation of the downloaded `.db`: missing
+  columns, NULL and blank fields, out-of-range ratings and price ranges, and
+  files that are not SQLite at all.
+- `RestaurantDaoTest` — the filter query against an in-memory Room database.
+- `RestaurantListViewModelTest` — how the three filter inputs combine into one
+  query and one UI state.
+
 ## Versioning
 
 The app version is derived automatically from git — there is nothing to edit

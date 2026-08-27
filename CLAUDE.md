@@ -39,10 +39,12 @@ When asked to write a commit message or a tag message:
   dependencies there, not as inline coordinates.
 - **No linter/formatter is configured** (no ktlint/detekt/`.editorconfig`).
   Match the existing style in the file you're editing.
-- **No test suite exists yet** (`app/src/test`, `app/src/androidTest` are
-  both empty). If you add tests, use JUnit4 + the AndroidX test libraries
-  already implied by the AGP template; put unit tests under
-  `app/src/test/kotlin/...` mirroring the main source package structure.
+- **Tests**: JUnit4 unit tests under `app/src/test/kotlin/...`, mirroring the
+  main source package structure. Robolectric is used for the cases that need
+  an Android runtime (the `.db` reader, the Room DAO), so everything runs on
+  the JVM with `./gradlew test` and no emulator is ever required. Keep it that
+  way — `app/src/androidTest` is still empty on purpose. Fakes are written by
+  hand; there is no mocking library and adding one needs discussing first.
 
 ## Build & verify
 
@@ -51,11 +53,12 @@ When asked to write a commit message or a tag message:
 ./gradlew assembleRelease          # release APK
 ./gradlew bundleRelease            # release AAB (Play Store)
 ./gradlew :app:printVersionInfo    # resolved versionName/versionCode, no build needed
-./gradlew lint                     # Android Lint (only static check currently wired up)
+./gradlew test                     # JVM unit tests (Robolectric, no emulator)
+./gradlew lint                     # Android Lint
 ```
 
-On Windows use `gradlew.bat`. Always run `assembleDebug` (or `lint` for a
-lighter check) after a code change before reporting it as done.
+On Windows use `gradlew.bat`. Always run `test` and `assembleDebug` after a
+code change before reporting it as done.
 
 ## Project structure
 
@@ -64,7 +67,7 @@ app/src/main/kotlin/com/albertferran/eatapp/
 ├── data/
 │   ├── local/        # Room entity, DAO, database, type converters
 │   ├── repository/   # Repository abstraction over the data source
-│   └── sync/          # Remote .db download, validation, and import
+│   └── sync/         # Remote .db download, validation, and import
 ├── navigation/        # NavHost and route definitions
 └── ui/
     ├── list/          # Restaurant list screen + ViewModel
