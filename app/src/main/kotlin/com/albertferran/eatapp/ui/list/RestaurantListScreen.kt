@@ -291,7 +291,7 @@ private fun FilterSection(
         }
 
         // Only the cuisines actually present in the synced data are offered, so the
-        // row stays short instead of listing all 22 vocabulary entries.
+        // row stays short instead of listing all 24 vocabulary entries.
         if (availableCuisines.isNotEmpty()) {
             val sortedCuisines = availableCuisines
                 .map { key -> key to cuisineLabel(key) }

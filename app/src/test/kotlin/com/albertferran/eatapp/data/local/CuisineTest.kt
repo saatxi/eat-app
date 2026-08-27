@@ -47,8 +47,8 @@ class CuisineTest {
     }
 
     @Test
-    fun `the vocabulary is the documented 22 keys`() {
+    fun `the vocabulary is the documented 24 keys`() {
         // Guards the README and Cuisine.kt against drifting apart silently.
-        assertEquals(22, Cuisine.entries.size)
+        assertEquals(24, Cuisine.entries.size)
     }
 }

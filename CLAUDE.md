@@ -85,7 +85,7 @@ app/src/main/kotlin/com/albertferran/eatapp/
   labels. Each key has its own icon in [CuisineVisuals.kt](app/src/main/kotlin/com/albertferran/eatapp/ui/common/CuisineVisuals.kt)
   and a translatable label in `strings.xml`. This design means adding a
   second language later is just a new `values-xx/strings.xml` file — the
-  data never changes. The full 22-key vocabulary is in [Cuisine.kt](app/src/main/kotlin/com/albertferran/eatapp/data/local/Cuisine.kt)
+  data never changes. The full 24-key vocabulary is in [Cuisine.kt](app/src/main/kotlin/com/albertferran/eatapp/data/local/Cuisine.kt)
   and documented in the README. An unrecognised key degrades gracefully: the
   app falls back to a generic icon and shows the raw string.
 - `versionCode`/`versionName` in `app/build.gradle.kts` are derived

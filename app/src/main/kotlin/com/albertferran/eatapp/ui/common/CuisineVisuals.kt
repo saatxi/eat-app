@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.BreakfastDining
 import androidx.compose.material.icons.filled.BrunchDining
 import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.Fastfood
+import androidx.compose.material.icons.filled.Flatware
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.Icecream
 import androidx.compose.material.icons.filled.KebabDining
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.OutdoorGrill
 import androidx.compose.material.icons.filled.RamenDining
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.RiceBowl
+import androidx.compose.material.icons.filled.RoomService
 import androidx.compose.material.icons.filled.SetMeal
 import androidx.compose.material.icons.filled.SoupKitchen
 import androidx.compose.material.icons.filled.SportsBar
@@ -42,6 +44,8 @@ import com.albertferran.eatapp.data.local.Cuisine
 fun cuisineIcon(cuisineType: String): ImageVector = when (Cuisine.fromKey(cuisineType)) {
     Cuisine.MEDITERRANEAN -> Icons.Filled.LocalDining
     Cuisine.SPANISH -> Icons.Filled.Tapas
+    Cuisine.CATALAN -> Icons.Filled.Flatware
+    Cuisine.BASQUE -> Icons.Filled.RoomService
     Cuisine.ITALIAN -> Icons.Filled.LocalPizza
     Cuisine.JAPANESE -> Icons.Filled.RamenDining
     Cuisine.CHINESE -> Icons.Filled.RiceBowl

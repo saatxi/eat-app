@@ -60,6 +60,8 @@
     -->
     <string name="cuisine_mediterranean">Mediterranean</string>
     <string name="cuisine_spanish">Spanish</string>
+    <string name="cuisine_catalan">Catalan</string>
+    <string name="cuisine_basque">Basque</string>
     <string name="cuisine_italian">Italian</string>
     <string name="cuisine_japanese">Japanese</string>
     <string name="cuisine_chinese">Chinese</string>

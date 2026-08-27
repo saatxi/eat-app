@@ -18,6 +18,8 @@ enum class Cuisine(val key: String, @StringRes val labelRes: Int) {
     // Origin
     MEDITERRANEAN("mediterranean", R.string.cuisine_mediterranean),
     SPANISH("spanish", R.string.cuisine_spanish),
+    CATALAN("catalan", R.string.cuisine_catalan),
+    BASQUE("basque", R.string.cuisine_basque),
     ITALIAN("italian", R.string.cuisine_italian),
     JAPANESE("japanese", R.string.cuisine_japanese),
     CHINESE("chinese", R.string.cuisine_chinese),

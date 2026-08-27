@@ -56,16 +56,16 @@ the list screen offers a filter chip for every key present in your data.
 |---|---|---|---|---|
 | `mediterranean` | Mediterranean | | `bar` | Bar |
 | `spanish` | Spanish | | `beer_bar` | Beer bar |
-| `italian` | Italian | | `wine_bar` | Wine bar |
-| `japanese` | Japanese | | `cafe` | Cafe |
-| `chinese` | Chinese | | `bakery` | Bakery |
-| `asian` | Asian | | `dessert` | Dessert |
-| `indian` | Indian | | `breakfast` | Breakfast |
-| `middle_eastern` | Middle Eastern | | `brunch` | Brunch |
-| `american` | American | | `grill` | Grill |
-| `seafood` | Seafood | | `fast_food` | Fast food |
-| | | | `fine_dining` | Fine dining |
-| | | | `vegetarian` | Vegetarian |
+| `catalan` | Catalan | | `wine_bar` | Wine bar |
+| `basque` | Basque | | `cafe` | Cafe |
+| `italian` | Italian | | `bakery` | Bakery |
+| `japanese` | Japanese | | `dessert` | Dessert |
+| `chinese` | Chinese | | `breakfast` | Breakfast |
+| `asian` | Asian | | `brunch` | Brunch |
+| `indian` | Indian | | `grill` | Grill |
+| `middle_eastern` | Middle Eastern | | `fast_food` | Fast food |
+| `american` | American | | `fine_dining` | Fine dining |
+| `seafood` | Seafood | | `vegetarian` | Vegetarian |
 
 An unrecognised value never breaks a sync: the app falls back to a generic
 icon and displays the raw string as-is. That means a data file using a key
