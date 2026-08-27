@@ -1,0 +1,9 @@
+# Project keep rules for R8, applied when `optimization { enable = true }` is on
+# (see app/build.gradle.kts). The platform defaults — the equivalent of
+# proguard-android-optimize.txt — are added automatically and don't belong here.
+# https://developer.android.com/topic/performance/app-optimization/enable-app-optimization
+#
+# Nothing custom is needed today: the app has no reflection of its own, and the
+# only reflective lookup in the dependency graph is Room resolving its generated
+# `*_Impl` classes, which androidx.room already covers with its own consumer keep
+# rules. Keep this file narrow — broad `-keep` rules block optimizations.

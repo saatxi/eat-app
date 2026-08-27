@@ -113,6 +113,60 @@ app/src/main/kotlin/com/albertferran/eatapp/
 
 On Windows use `gradlew.bat assembleDebug`.
 
+## App optimization (R8)
+
+Release builds go through [R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization),
+which shrinks and obfuscates the code and strips unused resources. It is turned
+on in `app/build.gradle.kts` with the AGP 9.3+ `optimization {}` DSL:
+
+```kotlin
+buildTypes {
+    release {
+        optimization {
+            enable = true
+        }
+    }
+}
+```
+
+One flag covers both halves — code shrinking and resource shrinking — and the
+platform keep rules (the equivalent of `proguard-android-optimize.txt`) are
+included automatically, so there is no `proguardFiles` line and no
+`proguard-rules.pro` any more. R8 full mode is on, which is the AGP 8+ default.
+
+The effect on the packaged APK is large, because most of what the app pulls in
+from Compose, Material 3 and Room is never reached:
+
+| Release APK | Size |
+| --- | --- |
+| Without optimization | ~11.2 MB |
+| With optimization | ~1.3 MB |
+
+Debug builds are deliberately left unoptimized so they stay fast to build and
+easy to debug.
+
+### Keep rules
+
+Project keep rules live in `app/src/main/keepRules/*.keep` — the source-set
+location AGP 9.3+ uses, not a `proguard-rules.pro` at the module root. That file
+carries no actual rules on purpose: the app itself uses no reflection, and Room,
+the one dependency that resolves generated classes by name, already ships its
+own consumer keep rules.
+
+If a release build ever misbehaves in a way the debug build does not, that is
+the file to add a narrow `-keep` rule to. Keep such rules as specific as
+possible — a broad `-keep` switches off optimization for everything it matches.
+`app/build/outputs/mapping/release/configanalyzer.html` is R8's own report on
+which rules are redundant or too wide.
+
+### Deobfuscating stack traces
+
+Every release build writes `app/build/outputs/mapping/release/mapping.txt`,
+which maps the obfuscated names back to the original ones. Android Studio's
+Logcat retraces stack traces automatically when it can find that file, so
+**keep the `mapping.txt` of every release you actually distribute** — the build
+directory is gitignored and the next build overwrites it.
+
 ## Tests
 
 ```
@@ -235,7 +289,13 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
    ```
    apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
    ```
-5. Distribute the APK/AAB (sideload, internal testing track, etc.) and
+5. Because release builds are optimized by R8 while debug builds are not, install
+   the release artifact on a device and smoke-test it — open the list, search,
+   filter, open a detail screen and run a data sync — before handing it to
+   anyone. Archive `app/build/outputs/mapping/release/mapping.txt` alongside the
+   artifact: without it, crash reports from that build are unreadable, and the
+   next build overwrites the file (see **App optimization (R8)** above).
+6. Distribute the APK/AAB (sideload, internal testing track, etc.) and
    confirm the version shown in the app's **About** dialog matches the tag.
 
 If you need to publish a fix without bumping the version number, don't

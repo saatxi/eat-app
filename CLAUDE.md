@@ -115,6 +115,11 @@ app/src/main/kotlin/com/albertferran/eatapp/
 - The app stores no user credentials, no PII beyond what the user
   themselves entered into their own `.db` file, and does no analytics or
   tracking — keep it that way unless the user asks for it explicitly.
-- `isMinifyEnabled = false` for release builds today (see
-  `app/build.gradle.kts`). That's a deliberate current state, not
-  something to silently change.
+- Release builds are optimized by R8 (`optimization { enable = true }` in
+  `app/build.gradle.kts`), which shrinks and obfuscates code and strips
+  unused resources. Don't turn it off, and don't reintroduce
+  `isMinifyEnabled`/`isShrinkResources`/`proguardFiles` — the
+  `optimization {}` DSL replaces all three. Project keep rules go in
+  `app/src/main/keepRules/*.keep`, kept as narrow as possible; a broad
+  `-keep` silently disables optimization for everything it matches. See
+  the README's "App optimization (R8)" section.

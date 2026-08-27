@@ -97,13 +97,19 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 code shrinking, obfuscation and resource shrinking, enabled only for
+            // release builds so debug stays fast and debuggable. This is the AGP 9.3+
+            // `optimization {}` DSL, which replaces isMinifyEnabled / isShrinkResources /
+            // proguardFiles: it turns on code and resource optimization together and
+            // already includes the platform defaults equivalent to
+            // "proguard-android-optimize.txt". Project keep rules live in
+            // src/main/keepRules/*.keep.
+            // https://developer.android.com/topic/performance/app-optimization/enable-app-optimization
+            optimization {
+                enable = true
+            }
             // Null when no keystore is configured, which leaves the build unsigned.
             signingConfig = signingConfigs.findByName("release")
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
         }
     }
 
