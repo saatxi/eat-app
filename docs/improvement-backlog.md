@@ -21,7 +21,7 @@ Large-screen and tablet support is deliberately not covered here; see
 If you only do a handful, these in this order:
 
 1. **F-26, F-33, F-34** — the list screen's interaction rough edges.
-2. **F-03, F-11** — what is left of hardening the sync, minutes each.
+2. **F-03, F-09** — what is left of hardening the sync, minutes each.
 3. **F-45, F-46** — two XS presentation fixes lint already points at.
 4. **F-47** — the dependency set is over a year stale.
 5. **F-50** — CI, now that there is a test suite worth running on every push.
@@ -59,28 +59,6 @@ Offline, the two 15-second timeouts mean up to 30 seconds of spinner before a
 generic failure.
 **Fix:** ask `ConnectivityManager` first and fail immediately with an accurate
 "no connection" message.
-
-### F-10 · Temp files leak on abnormal exit — Low / XS
-
-`sync_<millis>.db` is removed in a `finally`, but a process death mid-sync
-leaves it in `cacheDir` forever.
-**Where:** [RestaurantDatabaseSyncManager.kt:34](../app/src/main/kotlin/com/albertferran/eatapp/data/sync/RestaurantDatabaseSyncManager.kt#L34)
-**Fix:** use a fixed filename, or sweep leftover `sync_*.db` at startup.
-
-### F-11 · A legitimately empty dataset is rejected — Low / XS
-
-An empty table is treated as `INVALID_FILE`, so you could never sync your way
-back to zero restaurants.
-**Where:** [RestaurantDatabaseSyncManager.kt:126](../app/src/main/kotlin/com/albertferran/eatapp/data/sync/RestaurantDatabaseSyncManager.kt#L126)
-**Fix:** accept it. It's a valid state; the `REQUIRED_COLUMNS` check already
-catches genuinely malformed files.
-
-### F-12 · `DATABASE_URL` is hardcoded — Low / S
-
-Testing against a branch or a fork means editing source and rebuilding.
-**Where:** [RemoteConfig.kt](../app/src/main/kotlin/com/albertferran/eatapp/data/sync/RemoteConfig.kt)
-**Fix:** a debug-build override, or a `buildConfigField` per build type.
-Keep the release value hardcoded.
 
 ---
 
@@ -470,3 +448,26 @@ Four columns removed from the entity, the reader, the UI and `data/eatapp.db`.
   to surface as whatever SQLite happened to say, or as "missing columns" when
   it opened an empty database anyway. A file shorter than the header (the
   empty file included) is rejected on the same path.
+
+### Sync plumbing pass
+
+- **F-10 · Temp files leak on abnormal exit — Done.** The download target is now
+  a fixed `sync.db` rather than `sync_<millis>.db`, so a process death mid-sync
+  leaves at most one file behind and the next download truncates it instead of
+  adding another. Files left by earlier versions are swept at the start of every
+  sync: anything in `cacheDir` matching the old `sync_*.db` shape is deleted.
+- **F-11 · A legitimately empty dataset is rejected — Done.** The
+  `restaurants.isEmpty()` branch is gone, so a `.db` with zero rows imports as
+  zero rows and the list empties. It is the only way to sync back to nothing, and
+  nothing is lost by allowing it: the header and `REQUIRED_COLUMNS` checks are
+  what actually catch a malformed file. The test that pinned the old behaviour
+  now asserts the new one.
+- **F-12 · `DATABASE_URL` is hardcoded — Done.** The URL is now a
+  `buildConfigField` set per build type, and `RemoteConfig.DATABASE_URL` reads
+  `BuildConfig`. Release keeps the hardcoded `releaseDatabaseUrl` from
+  `app/build.gradle.kts` and ignores any override, so nothing local can escape
+  into a published APK; debug takes `eatapp.database.url` from
+  `local.properties` or `EATAPP_DATABASE_URL` from the environment, defaulting to
+  the same public URL. A non-`https://` override fails the build at configuration
+  time rather than at runtime, since the app allows no cleartext traffic. The
+  `signingSecret` helper became `localOrEnv`, shared with the signing config.

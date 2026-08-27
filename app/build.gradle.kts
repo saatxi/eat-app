@@ -42,12 +42,9 @@ val gitVersionCode: Int = runGitCommand("rev-list", "--count", "HEAD")
 val gitCommitShort: String = runGitCommand("rev-parse", "--short", "HEAD") ?: "unknown"
 // ---------------------------------------------------------------------------
 
-// --- Release signing -------------------------------------------------------
-// Credentials are read from local.properties (gitignored) or, for CI, from
-// environment variables. The keystore itself is never committed. When nothing
-// is configured the release build still runs, but stays unsigned and says so
-// loudly at build time instead of producing an artifact that silently cannot
-// be installed or uploaded.
+// --- Local build-time configuration ----------------------------------------
+// Values a developer (or CI) can set without touching source: local.properties is
+// gitignored, and the matching environment variable is what CI uses instead.
 val localProperties = Properties().apply {
     rootProject.file("local.properties")
         .takeIf { it.exists() }
@@ -55,20 +52,49 @@ val localProperties = Properties().apply {
         ?.use { load(it) }
 }
 
-fun signingSecret(propertyKey: String, envKey: String): String? =
+fun localOrEnv(propertyKey: String, envKey: String): String? =
     (localProperties.getProperty(propertyKey) ?: System.getenv(envKey))?.takeIf { it.isNotBlank() }
+// ---------------------------------------------------------------------------
+
+// --- Release signing -------------------------------------------------------
+// The keystore itself is never committed. When nothing is configured the release
+// build still runs, but stays unsigned and says so loudly at build time instead
+// of producing an artifact that silently cannot be installed or uploaded.
 
 // A relative path resolves against the repository root; an absolute one is used as is.
-val releaseKeystoreFile = signingSecret("eatapp.keystore.file", "EATAPP_KEYSTORE_FILE")
+val releaseKeystoreFile = localOrEnv("eatapp.keystore.file", "EATAPP_KEYSTORE_FILE")
     ?.let { rootProject.file(it) }
-val releaseKeystorePassword = signingSecret("eatapp.keystore.password", "EATAPP_KEYSTORE_PASSWORD")
-val releaseKeyAlias = signingSecret("eatapp.key.alias", "EATAPP_KEY_ALIAS")
-val releaseKeyPassword = signingSecret("eatapp.key.password", "EATAPP_KEY_PASSWORD")
+val releaseKeystorePassword = localOrEnv("eatapp.keystore.password", "EATAPP_KEYSTORE_PASSWORD")
+val releaseKeyAlias = localOrEnv("eatapp.key.alias", "EATAPP_KEY_ALIAS")
+val releaseKeyPassword = localOrEnv("eatapp.key.password", "EATAPP_KEY_PASSWORD")
 
 val hasReleaseSigning = releaseKeystoreFile?.exists() == true &&
     releaseKeystorePassword != null &&
     releaseKeyAlias != null &&
     releaseKeyPassword != null
+// ---------------------------------------------------------------------------
+
+// --- Remote database URL ---------------------------------------------------
+// Release is always the public raw GitHub URL, hardcoded here. Debug builds can be
+// pointed at a branch or a fork through eatapp.database.url in local.properties or
+// the EATAPP_DATABASE_URL environment variable, so testing against other data does
+// not need a source edit and a rebuild of the release value.
+val releaseDatabaseUrl = "https://raw.githubusercontent.com/saatxi/eat-app/main/data/eatapp.db"
+
+val debugDatabaseUrl = localOrEnv("eatapp.database.url", "EATAPP_DATABASE_URL")
+    ?.also {
+        // The app declares no cleartext traffic permission, so anything but HTTPS
+        // would only fail at runtime with a confusing network error.
+        require(it.startsWith("https://")) {
+            "eatapp.database.url / EATAPP_DATABASE_URL must be an https:// URL, got: $it"
+        }
+    }
+    ?: releaseDatabaseUrl
+
+// The value is pasted into generated Java source, so it has to survive being a
+// string literal there.
+fun String.asJavaStringLiteral(): String =
+    "\"" + replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 // ---------------------------------------------------------------------------
 
 android {
@@ -96,7 +122,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "DATABASE_URL", debugDatabaseUrl.asJavaStringLiteral())
+        }
         release {
+            buildConfigField("String", "DATABASE_URL", releaseDatabaseUrl.asJavaStringLiteral())
             // R8 code shrinking, obfuscation and resource shrinking, enabled only for
             // release builds so debug stays fast and debuggable. This is the AGP 9.3+
             // `optimization {}` DSL, which replaces isMinifyEnabled / isShrinkResources /

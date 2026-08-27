@@ -251,13 +251,14 @@ class RestaurantDatabaseReaderTest {
         assertEquals(SyncFailureReason.INVALID_FILE, failure.reason)
     }
 
-    // --- known gap ----------------------------------------------------------
+    // --- empty data, the F-11 case ------------------------------------------
 
     @Test
-    fun `rejects an empty table, which is F-11 and arguably wrong`() {
-        // Documents current behaviour: you cannot sync your way back to zero
-        // restaurants. Change this test when F-11 is fixed.
-        assertEquals(SyncFailureReason.INVALID_FILE, readErrorOf(databaseWith()).reason)
+    fun `accepts an empty table so you can sync back to zero restaurants`() {
+        val outcome = RestaurantDatabaseReader.read(databaseWith())
+
+        assertTrue("expected rows, got $outcome", outcome is ReadOutcome.Rows)
+        assertTrue((outcome as ReadOutcome.Rows).restaurants.isEmpty())
     }
 
     private companion object {

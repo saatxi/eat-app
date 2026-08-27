@@ -36,15 +36,40 @@ you maintain on a PC and publish to a public GitHub repository.
 - No Room-specific bookkeeping (e.g. `room_master_table`) is required in the
   file; the app reads it with plain SQLite and imports the rows into its own
   local database.
-- Publish the updated `.db` with `git add`/`commit`/`push` to the repo,
-  branch, and path configured in
-  [`RemoteConfig.kt`](app/src/main/kotlin/com/albertferran/eatapp/data/sync/RemoteConfig.kt)
-  (`DATABASE_URL`, currently a placeholder that must be filled in).
+- Publish the updated `.db` with `git add`/`commit`/`push` to the repo, branch
+  and path the build points at. The release URL is hardcoded as
+  `releaseDatabaseUrl` in [`app/build.gradle.kts`](app/build.gradle.kts) and
+  reaches the app as `BuildConfig.DATABASE_URL` through
+  [`RemoteConfig.kt`](app/src/main/kotlin/com/albertferran/eatapp/data/sync/RemoteConfig.kt);
+  a debug build can be pointed elsewhere without editing source, see
+  [Pointing a debug build at other data](#pointing-a-debug-build-at-other-data).
 - In the app, tap "Refresh Data" on the list screen to download and apply
   the latest published file. Sync is entirely manual — there's no
   version/freshness check, and every tap re-downloads and replaces the local
   data. A failed or invalid download leaves existing data untouched and shows
-  an error.
+  an error. A file with zero rows is *not* an error: it is how you empty the
+  list, so publishing one clears the app's data on the next refresh.
+
+### Pointing a debug build at other data
+
+Testing against a branch, a fork or a second data file doesn't need a source
+edit. Set the URL in `local.properties` (gitignored):
+
+```
+eatapp.database.url=https://raw.githubusercontent.com/<you>/<fork>/<branch>/data/eatapp.db
+```
+
+or as an environment variable, which is what CI would use:
+
+| `local.properties` | Environment variable |
+| --- | --- |
+| `eatapp.database.url` | `EATAPP_DATABASE_URL` |
+
+Only **debug** builds read it — a release build always uses the hardcoded
+release URL, so an override can't escape into a published APK. The value must
+start with `https://`; anything else fails the build at configuration time,
+since the app declares no cleartext traffic permission and would only fail
+later with a confusing network error.
 
 ### Cuisine keys
 

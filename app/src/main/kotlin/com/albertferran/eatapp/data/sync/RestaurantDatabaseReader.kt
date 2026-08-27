@@ -106,13 +106,11 @@ internal object RestaurantDatabaseReader {
                 }
             }
 
-            if (restaurants.isEmpty()) {
-                Log.w(TAG, "No rows found in restaurants table")
-                ReadOutcome.Error(DatabaseSyncResult.Failure(SyncFailureReason.INVALID_FILE, "no rows in restaurants table"))
-            } else {
-                Log.d(TAG, "Loaded ${restaurants.size} restaurants")
-                ReadOutcome.Rows(restaurants)
-            }
+            // An empty table is a valid state, not a malformed file: it is the only
+            // way to sync your way back to zero restaurants. Files that are genuinely
+            // broken are already caught by the header and column checks above.
+            Log.d(TAG, "Loaded ${restaurants.size} restaurants")
+            ReadOutcome.Rows(restaurants)
         } catch (e: SQLiteException) {
             Log.w(TAG, "SQLite error: ${e.message}", e)
             ReadOutcome.Error(DatabaseSyncResult.Failure(SyncFailureReason.INVALID_FILE, e.message))

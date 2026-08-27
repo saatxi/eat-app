@@ -16,6 +16,14 @@ private const val CONNECT_TIMEOUT_MS = 15_000
 private const val READ_TIMEOUT_MS = 15_000
 private const val TAG = "EatApp.Sync"
 
+// A fixed name, so a process death mid-sync leaves behind one file that the next
+// download truncates, instead of one more file per attempt forever.
+private const val TEMP_FILE_NAME = "sync.db"
+
+// Earlier versions named the temp file sync_<millis>.db, which is exactly how an
+// unbounded pile of them could accumulate in cacheDir. Sweep those on the way past.
+private const val LEGACY_TEMP_FILE_PREFIX = "sync_"
+
 class RestaurantDatabaseSyncManager(
     private val appContext: Context,
     private val repository: RestaurantRepository
@@ -24,8 +32,10 @@ class RestaurantDatabaseSyncManager(
 
     suspend fun sync(): DatabaseSyncResult = mutex.withLock {
         withContext(Dispatchers.IO) {
-            val tempFile = File(appContext.cacheDir, "sync_${System.currentTimeMillis()}.db")
+            val tempFile = File(appContext.cacheDir, TEMP_FILE_NAME)
             try {
+                deleteLegacyTempFiles()
+
                 val downloadResult = download(tempFile)
                 if (downloadResult != null) return@withContext downloadResult
 
@@ -45,6 +55,15 @@ class RestaurantDatabaseSyncManager(
                 tempFile.delete()
             }
         }
+    }
+
+    private fun deleteLegacyTempFiles() {
+        val leftovers = appContext.cacheDir
+            .listFiles { file -> file.name.startsWith(LEGACY_TEMP_FILE_PREFIX) && file.name.endsWith(".db") }
+            ?.takeIf { it.isNotEmpty() }
+            ?: return
+        Log.d(TAG, "Deleting ${leftovers.size} leftover temp file(s)")
+        leftovers.forEach { it.delete() }
     }
 
     private fun recordSyncTimestamp() {

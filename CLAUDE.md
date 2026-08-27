@@ -97,18 +97,24 @@ app/src/main/kotlin/com/albertferran/eatapp/
 
 ## Security guidelines
 
-- The only network call is an HTTPS GET to the hardcoded public URL in
-  [`RemoteConfig.kt`](app/src/main/kotlin/com/albertferran/eatapp/data/sync/RemoteConfig.kt)
-  (`DATABASE_URL`). It's a public raw GitHub content URL by design, not a
-  secret — but never point it at anything requiring auth, and never embed
-  API keys, tokens, or credentials anywhere in this repo (there are none
-  today; keep it that way).
-- The downloaded `.db` file is untrusted input: it's opened
-  `OPEN_READONLY` and validated (`REQUIRED_COLUMNS` check in
-  `RestaurantDatabaseSyncManager.kt`) before any row is imported. Don't
-  relax this validation, don't switch to a writable connection, and don't
-  execute SQL built from the file's own content — keep using parameterized
-  reads.
+- The only network call is an HTTPS GET to the public URL exposed as
+  `DATABASE_URL` by
+  [`RemoteConfig.kt`](app/src/main/kotlin/com/albertferran/eatapp/data/sync/RemoteConfig.kt),
+  which reads it from `BuildConfig`. The release value is hardcoded as
+  `releaseDatabaseUrl` in `app/build.gradle.kts`; only debug builds honour the
+  `eatapp.database.url` / `EATAPP_DATABASE_URL` override, and the build rejects
+  anything that is not `https://`. It's a public raw GitHub content URL by
+  design, not a secret — but never point it at anything requiring auth, never
+  let the override reach the release build type, and never embed API keys,
+  tokens, or credentials anywhere in this repo (there are none today; keep it
+  that way).
+- The downloaded `.db` file is untrusted input: it's opened `OPEN_READONLY`
+  and validated in `RestaurantDatabaseReader.kt` — the 16-byte SQLite header
+  first, then the `REQUIRED_COLUMNS` check, then every row — before anything
+  is imported. Don't relax this validation, don't switch to a writable
+  connection, and don't execute SQL built from the file's own content — keep
+  using parameterized reads. (An empty `restaurants` table is deliberately
+  accepted: it's a valid dataset, not a malformed file.)
 - `INTERNET` is the only Android permission the app declares
   (`AndroidManifest.xml`). Don't add permissions (location, contacts,
   storage, etc.) without an explicit, discussed reason.
