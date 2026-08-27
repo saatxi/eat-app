@@ -20,7 +20,7 @@ Large-screen and tablet support is deliberately not covered here; see
 
 If you only do a handful, these in this order:
 
-1. **F-26, F-33** — the list screen's interaction rough edges.
+1. **F-26** — the search field is still the list screen's roughest edge.
 2. **F-47** — the dependency set is over a year stale.
 3. **F-50** — CI, now that there is a test suite worth running on every push.
 
@@ -38,15 +38,6 @@ so the floating label permanently costs vertical space.
 ### F-29 · No sorting — Medium / M
 
 The list is always alphabetical. Sorting by rating is the obvious want.
-
-### F-33 · Two progress indicators, and a disappearing button — Medium / S
-
-During a pull-to-refresh, `PullToRefreshBox` shows its own indicator while the
-app bar *replaces* the refresh button with a spinner — so you get two
-spinners, and the button vanishes and shifts the icons next to it.
-**Where:** [RestaurantListScreen.kt:109](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt#L109)
-**Fix:** keep the button in place and disabled, and let the pull-to-refresh
-indicator be the only spinner.
 
 ---
 
@@ -151,6 +142,20 @@ screen, each in light and dark.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### List refresh indicator pass
+
+- **F-33 · Two progress indicators, and a disappearing button — Done.** The
+  app bar no longer swaps its refresh button for a `CircularProgressIndicator`
+  while a sync runs: the button stays where it is and is disabled instead
+  (`enabled = !uiState.isSyncing`), so the overflow icon beside it stops
+  shifting on every refresh and `PullToRefreshBox`'s indicator is the only
+  spinner on screen. That holds for a sync started from the button rather than
+  the gesture too, since the box's indicator follows `isRefreshing` and not the
+  drag. The screen's one remaining `CircularProgressIndicator` is F-20's
+  initial-load one, which shows before the pull-to-refresh box has anything to
+  report.
+- Verified with `./gradlew test assembleDebug` — 93 tests green.
 
 ### State and architecture pass
 

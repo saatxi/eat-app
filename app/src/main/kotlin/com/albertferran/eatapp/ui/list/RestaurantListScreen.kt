@@ -142,12 +142,11 @@ fun RestaurantListScreen(
                 TopAppBar(
                     title = { Text(stringResource(R.string.list_title)) },
                     actions = {
-                        if (uiState.isSyncing) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        } else {
-                            IconButton(onClick = viewModel::syncNow) {
-                                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.list_action_sync))
-                            }
+                        // Disabled rather than swapped for a spinner while syncing: the
+                        // pull-to-refresh indicator is already showing one, and replacing
+                        // the button would shift the icons beside it every refresh.
+                        IconButton(onClick = viewModel::syncNow, enabled = !uiState.isSyncing) {
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.list_action_sync))
                         }
                         IconButton(onClick = { showOverflowMenu = true }) {
                             Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.list_action_more))
