@@ -6,11 +6,9 @@ import android.util.Log
 import com.albertferran.eatapp.data.local.Restaurant
 import java.io.File
 import java.io.IOException
-import java.time.LocalDate
 
 internal val REQUIRED_COLUMNS = setOf(
-    "id", "name", "cuisineType", "address", "rating", "priceRange",
-    "notes", "visitDate", "photoUri", "createdAt"
+    "id", "name", "cuisineType", "address", "rating", "priceRange"
 )
 
 private const val TAG = "EatApp.Sync"
@@ -54,24 +52,23 @@ internal object RestaurantDatabaseReader {
             val restaurants = mutableListOf<Restaurant>()
             db.rawQuery(
                 """
-                SELECT id, name, cuisineType, address, rating, priceRange, notes, visitDate, photoUri, createdAt
+                SELECT id, name, cuisineType, address, rating, priceRange
                 FROM restaurants
                 """.trimIndent(),
                 null
             ).use { cursor ->
                 while (cursor.moveToNext()) {
-                    // getString returns null for a NULL column, and these three feed
+                    // getString returns null for a NULL column, and these two feed
                     // non-null fields. Coalescing first means the blank check below
                     // reports a real INVALID_FILE instead of throwing an NPE that the
                     // caller can only report as a generic failure.
                     val name = cursor.getString(1) ?: ""
                     val cuisineType = cursor.getString(2) ?: ""
-                    val notes = cursor.getString(6) ?: ""
                     val rating = cursor.getInt(4)
                     val priceRange = cursor.getInt(5)
 
-                    if (name.isBlank() || cuisineType.isBlank() || notes.isBlank()) {
-                        val msg = "row ${cursor.getLong(0)}: name, cuisineType and notes cannot be empty"
+                    if (name.isBlank() || cuisineType.isBlank()) {
+                        val msg = "row ${cursor.getLong(0)}: name and cuisineType cannot be empty"
                         Log.w(TAG, msg)
                         return ReadOutcome.Error(
                             DatabaseSyncResult.Failure(SyncFailureReason.INVALID_FILE, msg)
@@ -92,11 +89,7 @@ internal object RestaurantDatabaseReader {
                             cuisineType = cuisineType,
                             address = if (cursor.isNull(3)) null else cursor.getString(3),
                             rating = rating,
-                            priceRange = priceRange,
-                            notes = notes,
-                            visitDate = LocalDate.ofEpochDay(cursor.getLong(7)),
-                            photoUri = if (cursor.isNull(8)) null else cursor.getString(8),
-                            createdAt = cursor.getLong(9)
+                            priceRange = priceRange
                         )
                     )
                 }

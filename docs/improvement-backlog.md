@@ -22,7 +22,7 @@ If you only do a handful, these in this order:
 
 1. **F-26, F-33, F-34** — the list screen's interaction rough edges.
 2. **F-03, F-04, F-11** — what is left of hardening the sync, minutes each.
-3. **F-37, F-45, F-46** — three XS presentation fixes lint already points at.
+3. **F-45, F-46** — two XS presentation fixes lint already points at.
 4. **F-47** — the dependency set is over a year stale.
 5. **F-50** — CI, now that there is a test suite worth running on every push.
 
@@ -153,18 +153,12 @@ at least reads sensibly.
 
 ### F-29 · No sorting — Medium / M
 
-The list is always alphabetical. Sorting by rating or by most recent visit is
-the obvious want, and `visitDate` is already stored.
+The list is always alphabetical. Sorting by rating is the obvious want.
 
 ### F-31 · No result count — Low / XS
 
 "3 restaurants" is most useful precisely when a filter is active and you want
 to know how much you've narrowed things down.
-
-### F-32 · `visitDate` isn't shown in the list — Low / XS
-
-It only appears on the detail screen, though "when was I last there" is a
-natural thing to scan for. Depends on F-37 for formatting.
 
 ### F-33 · Two progress indicators, and a disappearing button — Medium / S
 
@@ -191,13 +185,6 @@ on screen says which restaurant you're looking at.
 **Where:** [RestaurantDetailScreen.kt:60](../app/src/main/kotlin/com/albertferran/eatapp/ui/detail/RestaurantDetailScreen.kt#L60)
 **Fix:** a `LargeTopAppBar` whose title collapses into the bar as you scroll —
 it replaces the hand-rolled hero rather than adding to it.
-
-### F-37 · Dates are shown in ISO format — Medium / XS
-
-`DateTimeFormatter.ISO_LOCAL_DATE` renders `2026-01-15`.
-**Where:** [RestaurantDetailScreen.kt:180](../app/src/main/kotlin/com/albertferran/eatapp/ui/detail/RestaurantDetailScreen.kt#L180)
-**Fix:** `ofLocalizedDate(FormatStyle.MEDIUM)` — "15 Jan 2026", and it follows
-the device locale for free.
 
 ### F-38 · No transition between list and detail — Low / L
 
@@ -312,12 +299,43 @@ themed icons on Android 13+.
 
 Recorded here rather than deleted, so the numbering stays stable.
 
+### Unused-column pass
+
+Four columns removed from the entity, the reader, the UI and `data/eatapp.db`.
+
+- **`photoUri` — Dropped.** It was `NULL` in every row and had never been read
+  by any composable: the entity field, the `REQUIRED_COLUMNS` entry, the
+  `SELECT` and the `cursor.isNull` mapping are gone.
+- **`visitDate` — Dropped.** Its only appearance was one `InfoRow` on the
+  detail screen, whose card is now titled "Rating and price"
+  (`detail_section_rating`). It was the last `LocalDate` in the schema, so
+  `Converters` and the `@TypeConverters` annotation went with it. This closes
+  F-32 and F-37, which existed only to improve how that one row looked.
+- **`createdAt` — Dropped.** Never read by anything: no composable, no query,
+  no ordering. It briefly gained a `DEFAULT (CAST(strftime('%s','now') AS
+  INTEGER) * 1000)` so it would not have to be typed by hand, before being
+  removed outright in the same pass.
+- **`notes` — Dropped, and this one cost something.** Unlike the others it was
+  live: a card on the detail screen, one of the four fields folded into
+  `searchText`, and part of the non-blank check in the reader. Search now
+  covers `name`, `cuisineType` and `address` only, the reader's blank check is
+  down to `name` and `cuisineType`, and `detail_section_notes` is gone. The
+  DAO's `matches on notes` test and the reader's `rejects a NULL note` test
+  went with it; `combines all three filters` now carries its query term in
+  `address` instead.
+- The reader only ever asked that `REQUIRED_COLUMNS` be *present*, so a `.db`
+  still carrying any of the four dropped columns keeps importing unchanged; a
+  test pins that. The Room version went 2 → 4, which the existing
+  `fallbackToDestructiveMigration` handles by re-syncing.
+- What is left is the minimum the UI actually renders: `id`, `name`,
+  `cuisineType`, `address`, `rating`, `priceRange`. Only `address` is nullable.
+
 ### Cuisine vocabulary pass
 
 - **F-18 · Dead code — Done.** `observeAll()` had no callers and was removed
   with the repository change. Still outstanding: the `GIT_COMMIT`
-  `buildConfigField` is generated but never read, and `photoUri` / `createdAt`
-  are imported from the `.db` and never displayed.
+  `buildConfigField` is generated but never read. (`photoUri` was dropped
+  outright in the unused-column pass above.)
 - **F-25 · Filters ate the screen — Done.** The rating and cuisine rows moved
   inside the `LazyColumn` so they scroll away; only the search field stays
   pinned. Adding the cuisine row would otherwise have pushed the fixed header
@@ -351,8 +369,9 @@ Recorded here rather than deleted, so the numbering stays stable.
   names the offending row id. A typo in the source data is now a message you
   can act on instead of a silently clamped value.
 - **F-02 · NULL text columns caused an NPE — Done.** Rows with a blank `name`,
-  `cuisineType` or `notes` are rejected the same way. `address` and `photoUri`
-  go through `cursor.isNull` and stay genuinely optional.
+  `cuisineType` or `notes` are rejected the same way. `address` goes through
+  `cursor.isNull` and stays genuinely optional. (`notes` has since been
+  dropped; the check now covers `name` and `cuisineType`.)
 - **F-05 · Failure details were thrown away — Done (partly).** Every failure
   site now logs its `detail` under the `EatApp.Sync` tag, so `adb logcat` tells
   you why a refresh failed. Still outstanding: surfacing that detail in the app
@@ -365,7 +384,8 @@ Recorded here rather than deleted, so the numbering stays stable.
   covers the same four fields through the normalized column.
 - **F-14 · Accented text never matched — Done.** `Restaurant` gained a
   `searchText` column holding an NFD-folded, accent-stripped, lowercased
-  concatenation of `name`, `cuisineType`, `address` and `notes`. It is a
+  concatenation of `name`, `cuisineType`, `address` and `notes`. (`notes` was
+  later dropped; the column now covers the remaining three.) It is a
   constructor default derived from those fields, so it cannot drift from them
   and the sync importer needs no changes. The DAO's four `LIKE` clauses
   collapsed into one against `searchText`, and the repository folds the query

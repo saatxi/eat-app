@@ -4,7 +4,6 @@ import androidx.test.core.app.ApplicationProvider
 import com.albertferran.eatapp.data.local.Restaurant
 import com.albertferran.eatapp.data.repository.RestaurantRepository
 import com.albertferran.eatapp.data.sync.RestaurantDatabaseSyncManager
-import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -212,11 +211,7 @@ class RestaurantListViewModelTest {
         cuisineType = "mediterranean",
         address = null,
         rating = 3,
-        priceRange = 2,
-        notes = "Notes",
-        visitDate = LocalDate.of(2026, 1, 15),
-        photoUri = null,
-        createdAt = 0L
+        priceRange = 2
     )
 }
 

@@ -1,11 +1,11 @@
 # EatApp
 
 An Android app to browse restaurants you've visited — name, cuisine type,
-address, rating, price range, notes, and visit date.
+address, rating and price range.
 
 ## Features
 
-- List restaurants, searchable across name, cuisine, address and notes
+- List restaurants, searchable across name, cuisine and address
   (accent- and case-insensitive), and filterable by minimum rating and
   cuisine type
 - View restaurant details (read-only)
@@ -22,18 +22,17 @@ you maintain on a PC and publish to a public GitHub repository.
 - Edit the data with any SQLite client (e.g. [DB Browser for
   SQLite](https://sqlitebrowser.org/) or the `sqlite3` CLI) against a single
   table named `restaurants` with columns: `id`, `name`, `cuisineType`,
-  `address`, `rating`, `priceRange`, `notes`, `visitDate`, `photoUri`,
-  `createdAt`.
+  `address`, `rating`, `priceRange`.
 - `cuisineType` must be one of the **cuisine keys** listed below — a stable,
   language-independent identifier such as `fast_food`, never a display label
   such as `Fast food`. The app maps the key to both an icon and a translated
   label, which is what makes adding a second language later a matter of adding
   `values-es/strings.xml` and nothing else: the data file never has to change.
-- `visitDate` must be stored as **epoch-day** (days since 1970-01-01), not as
-  a date string or epoch-millis.
-- `createdAt` is any long value (e.g. milliseconds since epoch at creation
-  time).
-- `photoUri` should be left `NULL` — it's not used by the read-only UI.
+- `address` is the only nullable column; every other one is `NOT NULL`. A row
+  needs six values and nothing else.
+- Extra columns are ignored rather than rejected, so a file that still carries
+  the dropped `notes`, `createdAt`, `visitDate` or `photoUri` columns keeps
+  importing unchanged.
 - No Room-specific bookkeeping (e.g. `room_master_table`) is required in the
   file; the app reads it with plain SQLite and imports the rows into its own
   local database.

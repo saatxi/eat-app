@@ -50,8 +50,7 @@
 
     <string name="rating_format">%1$d/5</string>
     <string name="detail_section_overview">Overview</string>
-    <string name="detail_section_visit">Visit details</string>
-    <string name="detail_section_notes">Notes</string>
+    <string name="detail_section_rating">Rating and price</string>
 
     <!--
         Display labels for the closed cuisine vocabulary. The `.db` stores the

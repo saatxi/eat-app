@@ -3,7 +3,6 @@ package com.albertferran.eatapp.data.local
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.albertferran.eatapp.data.repository.RoomRestaurantRepository
-import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -47,19 +46,14 @@ class RestaurantDaoTest {
         cuisineType: String = "mediterranean",
         address: String? = "Rambla 1",
         rating: Int = 3,
-        priceRange: Int = 2,
-        notes: String = "Nothing in particular"
+        priceRange: Int = 2
     ) = Restaurant(
         id = id,
         name = name,
         cuisineType = cuisineType,
         address = address,
         rating = rating,
-        priceRange = priceRange,
-        notes = notes,
-        visitDate = LocalDate.of(2026, 1, 15),
-        photoUri = null,
-        createdAt = 0L
+        priceRange = priceRange
     )
 
     private suspend fun seed(vararg restaurants: Restaurant) = dao.replaceAll(restaurants.toList())
@@ -117,16 +111,6 @@ class RestaurantDaoTest {
         )
 
         assertEquals(listOf("Cal Ferran"), search("carrer nou"))
-    }
-
-    @Test
-    fun `matches on notes`() = runTest {
-        seed(
-            restaurant(1, "Cal Ferran", notes = "Best paella in town"),
-            restaurant(2, "Bar Nil", notes = "Good coffee")
-        )
-
-        assertEquals(listOf("Cal Ferran"), search("paella"))
     }
 
     @Test
@@ -203,9 +187,9 @@ class RestaurantDaoTest {
     @Test
     fun `combines all three filters`() = runTest {
         seed(
-            restaurant(1, "Sakura", cuisineType = "japanese", rating = 5, notes = "Great sushi"),
-            restaurant(2, "Kioto", cuisineType = "japanese", rating = 2, notes = "Great sushi"),
-            restaurant(3, "Alga", cuisineType = "seafood", rating = 5, notes = "Great sushi")
+            restaurant(1, "Sakura", cuisineType = "japanese", rating = 5, address = "Carrer Sushi 1"),
+            restaurant(2, "Kioto", cuisineType = "japanese", rating = 2, address = "Carrer Sushi 2"),
+            restaurant(3, "Alga", cuisineType = "seafood", rating = 5, address = "Carrer Sushi 3")
         )
 
         val names = repository.observeFiltered("sushi", 4, "japanese").first().map { it.name }

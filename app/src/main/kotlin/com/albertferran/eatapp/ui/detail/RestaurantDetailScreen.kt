@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.RestaurantMenu
 import androidx.compose.material3.Button
@@ -51,7 +50,6 @@ import com.albertferran.eatapp.ui.AppViewModelProvider
 import com.albertferran.eatapp.ui.common.cuisineIcon
 import com.albertferran.eatapp.ui.common.cuisineLabel
 import com.albertferran.eatapp.ui.common.cuisineTint
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -200,7 +198,7 @@ fun RestaurantDetailScreen(
                         Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = stringResource(R.string.detail_section_visit),
+                                    text = stringResource(R.string.detail_section_rating),
                                     style = MaterialTheme.typography.titleMedium,
                                     modifier = Modifier.padding(bottom = 12.dp)
                                 )
@@ -239,24 +237,6 @@ fun RestaurantDetailScreen(
                                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                         )
                                     }
-                                }
-                                InfoRow(
-                                    icon = Icons.Outlined.CalendarToday,
-                                    text = current.visitDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                                    topPadding = 12.dp
-                                )
-                            }
-                        }
-
-                        if (current.notes.isNotBlank()) {
-                            Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = stringResource(R.string.detail_section_notes),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.padding(bottom = 8.dp)
-                                    )
-                                    Text(current.notes, style = MaterialTheme.typography.bodyLarge)
                                 }
                             }
                         }

@@ -25,8 +25,7 @@ fun normalizeForSearch(text: String): String =
 fun buildSearchText(
     name: String,
     cuisineType: String,
-    address: String?,
-    notes: String
+    address: String?
 ): String = normalizeForSearch(
-    listOfNotNull(name, cuisineType, address, notes).joinToString(" ")
+    listOfNotNull(name, cuisineType, address).joinToString(" ")
 )

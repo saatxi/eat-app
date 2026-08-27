@@ -39,15 +39,11 @@ class RestaurantDatabaseReaderTest {
         cuisineType: String? = "mediterranean",
         address: String? = "Placa Santa Anna, Mataro",
         rating: Int = 4,
-        priceRange: Int = 2,
-        notes: String? = "Great paella",
-        visitDate: Long = 20_000,
-        photoUri: String? = null,
-        createdAt: Long = 1_700_000_000
+        priceRange: Int = 2
     ) {
         execSQL(
-            "INSERT INTO restaurants VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            arrayOf(id, name, cuisineType, address, rating, priceRange, notes, visitDate, photoUri, createdAt)
+            "INSERT INTO restaurants VALUES (?, ?, ?, ?, ?, ?)",
+            arrayOf(id, name, cuisineType, address, rating, priceRange)
         )
     }
 
@@ -74,17 +70,13 @@ class RestaurantDatabaseReaderTest {
         assertEquals("Placa Santa Anna, Mataro", restaurant.address)
         assertEquals(4, restaurant.rating)
         assertEquals(2, restaurant.priceRange)
-        assertEquals("Great paella", restaurant.notes)
-        assertEquals(20_000L, restaurant.visitDate.toEpochDay())
-        assertNull(restaurant.photoUri)
-        assertEquals(1_700_000_000L, restaurant.createdAt)
     }
 
     @Test
     fun `derives the normalized search text on import`() {
         val rows = readRowsOf(
             databaseWith {
-                insertRow(name = "Cafe Niló", address = "Plaça Gran", notes = "Bó")
+                insertRow(name = "Cafe Niló", address = "Plaça Gran")
             }
         )
         // F-14: the column is derived here, never read from the file.
@@ -93,11 +85,10 @@ class RestaurantDatabaseReaderTest {
     }
 
     @Test
-    fun `treats address and photoUri as genuinely optional`() {
-        val rows = readRowsOf(databaseWith { insertRow(address = null, photoUri = null) })
+    fun `treats address as genuinely optional`() {
+        val rows = readRowsOf(databaseWith { insertRow(address = null) })
 
         assertNull(rows.single().address)
-        assertNull(rows.single().photoUri)
     }
 
     @Test
@@ -115,11 +106,30 @@ class RestaurantDatabaseReaderTest {
     // --- schema validation --------------------------------------------------
 
     @Test
+    fun `ignores columns it no longer needs`() {
+        // Data files written before notes, createdAt, visitDate and photoUri were
+        // dropped must keep importing: the reader names the columns it selects and
+        // only requires REQUIRED_COLUMNS to be present, never that the set matches
+        // exactly.
+        val file = databaseWith(schema = SCHEMA_WITH_DROPPED_COLUMNS) {
+            execSQL(
+                "INSERT INTO restaurants VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                arrayOf(1L, "Cal Ferran", "mediterranean", null, 4, 2, "Great paella", 20_000L, null, 1_700_000_000L)
+            )
+        }
+
+        val rows = readRowsOf(file)
+
+        assertEquals("Cal Ferran", rows.single().name)
+        assertEquals("mediterranean", rows.single().cuisineType)
+    }
+
+    @Test
     fun `rejects a file missing a required column`() {
-        val failure = readErrorOf(databaseWith(schema = SCHEMA_WITHOUT_NOTES))
+        val failure = readErrorOf(databaseWith(schema = SCHEMA_WITHOUT_CUISINE))
 
         assertEquals(SyncFailureReason.INVALID_FILE, failure.reason)
-        assertTrue("detail should name the column: ${failure.detail}", failure.detail!!.contains("notes"))
+        assertTrue("detail should name the column: ${failure.detail}", failure.detail!!.contains("cuisineType"))
     }
 
     @Test
@@ -152,14 +162,6 @@ class RestaurantDatabaseReaderTest {
         assertEquals(
             SyncFailureReason.INVALID_FILE,
             readErrorOf(databaseWith { insertRow(cuisineType = null) }).reason
-        )
-    }
-
-    @Test
-    fun `rejects a NULL note`() {
-        assertEquals(
-            SyncFailureReason.INVALID_FILE,
-            readErrorOf(databaseWith { insertRow(notes = null) }).reason
         )
     }
 
@@ -245,6 +247,18 @@ class RestaurantDatabaseReaderTest {
                 cuisineType TEXT,
                 address TEXT,
                 rating INTEGER,
+                priceRange INTEGER
+            )
+        """
+
+        /** A file still carrying every column the reader has since stopped reading. */
+        const val SCHEMA_WITH_DROPPED_COLUMNS = """
+            CREATE TABLE restaurants (
+                id INTEGER PRIMARY KEY,
+                name TEXT,
+                cuisineType TEXT,
+                address TEXT,
+                rating INTEGER,
                 priceRange INTEGER,
                 notes TEXT,
                 visitDate INTEGER,
@@ -253,17 +267,13 @@ class RestaurantDatabaseReaderTest {
             )
         """
 
-        const val SCHEMA_WITHOUT_NOTES = """
+        const val SCHEMA_WITHOUT_CUISINE = """
             CREATE TABLE restaurants (
                 id INTEGER PRIMARY KEY,
                 name TEXT,
-                cuisineType TEXT,
                 address TEXT,
                 rating INTEGER,
-                priceRange INTEGER,
-                visitDate INTEGER,
-                photoUri TEXT,
-                createdAt INTEGER
+                priceRange INTEGER
             )
         """
     }

@@ -57,13 +57,11 @@ class SearchNormalizerTest {
         val text = buildSearchText(
             name = "Cal Ferran",
             cuisineType = "mediterranean",
-            address = "Plaça Santa Anna, Mataró",
-            notes = "Great paella"
+            address = "Plaça Santa Anna, Mataró"
         )
         assertTrue(text.contains("cal ferran"))
         assertTrue(text.contains("mediterranean"))
         assertTrue(text.contains("placa santa anna"))
-        assertTrue(text.contains("great paella"))
     }
 
     @Test
@@ -71,15 +69,14 @@ class SearchNormalizerTest {
         val text = buildSearchText(
             name = "Nil",
             cuisineType = "cafe",
-            address = null,
-            notes = "Takeaway only"
+            address = null
         )
-        assertEquals("nil cafe takeaway only", text)
+        assertEquals("nil cafe", text)
     }
 
     @Test
     fun `buildSearchText output is itself normalized`() {
-        val text = buildSearchText("Café Niló", "cafe", "Rambla", "Bó")
+        val text = buildSearchText("Café Niló", "cafe", "Rambla")
         assertEquals(text, normalizeForSearch(text))
     }
 }
