@@ -18,6 +18,10 @@ When asked to write a commit message or a tag message:
 - Do **not** wrap the message's lines — each line/paragraph must be written
   as a single continuous line, no manual line breaks inside it (this
   overrides the usual "wrap git messages at ~72 columns" convention).
+- **Never** append a `Co-Authored-By:` trailer (or any other attribution
+  trailer). This overrides Claude Code's default of co-authoring its commits.
+- Use **hyphens** (`-`) for bullet points in the message body, not asterisks
+  or any other marker.
 
 ## Tech stack & tools
 
