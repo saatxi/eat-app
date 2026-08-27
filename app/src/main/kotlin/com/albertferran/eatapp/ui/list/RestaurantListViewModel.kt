@@ -2,11 +2,12 @@ package com.albertferran.eatapp.ui.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.albertferran.eatapp.data.local.Restaurant
 import com.albertferran.eatapp.data.repository.RestaurantRepository
 import com.albertferran.eatapp.data.sync.DatabaseSyncManager
 import com.albertferran.eatapp.data.sync.DatabaseSyncResult
 import com.albertferran.eatapp.data.sync.SyncFailureReason
+import com.albertferran.eatapp.ui.model.RestaurantUiModel
+import com.albertferran.eatapp.ui.model.toUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -27,7 +28,12 @@ data class RestaurantListUiState(
     val minRating: Int? = null,
     val cuisineType: String? = null,
     val availableCuisines: List<String> = emptyList(),
-    val restaurants: List<Restaurant> = emptyList(),
+    val restaurants: List<RestaurantUiModel> = emptyList(),
+    // True until the database has emitted for the first time. Without it this
+    // initial (empty) state is indistinguishable from a genuinely empty
+    // database, and the "No restaurants yet" screen flashes for a frame on
+    // every cold start.
+    val isInitialLoad: Boolean = true,
     val isSyncing: Boolean = false,
     val pendingSyncMessage: SyncMessage? = null
 ) {
@@ -95,7 +101,10 @@ class RestaurantListViewModel(
             minRating = activeFilters.minRating,
             cuisineType = activeFilters.cuisineType,
             availableCuisines = availableCuisines,
-            restaurants = restaurants,
+            restaurants = restaurants.map { it.toUiModel() },
+            // Reaching this block at all means the database has emitted, since
+            // combine produces nothing until every source has.
+            isInitialLoad = false,
             isSyncing = syncing,
             pendingSyncMessage = syncMessage
         )

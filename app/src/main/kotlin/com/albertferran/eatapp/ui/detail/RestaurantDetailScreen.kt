@@ -127,7 +127,7 @@ fun RestaurantDetailScreen(
                         .padding(padding)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    val tint = cuisineTint(current.cuisineType)
+                    val tint = cuisineTint(current.cuisineKey)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -139,7 +139,7 @@ fun RestaurantDetailScreen(
                             )
                     ) {
                         Icon(
-                            cuisineIcon(current.cuisineType),
+                            cuisineIcon(current.cuisineKey),
                             contentDescription = null,
                             tint = tint.onContainer.copy(alpha = 0.16f),
                             modifier = Modifier
@@ -176,8 +176,8 @@ fun RestaurantDetailScreen(
                                     modifier = Modifier.padding(bottom = 12.dp)
                                 )
                                 InfoRow(
-                                    icon = cuisineIcon(current.cuisineType),
-                                    text = cuisineLabel(current.cuisineType)
+                                    icon = cuisineIcon(current.cuisineKey),
+                                    text = cuisineLabel(current.cuisineKey)
                                 )
                                 current.address?.let { address ->
                                     InfoRow(
@@ -208,11 +208,11 @@ fun RestaurantDetailScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        repeat(5) { index ->
+                                        current.stars.forEach { filled ->
                                             Icon(
                                                 Icons.Default.Star,
                                                 contentDescription = null,
-                                                tint = if (index < current.rating) {
+                                                tint = if (filled) {
                                                     MaterialTheme.colorScheme.primary
                                                 } else {
                                                     MaterialTheme.colorScheme.outlineVariant
@@ -231,7 +231,7 @@ fun RestaurantDetailScreen(
                                         color = MaterialTheme.colorScheme.tertiaryContainer
                                     ) {
                                         Text(
-                                            text = "$".repeat(current.priceRange),
+                                            text = current.priceLabel,
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)

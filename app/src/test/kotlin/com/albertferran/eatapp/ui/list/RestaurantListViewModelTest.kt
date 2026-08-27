@@ -4,6 +4,7 @@ import com.albertferran.eatapp.data.local.Restaurant
 import com.albertferran.eatapp.data.repository.RestaurantRepository
 import com.albertferran.eatapp.data.sync.DatabaseSyncManager
 import com.albertferran.eatapp.data.sync.DatabaseSyncResult
+import com.albertferran.eatapp.ui.model.RestaurantUiModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -72,9 +73,24 @@ class RestaurantListViewModelTest {
         assertEquals("", state.searchQuery)
         assertNull(state.minRating)
         assertNull(state.cuisineType)
-        assertEquals(emptyList<Restaurant>(), state.restaurants)
+        assertEquals(emptyList<RestaurantUiModel>(), state.restaurants)
         assertFalse(state.isSyncing)
         assertFalse(state.hasActiveFilter)
+    }
+
+    // --- F-20: the initial-load flag ---------------------------------------
+
+    @Test
+    fun `starts in the initial-load state, before the database has emitted`() = runTest {
+        assertTrue(viewModel.uiState.value.isInitialLoad)
+    }
+
+    @Test
+    fun `the initial-load flag clears on the first emission, even an empty one`() = runTest {
+        observeState()
+
+        assertFalse(viewModel.uiState.value.isInitialLoad)
+        assertEquals(emptyList<RestaurantUiModel>(), viewModel.uiState.value.restaurants)
     }
 
     // --- filters reach the repository and the state -------------------------
@@ -190,6 +206,18 @@ class RestaurantListViewModelTest {
         repository.restaurants.value = listOf(restaurant(1, "Cal Ferran"), restaurant(2, "Bar Nil"))
 
         assertEquals(listOf("Cal Ferran", "Bar Nil"), viewModel.uiState.value.restaurants.map { it.name })
+    }
+
+    @Test
+    fun `entities are mapped to UI models before reaching the state`() = runTest {
+        observeState()
+
+        repository.restaurants.value = listOf(restaurant(1, "Cal Ferran"))
+
+        val item = viewModel.uiState.value.restaurants.single()
+        assertEquals(1L, item.id)
+        assertEquals("mediterranean", item.cuisineKey)
+        assertEquals("$$", item.priceLabel)
     }
 
     @Test

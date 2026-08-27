@@ -66,13 +66,13 @@ import android.content.Context
 import androidx.compose.ui.platform.LocalContext
 import com.albertferran.eatapp.BuildConfig
 import com.albertferran.eatapp.R
-import com.albertferran.eatapp.data.local.Restaurant
 import com.albertferran.eatapp.data.sync.RestaurantDatabaseSyncManager
 import com.albertferran.eatapp.data.sync.SyncFailureReason
 import com.albertferran.eatapp.ui.AppViewModelProvider
 import com.albertferran.eatapp.ui.common.cuisineIcon
 import com.albertferran.eatapp.ui.common.cuisineLabel
 import com.albertferran.eatapp.ui.common.cuisineTint
+import com.albertferran.eatapp.ui.model.RestaurantUiModel
 
 @Composable
 private fun formatRelativeTime(timestampMs: Long): String {
@@ -185,7 +185,14 @@ fun RestaurantListScreen(
                 onRefresh = viewModel::syncNow,
                 modifier = Modifier.weight(1f).fillMaxWidth()
             ) {
-                if (uiState.restaurants.isEmpty() && !uiState.hasActiveFilter) {
+                if (uiState.isInitialLoad) {
+                    // The database has not emitted yet, so an empty list here means
+                    // "not loaded", not "nothing to show" — painting the first-sync
+                    // empty state would flash it for a frame on every cold start.
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (uiState.restaurants.isEmpty() && !uiState.hasActiveFilter) {
                     // Nothing has ever been synced: there are no filters to offer yet.
                     EmptyState(
                         icon = Icons.Outlined.RestaurantMenu,
@@ -400,10 +407,10 @@ private fun EmptyState(
 }
 
 @Composable
-private fun RestaurantRow(restaurant: Restaurant, onClick: () -> Unit) {
+private fun RestaurantRow(restaurant: RestaurantUiModel, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            val tint = cuisineTint(restaurant.cuisineType)
+            val tint = cuisineTint(restaurant.cuisineKey)
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -412,7 +419,7 @@ private fun RestaurantRow(restaurant: Restaurant, onClick: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    cuisineIcon(restaurant.cuisineType),
+                    cuisineIcon(restaurant.cuisineKey),
                     contentDescription = null,
                     tint = tint.onContainer,
                     modifier = Modifier.size(24.dp)
@@ -422,7 +429,7 @@ private fun RestaurantRow(restaurant: Restaurant, onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Text(text = restaurant.name, style = MaterialTheme.typography.titleLarge)
                 Text(
-                    text = cuisineLabel(restaurant.cuisineType),
+                    text = cuisineLabel(restaurant.cuisineKey),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -465,7 +472,7 @@ private fun RestaurantRow(restaurant: Restaurant, onClick: () -> Unit) {
                     modifier = Modifier.padding(top = 6.dp)
                 ) {
                     Text(
-                        text = "$".repeat(restaurant.priceRange),
+                        text = restaurant.priceLabel,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)

@@ -26,22 +26,6 @@ If you only do a handful, these in this order:
 
 ---
 
-## D. State and architecture
-
-### F-20 · Empty state flashes on cold start — Medium / XS
-
-`RestaurantListUiState` starts with an empty list and no "still loading" flag,
-so "No restaurants yet" paints for a frame before Room's first emission.
-**Fix:** an `isInitialLoad` flag, cleared on the first emission.
-
-### F-22 · The Room entity is used directly as the UI model — Low / M
-
-Screens read `Restaurant` straight from the database, so formatting decisions
-(price string, date format, rating text) live inside composables. Fine at this
-size; worth splitting if the detail screen grows.
-
----
-
 ## E. List screen UX
 
 ### F-26 · The search field is bare — Medium / S
@@ -167,6 +151,37 @@ screen, each in light and dark.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### State and architecture pass
+
+Section D in full: both of its entries.
+
+- **F-20 · Empty state flashes on cold start — Done.** `RestaurantListUiState`
+  gained an `isInitialLoad` flag: true in `stateIn`'s initial value, false in
+  every state the `combine` block builds. Since `combine` produces nothing
+  until all of its sources have emitted, "that block ran at all" is exactly
+  the signal that the database's first emission arrived — no extra flow needed
+  to track it. The list screen shows a centred spinner while the flag is set,
+  so an empty list can no longer be mistaken for a loaded-but-empty database
+  and "No restaurants yet" only paints once it really is one.
+- **F-22 · The Room entity is used directly as the UI model — Done.** New
+  `ui/model/RestaurantUiModel.kt` holds what the screens draw plus the
+  `Restaurant.toUiModel()` mapper; both ViewModels map at their edge, so
+  `RestaurantListUiState.restaurants` and `DetailUiState.Loaded` carry UI
+  models and neither screen sees the entity any more. The formatting that used
+  to sit inside composables moved into the mapper: `"$".repeat(priceRange)`
+  became a ready-made `priceLabel` (clamped, so a hand-built row can't draw a
+  runaway chip), the detail screen's `repeat(5) { index < rating }` became
+  `stars: List<Boolean>`, and a blank address is normalised to null so the
+  location row is skipped instead of drawn empty. Anything that needs a string
+  resource stayed in the composables — the cuisine label and the "3/5" rating
+  text can't be resolved without a Context — so the model carries the raw
+  `cuisineKey` and `rating` and `CuisineVisuals` resolves them at draw time.
+- Verified with `./gradlew test assembleDebug lint` — 93 tests green, among
+  them a new `RestaurantUiModelTest` pinning the mapper and three new
+  ViewModel tests for the flag and the mapping; the lint report is unchanged
+  from the previous pass (`GradleDependency` / `NewerVersionAvailable`, i.e.
+  F-47; `UseKtx`; `OldTargetApi`; `ObsoleteSdkInt`).
 
 ### Sync robustness pass
 

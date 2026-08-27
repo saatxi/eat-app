@@ -70,9 +70,11 @@ app/src/main/kotlin/com/albertferran/eatapp/
 │   └── sync/         # Remote .db download, validation, and import
 ├── navigation/        # NavHost and route definitions
 └── ui/
+    ├── common/        # Shared composable helpers (cuisine icon, label, tint)
+    ├── model/         # UI models the screens draw, mapped from the entity
     ├── list/          # Restaurant list screen + ViewModel
-    ├── detail/         # Restaurant detail screen + ViewModel
-    └── theme/          # Compose theming (color, type, shape)
+    ├── detail/        # Restaurant detail screen + ViewModel
+    └── theme/         # Compose theming (color, type, shape)
 ```
 
 ## Conventions
