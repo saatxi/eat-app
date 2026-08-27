@@ -20,12 +20,11 @@ Large-screen and tablet support is deliberately not covered here; see
 
 If you only do a handful, these in this order:
 
-1. **F-54** — the last two features left English text hardcoded in Kotlin.
-2. **F-26, F-33, F-34** — the list screen's interaction rough edges.
-3. **F-03, F-04, F-11** — what is left of hardening the sync, minutes each.
-4. **F-37, F-45, F-46** — three XS presentation fixes lint already points at.
-5. **F-47** — the dependency set is over a year stale.
-6. **F-50** — CI, now that there is a test suite worth running on every push.
+1. **F-26, F-33, F-34** — the list screen's interaction rough edges.
+2. **F-03, F-04, F-11** — what is left of hardening the sync, minutes each.
+3. **F-37, F-45, F-46** — three XS presentation fixes lint already points at.
+4. **F-47** — the dependency set is over a year stale.
+5. **F-50** — CI, now that there is a test suite worth running on every push.
 
 ---
 
@@ -261,19 +260,6 @@ Note this would need the "all strings in English" rule in
 [CLAUDE.md](../CLAUDE.md) relaxed to "English is the default locale", since
 that rule currently forbids exactly this.
 
-### F-54 · Recent features hardcoded English strings — Medium / XS
-
-`CLAUDE.md` requires every in-app string to live in `strings.xml`, but the
-detail screen's "not found" state (F-19) and the About dialog's "Last synced"
-line (F-06) both went in as Kotlin string literals, and `formatRelativeTime`
-builds its output ("2 days ago") in Kotlin too.
-
-**Where:** [RestaurantDetailScreen.kt:107-118](../app/src/main/kotlin/com/albertferran/eatapp/ui/detail/RestaurantDetailScreen.kt#L107-L118),
-[RestaurantListScreen.kt:220](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt#L220)
-
-**Fix:** move them to `strings.xml`; the relative time is a `<plurals>` job,
-so it pairs with F-46. Blocks F-53 until done.
-
 ---
 
 ## H. Build, release and tooling
@@ -429,3 +415,16 @@ Recorded here rather than deleted, so the numbering stays stable.
   claimed to. Two tests deliberately pin behaviour the backlog calls wrong —
   F-11 (an empty table is rejected) and F-15 (`%` acts as a wildcard) — so
   fixing either has an obvious place to start.
+
+### String resources pass
+
+- **F-54 · Recent features hardcoded English strings — Done.** The detail
+  screen's "not found" state and the About dialog's "Last synced" line now read
+  from `strings.xml`, and `formatRelativeTime` became a `@Composable` that
+  resolves its output through three `<plurals>` resources
+  (`relative_time_minutes_ago` / `_hours_ago` / `_days_ago`) plus a
+  `relative_time_just_now` string, replacing the hand-rolled `if (…) "s" else ""`
+  pluralisation. F-53 is no longer blocked: every user-visible string in the app
+  now lives in `values/strings.xml`. The `"$".repeat(priceRange)` price marks and
+  the `"$rating+"` chip label are deliberately left as Kotlin — they are symbols
+  and numbers, not prose; making them readable is F-44's and F-27's job.

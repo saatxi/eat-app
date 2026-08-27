@@ -56,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -72,14 +73,23 @@ import com.albertferran.eatapp.ui.common.cuisineIcon
 import com.albertferran.eatapp.ui.common.cuisineLabel
 import com.albertferran.eatapp.ui.common.cuisineTint
 
+@Composable
 private fun formatRelativeTime(timestampMs: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestampMs
+    val diff = System.currentTimeMillis() - timestampMs
     return when {
-        diff < 60_000 -> "just now"
-        diff < 3_600_000 -> "${diff / 60_000} minute${if (diff >= 120_000) "s" else ""} ago"
-        diff < 86_400_000 -> "${diff / 3_600_000} hour${if (diff >= 7_200_000) "s" else ""} ago"
-        else -> "${diff / 86_400_000} day${if (diff >= 172_800_000) "s" else ""} ago"
+        diff < 60_000 -> stringResource(R.string.relative_time_just_now)
+        diff < 3_600_000 -> {
+            val minutes = (diff / 60_000).toInt()
+            pluralStringResource(R.plurals.relative_time_minutes_ago, minutes, minutes)
+        }
+        diff < 86_400_000 -> {
+            val hours = (diff / 3_600_000).toInt()
+            pluralStringResource(R.plurals.relative_time_hours_ago, hours, hours)
+        }
+        else -> {
+            val days = (diff / 86_400_000).toInt()
+            pluralStringResource(R.plurals.relative_time_days_ago, days, days)
+        }
     }
 }
 
@@ -217,9 +227,9 @@ fun RestaurantListScreen(
         val context = LocalContext.current
         val lastSyncTime = RestaurantDatabaseSyncManager.getLastSyncTime(context)
         val lastSyncText = if (lastSyncTime > 0) {
-            "\n\nLast synced: ${formatRelativeTime(lastSyncTime)}"
+            stringResource(R.string.about_last_synced, formatRelativeTime(lastSyncTime))
         } else {
-            "\n\nNo sync completed yet"
+            stringResource(R.string.about_last_synced_never)
         }
 
         AlertDialog(
@@ -236,7 +246,7 @@ fun RestaurantListScreen(
                         R.string.about_version_template,
                         BuildConfig.VERSION_NAME,
                         BuildConfig.VERSION_CODE
-                    ) + lastSyncText
+                    ) + "\n\n" + lastSyncText
                 )
             }
         )

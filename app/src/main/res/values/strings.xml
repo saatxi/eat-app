@@ -17,10 +17,35 @@
     <string name="list_sync_error_unknown">Couldn\'t refresh the data.</string>
 
     <string name="action_back">Back</string>
+    <string name="action_go_back">Go back</string>
+
+    <string name="detail_not_found_title">Restaurant not found</string>
+    <string name="detail_not_found_body">This restaurant was removed or the data was refreshed.</string>
 
     <string name="list_action_more">More options</string>
     <string name="list_action_about">About</string>
     <string name="about_version_template">Version %1$s (build %2$d)</string>
+    <string name="about_last_synced">Last synced: %1$s</string>
+    <string name="about_last_synced_never">No sync completed yet</string>
+
+    <!--
+        Relative "last synced" wording. The number is both the plural quantity
+        and the formatting argument, so it has to stay in the translated text.
+    -->
+    <string name="relative_time_just_now">just now</string>
+    <plurals name="relative_time_minutes_ago">
+        <item quantity="one">%1$d minute ago</item>
+        <item quantity="other">%1$d minutes ago</item>
+    </plurals>
+    <plurals name="relative_time_hours_ago">
+        <item quantity="one">%1$d hour ago</item>
+        <item quantity="other">%1$d hours ago</item>
+    </plurals>
+    <plurals name="relative_time_days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+
     <string name="action_ok">OK</string>
 
     <string name="rating_format">%1$d/5</string>

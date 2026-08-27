@@ -104,18 +104,18 @@ fun RestaurantDetailScreen(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "Restaurant not found",
+                            text = stringResource(R.string.detail_not_found_title),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(top = 16.dp)
                         )
                         Text(
-                            text = "This restaurant was removed or the data was refreshed.",
+                            text = stringResource(R.string.detail_not_found_body),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 4.dp)
                         )
                         Button(onClick = onBack, modifier = Modifier.padding(top = 20.dp)) {
-                            Text("Go back")
+                            Text(stringResource(R.string.action_go_back))
                         }
                     }
                 }
