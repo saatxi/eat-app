@@ -22,25 +22,7 @@ If you only do a handful, these in this order:
 
 1. **F-47** — the dependency set is over a year stale.
 2. **F-50** — CI, now that there is a test suite worth running on every push.
-3. **F-35** — the detail screen still has no title once the hero scrolls off.
-
----
-
-## F. Detail screen UX
-
-### F-35 · The top app bar has no title — Medium / S
-
-`title = { Text("") }` — literally empty. Once the hero scrolls off, nothing
-on screen says which restaurant you're looking at.
-**Where:** [RestaurantDetailScreen.kt:60](../app/src/main/kotlin/com/albertferran/eatapp/ui/detail/RestaurantDetailScreen.kt#L60)
-**Fix:** a `LargeTopAppBar` whose title collapses into the bar as you scroll —
-it replaces the hand-rolled hero rather than adding to it.
-
-### F-38 · No transition between list and detail — Low / L
-
-Tapping a card cuts straight to the detail screen. A shared-element container
-transform from the card's cuisine icon into the detail hero is the standout
-polish item, and Compose supports it natively now.
+3. **F-41** — half the colour scheme is still Material's default purple.
 
 ---
 
@@ -127,6 +109,41 @@ screen, each in light and dark.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### Detail screen pass
+
+Section F in full, which retires the section. The two entries turned out to be
+one change: F-35 removes the hero, so F-38 needed somewhere else to land.
+
+- **F-35 · The top app bar has no title — Done.** The hand-rolled hero Box is
+  gone and its job moved into a `LargeTopAppBar`: the restaurant name is the
+  title, so it shrinks into the bar as you scroll instead of leaving with the
+  hero, and the bar takes over the hero's cuisine tint (`containerColor` and
+  `scrolledContainerColor` both set to it — the tint is the screen's identity,
+  not a scroll affordance). Dropping the hero also collapsed the content
+  column's outer/inner nesting into one. Two details worth knowing:
+  `exitUntilCollapsedScrollBehavior` gets an explicit `canScroll` guard, because
+  the default `{ true }` lets a fling collapse the bar on a page short enough to
+  fit and leave a blank strip under it; and loading/not-found keep a plain
+  `TopAppBar`, since a large bar with no name to show would just stand empty
+  above a centred message.
+- **F-38 · No transition between list and detail — Done.** `EatAppNavHost` now
+  wraps the graph in a `SharedTransitionLayout`, and the cuisine icon is the
+  shared element: the 48 dp tinted disc in the list row travels into the 32 dp
+  icon in the detail app bar. `sharedBounds` rather than `sharedElement` because
+  the two are deliberately drawn differently — the bounds animate while the
+  contents cross-fade. The destinations themselves only cross-fade, over the
+  same 320 ms; the default horizontal slide would have dragged the badge
+  sideways along with everything else. The two scopes Compose needs are
+  published as CompositionLocals from the NavHost
+  ([SharedTransition.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/common/SharedTransition.kt))
+  rather than threaded through every screen signature, and the modifier is a
+  no-op when they are absent, so the screens stay composable outside the graph —
+  which matters for F-51. `androidx.compose.animation:animation` was added to
+  the version catalog: it was already on the classpath through Foundation, but
+  the app now uses its API directly.
+- Verified with `./gradlew test assembleDebug lint` — all green, no new lint
+  findings.
 
 ### List screen search and sort pass
 

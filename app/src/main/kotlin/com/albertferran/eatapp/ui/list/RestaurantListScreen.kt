@@ -78,6 +78,7 @@ import com.albertferran.eatapp.data.local.RestaurantSort
 import com.albertferran.eatapp.data.sync.RestaurantDatabaseSyncManager
 import com.albertferran.eatapp.data.sync.SyncFailureReason
 import com.albertferran.eatapp.ui.AppViewModelProvider
+import com.albertferran.eatapp.ui.common.cuisineBadgeTransition
 import com.albertferran.eatapp.ui.common.cuisineIcon
 import com.albertferran.eatapp.ui.common.cuisineLabel
 import com.albertferran.eatapp.ui.common.cuisineTint
@@ -476,6 +477,8 @@ private fun RestaurantRow(restaurant: RestaurantUiModel, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(48.dp)
+                    // The element the container transform into the detail screen runs on.
+                    .cuisineBadgeTransition(restaurant.id)
                     .clip(CircleShape)
                     .background(tint.container),
                 contentAlignment = Alignment.Center
