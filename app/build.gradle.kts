@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -40,6 +42,35 @@ val gitVersionCode: Int = runGitCommand("rev-list", "--count", "HEAD")
 val gitCommitShort: String = runGitCommand("rev-parse", "--short", "HEAD") ?: "unknown"
 // ---------------------------------------------------------------------------
 
+// --- Release signing -------------------------------------------------------
+// Credentials are read from local.properties (gitignored) or, for CI, from
+// environment variables. The keystore itself is never committed. When nothing
+// is configured the release build still runs, but stays unsigned and says so
+// loudly at build time instead of producing an artifact that silently cannot
+// be installed or uploaded.
+val localProperties = Properties().apply {
+    rootProject.file("local.properties")
+        .takeIf { it.exists() }
+        ?.inputStream()
+        ?.use { load(it) }
+}
+
+fun signingSecret(propertyKey: String, envKey: String): String? =
+    (localProperties.getProperty(propertyKey) ?: System.getenv(envKey))?.takeIf { it.isNotBlank() }
+
+// A relative path resolves against the repository root; an absolute one is used as is.
+val releaseKeystoreFile = signingSecret("eatapp.keystore.file", "EATAPP_KEYSTORE_FILE")
+    ?.let { rootProject.file(it) }
+val releaseKeystorePassword = signingSecret("eatapp.keystore.password", "EATAPP_KEYSTORE_PASSWORD")
+val releaseKeyAlias = signingSecret("eatapp.key.alias", "EATAPP_KEY_ALIAS")
+val releaseKeyPassword = signingSecret("eatapp.key.password", "EATAPP_KEY_PASSWORD")
+
+val hasReleaseSigning = releaseKeystoreFile?.exists() == true &&
+    releaseKeystorePassword != null &&
+    releaseKeyAlias != null &&
+    releaseKeyPassword != null
+// ---------------------------------------------------------------------------
+
 android {
     namespace = "com.albertferran.eatapp"
     compileSdk = 36
@@ -53,9 +84,22 @@ android {
         buildConfigField("String", "GIT_COMMIT", "\"$gitCommitShort\"")
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = releaseKeystoreFile
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            // Null when no keystore is configured, which leaves the build unsigned.
+            signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -75,6 +119,26 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+// Surface a missing keystore at build time rather than at install time, and only
+// when a release build is actually being run so debug builds stay quiet.
+gradle.taskGraph.whenReady {
+    if (!hasReleaseSigning && allTasks.any { it.name.contains("Release") }) {
+        val keystore = releaseKeystoreFile
+        val reason = if (keystore != null && !keystore.exists()) {
+            "the configured keystore was not found at ${keystore.absolutePath}"
+        } else {
+            "release signing is not configured"
+        }
+        logger.warn(
+            "WARNING: $reason, so this release build will be UNSIGNED and cannot be " +
+                "installed or uploaded. Set eatapp.keystore.file, eatapp.keystore.password, " +
+                "eatapp.key.alias and eatapp.key.password in local.properties, or the matching " +
+                "EATAPP_KEYSTORE_FILE, EATAPP_KEYSTORE_PASSWORD, EATAPP_KEY_ALIAS and " +
+                "EATAPP_KEY_PASSWORD environment variables. See the README section on signing releases."
+        )
     }
 }
 

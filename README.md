@@ -136,6 +136,53 @@ To check what the current build will resolve to without building an APK:
 ./gradlew :app:printVersionInfo
 ```
 
+## Signing releases
+
+Release builds are signed with your own keystore. Neither the keystore nor its
+passwords are ever committed — the build reads them from `local.properties`
+(which is gitignored) or, for CI, from environment variables. `*.jks` and
+`*.keystore` are gitignored too, so a keystore left in the project directory
+cannot be committed by accident.
+
+**Create a keystore once** (keep it somewhere safe and backed up — losing it
+means you can never update the app on the Play Store again):
+
+```
+keytool -genkeypair -v -keystore eatapp-release.jks -alias eatapp \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+
+**Point the build at it** by adding these to `local.properties`. A relative
+path resolves against the repository root; an absolute path is used as is:
+
+```
+eatapp.keystore.file=../eatapp-release.jks
+eatapp.keystore.password=<store password>
+eatapp.key.alias=eatapp
+eatapp.key.password=<key password>
+```
+
+The same four values can be supplied as environment variables instead, which
+is what CI should use:
+
+| `local.properties` | Environment variable |
+| --- | --- |
+| `eatapp.keystore.file` | `EATAPP_KEYSTORE_FILE` |
+| `eatapp.keystore.password` | `EATAPP_KEYSTORE_PASSWORD` |
+| `eatapp.key.alias` | `EATAPP_KEY_ALIAS` |
+| `eatapp.key.password` | `EATAPP_KEY_PASSWORD` |
+
+If none of this is configured, `assembleRelease` and `bundleRelease` still
+succeed but produce an **unsigned** artifact that cannot be installed or
+uploaded. The build prints a warning saying so, and the APK is named
+`app-release-unsigned.apk` rather than `app-release.apk`.
+
+To confirm a built APK really is signed:
+
+```
+apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
+```
+
 ## Releasing a new version
 
 1. Make sure all changes for the release are committed (an uncommitted
@@ -145,7 +192,9 @@ To check what the current build will resolve to without building an APK:
    git tag -a v1.1.0 -m "Describe what changed"
    git push origin v1.1.0
    ```
-3. Build the release APK/AAB:
+3. Make sure signing is configured (see **Signing releases** above) — without it
+   the build succeeds but the artifact is unusable. Then build the release
+   APK/AAB:
    ```
    ./gradlew assembleRelease
    ```
@@ -160,6 +209,10 @@ To check what the current build will resolve to without building an APK:
    or inspect the built artifact directly:
    ```
    aapt dump badging app/build/outputs/apk/release/app-release.apk
+   ```
+   Confirm it is signed too:
+   ```
+   apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
    ```
 5. Distribute the APK/AAB (sideload, internal testing track, etc.) and
    confirm the version shown in the app's **About** dialog matches the tag.

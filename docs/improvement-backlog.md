@@ -20,13 +20,13 @@ Large-screen and tablet support is deliberately not covered here; see
 
 If you only do a handful, these in this order:
 
-1. **F-48** — `assembleRelease` currently produces an *unsigned* APK, so there
-   is no way to install or publish a real build.
-2. **F-23** — still no tests; `readRestaurants` validation is the place to start.
-3. **F-54** — the last two features left English text hardcoded in Kotlin.
-4. **F-26, F-33, F-34** — the list screen's interaction rough edges.
-5. **F-03, F-04, F-11** — what is left of hardening the sync, minutes each.
-6. **F-37, F-45, F-46** — three XS presentation fixes lint already points at.
+1. **F-23** — still no tests; `readRestaurants` validation is the place to start.
+2. **F-54** — the last two features left English text hardcoded in Kotlin.
+3. **F-26, F-33, F-34** — the list screen's interaction rough edges.
+4. **F-03, F-04, F-11** — what is left of hardening the sync, minutes each.
+5. **F-37, F-45, F-46** — three XS presentation fixes lint already points at.
+6. **F-47** — the dependency set is over a year stale, and F-50 (CI) is
+   worth little until it builds something current.
 
 ---
 
@@ -296,16 +296,6 @@ navigation-compose `2.8.5` → `2.9.8`, coroutines `1.9.0` → `1.11.0`, core-kt
 **Fix:** upgrade in two steps — the Compose BOM on its own first, then Kotlin
 and KSP together, since those two must stay in lockstep.
 
-### F-48 · Release builds are unsigned — High / S
-
-There's no `signingConfigs` block, so `assembleRelease` and `bundleRelease`
-produce artifacts that can't be installed or uploaded. The README's release
-process doesn't mention signing at all.
-**Where:** [app/build.gradle.kts](../app/build.gradle.kts)
-**Fix:** a release signing config reading the keystore path and passwords from
-`local.properties` or environment variables — never committed — plus a README
-section covering it.
-
 ### F-49 · Minification is off, so the whole icon set ships — Medium / S
 
 `isMinifyEnabled = false` means `material-icons-extended` (1,932 icons) is
@@ -415,3 +405,18 @@ Recorded here rather than deleted, so the numbering stays stable.
 - **F-36 · The address was dead text — Done (partly).** The address row fires
   `ACTION_VIEW` on a `geo:0,0?q=<address>` URI. The share action from the same
   entry was not added and is still worth having.
+
+### Release signing pass
+
+- **F-48 · Release builds were unsigned — Done.** `app/build.gradle.kts` gained
+  a `release` signing config whose keystore path, store password, key alias and
+  key password come from `local.properties` or, for CI, from the matching
+  `EATAPP_*` environment variables — nothing secret is committed, and `*.jks` /
+  `*.keystore` were added to `.gitignore` so a stray keystore cannot be
+  committed by accident. When no keystore is configured the release build still
+  succeeds but stays unsigned and now says so with an explicit warning, and only
+  on release tasks so debug builds stay quiet. Verified end to end against a
+  throwaway keystore: `assembleRelease` produced `app-release.apk` instead of
+  `app-release-unsigned.apk` and `apksigner verify` confirmed the signature.
+  README gained a "Signing releases" section and the release checklist now
+  points at it.
