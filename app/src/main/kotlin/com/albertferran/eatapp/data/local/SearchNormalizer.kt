@@ -29,3 +29,11 @@ fun buildSearchText(
 ): String = normalizeForSearch(
     listOfNotNull(name, cuisineType, address).joinToString(" ")
 )
+
+/**
+ * Escapes `LIKE` metacharacters (`%`, `_`, and the escape character itself)
+ * so a typed query is matched literally rather than as a `LIKE` pattern.
+ * Pairs with the `ESCAPE '\'` clause in [RestaurantDao.observeFiltered].
+ */
+fun escapeLikeWildcards(text: String): String =
+    text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")

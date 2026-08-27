@@ -79,4 +79,22 @@ class SearchNormalizerTest {
         val text = buildSearchText("Café Niló", "cafe", "Rambla")
         assertEquals(text, normalizeForSearch(text))
     }
+
+    // --- escapeLikeWildcards, which is F-15 ---------------------------------
+
+    @Test
+    fun `escapes percent and underscore`() {
+        assertEquals("100\\%", escapeLikeWildcards("100%"))
+        assertEquals("cal\\_ferran", escapeLikeWildcards("cal_ferran"))
+    }
+
+    @Test
+    fun `escapes a literal backslash so it does not act as the escape character`() {
+        assertEquals("cal\\\\ferran", escapeLikeWildcards("cal\\ferran"))
+    }
+
+    @Test
+    fun `leaves ordinary text alone`() {
+        assertEquals("cal ferran", escapeLikeWildcards("cal ferran"))
+    }
 }

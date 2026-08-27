@@ -8,6 +8,8 @@ import com.albertferran.eatapp.data.sync.DatabaseSyncResult
 import com.albertferran.eatapp.data.sync.RestaurantDatabaseSyncManager
 import com.albertferran.eatapp.data.sync.SyncFailureReason
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -15,7 +17,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -43,7 +48,7 @@ private data class Filters(
     val cuisineType: String? = null
 )
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 class RestaurantListViewModel(
     private val repository: RestaurantRepository,
     private val syncManager: RestaurantDatabaseSyncManager
@@ -55,9 +60,20 @@ class RestaurantListViewModel(
     private val _syncEvents = MutableSharedFlow<SyncEvent>()
     val syncEvents: SharedFlow<SyncEvent> = _syncEvents.asSharedFlow()
 
+    // The search box updates the visible text on every keystroke (via
+    // `filters` below), but only debounces the query actually sent to the
+    // repository — an empty query (e.g. clearing the field) skips the
+    // debounce so results reappear immediately.
+    private val queryFilters: Flow<Filters> = combine(
+        filters.map { it.query }.debounce { query -> if (query.isBlank()) 0L else SEARCH_DEBOUNCE_MS },
+        filters.map { it.minRating }.distinctUntilChanged(),
+        filters.map { it.cuisineType }.distinctUntilChanged(),
+        ::Filters
+    )
+
     val uiState: StateFlow<RestaurantListUiState> = combine(
         filters,
-        filters.flatMapLatest { repository.observeFiltered(it.query, it.minRating, it.cuisineType) },
+        queryFilters.flatMapLatest { repository.observeFiltered(it.query, it.minRating, it.cuisineType) },
         repository.observeCuisineTypes(),
         isSyncing
     ) { activeFilters, restaurants, availableCuisines, syncing ->
@@ -102,5 +118,9 @@ class RestaurantListViewModel(
             isSyncing.value = false
             _syncEvents.emit(event)
         }
+    }
+
+    private companion object {
+        const val SEARCH_DEBOUNCE_MS = 250L
     }
 }

@@ -11,13 +11,16 @@ import kotlinx.coroutines.flow.Flow
 interface RestaurantDao {
 
     /**
-     * [query] must already be folded with `normalizeForSearch`, since it is
-     * matched against the equally folded `searchText` column.
+     * [query] must already be folded with `normalizeForSearch` and escaped
+     * with `escapeLikeWildcards`, since it is matched as a literal substring
+     * of the equally folded `searchText` column — the `ESCAPE '\'` clause is
+     * what makes `%` and `_` in the escaped query match themselves rather
+     * than act as `LIKE` wildcards.
      */
     @Query(
         """
         SELECT * FROM restaurants
-        WHERE (:query IS NULL OR searchText LIKE '%' || :query || '%')
+        WHERE (:query IS NULL OR searchText LIKE '%' || :query || '%' ESCAPE '\')
           AND (:minRating IS NULL OR rating >= :minRating)
           AND (:cuisineType IS NULL OR cuisineType = :cuisineType)
         ORDER BY name COLLATE NOCASE ASC

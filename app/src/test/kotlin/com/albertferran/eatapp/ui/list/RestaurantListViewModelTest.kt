@@ -61,6 +61,11 @@ class RestaurantListViewModelTest {
         backgroundScope.launch(dispatcher) { viewModel.uiState.collect {} }
     }
 
+    /** A non-blank search query is debounced by 250ms before reaching the repository, per F-16. */
+    private fun advanceSearchDebounce() {
+        dispatcher.scheduler.advanceUntilIdle()
+    }
+
     // --- initial state ------------------------------------------------------
 
     @Test
@@ -79,12 +84,16 @@ class RestaurantListViewModelTest {
     // --- filters reach the repository and the state -------------------------
 
     @Test
-    fun `a search query lands in the state and in the query`() = runTest {
+    fun `a search query lands in the state immediately, and in the query after the debounce`() = runTest {
         observeState()
 
         viewModel.onSearchQueryChange("ferran")
 
         assertEquals("ferran", viewModel.uiState.value.searchQuery)
+        assertEquals("", repository.lastQuery)
+
+        advanceSearchDebounce()
+
         assertEquals("ferran", repository.lastQuery)
     }
 
@@ -115,6 +124,7 @@ class RestaurantListViewModelTest {
         viewModel.onSearchQueryChange("sushi")
         viewModel.onMinRatingChange(4)
         viewModel.onCuisineChange("japanese")
+        advanceSearchDebounce()
 
         assertEquals("sushi", repository.lastQuery)
         assertEquals(4, repository.lastMinRating)

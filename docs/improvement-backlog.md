@@ -62,20 +62,6 @@ generic failure.
 
 ---
 
-## C. Query layer
-
-### F-15 · `%` and `_` in the search box act as wildcards — Low / XS
-
-They're passed into `LIKE` unescaped.
-**Fix:** escape them and add an `ESCAPE` clause.
-
-### F-16 · No search debounce — Low / XS
-
-Every keystroke re-runs the query through `flatMapLatest`. Harmless at this
-data size, worth a ~250 ms debounce if the list ever grows.
-
----
-
 ## D. State and architecture
 
 ### F-20 · Empty state flashes on cold start — Medium / XS
@@ -263,6 +249,23 @@ screen, each in light and dark.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### Query layer pass
+
+- **F-15 · `%` and `_` in the search box acted as wildcards — Done.** The
+  query is now escaped with `escapeLikeWildcards` (folded in the same step as
+  `normalizeForSearch`) and the DAO's `LIKE` clause gained an `ESCAPE '\'`
+  clause to match. A search for a literal `%` or `_` now matches that
+  character instead of the whole table.
+- **F-16 · No search debounce — Done.** The query half of the filter pipeline
+  now runs through `debounce`, 250 ms for a non-blank query and 0 ms
+  (immediate) for a blank one — so clearing the field or loading the screen
+  for the first time isn't held up waiting on a timer that exists for
+  keystrokes. `minRating` and `cuisineType` are unaffected: only the text
+  query is debounced, since those are discrete taps rather than a stream of
+  keystrokes. The search box itself still updates every keystroke instantly;
+  only the repository query is throttled, via a second `Filters` flow
+  (`queryFilters`) that the UI state's `filters` flow does not go through.
 
 ### Unused-column pass
 

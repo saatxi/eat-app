@@ -8,7 +8,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -247,14 +246,40 @@ class RestaurantDaoTest {
         assertEquals(emptyList<String>(), search(null))
     }
 
-    // --- known gap ----------------------------------------------------------
+    // --- LIKE metacharacters, which is F-15 ---------------------------------
 
     @Test
-    fun `a percent sign in the query still acts as a wildcard, which is F-15`() = runTest {
-        // Documents current behaviour: LIKE metacharacters reach SQLite
-        // unescaped. Change this test when F-15 is fixed.
+    fun `a percent sign in the query is matched literally, not as a wildcard`() = runTest {
         seed(restaurant(1, "Cal Ferran"), restaurant(2, "Bar Nil"))
 
-        assertTrue(search("%").size == 2)
+        assertEquals(emptyList<String>(), search("%"))
+    }
+
+    @Test
+    fun `an underscore in the query is matched literally, not as a wildcard`() = runTest {
+        seed(restaurant(1, "Cal Ferran"))
+
+        assertEquals(emptyList<String>(), search("_al"))
+    }
+
+    @Test
+    fun `a literal percent sign in the data still matches`() = runTest {
+        seed(restaurant(1, "100% Fresh"), restaurant(2, "Bar Nil"))
+
+        assertEquals(listOf("100% Fresh"), search("100%"))
+    }
+
+    @Test
+    fun `a literal underscore in the data still matches`() = runTest {
+        seed(restaurant(1, "Cal_Ferran"), restaurant(2, "Bar Nil"))
+
+        assertEquals(listOf("Cal_Ferran"), search("cal_ferran"))
+    }
+
+    @Test
+    fun `a backslash in the query is matched literally`() = runTest {
+        seed(restaurant(1, "Cal\\Ferran"), restaurant(2, "Bar Nil"))
+
+        assertEquals(listOf("Cal\\Ferran"), search("cal\\ferran"))
     }
 }
