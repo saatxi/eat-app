@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.albertferran.eatapp.EatApplication
 import com.albertferran.eatapp.ui.detail.RestaurantDetailViewModel
 import com.albertferran.eatapp.ui.list.RestaurantListViewModel
+import com.albertferran.eatapp.ui.settings.SettingsViewModel
 
 fun CreationExtras.eatApplication(): EatApplication =
     this[APPLICATION_KEY] as EatApplication
@@ -19,6 +20,9 @@ object AppViewModelProvider {
         }
         initializer {
             RestaurantDetailViewModel(eatApplication().repository, createSavedStateHandle())
+        }
+        initializer {
+            SettingsViewModel(eatApplication().userPreferences, eatApplication().syncManager)
         }
     }
 }

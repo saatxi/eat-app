@@ -41,17 +41,26 @@ enum class ThemeMode(@StringRes val labelRes: Int) {
     }
 }
 
+/**
+ * Resolves [mode] against the system setting. Shared rather than inlined into
+ * [EatAppTheme] so a screen that needs to preview a palette (the Settings
+ * picker) resolves "what will dark mode actually be" the same way the theme
+ * itself does, instead of re-deriving it and risking drift.
+ */
+@Composable
+fun isDarkTheme(mode: ThemeMode): Boolean = when (mode) {
+    ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
+}
+
 @Composable
 fun EatAppTheme(
     palette: AppPalette = AppPalette.Default,
     themeMode: ThemeMode = ThemeMode.Default,
     content: @Composable () -> Unit
 ) {
-    val darkTheme = when (themeMode) {
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
-    }
+    val darkTheme = isDarkTheme(themeMode)
 
     // Assembling a scheme allocates ~50 Colors, so it is worth not redoing on
     // every recomposition — but only the two inputs can change it.

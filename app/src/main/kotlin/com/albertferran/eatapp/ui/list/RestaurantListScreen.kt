@@ -22,14 +22,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.RestaurantMenu
 import androidx.compose.material.icons.outlined.SearchOff
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -49,7 +47,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -73,18 +70,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import android.content.Context
 import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalContext
-import com.albertferran.eatapp.BuildConfig
 import com.albertferran.eatapp.R
 import com.albertferran.eatapp.data.local.RestaurantSort
-import com.albertferran.eatapp.data.sync.RestaurantDatabaseSyncManager
 import com.albertferran.eatapp.data.sync.SyncFailureReason
 import com.albertferran.eatapp.ui.AppViewModelProvider
 import com.albertferran.eatapp.ui.common.cuisineBadgeTransition
 import com.albertferran.eatapp.ui.common.cuisineIcon
-import com.albertferran.eatapp.ui.common.formatRelativeTime
 import com.albertferran.eatapp.ui.common.cuisineLabel
 import com.albertferran.eatapp.ui.common.cuisineTint
 import com.albertferran.eatapp.ui.model.RestaurantUiModel
@@ -99,8 +92,6 @@ fun RestaurantListScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showSortMenu by remember { mutableStateOf(false) }
-    var showOverflowMenu by remember { mutableStateOf(false) }
-    var showAboutDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
@@ -172,21 +163,6 @@ fun RestaurantListScreen(
                                     }
                                 )
                             }
-                        }
-                        IconButton(onClick = { showOverflowMenu = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.list_action_more))
-                        }
-                        DropdownMenu(
-                            expanded = showOverflowMenu,
-                            onDismissRequest = { showOverflowMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.list_action_about)) },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    showAboutDialog = true
-                                }
-                            )
                         }
                     }
                 )
@@ -299,34 +275,6 @@ fun RestaurantListScreen(
                 }
             }
         }
-    }
-
-    if (showAboutDialog) {
-        val lastSyncTime = RestaurantDatabaseSyncManager.getLastSyncTime(context)
-        val lastSyncText = if (lastSyncTime > 0) {
-            stringResource(R.string.about_last_synced, formatRelativeTime(lastSyncTime))
-        } else {
-            stringResource(R.string.about_last_synced_never)
-        }
-
-        AlertDialog(
-            onDismissRequest = { showAboutDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showAboutDialog = false }) {
-                    Text(stringResource(R.string.action_ok))
-                }
-            },
-            title = { Text(stringResource(R.string.app_name)) },
-            text = {
-                Text(
-                    stringResource(
-                        R.string.about_version_template,
-                        BuildConfig.VERSION_NAME,
-                        BuildConfig.VERSION_CODE
-                    ) + "\n\n" + lastSyncText
-                )
-            }
-        )
     }
 }
 

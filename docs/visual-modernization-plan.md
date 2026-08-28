@@ -18,7 +18,7 @@ list/detail split.
 | Phase | | |
 |---|---|---|
 | 1 | Theme foundations — palettes, accents, typography | **Done** |
-| 2 | Preferences (DataStore) and Settings screen | Partly done |
+| 2 | Preferences (DataStore) and Settings screen | **Done** |
 | 3 | Favourites | Not started |
 | 4 | Website and Instagram links | **Done** |
 | 5 | Bottom navigation | Not started |
@@ -26,7 +26,7 @@ list/detail split.
 | 7 | Performance | Partly done |
 | 8 | Usability and M3 Expressive | Not started |
 
-At the last checkpoint: `test`, `assembleDebug` and `lint` all green, 122 unit
+At the last checkpoint: `test`, `assembleDebug` and `lint` all green, 128 unit
 tests passing (up from 101), still JVM-only with no emulator.
 
 ## Why
@@ -152,10 +152,10 @@ user's screen reads better. The full M3 scale is now spelled out in
 
 ---
 
-## Phase 2 — Preferences and Settings · Partly done
+## Phase 2 — Preferences and Settings · Done
 
-**Done**: `androidx.datastore:datastore-preferences` and
-`androidx.core:core-splashscreen` added to the version catalog;
+`androidx.datastore:datastore-preferences` and `androidx.core:core-splashscreen`
+added to the version catalog;
 [UserPreferencesRepository.kt](../app/src/main/kotlin/com/albertferran/eatapp/data/prefs/UserPreferencesRepository.kt)
 (interface + `UserPreferences`) and
 [DataStoreUserPreferencesRepository.kt](../app/src/main/kotlin/com/albertferran/eatapp/data/prefs/DataStoreUserPreferencesRepository.kt)
@@ -166,21 +166,45 @@ degrades to the default rather than throwing, because the file outlives any one
 version of the app. `formatRelativeTime` moved to
 [ui/common/RelativeTime.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/common/RelativeTime.kt).
 
-**Remaining**:
+### Wiring `MainActivity`
 
-- Wire the preferences into `MainActivity`, which still calls `EatAppTheme()`
-  with no arguments. Hold the splash with `setKeepOnScreenCondition` until the
-  first emission rather than blocking the main thread with `runBlocking` — that
-  would ruin the startup metric Phase 7 is trying to measure.
-- New `ui/settings/SettingsScreen.kt` + `SettingsViewModel`: palette picker
-  (three cards showing a real swatch of each), mode selector
-  (`SingleChoiceSegmentedButtonRow`), last-sync time and a sync button, version
-  and commit from `BuildConfig`.
-- Add the new ViewModels to
-  [AppViewModelProvider.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/AppViewModelProvider.kt).
-- **Delete** the overflow menu and the "About" `AlertDialog` from
-  `RestaurantListScreen.kt`, and the now-unused `list_action_more` /
-  `list_action_about` strings.
+[MainActivity.kt](../app/src/main/kotlin/com/albertferran/eatapp/MainActivity.kt)
+calls `installSplashScreen()` before `super.onCreate`, reads
+`UserPreferences?` into a `mutableStateOf` seeded `null`, and holds the splash
+with `setKeepOnScreenCondition { preferences == null }` until the DataStore
+flow's first emission — no `runBlocking`, so the startup metric Phase 7 will
+measure stays honest. `EatAppTheme` is now called with the stored
+palette/mode, falling back to `UserPreferences.Defaults` for the one frame
+before that first emission (which the splash is covering anyway).
+
+### `SettingsScreen` and `SettingsViewModel`
+
+New `ui/settings/SettingsScreen.kt` +
+[SettingsViewModel.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/settings/SettingsViewModel.kt).
+The palette picker is three `Card`s, each built from `palette.tones.lightScheme()`
+/ `darkScheme()` directly (not the currently-applied `MaterialTheme`, since two
+of the three cards are never the active scheme) and resolved against the mode
+actually in effect via the new `isDarkTheme(mode)` helper in
+[Theme.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/Theme.kt) —
+shared with `EatAppTheme` itself so the preview can't drift from what
+selecting a palette actually produces. Mode selection reuses
+`SingleChoiceSegmentedButtonRow`. Sync feedback (last-sync time, a sync
+button, and the same `SyncMessage`-driven snackbar the list screen uses,
+reusing that sealed interface) replaces what used to be the list screen's
+"About" dialog; `about_version_template` gained a third `%3$s` slot for
+`BuildConfig.GIT_COMMIT` alongside version name and code.
+
+Not yet wired into navigation — `EatAppNavHost` still only has `list` and
+`detail/{id}`. `SettingsScreen` becomes reachable once Phase 5 restructures
+the graph around `NavigationSuiteScaffold`; until then it's covered by its
+ViewModel test and a `@Preview`.
+
+`SettingsViewModel` added to
+[AppViewModelProvider.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/AppViewModelProvider.kt).
+
+The overflow menu and the "About" `AlertDialog` are gone from
+`RestaurantListScreen.kt`, along with the now-unused `list_action_more` /
+`list_action_about` strings.
 
 ---
 
@@ -427,6 +451,9 @@ mocking library.
   file.
 - **`RestaurantUiModelTest`** (updated) — `stars` out; links, `hasLinks` and
   `isFavorite` in.
+- **`SettingsViewModelTest`** — palette/mode changes write through to a fake
+  `UserPreferencesRepository` and land back in `uiState`; `syncNow` against a
+  fake `DatabaseSyncManager` for both the success and failure paths.
 
 **Still to write**:
 
