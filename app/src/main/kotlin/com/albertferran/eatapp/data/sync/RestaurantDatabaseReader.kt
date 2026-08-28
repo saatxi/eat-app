@@ -1,5 +1,6 @@
 package com.albertferran.eatapp.data.sync
 
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
 import android.util.Log
@@ -10,6 +11,20 @@ import java.io.IOException
 internal val REQUIRED_COLUMNS = setOf(
     "id", "name", "cuisineType", "address", "rating", "priceRange"
 )
+
+/**
+ * Columns a newer data file may carry. Deliberately not in [REQUIRED_COLUMNS]:
+ * a file written before these existed — including the one currently published —
+ * has to keep validating, or upgrading the app would empty it.
+ */
+internal val OPTIONAL_COLUMNS = listOf("website", "instagram")
+
+/**
+ * [REQUIRED_COLUMNS] in the order the row reader indexes them. A set has no
+ * order, and the cursor is read positionally, so the two can't be the same value.
+ */
+private val REQUIRED_COLUMN_ORDER =
+    listOf("id", "name", "cuisineType", "address", "rating", "priceRange")
 
 private const val TAG = "EatApp.Sync"
 
@@ -60,14 +75,19 @@ internal object RestaurantDatabaseReader {
                 return ReadOutcome.Error(DatabaseSyncResult.Failure(SyncFailureReason.INVALID_FILE, msg))
             }
 
+            // Every name in the projection is one of our own literals; only which
+            // of them to include depends on the file. No part of the SQL is built
+            // out of the file's own content.
+            val projection = REQUIRED_COLUMN_ORDER + OPTIONAL_COLUMNS.filter { it in columnNames }
+
             val restaurants = mutableListOf<Restaurant>()
             db.rawQuery(
-                """
-                SELECT id, name, cuisineType, address, rating, priceRange
-                FROM restaurants
-                """.trimIndent(),
+                "SELECT ${projection.joinToString()} FROM restaurants",
                 null
             ).use { cursor ->
+                // Resolved once rather than per row; -1 when the column is absent.
+                val websiteIndex = cursor.getColumnIndex("website")
+                val instagramIndex = cursor.getColumnIndex("instagram")
                 while (cursor.moveToNext()) {
                     // getString returns null for a NULL column, and these two feed
                     // non-null fields. Coalescing first means the blank check below
@@ -93,6 +113,20 @@ internal object RestaurantDatabaseReader {
                         )
                     }
 
+                    // An unusable link degrades to null rather than failing the
+                    // whole file, the same way an unrecognised cuisine key does:
+                    // one bad cell shouldn't cost the user every restaurant.
+                    val rawWebsite = cursor.stringAt(websiteIndex)
+                    val website = normalizeWebsite(rawWebsite)
+                    if (website == null && rawWebsite != null) {
+                        Log.w(TAG, "row ${cursor.getLong(0)}: ignoring unusable website")
+                    }
+                    val rawInstagram = cursor.stringAt(instagramIndex)
+                    val instagram = normalizeInstagramHandle(rawInstagram)
+                    if (instagram == null && rawInstagram != null) {
+                        Log.w(TAG, "row ${cursor.getLong(0)}: ignoring unusable instagram handle")
+                    }
+
                     restaurants.add(
                         Restaurant(
                             id = cursor.getLong(0),
@@ -100,7 +134,9 @@ internal object RestaurantDatabaseReader {
                             cuisineType = cuisineType,
                             address = if (cursor.isNull(3)) null else cursor.getString(3),
                             rating = rating,
-                            priceRange = priceRange
+                            priceRange = priceRange,
+                            website = website,
+                            instagram = instagram
                         )
                     )
                 }
@@ -121,6 +157,13 @@ internal object RestaurantDatabaseReader {
             db?.close()
         }
     }
+
+    /**
+     * Value of an optional column, or null when the file doesn't have it
+     * (`index == -1`) or the cell is NULL.
+     */
+    private fun Cursor.stringAt(index: Int): String? =
+        if (index < 0 || isNull(index)) null else getString(index)
 
     private fun hasSqliteHeader(file: File): Boolean {
         val header = ByteArray(SQLITE_HEADER.size)

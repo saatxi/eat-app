@@ -2,6 +2,8 @@ package com.albertferran.eatapp
 
 import android.app.Application
 import com.albertferran.eatapp.data.local.buildEatAppDatabase
+import com.albertferran.eatapp.data.prefs.DataStoreUserPreferencesRepository
+import com.albertferran.eatapp.data.prefs.UserPreferencesRepository
 import com.albertferran.eatapp.data.repository.RestaurantRepository
 import com.albertferran.eatapp.data.repository.RoomRestaurantRepository
 import com.albertferran.eatapp.data.sync.RestaurantDatabaseSyncManager
@@ -14,5 +16,9 @@ class EatApplication : Application() {
 
     val syncManager: RestaurantDatabaseSyncManager by lazy {
         RestaurantDatabaseSyncManager(applicationContext, repository)
+    }
+
+    val userPreferences: UserPreferencesRepository by lazy {
+        DataStoreUserPreferencesRepository(applicationContext)
     }
 }

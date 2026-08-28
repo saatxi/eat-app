@@ -84,30 +84,11 @@ import com.albertferran.eatapp.data.sync.SyncFailureReason
 import com.albertferran.eatapp.ui.AppViewModelProvider
 import com.albertferran.eatapp.ui.common.cuisineBadgeTransition
 import com.albertferran.eatapp.ui.common.cuisineIcon
+import com.albertferran.eatapp.ui.common.formatRelativeTime
 import com.albertferran.eatapp.ui.common.cuisineLabel
 import com.albertferran.eatapp.ui.common.cuisineTint
 import com.albertferran.eatapp.ui.model.RestaurantUiModel
 import com.albertferran.eatapp.ui.theme.EatAppTheme
-
-@Composable
-private fun formatRelativeTime(timestampMs: Long): String {
-    val diff = System.currentTimeMillis() - timestampMs
-    return when {
-        diff < 60_000 -> stringResource(R.string.relative_time_just_now)
-        diff < 3_600_000 -> {
-            val minutes = (diff / 60_000).toInt()
-            pluralStringResource(R.plurals.relative_time_minutes_ago, minutes, minutes)
-        }
-        diff < 86_400_000 -> {
-            val hours = (diff / 3_600_000).toInt()
-            pluralStringResource(R.plurals.relative_time_hours_ago, hours, hours)
-        }
-        else -> {
-            val days = (diff / 86_400_000).toInt()
-            pluralStringResource(R.plurals.relative_time_days_ago, days, days)
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -583,7 +564,9 @@ private val previewRestaurant = RestaurantUiModel(
     address = "Plaça Santa Anna, Mataró",
     rating = 4,
     priceLabel = "$$",
-    stars = listOf(true, true, true, true, false)
+    website = "https://calferran.example",
+    instagram = "calferran",
+    isFavorite = true
 )
 
 @Preview(name = "Light")

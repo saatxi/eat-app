@@ -9,7 +9,8 @@ address, rating and price range.
   (accent- and case-insensitive), and filterable by minimum rating and
   cuisine type
 - Sort the list by name or by rating (highest first), from the app bar
-- View restaurant details (read-only)
+- View restaurant details (read-only), including links to the restaurant's
+  website and Instagram when the data provides them
 - Refresh restaurant data on demand from a prebuilt SQLite file hosted on
   GitHub ("Refresh Data")
 - View the current app version from the overflow menu ("About")
@@ -22,18 +23,45 @@ you maintain on a PC and publish to a public GitHub repository.
 
 - Edit the data with any SQLite client (e.g. [DB Browser for
   SQLite](https://sqlitebrowser.org/) or the `sqlite3` CLI) against a single
-  table named `restaurants` with columns: `id`, `name`, `cuisineType`,
-  `address`, `rating`, `priceRange`.
+  table named `restaurants`. Six columns are **required** — `id`, `name`,
+  `cuisineType`, `address`, `rating`, `priceRange` — and two are **optional**:
+  `website` and `instagram`.
 - `cuisineType` must be one of the **cuisine keys** listed below — a stable,
   language-independent identifier such as `fast_food`, never a display label
   such as `Fast food`. The app maps the key to both an icon and a translated
   label, which is what makes adding a second language later a matter of adding
   `values-es/strings.xml` and nothing else: the data file never has to change.
-- `address` is the only nullable column; every other one is `NOT NULL`. A row
-  needs six values and nothing else.
+- `address` is the only nullable *required* column; the other five are
+  `NOT NULL`.
 - Extra columns are ignored rather than rejected, so a file that still carries
   the dropped `notes`, `createdAt`, `visitDate` or `photoUri` columns keeps
   importing unchanged.
+
+#### The optional link columns
+
+`website` and `instagram` add a "Links" section to the restaurant detail
+screen. Both are nullable, and a file that omits the columns entirely imports
+exactly as before — so adding them is opt-in, and an older data file never
+stops working. To add them to a file you already have:
+
+```sql
+ALTER TABLE restaurants ADD COLUMN website TEXT;
+ALTER TABLE restaurants ADD COLUMN instagram TEXT;
+```
+
+- `website` is a normal web address. A bare host (`calferran.example`) is
+  accepted and read as `https://`. **Only `http` and `https` are allowed** —
+  the app opens this value with an `ACTION_VIEW` intent, so anything else
+  (`javascript:`, `intent:`, `file:`, a custom scheme) is a way of choosing
+  what the app launches and is discarded.
+- `instagram` is the **handle**, not a URL: `cal_ferran` or `@cal_ferran`, up
+  to 30 letters, digits, periods and underscores. The app builds
+  `https://instagram.com/<handle>` itself, which is what makes the scheme
+  impossible to influence from the data file. Android deep-links that URL into
+  the Instagram app when it's installed.
+- A value that fails either rule is dropped — that one link isn't drawn — and
+  the rest of the file still imports. One bad cell never costs you the whole
+  dataset.
 - No Room-specific bookkeeping (e.g. `room_master_table`) is required in the
   file; the app reads it with plain SQLite and imports the rows into its own
   local database.
@@ -115,12 +143,12 @@ keep this table in sync with it when adding a key.
 ```
 app/src/main/kotlin/com/albertferran/eatapp/
 ├── data/
-│   ├── local/        # Room entity, DAO, database, type converters
-│   ├── repository/   # Repository abstraction over the data source
-│   └── sync/          # Remote .db download, validation, and import
-├── navigation/        # NavHost and route definitions
+│   ├── local/          # Room entity, DAO, database, type converters
+│   ├── repository/     # Repository abstraction over the data source
+│   └── sync/           # Remote .db download, validation, and import
+├── navigation/         # NavHost and route definitions
 └── ui/
-    ├── list/          # Restaurant list screen + ViewModel
+    ├── list/           # Restaurant list screen + ViewModel
     ├── detail/         # Restaurant detail screen + ViewModel
     └── theme/          # Compose theming (color, type, shape)
 ```
@@ -209,14 +237,19 @@ What is covered:
 - `SearchNormalizerTest` — the accent and case folding behind the search.
 - `CuisineTest` — resolving `cuisineType` keys, including unknown ones.
 - `RestaurantDatabaseReaderTest` — validation of the downloaded `.db`: missing
-  columns, NULL and blank fields, out-of-range ratings and price ranges, and
-  files that are not SQLite at all.
+  columns, NULL and blank fields, out-of-range ratings and price ranges, files
+  that are not SQLite at all, and the optional link columns (present, absent
+  and unsafe).
+- `LinkValidationTest` — the whitelist behind `website` and `instagram`,
+  including every scheme the app refuses to open.
+- `ColorSchemeContrastTest` — WCAG AA contrast for every on-colour of every
+  palette, in both light and dark, plus all eight cuisine accents.
 - `RestaurantDaoTest` — the filter query and both sort orders against an
   in-memory Room database.
 - `RestaurantListViewModelTest` — how the filter and sort inputs combine into
   one query and one UI state.
-- `RestaurantUiModelTest` — the entity-to-UI-model mapping behind the price,
-  star and address formatting.
+- `RestaurantUiModelTest` — the entity-to-UI-model mapping behind the price
+  and address formatting, the link fields and the favourite flag.
 
 ## Versioning
 

@@ -47,6 +47,21 @@ class RestaurantDatabaseReaderTest {
         )
     }
 
+    /** Companion of [insertRow] for [SCHEMA_WITH_LINKS], which has two more columns. */
+    private fun SQLiteDatabase.insertRowWithLinks(
+        id: Long = 1,
+        website: String? = null,
+        instagram: String? = null
+    ) {
+        execSQL(
+            "INSERT INTO restaurants VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            arrayOf<Any?>(
+                id, "Cal Ferran", "mediterranean", "Placa Santa Anna, Mataro", 4, 2,
+                website, instagram
+            )
+        )
+    }
+
     private fun readErrorOf(file: File): DatabaseSyncResult.Failure {
         val outcome = RestaurantDatabaseReader.read(file)
         assertTrue("expected an error, got $outcome", outcome is ReadOutcome.Error)
@@ -101,6 +116,79 @@ class RestaurantDatabaseReaderTest {
             }
         )
         assertEquals(listOf("One", "Two", "Three"), rows.map { it.name })
+    }
+
+    // --- optional link columns ----------------------------------------------
+
+    /**
+     * The regression that matters most here: every other test in this class uses
+     * FULL_SCHEMA, which has neither column. If the reader ever started requiring
+     * them, the `.db` already published would stop importing and users would open
+     * the app to an empty list.
+     */
+    @Test
+    fun `a file without the link columns still imports, with both links null`() {
+        val restaurant = readRowsOf(databaseWith { insertRow() }).single()
+
+        assertNull(restaurant.website)
+        assertNull(restaurant.instagram)
+    }
+
+    @Test
+    fun `reads the link columns when the file carries them`() {
+        val restaurant = readRowsOf(
+            databaseWith(schema = SCHEMA_WITH_LINKS) {
+                insertRowWithLinks(website = "https://calferran.example", instagram = "@cal_ferran")
+            }
+        ).single()
+
+        assertEquals("https://calferran.example", restaurant.website)
+        // Stored as a bare handle: the app builds the URL, the file never does.
+        assertEquals("cal_ferran", restaurant.instagram)
+    }
+
+    @Test
+    fun `assumes https for a website written without a scheme`() {
+        val restaurant = readRowsOf(
+            databaseWith(schema = SCHEMA_WITH_LINKS) {
+                insertRowWithLinks(website = "calferran.example")
+            }
+        ).single()
+
+        assertEquals("https://calferran.example", restaurant.website)
+    }
+
+    /**
+     * A link the app refuses to open must not cost the user the whole file — the
+     * same graceful degradation an unrecognised cuisine key gets.
+     */
+    @Test
+    fun `drops an unsafe link instead of rejecting the file`() {
+        val rows = readRowsOf(
+            databaseWith(schema = SCHEMA_WITH_LINKS) {
+                insertRowWithLinks(
+                    website = "javascript:alert(1)",
+                    instagram = "https://instagram.com/cal_ferran"
+                )
+            }
+        )
+
+        assertEquals(1, rows.size)
+        assertEquals("Cal Ferran", rows.single().name)
+        assertNull(rows.single().website)
+        assertNull(rows.single().instagram)
+    }
+
+    @Test
+    fun `treats NULL and blank link cells as absent`() {
+        val rows = readRowsOf(
+            databaseWith(schema = SCHEMA_WITH_LINKS) {
+                insertRowWithLinks(id = 1, website = null, instagram = null)
+                insertRowWithLinks(id = 2, website = "  ", instagram = "  ")
+            }
+        )
+
+        assertTrue(rows.all { it.website == null && it.instagram == null })
     }
 
     // --- schema validation --------------------------------------------------
@@ -270,6 +358,20 @@ class RestaurantDatabaseReaderTest {
                 address TEXT,
                 rating INTEGER,
                 priceRange INTEGER
+            )
+        """
+
+        /** A newer file, carrying the two optional link columns. */
+        const val SCHEMA_WITH_LINKS = """
+            CREATE TABLE restaurants (
+                id INTEGER PRIMARY KEY,
+                name TEXT,
+                cuisineType TEXT,
+                address TEXT,
+                rating INTEGER,
+                priceRange INTEGER,
+                website TEXT,
+                instagram TEXT
             )
         """
 

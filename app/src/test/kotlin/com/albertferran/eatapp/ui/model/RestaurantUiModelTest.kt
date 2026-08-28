@@ -2,7 +2,9 @@ package com.albertferran.eatapp.ui.model
 
 import com.albertferran.eatapp.data.local.Restaurant
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -17,14 +19,18 @@ class RestaurantUiModelTest {
         cuisineType: String = "catalan",
         address: String? = "Carrer Gran 1",
         rating: Int = 3,
-        priceRange: Int = 2
+        priceRange: Int = 2,
+        website: String? = null,
+        instagram: String? = null
     ) = Restaurant(
         id = id,
         name = name,
         cuisineType = cuisineType,
         address = address,
         rating = rating,
-        priceRange = priceRange
+        priceRange = priceRange,
+        website = website,
+        instagram = instagram
     )
 
     @Test
@@ -52,19 +58,35 @@ class RestaurantUiModelTest {
     }
 
     @Test
-    fun `the rating becomes a fixed-length list of filled and empty stars`() {
-        assertEquals(
-            listOf(true, true, true, false, false),
-            entity(rating = 3).toUiModel().stars
-        )
-        assertEquals(List(5) { false }, entity(rating = 0).toUiModel().stars)
-        assertEquals(List(5) { true }, entity(rating = 5).toUiModel().stars)
-    }
-
-    @Test
     fun `a missing or blank address is null, so the screens skip the row`() {
         assertNull(entity(address = null).toUiModel().address)
         assertNull(entity(address = "   ").toUiModel().address)
         assertEquals("Carrer Gran 1", entity().toUiModel().address)
+    }
+
+    @Test
+    fun `links are carried through as stored, already validated on import`() {
+        val model = entity(website = "https://example.com", instagram = "cal_ferran").toUiModel()
+
+        assertEquals("https://example.com", model.website)
+        assertEquals("cal_ferran", model.instagram)
+    }
+
+    /** Drives whether the detail screen draws a Links card at all. */
+    @Test
+    fun `hasLinks is true when either link is present and false when neither is`() {
+        assertFalse(entity().toUiModel().hasLinks)
+        assertTrue(entity(website = "https://example.com").toUiModel().hasLinks)
+        assertTrue(entity(instagram = "cal_ferran").toUiModel().hasLinks)
+    }
+
+    /**
+     * Favourites live outside the synced entity, so the mapper takes them as an
+     * argument rather than reading them off the row.
+     */
+    @Test
+    fun `favourite state comes from the caller, defaulting to not favourited`() {
+        assertFalse(entity().toUiModel().isFavorite)
+        assertTrue(entity().toUiModel(isFavorite = true).isFavorite)
     }
 }

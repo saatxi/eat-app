@@ -70,6 +70,46 @@
     <string name="restaurant_rating_description">Rated %1$d of 5</string>
     <string name="restaurant_price_description">Price range %1$d of 4</string>
 
+    <!-- Bottom navigation / navigation rail. -->
+    <string name="nav_restaurants">Restaurants</string>
+    <string name="nav_favorites">Favorites</string>
+    <string name="nav_roulette">What to eat</string>
+    <string name="nav_settings">Settings</string>
+
+    <string name="favorites_title">Favorites</string>
+    <string name="favorites_empty_title">No favorites yet</string>
+    <string name="favorites_empty_body">Tap the heart on a restaurant to keep it here.</string>
+    <string name="action_add_favorite">Add to favorites</string>
+    <string name="action_remove_favorite">Remove from favorites</string>
+
+    <string name="roulette_title">What to eat</string>
+    <string name="roulette_prompt">Can\'t decide? Let the app pick.</string>
+    <string name="roulette_action_pick">Pick one</string>
+    <string name="roulette_action_again">Try again</string>
+    <string name="roulette_only_favorites">Favorites only</string>
+    <string name="roulette_empty_title">Nothing to pick from</string>
+    <string name="roulette_empty_body">No restaurant matches these filters.</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_palette">Color scheme</string>
+    <string name="settings_theme_mode">Theme</string>
+    <string name="theme_mode_system">System</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
+    <string name="palette_saffron">Saffron</string>
+    <string name="palette_garden">Garden</string>
+    <string name="palette_indigo">Indigo</string>
+    <string name="settings_section_data">Data</string>
+    <string name="settings_section_about">About</string>
+
+    <!-- Optional links, shown only when the synced data provides them. -->
+    <string name="detail_section_links">Links</string>
+    <string name="detail_link_website">Website</string>
+    <string name="detail_link_instagram">Instagram</string>
+    <string name="detail_link_handle_format">\@%1$s</string>
+    <string name="detail_link_failed">No app can open this link.</string>
+
     <!--
         Display labels for the closed cuisine vocabulary. The `.db` stores the
         stable key (see Cuisine.kt); only these labels are ever translated, so

@@ -1,8 +1,12 @@
 package com.albertferran.eatapp.ui.detail
 
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +22,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.AlternateEmail
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.RestaurantMenu
 import androidx.compose.material3.Button
@@ -49,13 +55,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.albertferran.eatapp.R
+import com.albertferran.eatapp.data.sync.instagramUrl
 import com.albertferran.eatapp.ui.AppViewModelProvider
 import com.albertferran.eatapp.ui.common.cuisineBadgeTransition
 import com.albertferran.eatapp.ui.common.cuisineIcon
 import com.albertferran.eatapp.ui.common.cuisineLabel
 import com.albertferran.eatapp.ui.common.cuisineTint
+import com.albertferran.eatapp.ui.model.MAX_RATING
 import com.albertferran.eatapp.ui.model.RestaurantUiModel
 import com.albertferran.eatapp.ui.theme.EatAppTheme
 
@@ -173,10 +182,7 @@ private fun RestaurantDetailContent(uiState: DetailUiState, onBack: () -> Unit) 
                                     text = address,
                                     topPadding = 10.dp,
                                     onClick = {
-                                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                                            data = Uri.parse("geo:0,0?q=${Uri.encode(address)}")
-                                        }
-                                        context.startActivity(intent)
+                                        context.openUri("geo:0,0?q=${Uri.encode(address)}")
                                     }
                                 )
                             }
@@ -208,11 +214,11 @@ private fun RestaurantDetailContent(uiState: DetailUiState, onBack: () -> Unit) 
                                         contentDescription = ratingDescription
                                     }
                                 ) {
-                                    current.stars.forEach { filled ->
+                                    repeat(MAX_RATING) { index ->
                                         Icon(
                                             Icons.Default.Star,
                                             contentDescription = null,
-                                            tint = if (filled) {
+                                            tint = if (index < current.rating) {
                                                 MaterialTheme.colorScheme.primary
                                             } else {
                                                 MaterialTheme.colorScheme.outlineVariant
@@ -248,9 +254,78 @@ private fun RestaurantDetailContent(uiState: DetailUiState, onBack: () -> Unit) 
                             }
                         }
                     }
+
+                    if (current.hasLinks) {
+                        LinksCard(
+                            website = current.website,
+                            instagram = current.instagram,
+                            onOpen = { url -> context.openUri(url) }
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+/**
+ * Website and Instagram, drawn only when the synced data actually carries them
+ * — the card is absent rather than empty for the rows that have neither.
+ *
+ * Both values were validated on import (`LinkValidation.kt`); the Instagram URL
+ * is built here from a bare handle rather than stored, so there is no way for
+ * the data file to choose the scheme.
+ */
+@Composable
+private fun LinksCard(
+    website: String?,
+    instagram: String?,
+    onOpen: (String) -> Unit
+) {
+    Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.detail_section_links),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            website?.let { url ->
+                InfoRow(
+                    icon = Icons.Outlined.Language,
+                    // The scheme carries no meaning for the reader, and a long
+                    // URL would wrap the row; the host is what identifies the site.
+                    text = url.toUri().host ?: url,
+                    onClick = { onOpen(url) }
+                )
+            }
+            instagram?.let { handle ->
+                InfoRow(
+                    icon = Icons.Outlined.AlternateEmail,
+                    text = stringResource(R.string.detail_link_handle_format, handle),
+                    topPadding = if (website != null) 10.dp else 0.dp,
+                    onClick = { onOpen(instagramUrl(handle)) }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Hands a URI to whichever app claims it, and says so politely when none does.
+ *
+ * A device with no browser — or, for the address row, no maps app — must not
+ * crash the detail screen, which is what an unguarded `startActivity` would do.
+ *
+ * The https Instagram URL deep-links into the Instagram app on its own when
+ * that app is installed, which is why no `instagram://` scheme is needed here
+ * and no `<queries>` entry in the manifest.
+ */
+private fun Context.openUri(uri: String) {
+    try {
+        startActivity(Intent(Intent.ACTION_VIEW, uri.toUri()))
+    } catch (e: ActivityNotFoundException) {
+        Log.w("EatApp.Detail", "No activity can open $uri", e)
+        Toast.makeText(this, R.string.detail_link_failed, Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -347,7 +422,9 @@ private val previewRestaurant = RestaurantUiModel(
     address = "Plaça Santa Anna, Mataró",
     rating = 4,
     priceLabel = "$$",
-    stars = listOf(true, true, true, true, false)
+    website = "https://calferran.example",
+    instagram = "calferran",
+    isFavorite = true
 )
 
 @Preview(name = "Light")

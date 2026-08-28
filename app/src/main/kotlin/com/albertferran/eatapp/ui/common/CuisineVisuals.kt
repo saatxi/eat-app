@@ -28,10 +28,11 @@ import androidx.compose.material.icons.filled.Tapas
 import androidx.compose.material.icons.filled.WineBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.albertferran.eatapp.data.local.Cuisine
+import com.albertferran.eatapp.ui.theme.CuisineTint
+import com.albertferran.eatapp.ui.theme.LocalCuisineAccents
 
 /**
  * Since restaurants have no real photo data, list/detail screens use a cuisine-derived
@@ -74,18 +75,16 @@ fun cuisineIcon(cuisineType: String): ImageVector = when (Cuisine.fromKey(cuisin
 fun cuisineLabel(cuisineType: String): String =
     Cuisine.fromKey(cuisineType)?.let { stringResource(it.labelRes) } ?: cuisineType
 
-data class CuisineTint(val container: Color, val onContainer: Color)
-
 @Composable
 fun cuisineTint(cuisineType: String): CuisineTint {
-    val colorScheme = MaterialTheme.colorScheme
     // Keyed off the enum ordinal rather than the string's hash: stable across
-    // releases, and spread evenly over the three container roles instead of
-    // landing arbitrarily.
-    return when (Cuisine.fromKey(cuisineType)?.ordinal?.mod(3)) {
-        0 -> CuisineTint(colorScheme.primaryContainer, colorScheme.onPrimaryContainer)
-        1 -> CuisineTint(colorScheme.secondaryContainer, colorScheme.onSecondaryContainer)
-        2 -> CuisineTint(colorScheme.tertiaryContainer, colorScheme.onTertiaryContainer)
-        else -> CuisineTint(colorScheme.surfaceVariant, colorScheme.onSurfaceVariant)
-    }
+    // releases, and spread evenly over the palette's accents instead of landing
+    // arbitrarily. An unknown key stays neutral so it reads as "no category"
+    // rather than borrowing a colour that means something else.
+    val ordinal = Cuisine.fromKey(cuisineType)?.ordinal
+        ?: return CuisineTint(
+            container = MaterialTheme.colorScheme.surfaceVariant,
+            onContainer = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    return LocalCuisineAccents.current[ordinal]
 }

@@ -18,10 +18,16 @@ Large-screen and tablet support is deliberately not covered here; see
 
 ## Where to start
 
-Nothing is currently open — every entry below is marked **Done**. Pick
-whatever seems most useful to revisit, or see
-[tablet-adaptive-layout-idea.md](tablet-adaptive-layout-idea.md) for what's
-deliberately out of scope here.
+Nothing in *this* file is open — every entry below is marked **Done**.
+
+Active work lives in
+[visual-modernization-plan.md](visual-modernization-plan.md): the redesign pass
+started 2026-08-28 (three selectable colour schemes, bottom navigation,
+favourites, a "what to eat" picker, optional link columns, and a performance
+pass). Phases 1 and 4 are done; that file tracks the rest.
+
+For what's deliberately out of scope in both, see
+[tablet-adaptive-layout-idea.md](tablet-adaptive-layout-idea.md).
 
 ---
 
