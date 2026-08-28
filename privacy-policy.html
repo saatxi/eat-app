@@ -1,0 +1,245 @@
+<title>EatApp Privacy Policy</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#FFFBF3;
+    --surface:#FFFFFF;
+    --ink:#2B1B10;
+    --ink-soft:#6B5A47;
+    --accent:#6B4226;
+    --accent-soft:#A9744C;
+    --line:#E8DCC8;
+    --chip-bg:#F3E7D4;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#1B140D;
+      --surface:#241A10;
+      --ink:#F3E9D8;
+      --ink-soft:#C4B29A;
+      --accent:#E3B98A;
+      --accent-soft:#C99A6C;
+      --line:#3A2C1C;
+      --chip-bg:#2F2415;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1B140D;
+    --surface:#241A10;
+    --ink:#F3E9D8;
+    --ink-soft:#C4B29A;
+    --accent:#E3B98A;
+    --accent-soft:#C99A6C;
+    --line:#3A2C1C;
+    --chip-bg:#2F2415;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Work Sans", ui-sans-serif, system-ui, sans-serif;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent-soft);}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--accent-soft); outline-offset:2px;}
+
+  .page{
+    max-width:700px;
+    margin:0 auto;
+    padding:4rem 1.5rem 6rem;
+  }
+
+  header.masthead{
+    display:flex;
+    align-items:center;
+    gap:0.9rem;
+    margin-bottom:2.5rem;
+  }
+  .mark{
+    width:44px;
+    height:44px;
+    flex:none;
+    border-radius:12px;
+    background:var(--accent);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .mark svg{width:26px;height:26px;}
+  .brand-line{display:flex; flex-direction:column; gap:0.1rem;}
+  .brand-name{
+    font-family:"Fraunces", Georgia, serif;
+    font-weight:600;
+    font-size:1.15rem;
+    letter-spacing:0.01em;
+  }
+  .brand-sub{
+    font-size:0.82rem;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+  }
+
+  h1{
+    font-family:"Fraunces", Georgia, serif;
+    font-weight:600;
+    font-size:clamp(2rem, 5vw, 2.6rem);
+    line-height:1.1;
+    text-wrap:balance;
+    margin:0 0 0.5rem;
+  }
+  .updated{
+    color:var(--ink-soft);
+    font-size:0.92rem;
+    margin:0 0 3rem;
+  }
+
+  h2{
+    font-family:"Fraunces", Georgia, serif;
+    font-weight:600;
+    font-size:1.3rem;
+    margin:2.6rem 0 0.9rem;
+    padding-top:1.6rem;
+    border-top:1px solid var(--line);
+  }
+  section:first-of-type h2{border-top:none; padding-top:0;}
+
+  p{margin:0 0 1rem; max-width:62ch;}
+  ul{margin:0 0 1rem; padding-left:1.3rem;}
+  li{margin-bottom:0.5rem; max-width:60ch;}
+
+  .callout{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:1.1rem 1.3rem;
+    margin:0 0 1.4rem;
+    font-size:0.95rem;
+  }
+  .callout strong{color:var(--accent-soft);}
+
+  .chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:0.5rem;
+    margin:0.4rem 0 1.4rem;
+  }
+  .chip{
+    background:var(--chip-bg);
+    border-radius:999px;
+    padding:0.35rem 0.9rem;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    white-space:nowrap;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:0 0 1.4rem;
+    font-size:0.92rem;
+  }
+  th, td{
+    text-align:left;
+    padding:0.55rem 0.7rem;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  th{color:var(--ink-soft); font-weight:500; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.04em;}
+  .table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+
+  footer{
+    margin-top:3.5rem;
+    padding-top:1.6rem;
+    border-top:1px solid var(--line);
+    color:var(--ink-soft);
+    font-size:0.88rem;
+  }
+  footer a{color:var(--accent-soft);}
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(54 54) scale(1.15) translate(-54 -54)">
+          <path fill="#FFF8E7" d="M39,31 L42,31 L42,43 L43.5,43 L43.5,31 L46.5,31 L46.5,43 L48,43 L48,31 L51,31 L51,51 L47.5,54 L47.5,75 A2.5,2.5 0 0,1 42.5,75 L42.5,54 L39,51 Z" />
+          <path fill="#FFF8E7" d="M64.5,30 C67.5,35 69,41.5 69,48 C69,52 67.5,54.5 65.5,55.5 L65.5,75 A2.5,2.5 0 0,1 60.5,75 L60.5,35.5 C60.5,33 62.5,30.5 64.5,30 Z" />
+        </g>
+      </svg>
+    </div>
+    <div class="brand-line">
+      <span class="brand-name">EatApp</span>
+      <span class="brand-sub">Privacy Policy</span>
+    </div>
+  </header>
+
+  <h1>Your data never leaves your phone</h1>
+  <p class="updated">Effective and last updated: August 28, 2026</p>
+
+  <div class="callout">
+    <strong>In short:</strong> EatApp collects nothing. There are no accounts, no analytics, no ads, and no tracking of any kind. The only network request the app makes is a plain download of a public, static restaurant list — nothing about you or your device is sent anywhere.
+  </div>
+
+  <section>
+    <h2>What EatApp is</h2>
+    <p>EatApp is a personal project by Albert Ferran: a read‑only browser for a curated list of restaurants he has actually visited — name, cuisine, address, rating, and price range. There is no way to add, edit, or delete restaurants from the app itself; the list is maintained separately and published as a single data file.</p>
+  </section>
+
+  <section>
+    <h2>Data we collect</h2>
+    <p>None. EatApp has no sign‑up, no login, no user profile, and no analytics or crash‑reporting SDK embedded in it. Nothing you do inside the app — searching, filtering, sorting, opening a restaurant, tapping refresh — is recorded, transmitted, or shared with anyone, including the developer.</p>
+    <div class="chips">
+      <span class="chip">No accounts</span>
+      <span class="chip">No analytics</span>
+      <span class="chip">No ads</span>
+      <span class="chip">No tracking SDKs</span>
+      <span class="chip">No location access</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>The one network request</h2>
+    <p>Tapping “Refresh Data” downloads a single static file (a small SQLite database of restaurants) over HTTPS from a public GitHub address. It is the same file for every install of the app — it is not personalized, and the request carries no identifying information beyond what any standard HTTPS request includes at the network level (such as your IP address, visible to GitHub's servers as with any web request). The app itself reads nothing from that response except restaurant rows, and writes nothing back.</p>
+    <p>That downloaded data is stored only in the app's local database, on your device. It is never uploaded, synced to a server, or shared with any third party.</p>
+  </section>
+
+  <section>
+    <h2>Permissions</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Permission</th><th>Why it's needed</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Internet</td>
+            <td>Required to download the restaurant list file described above. Not used for anything else.</td>
+          </tr>
+          <tr>
+            <td>Network state</td>
+            <td>Lets the app check whether a connection is available so it can skip a doomed download attempt and show a clear message instead. It does not reveal what network you're on to anyone.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>EatApp requests no other permissions — no location, no contacts, no storage, no camera, no microphone.</p>
+  </section>
+
+  <section>
+    <h2>Children's privacy</h2>
+    <p>EatApp is not directed at children and collects no personal information from anyone, regardless of age.</p>
+  </section>
+
+  <section>
+    <h2>Changes to this policy</h2>
+    <p>If this policy ever changes — for example, if a future version of the app adds a feature that involves data collection — this page will be updated and the “last updated” date above will change accordingly.</p>
+  </section>
+
+  <footer>
+    Questions about this policy? Contact <a href="mailto:albert.ferran@gmail.com">albert.ferran@gmail.com</a>.
+  </footer>
+</div>
