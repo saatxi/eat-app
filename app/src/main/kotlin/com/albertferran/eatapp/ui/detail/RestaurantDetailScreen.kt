@@ -1,6 +1,7 @@
 package com.albertferran.eatapp.ui.detail
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -55,17 +57,28 @@ import com.albertferran.eatapp.ui.common.cuisineIcon
 import com.albertferran.eatapp.ui.common.cuisineLabel
 import com.albertferran.eatapp.ui.common.cuisineTint
 import com.albertferran.eatapp.ui.model.RestaurantUiModel
+import com.albertferran.eatapp.ui.theme.EatAppTheme
 
 /** Size of the cuisine icon in the app bar, where the shared transition lands. */
 private val CUISINE_BADGE_SIZE = 32.dp
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RestaurantDetailScreen(
     onBack: () -> Unit,
     viewModel: RestaurantDetailViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    RestaurantDetailContent(uiState = uiState, onBack = onBack)
+}
+
+/**
+ * The screen's actual content, taking [uiState] directly rather than collecting it
+ * from a [RestaurantDetailViewModel] — that split is what lets this be previewed
+ * with a hand-built state instead of a real ViewModel and its factory.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RestaurantDetailContent(uiState: DetailUiState, onBack: () -> Unit) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     // Guarded rather than the default `{ true }`: on a detail page short enough to
@@ -324,5 +337,24 @@ private fun InfoRow(
             modifier = Modifier.size(18.dp).padding(end = 8.dp)
         )
         Text(text = text, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+private val previewRestaurant = RestaurantUiModel(
+    id = 1,
+    name = "Cal Ferran",
+    cuisineKey = "mediterranean",
+    address = "Plaça Santa Anna, Mataró",
+    rating = 4,
+    priceLabel = "$$",
+    stars = listOf(true, true, true, true, false)
+)
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun RestaurantDetailScreenPreview() {
+    EatAppTheme {
+        RestaurantDetailContent(uiState = DetailUiState.Loaded(previewRestaurant), onBack = {})
     }
 }

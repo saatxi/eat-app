@@ -99,7 +99,7 @@ fun String.asJavaStringLiteral(): String =
 
 android {
     namespace = "com.albertferran.eatapp"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.albertferran.eatapp"
@@ -148,10 +148,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -163,6 +159,12 @@ android {
             // real Android runtime inside the JVM test task.
             isIncludeAndroidResources = true
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 

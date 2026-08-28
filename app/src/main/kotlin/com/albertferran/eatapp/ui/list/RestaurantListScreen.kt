@@ -70,9 +70,11 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.content.Context
+import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalContext
 import com.albertferran.eatapp.BuildConfig
 import com.albertferran.eatapp.R
@@ -85,6 +87,7 @@ import com.albertferran.eatapp.ui.common.cuisineIcon
 import com.albertferran.eatapp.ui.common.cuisineLabel
 import com.albertferran.eatapp.ui.common.cuisineTint
 import com.albertferran.eatapp.ui.model.RestaurantUiModel
+import com.albertferran.eatapp.ui.theme.EatAppTheme
 
 @Composable
 private fun formatRelativeTime(timestampMs: Long): String {
@@ -569,6 +572,61 @@ private fun RestaurantRow(restaurant: RestaurantUiModel, onClick: () -> Unit) {
                     )
                 }
             }
+        }
+    }
+}
+
+private val previewRestaurant = RestaurantUiModel(
+    id = 1,
+    name = "Cal Ferran",
+    cuisineKey = "mediterranean",
+    address = "Plaça Santa Anna, Mataró",
+    rating = 4,
+    priceLabel = "$$",
+    stars = listOf(true, true, true, true, false)
+)
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun RestaurantRowPreview() {
+    EatAppTheme {
+        Surface {
+            RestaurantRow(restaurant = previewRestaurant, onClick = {})
+        }
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun EmptyStateFirstSyncPreview() {
+    EatAppTheme {
+        Surface {
+            EmptyState(
+                icon = Icons.Outlined.RestaurantMenu,
+                title = stringResource(R.string.list_empty_first_sync_title),
+                body = stringResource(R.string.list_empty_first_sync_body),
+                actionLabel = stringResource(R.string.list_action_sync),
+                onAction = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun EmptyStateNoResultsPreview() {
+    EatAppTheme {
+        Surface {
+            EmptyState(
+                icon = Icons.Outlined.SearchOff,
+                title = stringResource(R.string.list_empty_no_results_title),
+                body = stringResource(R.string.list_empty_no_results_body),
+                actionLabel = stringResource(R.string.list_action_clear_filters),
+                onAction = {}
+            )
         }
     }
 }

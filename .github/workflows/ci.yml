@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The git-derived versioning in app/build.gradle.kts needs full
+          # history (versionCode = total commit count) and every tag
+          # (versionName = nearest tag), or it silently falls back to
+          # versionCode=1 and a bare commit SHA.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up JDK 17
+        id: setup-java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Point Gradle at the JDK setup-java installed
+        # gradle.properties pins org.gradle.java.home to a local Android
+        # Studio path for day-to-day development on Windows. A
+        # GRADLE_USER_HOME-level gradle.properties takes precedence over the
+        # project's, so this overrides it for CI without touching the
+        # committed file or affecting local builds.
+        run: |
+          mkdir -p "$HOME/.gradle"
+          echo "org.gradle.java.home=${{ steps.setup-java.outputs.path }}" >> "$HOME/.gradle/gradle.properties"
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Test, assemble and lint
+        run: ./gradlew test assembleDebug lint --no-daemon
+
+      - name: Upload test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: app/build/reports
+          retention-days: 7

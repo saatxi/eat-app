@@ -43,7 +43,7 @@ class RestaurantDatabaseReaderTest {
     ) {
         execSQL(
             "INSERT INTO restaurants VALUES (?, ?, ?, ?, ?, ?)",
-            arrayOf(id, name, cuisineType, address, rating, priceRange)
+            arrayOf<Any?>(id, name, cuisineType, address, rating, priceRange)
         )
     }
 
@@ -114,7 +114,7 @@ class RestaurantDatabaseReaderTest {
         val file = databaseWith(schema = SCHEMA_WITH_DROPPED_COLUMNS) {
             execSQL(
                 "INSERT INTO restaurants VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                arrayOf(1L, "Cal Ferran", "mediterranean", null, 4, 2, "Great paella", 20_000L, null, 1_700_000_000L)
+                arrayOf<Any?>(1L, "Cal Ferran", "mediterranean", null, 4, 2, "Great paella", 20_000L, null, 1_700_000_000L)
             )
         }
 

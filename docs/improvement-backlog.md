@@ -18,56 +18,160 @@ Large-screen and tablet support is deliberately not covered here; see
 
 ## Where to start
 
-If you only do a handful, these in this order:
-
-1. **F-47** — the dependency set is over a year stale.
-2. **F-50** — CI, now that there is a test suite worth running on every push.
-
----
-
-## H. Build, release and tooling
-
-### F-47 · Dependencies are well over a year stale — Medium / M
-
-From lint: Compose BOM `2024.12.01` → `2026.08.00`, Kotlin `2.2.10` →
-`2.4.10`, lifecycle `2.8.7` → `2.11.0`, activity-compose `1.9.3` → `1.13.0`,
-navigation-compose `2.8.5` → `2.9.8`, coroutines `1.9.0` → `1.11.0`, core-ktx
-`1.15.0` → `1.19.0`, and `compileSdk` 36 → 37.
-**Where:** [libs.versions.toml](../gradle/libs.versions.toml)
-**Fix:** upgrade in two steps — the Compose BOM on its own first, then Kotlin
-and KSP together, since those two must stay in lockstep.
-
-### F-49 · Minification is off, so the whole icon set ships — Medium / S
-
-`isMinifyEnabled = false` means `material-icons-extended` (1,932 icons) is
-packaged in full for the ~25 actually used. This is by far the largest thing
-in the APK.
-**Fix:** either enable R8, or import the handful of icons directly from
-`material-icons-core` and drop the extended dependency. The second option is
-smaller and needs no ProGuard rules, but not every icon used here exists in
-core. Note that `CLAUDE.md` records minification being off as a deliberate
-choice, so this is a decision to make rather than a defect to fix.
-
-### F-50 · No CI — Medium / M
-
-Nothing builds this but a local machine. `app/build.gradle.kts` already
-carries a warning that any future CI checkout must use `fetch-depth: 0` and
-`fetch-tags: true`, or the git-derived version silently collapses to
-`versionCode=1` and a bare SHA.
-**Fix:** a workflow running `assembleDebug` and `lint` on push.
-
-### F-51 · No `@Preview` composables — Medium / S
-
-`ui-tooling-preview` is a dependency but there isn't a single preview, so
-every UI tweak needs a full build and deploy to see.
-**Fix:** previews for the restaurant row, both empty states, and the detail
-screen, each in light and dark.
+Nothing is currently open — every entry below is marked **Done**. Pick
+whatever seems most useful to revisit, or see
+[tablet-adaptive-layout-idea.md](tablet-adaptive-layout-idea.md) for what's
+deliberately out of scope here.
 
 ---
 
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-51 · No `@Preview` composables — Done.
+
+Section H in full, which retires the section: F-51 was its last item.
+
+Four preview subjects, each in light and dark via two stacked `@Preview`
+annotations (one plain, one with `uiMode = Configuration.UI_MODE_NIGHT_YES`) —
+`isSystemInDarkTheme()` inside `EatAppTheme` reads the preview's configuration
+the same way it would a real device, so no separate dark/light branching was
+needed beyond that.
+- **The restaurant row and both empty states**
+  ([RestaurantListScreen.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt)):
+  `RestaurantRowPreview` against a hand-built `RestaurantUiModel`, and
+  `EmptyStateFirstSyncPreview` / `EmptyStateNoResultsPreview` against the same
+  private `EmptyState` composable the screen itself uses for its two empty
+  states — a Kotlin file-private function is visible to a `@Preview` in the
+  same file, so no visibility had to widen for this.
+- **The detail screen**
+  ([RestaurantDetailScreen.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/detail/RestaurantDetailScreen.kt))
+  couldn't be previewed as directly: its entry point takes a
+  `RestaurantDetailViewModel` from `viewModel(factory = AppViewModelProvider.Factory)`,
+  which needs a real Android runtime to construct. The fix was to split it in
+  two — `RestaurantDetailScreen` now just collects `uiState` and hands it to a
+  new private `RestaurantDetailContent(uiState, onBack)`, which carries
+  everything the old function's body did. `RestaurantDetailScreenPreview`
+  calls `RestaurantDetailContent` directly with a hand-built
+  `DetailUiState.Loaded`, sidestepping the ViewModel entirely. `Loading` and
+  `NotFound` were left unpreviewed — the entry asked for "the detail screen",
+  and the loaded state is what that screen actually looks like; both other
+  states are a single centred icon-and-text block shared with the list's
+  empty states, already covered there.
+- Verified with `./gradlew test assembleDebug lint` — 101 tests green, lint
+  report unchanged from before this pass. No Android Studio instance was
+  available to actually render the previews, only to confirm the file
+  compiles and the preview functions are well-formed; rendering them is
+  worth a manual check next time the project is open in the IDE.
+
+### F-50 · No CI — Done.
+
+A new [ci.yml](../.github/workflows/ci.yml) workflow runs on every push and
+pull request: checkout, JDK 17, then `./gradlew test assembleDebug lint` in
+one invocation. `test` was added alongside the two the entry's `Fix` line
+named, since the "Where to start" note framing this entry was explicit that
+CI matters "now that there is a test suite worth running on every push" —
+leaving it out would have missed the actual point.
+- The checkout step sets `fetch-depth: 0` and `fetch-tags: true`, exactly the
+  warning already sitting in
+  [build.gradle.kts](../app/build.gradle.kts) about the git-derived
+  `versionCode`/`versionName` collapsing to `1` / a bare SHA otherwise.
+- One real obstacle surfaced testing this: the committed
+  [gradle.properties](../gradle.properties) pins
+  `org.gradle.java.home=C:\Program Files\Android\Android Studio\jbr` for
+  local Windows development, which doesn't exist on a CI runner and would
+  fail every build. Rather than touch that (it's a legitimate local dev
+  setting, not something to rip out for CI's sake), the workflow writes its
+  own `GRADLE_USER_HOME/gradle.properties` pointing `org.gradle.java.home` at
+  the JDK `setup-java` just installed — Gradle resolves a user-level
+  `gradle.properties` ahead of the project's, so this overrides the pinned
+  path for CI without changing anything a local build sees.
+- Runs on `ubuntu-latest`: nothing in the test suite needs an emulator or
+  Windows (CLAUDE.md already says as much — Robolectric covers the two cases
+  that need an Android runtime, entirely on the JVM), so there's no reason to
+  pay for a Windows or macOS runner.
+- Test and lint HTML reports upload as a build artifact on every run
+  (`if: always()`), so a CI failure is diagnosable from the Actions tab
+  without reproducing it locally.
+- Debug builds need no secrets: `DATABASE_URL` falls back to the same public
+  hardcoded URL release uses when `EATAPP_DATABASE_URL` isn't set, and
+  `assembleDebug` needs no signing config.
+- Verified locally rather than by watching an actual Actions run: confirmed
+  `git ls-files` shows `gradle.properties` is committed (so the JDK-path
+  problem is real and not local-machine noise), and that
+  `./gradlew test assembleDebug lint` — the same command the workflow
+  runs — passes on this machine. The workflow YAML itself is unverified
+  against a live GitHub Actions run.
+
+### F-49 · Minification was off, so the whole icon set shipped — Done.
+
+Already fixed by an earlier commit (`b178fd6`, "Enable R8 app optimization
+for release builds") that this backlog entry was never updated to reflect —
+a bookkeeping gap, not new work. `isMinifyEnabled = false` /
+`proguard-rules.pro` became the AGP 9.3+ `optimization { enable = true }` DSL
+in [build.gradle.kts](../app/build.gradle.kts), which turns on code
+shrinking/obfuscation and resource shrinking together and pulls in the
+platform's keep rules automatically; project-specific rules live in
+[eat-app.keep](../app/src/main/keepRules/eat-app.keep), which stays empty of
+custom rules since the app has no reflection of its own and Room ships its
+own consumer keep rules for its generated `*_Impl` classes. This took the
+first of the two fixes the entry offered (enable R8) rather than dropping
+`material-icons-extended` for `material-icons-core`, so all ~25 icons the app
+actually draws stay available without checking each one exists in the
+smaller artifact. `CLAUDE.md`'s security guidelines section already
+documents this as the current, permanent state ("Don't turn it off, and
+don't reintroduce `isMinifyEnabled`/`isShrinkResources`/`proguardFiles`").
+- Verified at the time with `./gradlew test assembleDebug assembleRelease` —
+  release APK dropped from ~11.2 MB to ~1.3 MB. Re-confirmed now after F-47's
+  dependency bumps: `assembleRelease` still succeeds and produces a
+  ~1.46 MB APK, so R8 is still shrinking the icon set (and everything else)
+  as expected on the newer toolchain.
+
+### F-47 · Dependencies were well over a year stale — Done.
+
+Done in the two steps the entry asked for, each built and tested before the
+next: the Compose BOM alone first, then Kotlin and KSP together.
+[libs.versions.toml](../gradle/libs.versions.toml) now carries Compose BOM
+`2026.08.00`, Kotlin `2.4.10`, lifecycle `2.11.0`, activity-compose `1.13.0`,
+navigation-compose `2.9.8`, coroutines `1.11.0` and core-ktx `1.19.0`.
+
+- **The Compose BOM step forced `compileSdk` 36 → 37** on its own — the new
+  BOM's artifacts (`ui-text-android` and others) require compiling against
+  API 37, not something optional. `targetSdk` was deliberately left at 36
+  rather than following it: Robolectric 4.16 (the newest *stable* release)
+  caps out at API 36 and rejects a `targetSdk` above its `maxSdkVersion` at
+  test-collection time, and Robolectric 4.17 — the release that adds SDK 37
+  support — is still beta-only. `compileSdk` and `targetSdk` are independent
+  by design (the AGP warning that flagged this says so directly), so this
+  isn't a compromise, just not following the entry's compileSdk number out to
+  targetSdk too, which it never asked for.
+- **KSP's own versioning changed underneath this**: as of KSP 2.3.0 its
+  version is no longer the `<kotlin>-<ksp>` composite the old `2.2.10-2.0.2`
+  followed — it's decoupled and standalone now, so the paired release is
+  just `ksp = "2.3.11"`.
+- **The Kotlin step broke two things the compiler used to only warn about,
+  both now promoted to hard errors**: `kotlinOptions { jvmTarget = "17" }` in
+  [build.gradle.kts](../app/build.gradle.kts) is gone, replaced by the
+  top-level `kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }`
+  block the AGP/Kotlin migration guide points at; and two `arrayOf(...)`
+  calls in
+  [RestaurantDatabaseReaderTest.kt](../app/src/test/kotlin/com/albertferran/eatapp/data/sync/RestaurantDatabaseReaderTest.kt)
+  (building mixed-type SQLite row arrays) needed an explicit `arrayOf<Any?>`
+  — Kotlin 2.4 stopped tolerating the reified type parameter inferring to an
+  intersection type silently.
+- Verified with `./gradlew test assembleDebug assembleRelease lint` after
+  each of the two steps — 101 tests green throughout, `assembleRelease`
+  confirms R8 minification still runs clean against the new dependency set.
+  Lint gained two findings the previous pass didn't have —
+  `ModifierParameter` (one optional `Modifier` parameter in
+  [RestaurantListScreen.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt)
+  without a plain `Modifier` default) and `LocalContextResourcesRead` (a
+  `context.resources.getQuantityString` call in the same file) — both from
+  Compose lint checks that shipped with this newer toolchain and now flag
+  code that predates this pass; left alone as out of scope for a version
+  bump. `GradleDependency` / `NewerVersionAvailable`, `UseKtx` and
+  `OldTargetApi` / `ObsoleteSdkInt` remain, as before.
 
 ### Multi-language support pass
 
