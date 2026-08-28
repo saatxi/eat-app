@@ -42,6 +42,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -180,7 +182,19 @@ fun RestaurantDetailScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                val ratingDescription = stringResource(
+                                    R.string.restaurant_rating_description,
+                                    current.rating
+                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    // The star icons are decorative (contentDescription = null) and the
+                                    // "3/5" text next to them isn't natural speech, so the row would
+                                    // otherwise announce as silent stars followed by "3 slash 5".
+                                    modifier = Modifier.clearAndSetSemantics {
+                                        contentDescription = ratingDescription
+                                    }
+                                ) {
                                     current.stars.forEach { filled ->
                                         Icon(
                                             Icons.Default.Star,
@@ -199,9 +213,17 @@ fun RestaurantDetailScreen(
                                         modifier = Modifier.padding(start = 6.dp)
                                     )
                                 }
+                                val priceDescription = stringResource(
+                                    R.string.restaurant_price_description,
+                                    current.priceLabel.length
+                                )
                                 Surface(
                                     shape = RoundedCornerShape(percent = 50),
-                                    color = MaterialTheme.colorScheme.tertiaryContainer
+                                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                                    // Otherwise "$$" is read out as "dollar dollar".
+                                    modifier = Modifier.clearAndSetSemantics {
+                                        contentDescription = priceDescription
+                                    }
                                 ) {
                                     Text(
                                         text = current.priceLabel,

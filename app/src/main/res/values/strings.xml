@@ -1,5 +1,6 @@
 <resources>
-    <string name="app_name">EatApp</string>
+    <!-- Brand name: intentionally never translated. -->
+    <string name="app_name" translatable="false">EatApp</string>
 
     <string name="list_title">My Restaurants</string>
     <string name="list_search_placeholder">Search restaurants</string>
@@ -64,6 +65,10 @@
     <string name="rating_format">%1$d/5</string>
     <string name="detail_section_overview">Overview</string>
     <string name="detail_section_rating">Rating and price</string>
+
+    <!-- Screen-reader phrasing for the rating/price marks, which are drawn as stars and "$" symbols. -->
+    <string name="restaurant_rating_description">Rated %1$d of 5</string>
+    <string name="restaurant_price_description">Price range %1$d of 4</string>
 
     <!--
         Display labels for the closed cuisine vocabulary. The `.db` stores the

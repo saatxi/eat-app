@@ -79,9 +79,13 @@ app/src/main/kotlin/com/albertferran/eatapp/
 
 ## Conventions
 
-- All in-app strings live in `app/src/main/res/values/strings.xml` and are
-  in **English** — no hardcoded UI text in Kotlin, no other language.
-  Code comments are in English too.
+- All in-app strings live in `strings.xml` — no hardcoded UI text in Kotlin.
+  `app/src/main/res/values/strings.xml` is the default locale, **English**;
+  other languages are added as `values-xx/strings.xml` overrides of the same
+  resource names, never by touching the data (`Cuisine.kt`'s keys and the
+  `.db` itself stay language-independent — see the cuisine vocabulary note
+  below). `values-es/strings.xml` covers Spanish. Code comments are in
+  English regardless of locale.
 - **Cuisine vocabulary**: the `.db` column `cuisineType` stores stable,
   language-independent keys (`japanese`, `fast_food`, etc.), never display
   labels. Each key has its own icon in [CuisineVisuals.kt](app/src/main/kotlin/com/albertferran/eatapp/ui/common/CuisineVisuals.kt)

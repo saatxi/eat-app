@@ -22,47 +22,6 @@ If you only do a handful, these in this order:
 
 1. **F-47** — the dependency set is over a year stale.
 2. **F-50** — CI, now that there is a test suite worth running on every push.
-3. **F-41** — half the colour scheme is still Material's default purple.
-
----
-
-## G. Theming, i18n and accessibility
-
-### F-41 · Half the colour scheme is still Material's default — Medium / S
-
-Only 12 of the ~26 colour roles are overridden. `surface`, `background`,
-`error`, `outline`, `surfaceVariant` and `onSurfaceVariant` all keep the
-baseline purple-tinted defaults, which quietly fight the terracotta/sage brand
-everywhere they show up — dividers, empty-state icons, secondary text.
-**Where:** [Theme.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/Theme.kt)
-**Fix:** generate a full scheme from the terracotta seed and fill in the
-remaining roles.
-
-### F-42 · The window theme is light-only — Medium / XS
-
-`themes.xml` inherits `android:Theme.Material.Light.NoActionBar`, so in dark
-mode the window flashes white before Compose paints.
-**Where:** [themes.xml](../app/src/main/res/values/themes.xml)
-**Fix:** switch to a `DayNight` parent.
-
-### F-44 · Screen readers get fragments — Medium / S
-
-Every icon in a row is `contentDescription = null` and the texts are separate
-nodes, so a row is announced as disconnected pieces. `"$$"` is read out as
-"dollar dollar", and the star row on the detail screen is silent.
-**Fix:** set one description on the whole `Card` describing the restaurant,
-and give the price and rating real descriptions ("Price range 2 of 4").
-
-### F-53 · Multi-language support — Medium / M
-
-Deferred deliberately when the data was migrated to English (F-43). The
-groundwork is done: cuisines are stored as keys and resolved through
-`strings.xml`, so a second language is now a matter of adding
-`values-es/strings.xml` without touching the `.db`.
-
-Note this would need the "all strings in English" rule in
-[CLAUDE.md](../CLAUDE.md) relaxed to "English is the default locale", since
-that rule currently forbids exactly this.
 
 ---
 
@@ -109,6 +68,92 @@ screen, each in light and dark.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### Multi-language support pass
+
+Section G in full, which retires the section: F-53 was its last item.
+
+- **F-53 · Multi-language support — Done.** [CLAUDE.md](../CLAUDE.md)'s string
+  rule changed from "all strings in English" to "English is the default
+  locale, other languages are `values-xx/strings.xml` overrides" — exactly the
+  relaxation the entry called for. A new
+  [values-es/strings.xml](../app/src/main/res/values-es/strings.xml) covers
+  every resource in the default `strings.xml` with Spanish text, including the
+  five `<plurals>`: Spanish's CLDR rules need a `many` quantity alongside
+  `one`/`other` (lint's `MissingQuantity` flagged its absence), which none of
+  this app's plural counts will ever actually reach, so it duplicates the
+  `other` wording rather than inventing a distinct phrasing for numbers in the
+  millions. `app_name` is the one string not translated — a brand name — and
+  is marked `translatable="false"` in the default `strings.xml`, which is what
+  lint's `MissingTranslation` check needed to stop treating its absence from
+  `values-es` as an error. Nothing in `Cuisine.kt` or the `.db` changed: the
+  groundwork from F-43 (English vocabulary keys, resolved through
+  `cuisineLabel()`) meant this was purely a resource addition.
+- Verified with `./gradlew test assembleDebug lint` — 101 tests green, lint
+  report unchanged from before the pass (`MissingQuantity` and
+  `MissingTranslation` both appeared and were then resolved, not left as new
+  findings).
+
+### F-44 · Screen readers get fragments — Done.
+
+Two new strings carry the spoken versions of the rating stars and the price
+marks: `restaurant_rating_description` ("Rated %1$d of 5") and
+`restaurant_price_description` ("Price range %1$d of 4", fed the price mark
+count since the model only carries the rendered `"$"`-repeated label, not the
+raw integer). The list row's `Card` in
+[RestaurantListScreen.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt)
+now carries `Modifier.clearAndSetSemantics { contentDescription = ... }`
+joining name, cuisine, rating, price and address (when present) into one
+sentence, so the whole card is one screen-reader stop instead of five separate
+text fragments; the card's own click action is untouched, since it comes from
+`Card`'s `onClick` on the same layout node, one level inside where
+`clearAndSetSemantics` only cuts the merge from *descendant* nodes. On the
+detail screen ([RestaurantDetailScreen.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/detail/RestaurantDetailScreen.kt))
+the star row and the price chip get the same treatment individually, each
+replacing what would otherwise merge into "3 slash 5" and "dollar dollar"
+with the real phrase. `clearAndSetSemantics`'s lambda isn't `@Composable`, so
+each description is resolved via `stringResource` into a local `val` first and
+only captured inside the lambda.
+- Verified with `./gradlew test assembleDebug lint` — 101 tests green, lint
+  report unchanged from before the pass. No emulator or TalkBack run was
+  available to confirm the actual announcement, only that the app builds and
+  the existing test suite still passes.
+
+### F-42 · The window theme is light-only — Done.
+
+The app has no AppCompat dependency (Compose/Material3 only, per CLAUDE.md), so
+there is no `Theme.AppCompat.DayNight` to switch to, and the framework's own
+`android:Theme.*.DayNight` styles only exist from API 31 — below that on this
+app's `minSdk = 26` they'd fail to resolve at runtime. The fix instead splits
+`themes.xml` by the standard `night` resource qualifier: `values/themes.xml` kept
+`android:Theme.Material.Light.NoActionBar`, and a new
+[values-night/themes.xml](../app/src/main/res/values-night/themes.xml) parents on
+`android:Theme.Material.NoActionBar` (the same family, without `.Light`). This
+works on every API level back to 8, well under the app's floor, and means the
+window background the system paints before Compose's first frame is now dark
+when the system is in dark mode, instead of always flashing white.
+
+### Colour scheme pass
+
+- **F-41 · Half the colour scheme is still Material's default — Done.**
+  [Color.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/Color.kt) gained
+  a `Neutral*`/`NeutralVariant*` tonal family, hand-derived from the Terracotta
+  seed's hue (24°) at the low saturations M3's neutral (6%) and neutral-variant
+  (14%) palettes use, at exactly the tone steps the baseline scheme maps onto
+  `background`, `surface`, `surfaceVariant`, `outline` and their
+  `on*`/container/inverse siblings — so those roles are now warm off-white/off-black
+  instead of Material's default cool purple-gray. `error` and its container roles
+  are the one family left untouched in hue: they use the standard M3 baseline red
+  tones, since error is a semantic colour independent of brand and red doesn't
+  clash with terracotta or sage. Both `lightColorScheme()` and `darkColorScheme()`
+  in [Theme.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/Theme.kt)
+  now set every role the M3 baseline scheme defines, including the
+  `surfaceContainer*` tiers, `surfaceDim`/`surfaceBright`,
+  `inverseSurface`/`inverseOnSurface` and `scrim`. `inversePrimary` reuses the
+  existing `Terracotta80`/`Terracotta40` constants rather than adding new ones,
+  since those are already the right tones for that role.
+- Verified with `./gradlew test assembleDebug lint` — all green, lint report
+  unchanged from before the pass.
 
 ### Detail screen pass
 

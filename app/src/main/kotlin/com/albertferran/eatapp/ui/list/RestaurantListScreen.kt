@@ -66,6 +66,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -471,7 +473,30 @@ private fun EmptyState(
 
 @Composable
 private fun RestaurantRow(restaurant: RestaurantUiModel, onClick: () -> Unit) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    // The row draws name, cuisine, address, rating and price as separate icons and
+    // text nodes, which a screen reader would otherwise announce one fragment at a
+    // time; clearAndSetSemantics collapses the whole card into one description
+    // instead, while the card's own click action (added by Card's onClick, on the
+    // same node) is untouched.
+    val cuisineLabelText = cuisineLabel(restaurant.cuisineKey)
+    val ratingDescription = stringResource(R.string.restaurant_rating_description, restaurant.rating)
+    val priceDescription = restaurant.priceLabel.takeIf { it.isNotEmpty() }?.let {
+        stringResource(R.string.restaurant_price_description, it.length)
+    }
+    val description = listOfNotNull(
+        restaurant.name,
+        cuisineLabelText,
+        ratingDescription,
+        priceDescription,
+        restaurant.address
+    ).joinToString(", ")
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clearAndSetSemantics { contentDescription = description }
+    ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             val tint = cuisineTint(restaurant.cuisineKey)
             Box(
@@ -494,7 +519,7 @@ private fun RestaurantRow(restaurant: RestaurantUiModel, onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Text(text = restaurant.name, style = MaterialTheme.typography.titleLarge)
                 Text(
-                    text = cuisineLabel(restaurant.cuisineKey),
+                    text = cuisineLabelText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
