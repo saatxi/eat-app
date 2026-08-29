@@ -19,14 +19,14 @@ list/detail split.
 |---|---|---|
 | 1 | Theme foundations — palettes, accents, typography | **Done** |
 | 2 | Preferences (DataStore) and Settings screen | **Done** |
-| 3 | Favourites | Not started |
+| 3 | Favourites | **Done** |
 | 4 | Website and Instagram links | **Done** |
-| 5 | Bottom navigation | Not started |
-| 6 | "What to eat" picker | Not started |
+| 5 | Bottom navigation | **Done** |
+| 6 | "What to eat" picker | **Done** |
 | 7 | Performance | Partly done |
 | 8 | Usability and M3 Expressive | Not started |
 
-At the last checkpoint: `test`, `assembleDebug` and `lint` all green, 128 unit
+At the last checkpoint: `test`, `assembleDebug` and `lint` all green, 145 unit
 tests passing (up from 101), still JVM-only with no emulator.
 
 ## Why
@@ -208,31 +208,51 @@ The overflow menu and the "About" `AlertDialog` are gone from
 
 ---
 
-## Phase 3 — Favourites · Not started
+## Phase 3 — Favourites · Done
 
 **Where they live: DataStore, not Room.** [EatAppDatabase.kt](../app/src/main/kotlin/com/albertferran/eatapp/data/local/EatAppDatabase.kt)
 uses `fallbackToDestructiveMigration(dropAllTables = true)` — right for a cache
 of a re-downloadable file, wrong for user data. Favourites are a tiny
 `Set<Long>`; putting them in the cache database would mean either abandoning
 that policy or standing up a second database with real migrations, and the size
-doesn't justify it. `UserPreferences.favoriteIds` already exists.
+doesn't justify it. `UserPreferences.favoriteIds` already existed from Phase 2.
 
 Ids are stable: the reader preserves the source `.db`'s id verbatim
 (`RestaurantDatabaseReader.kt`, `id = cursor.getLong(0)`), so a favourite
 survives a sync. If the ids in the source file are ever renumbered, favourites
 drift.
 
-- `RestaurantUiModel.isFavorite` already exists, and `toUiModel(isFavorite)`
-  already takes it — only the wiring is missing.
-- `RestaurantListViewModel` combines the repository flow with
-  `preferences.map { it.favoriteIds }`.
-- `RestaurantRow` gains an `IconToggleButton` heart with haptic feedback.
-  **Careful**: the row is collapsed into one accessibility node with
-  `clearAndSetSemantics`, so the heart must sit *outside* that node to stay
-  actionable under TalkBack.
-- Same on the detail screen, as a `LargeTopAppBar` action.
-- New `ui/favorites/FavoritesScreen.kt` + ViewModel, reusing `RestaurantRow`
-  and `EmptyState`, with its own empty state.
+- `RestaurantListViewModel` gained a `UserPreferencesRepository` constructor
+  parameter. A separate `restaurantsWithFavorites` flow combines the filtered
+  restaurant stream with `preferences.map { it.favoriteIds }` before feeding
+  the outer `uiState` combine — kept as its own `combine()` rather than adding
+  a sixth flow to the existing one, which would have dropped it out of
+  kotlinx.coroutines' typed 5-flow overload and into the untyped vararg one.
+  `onFavoriteToggle(id)` writes through to the repository.
+- `RestaurantRow` (`RestaurantListScreen.kt`) gained an `onFavoriteToggle`
+  parameter and now draws the heart in a `Box` **alongside** the `Card`, not
+  inside it: the card's `clearAndSetSemantics` collapses its whole subtree into
+  one accessibility node, which would otherwise swallow the heart's own toggle
+  semantics and leave it unreachable under TalkBack. The card's content row
+  gained 44dp of extra end padding so the overlaid heart (top-end corner)
+  doesn't sit on top of the rating/price column. `RestaurantRow` and
+  `EmptyState` are now `internal` instead of `private`, so `FavoritesScreen`
+  can reuse them.
+- `RestaurantDetailViewModel` gained the same `UserPreferencesRepository`
+  parameter and combines `observeById(id)` with `favoriteIds` the same way.
+  `DetailTopBar` gained a leading `IconButton` favourite toggle ahead of the
+  cuisine badge in its actions row.
+- Both toggles perform `HapticFeedbackType.LongPress` — the one haptic type
+  guaranteed present across Compose UI versions, rather than guessing at the
+  newer `ToggleOn`/`ToggleOff` constants sight-unseen against a BOM this build
+  couldn't inspect offline.
+- New `ui/favorites/FavoritesScreen.kt` + `FavoritesViewModel.kt`. No new DAO
+  query: `FavoritesViewModel` reuses `repository.observeFiltered(null, null,
+  null)` unchanged and filters to `favoriteIds` in memory, the same "no new
+  query" approach Roulette (Phase 6) uses for its own filters. Its own empty
+  state (`favorites_empty_title` / `_body`) covers the no-favourites case.
+- `AppViewModelProvider` wires all of the above through `EatApplication`,
+  which already exposed both `repository` and `userPreferences`.
 
 ---
 
@@ -295,9 +315,10 @@ them to an existing file.
 
 ---
 
-## Phase 5 — Bottom navigation · Not started
+## Phase 5 — Bottom navigation · Done
 
-New `navigation/TopLevelDestination.kt`:
+New [navigation/TopLevelDestination.kt](../app/src/main/kotlin/com/albertferran/eatapp/navigation/TopLevelDestination.kt),
+exactly as planned:
 
 ```kotlin
 enum class TopLevelDestination(
@@ -314,37 +335,65 @@ enum class TopLevelDestination(
 ```
 
 The filled/outline pair by selection state is Now in Android's pattern. Every
-icon is already in `material-icons-extended`.
+icon was already in `material-icons-extended`, and both that dependency and
+`material3-adaptive-navigation-suite` turned out to already be wired into
+`app/build.gradle.kts` from Phase 1 — no dependency changes needed.
 
-Restructuring [EatAppNavHost.kt](../app/src/main/kotlin/com/albertferran/eatapp/navigation/EatAppNavHost.kt):
+[EatAppNavHost.kt](../app/src/main/kotlin/com/albertferran/eatapp/navigation/EatAppNavHost.kt)
+restructured:
 
-- Wrap the `NavHost` in **`NavigationSuiteScaffold`**
-  (`androidx.compose.material3:material3-adaptive-navigation-suite`, already in
-  the catalog) — bottom bar on a phone, navigation rail on a tablet, which is
-  what Reply does, with no extra code.
-- Keep `SharedTransitionLayout` **outside** the scaffold so the list→detail
+- The `NavHost` is now wrapped in **`NavigationSuiteScaffold`**: bottom bar on
+  a phone, navigation rail on a tablet, with no extra code — its `layoutType`
+  defaults to `NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(...)`,
+  which the "hide on detail" branch below has to name explicitly rather than
+  omit, since a Kotlin default-parameter expression can't be reused across two
+  call sites without repeating it. `currentWindowAdaptiveInfoV2()` is used
+  rather than the older `currentWindowAdaptiveInfo()` the IDE's own
+  autocomplete reaches for first, which is deprecated in this BOM in favour of
+  the V2 overload (L/XL window size class support).
+- `SharedTransitionLayout` stays **outside** the scaffold, so the list→detail
   badge transition keeps working.
-- Hide the bar on detail: `navigationSuiteType = NavigationSuiteType.None` when
-  the route from `currentBackStackEntryAsState()` is the detail one.
-- Tab navigation with `launchSingleTop = true`, `restoreState = true` and
+- The bar hides on detail: `layoutType = NavigationSuiteType.None` when
+  `currentBackStackEntryAsState().value?.destination?.route == Routes.DETAIL`.
+- Tab navigation uses `launchSingleTop = true`, `restoreState = true` and
   `popUpTo(graph.findStartDestination().id) { saveState = true }`, so each tab
-  keeps its scroll position and filters.
+  keeps its own scroll position and filters across visits.
+- `SettingsScreen` — built in Phase 2 but never reachable — is now the
+  `SETTINGS` tab's destination.
 
 ---
 
-## Phase 6 — "What to eat" · Not started
+## Phase 6 — "What to eat" · Done
 
-New `ui/roulette/RouletteScreen.kt` + `RouletteViewModel`:
+New [ui/roulette/RouletteViewModel.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/roulette/RouletteViewModel.kt)
++ [RouletteScreen.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/roulette/RouletteScreen.kt):
 
-- Picks at random among the restaurants passing the current filters, reusing
-  `repository.observeFiltered(...)` unchanged — no new query.
-- `Random` is **injected via the constructor** (defaulting to `Random.Default`)
-  so the test can seed it and be deterministic.
-- Its own light filters: minimum-rating chips and a "favourites only" toggle.
-- A large card with the cuisine icon, a shuffle animation (`AnimatedContent` +
-  `Modifier.graphicsLayer`), haptic feedback on landing, a "try again" button,
-  and tap to open the detail screen.
-- Empty state when nothing matches.
+- Picks at random among the restaurants passing this screen's own filters,
+  reusing `repository.observeFiltered(...)` unchanged — no new query. A
+  favourites-only filter narrows the candidates in memory afterwards, the same
+  approach Favourites (Phase 3) uses.
+- `Random` is **injected via the constructor** (defaulting to `Random.Default`),
+  so `RouletteViewModelTest` seeds it (`Random(42)`) and asserts two
+  identically-seeded ViewModels against identical data land on the same pick.
+- Its own light filters: minimum-rating chips (`2+`…`5+`, same reasoning as
+  the list screen — every synced restaurant already rates at least 1) and a
+  "favourites only" `FilterChip`.
+- `RouletteUiState.pickCount` increments on every `pick()`, independent of
+  whether the picked restaurant's identity actually changed — needed because
+  chance can land on the same restaurant twice in a row, and the shuffle
+  animation should still play. A `picked` that falls out of the candidate pool
+  after a filter changes is cleared back to the "pick one" prompt rather than
+  left showing a restaurant that no longer matches.
+- A large `RouletteResultCard` (cuisine icon, name, cuisine label, star rating,
+  price chip, address) with a shuffle effect: `AnimatedContent` cross-fades the
+  card content on an actual pick change, while a separate `Animatable`-driven
+  `Modifier.graphicsLayer { rotationY = ... }` spins the card a full turn on
+  every `pick()` regardless — a face-on card flip that still reads as "shuffled"
+  even when the outcome repeats. Haptic feedback (`HapticFeedbackType.LongPress`)
+  fires when the pick button is pressed. Tapping the result card opens its
+  detail screen.
+- `roulette_empty_title` / `_body` empty state when the current filters match
+  nothing.
 
 ---
 
@@ -411,9 +460,11 @@ when the new module is configured.
 
 ## Strings
 
-All of these are already added, in both `values/` and `values-es/` (Spanish
-plurals need the extra `many` quantity, as elsewhere). Lint reports them as
-`UnusedResources` until the screens that consume them exist — expected.
+All of these were already added, in both `values/` and `values-es/` (Spanish
+plurals need the extra `many` quantity, as elsewhere), back when Phases 3/5/6
+were still unstarted — `lint` flagged them `UnusedResources` until the screens
+below consumed them. Now that Favourites, the bottom bar and Roulette all
+exist, `lint` reports zero unused resources among this list.
 
 `nav_restaurants` · `nav_favorites` · `nav_roulette` · `nav_settings` ·
 `favorites_title` · `favorites_empty_title` · `favorites_empty_body` ·
@@ -454,16 +505,27 @@ mocking library.
 - **`SettingsViewModelTest`** — palette/mode changes write through to a fake
   `UserPreferencesRepository` and land back in `uiState`; `syncNow` against a
   fake `DatabaseSyncManager` for both the success and failure paths.
+- **`RestaurantListViewModelTest`** (updated) — a `FakeUserPreferencesRepository`
+  joined the existing fakes; new cases cover `isFavorite` mapping onto the
+  right restaurant and `onFavoriteToggle` writing through.
+- **`RestaurantDetailViewModelTest`** (new) — loading/not-found/loaded states,
+  `isFavorite` reflecting the stored ids, and `onFavoriteToggle` toggling this
+  restaurant's own id specifically.
+- **`FavoritesViewModelTest`** (new) — only favourited ids reach the state
+  (each mapped with `isFavorite = true`), and un-favouriting removes a
+  restaurant from the list immediately.
+- **`RouletteViewModelTest`** (new) — two identically-seeded ViewModels
+  (`Random(42)`) against identical data land on the same pick;  `pickCount`
+  increments even when chance repeats the same restaurant; an empty candidate
+  pool leaves `picked` null; `minRating` reaches the repository query;
+  `favoritesOnly` narrows candidates to favourited ids; a pick that falls out
+  of the pool after a filter change is cleared.
 
 **Still to write**:
 
 - `UserPreferencesRepositoryTest` — round-trip of palette, mode and favourite
-  toggling.
-- `FavoritesViewModelTest` — using `FakeRestaurantRepository`, which already
-  exists inside `RestaurantListViewModelTest.kt`.
-- `RouletteViewModelTest` — seeded `Random`, deterministic selection, filters
-  respected, empty case.
-- Update `RestaurantListViewModelTest` for the new state fields.
+  toggling against the real `DataStoreUserPreferencesRepository`, not just the
+  in-memory fakes the ViewModel tests use.
 - Consider `androidx.compose.ui:ui-test-junit4` as a **`testImplementation`**:
   `createComposeRule()` runs under Robolectric on the JVM, so composable
   coverage is possible without an emulator and without touching `androidTest` —
