@@ -7,10 +7,10 @@
     Automates steps 3-5 of the README's "Releasing a new version" section:
     verifies release signing is configured (see README "Signing releases"),
     runs `gradlew bundleRelease`, reports the resolved version, and copies
-    mapping.txt next to the .aab so it survives the next build (which
-    otherwise overwrites it). Warns (with a confirm prompt) if the working
-    tree is dirty or HEAD isn't exactly on a vX.Y.Z tag, since either means
-    this isn't a clean, reproducible release build.
+    mapping.txt and native-debug-symbols.zip next to the .aab so they survive
+    the next build (which otherwise overwrites them). Warns (with a confirm
+    prompt) if the working tree is dirty or HEAD isn't exactly on a vX.Y.Z
+    tag, since either means this isn't a clean, reproducible release build.
 
     This script does not tag anything -- run scripts/release.ps1 first.
 
@@ -176,6 +176,21 @@ if (Test-Path -LiteralPath $mappingSrc) {
     Write-Step "Mapping file archived to $mappingDest -- move it somewhere durable before your next clean build."
 } else {
     Write-Warn "No mapping.txt found at $mappingSrc; deobfuscation for crash reports from this build won't be possible."
+}
+
+# --- native debug symbols archive --------------------------------------------
+# Same rationale as the mapping file above: copied out from under build/ before
+# the next build overwrites it. Produced by the release buildType's `ndk {
+# debugSymbolLevel = "FULL" }` in app/build.gradle.kts; upload it alongside the
+# .aab on Play Console so native crashes/ANRs get symbolicated.
+
+$symbolsSrc = Join-Path $repoRoot 'app\build\outputs\native-debug-symbols\release\native-debug-symbols.zip'
+if (Test-Path -LiteralPath $symbolsSrc) {
+    $symbolsDest = Join-Path $repoRoot "app\build\outputs\bundle\release\native-debug-symbols-$versionName.zip"
+    Copy-Item -LiteralPath $symbolsSrc -Destination $symbolsDest -Force
+    Write-Step "Native debug symbols archived to $symbolsDest -- move it somewhere durable before your next clean build."
+} else {
+    Write-Warn "No native-debug-symbols.zip found at $symbolsSrc; this build likely bundles no native (.so) libraries, so there is nothing to symbolicate."
 }
 
 Write-Host ''

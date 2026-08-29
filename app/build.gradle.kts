@@ -138,6 +138,14 @@ android {
             optimization {
                 enable = true
             }
+            // Play Console wants this to symbolicate native crashes/ANRs. The app has
+            // no C/C++ of its own, but dependencies can still ship prebuilt .so files,
+            // so this stays on rather than depending on today's dependency set. FULL
+            // (not SYMBOL_TABLE) keeps inlined-frame info; bundleRelease writes the
+            // result to app/build/outputs/native-debug-symbols/release/.
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
             // Null when no keystore is configured, which leaves the build unsigned.
             signingConfig = signingConfigs.findByName("release")
         }

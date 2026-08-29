@@ -221,6 +221,14 @@ Logcat retraces stack traces automatically when it can find that file, so
 **keep the `mapping.txt` of every release you actually distribute** — the build
 directory is gitignored and the next build overwrites it.
 
+The release buildType also sets `ndk { debugSymbolLevel = "FULL" }`, so
+`bundleRelease` additionally writes
+`app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip`.
+The app has no C/C++ of its own, but a dependency can still ship a prebuilt
+`.so`, and Play Console needs this file to symbolicate native crashes/ANRs —
+upload it alongside the `.aab`. Same lifecycle as `mapping.txt`: gitignored,
+overwritten by the next build, so archive it before then.
+
 ## Tests
 
 ```
@@ -384,8 +392,9 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
    [`scripts/bundle.ps1`](scripts/bundle.ps1) wraps the `bundleRelease`
    path above: it fails fast if signing isn't configured, warns if the
    working tree is dirty or HEAD isn't on a release tag, prints the
-   resolved version, and archives `mapping.txt` next to the built `.aab` so
-   a later build doesn't overwrite it before you've saved a copy.
+   resolved version, and archives `mapping.txt` and
+   `native-debug-symbols.zip` next to the built `.aab` so a later build
+   doesn't overwrite them before you've saved a copy.
    ```
    ./scripts/bundle.ps1
    ```
@@ -404,9 +413,11 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 5. Because release builds are optimized by R8 while debug builds are not, install
    the release artifact on a device and smoke-test it — open the list, search,
    filter, open a detail screen and run a data sync — before handing it to
-   anyone. Archive `app/build/outputs/mapping/release/mapping.txt` alongside the
-   artifact: without it, crash reports from that build are unreadable, and the
-   next build overwrites the file (see **App optimization (R8)** above).
+   anyone. Archive `app/build/outputs/mapping/release/mapping.txt` and
+   `app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip`
+   alongside the artifact: without them, crash reports from that build are
+   unreadable, and the next build overwrites both files (see **App
+   optimization (R8)** and **Deobfuscating stack traces** above).
 6. Distribute the APK/AAB (sideload, internal testing track, etc.) and
    confirm the version shown in the app's **About** dialog matches the tag.
 
