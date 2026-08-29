@@ -3,6 +3,7 @@ package com.albertferran.eatapp.ui.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.albertferran.eatapp.data.local.RestaurantSort
+import com.albertferran.eatapp.data.prefs.UserPreferencesRepository
 import com.albertferran.eatapp.data.repository.RestaurantRepository
 import com.albertferran.eatapp.data.sync.DatabaseSyncManager
 import com.albertferran.eatapp.data.sync.DatabaseSyncResult
@@ -65,7 +66,8 @@ private data class Filters(
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 class RestaurantListViewModel(
     private val repository: RestaurantRepository,
-    private val syncManager: DatabaseSyncManager
+    private val syncManager: DatabaseSyncManager,
+    private val preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val filters = MutableStateFlow(Filters())
@@ -95,9 +97,19 @@ class RestaurantListViewModel(
         ::Filters
     )
 
+    // Combined separately from the outer state so the outer combine() stays within
+    // kotlinx.coroutines' 5-flow overload instead of dropping to the untyped
+    // vararg one.
+    private val restaurantsWithFavorites: Flow<List<RestaurantUiModel>> = combine(
+        queryFilters.flatMapLatest { repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort) },
+        preferencesRepository.preferences.map { it.favoriteIds }
+    ) { restaurants, favoriteIds ->
+        restaurants.map { it.toUiModel(isFavorite = it.id in favoriteIds) }
+    }
+
     val uiState: StateFlow<RestaurantListUiState> = combine(
         filters,
-        queryFilters.flatMapLatest { repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort) },
+        restaurantsWithFavorites,
         repository.observeCuisineTypes(),
         isSyncing,
         pendingSyncMessage
@@ -108,7 +120,7 @@ class RestaurantListViewModel(
             cuisineType = activeFilters.cuisineType,
             sort = activeFilters.sort,
             availableCuisines = availableCuisines,
-            restaurants = restaurants.map { it.toUiModel() },
+            restaurants = restaurants,
             // Reaching this block at all means the database has emitted, since
             // combine produces nothing until every source has.
             isInitialLoad = false,
@@ -135,6 +147,10 @@ class RestaurantListViewModel(
 
     fun onSortChange(sort: RestaurantSort) {
         filters.update { it.copy(sort = sort) }
+    }
+
+    fun onFavoriteToggle(restaurantId: Long) {
+        viewModelScope.launch { preferencesRepository.toggleFavorite(restaurantId) }
     }
 
     // Deliberately leaves the sort order alone: it is reached from the "no

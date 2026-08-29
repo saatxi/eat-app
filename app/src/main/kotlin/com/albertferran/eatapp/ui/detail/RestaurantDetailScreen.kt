@@ -21,8 +21,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AlternateEmail
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.RestaurantMenu
@@ -46,8 +48,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -77,7 +81,7 @@ fun RestaurantDetailScreen(
     viewModel: RestaurantDetailViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    RestaurantDetailContent(uiState = uiState, onBack = onBack)
+    RestaurantDetailContent(uiState = uiState, onBack = onBack, onFavoriteToggle = viewModel::onFavoriteToggle)
 }
 
 /**
@@ -87,7 +91,11 @@ fun RestaurantDetailScreen(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RestaurantDetailContent(uiState: DetailUiState, onBack: () -> Unit) {
+private fun RestaurantDetailContent(
+    uiState: DetailUiState,
+    onBack: () -> Unit,
+    onFavoriteToggle: () -> Unit = {}
+) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     // Guarded rather than the default `{ true }`: on a detail page short enough to
@@ -103,6 +111,7 @@ private fun RestaurantDetailContent(uiState: DetailUiState, onBack: () -> Unit) 
             DetailTopBar(
                 restaurant = (uiState as? DetailUiState.Loaded)?.restaurant,
                 onBack = onBack,
+                onFavoriteToggle = onFavoriteToggle,
                 scrollBehavior = scrollBehavior
             )
         }
@@ -339,8 +348,10 @@ private fun Context.openUri(uri: String) {
 private fun DetailTopBar(
     restaurant: RestaurantUiModel?,
     onBack: () -> Unit,
+    onFavoriteToggle: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior
 ) {
+    val haptic = LocalHapticFeedback.current
     val backButton: @Composable () -> Unit = {
         IconButton(onClick = onBack) {
             Icon(
@@ -369,6 +380,19 @@ private fun DetailTopBar(
         },
         navigationIcon = backButton,
         actions = {
+            IconButton(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onFavoriteToggle()
+                }
+            ) {
+                Icon(
+                    imageVector = if (restaurant.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = stringResource(
+                        if (restaurant.isFavorite) R.string.action_remove_favorite else R.string.action_add_favorite
+                    )
+                )
+            }
             Icon(
                 cuisineIcon(restaurant.cuisineKey),
                 contentDescription = null,

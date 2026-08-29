@@ -2,10 +2,14 @@ package com.albertferran.eatapp.ui.list
 
 import com.albertferran.eatapp.data.local.Restaurant
 import com.albertferran.eatapp.data.local.RestaurantSort
+import com.albertferran.eatapp.data.prefs.UserPreferences
+import com.albertferran.eatapp.data.prefs.UserPreferencesRepository
 import com.albertferran.eatapp.data.repository.RestaurantRepository
 import com.albertferran.eatapp.data.sync.DatabaseSyncManager
 import com.albertferran.eatapp.data.sync.DatabaseSyncResult
 import com.albertferran.eatapp.ui.model.RestaurantUiModel
+import com.albertferran.eatapp.ui.theme.AppPalette
+import com.albertferran.eatapp.ui.theme.ThemeMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -36,6 +40,7 @@ class RestaurantListViewModelTest {
     private val dispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: FakeRestaurantRepository
     private lateinit var syncManager: FakeDatabaseSyncManager
+    private lateinit var preferencesRepository: FakeUserPreferencesRepository
     private lateinit var viewModel: RestaurantListViewModel
 
     @Before
@@ -46,7 +51,12 @@ class RestaurantListViewModelTest {
         // test in this class.
         repository = FakeRestaurantRepository(count = 1)
         syncManager = FakeDatabaseSyncManager()
-        viewModel = RestaurantListViewModel(repository = repository, syncManager = syncManager)
+        preferencesRepository = FakeUserPreferencesRepository()
+        viewModel = RestaurantListViewModel(
+            repository = repository,
+            syncManager = syncManager,
+            preferencesRepository = preferencesRepository
+        )
     }
 
     @After
@@ -299,7 +309,11 @@ class RestaurantListViewModelTest {
         val emptyRepository = FakeRestaurantRepository(count = 0)
         val freshSyncManager = FakeDatabaseSyncManager()
 
-        RestaurantListViewModel(repository = emptyRepository, syncManager = freshSyncManager)
+        RestaurantListViewModel(
+            repository = emptyRepository,
+            syncManager = freshSyncManager,
+            preferencesRepository = FakeUserPreferencesRepository()
+        )
 
         assertEquals(1, freshSyncManager.syncCallCount)
     }
@@ -309,9 +323,36 @@ class RestaurantListViewModelTest {
         val nonEmptyRepository = FakeRestaurantRepository(count = 1)
         val freshSyncManager = FakeDatabaseSyncManager()
 
-        RestaurantListViewModel(repository = nonEmptyRepository, syncManager = freshSyncManager)
+        RestaurantListViewModel(
+            repository = nonEmptyRepository,
+            syncManager = freshSyncManager,
+            preferencesRepository = FakeUserPreferencesRepository()
+        )
 
         assertEquals(0, freshSyncManager.syncCallCount)
+    }
+
+    // --- Phase 3: favourites ------------------------------------------------
+
+    @Test
+    fun `a restaurant whose id is in favoriteIds maps to isFavorite true`() = runTest {
+        observeState()
+        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf(1L))
+
+        repository.restaurants.value = listOf(restaurant(1, "Cal Ferran"), restaurant(2, "Bar Nil"))
+
+        val items = viewModel.uiState.value.restaurants.associateBy { it.id }
+        assertTrue(items.getValue(1L).isFavorite)
+        assertFalse(items.getValue(2L).isFavorite)
+    }
+
+    @Test
+    fun `onFavoriteToggle writes through to the preferences repository`() = runTest {
+        observeState()
+
+        viewModel.onFavoriteToggle(1L)
+
+        assertEquals(setOf(1L), preferencesRepository.preferences.value.favoriteIds)
     }
 }
 
@@ -355,6 +396,27 @@ private class FakeRestaurantRepository(var count: Int = 0) : RestaurantRepositor
 
     override suspend fun replaceAll(restaurants: List<Restaurant>) {
         this.restaurants.value = restaurants
+    }
+}
+
+/** Replays whatever the test pushes into [preferences] and records favourite writes. */
+private class FakeUserPreferencesRepository : UserPreferencesRepository {
+
+    override val preferences = MutableStateFlow(UserPreferences.Defaults)
+
+    override suspend fun setPalette(palette: AppPalette) {
+        preferences.value = preferences.value.copy(palette = palette)
+    }
+
+    override suspend fun setThemeMode(themeMode: ThemeMode) {
+        preferences.value = preferences.value.copy(themeMode = themeMode)
+    }
+
+    override suspend fun toggleFavorite(restaurantId: Long) {
+        val current = preferences.value.favoriteIds
+        preferences.value = preferences.value.copy(
+            favoriteIds = if (restaurantId in current) current - restaurantId else current + restaurantId
+        )
     }
 }
 

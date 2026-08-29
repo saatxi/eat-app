@@ -22,9 +22,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.RestaurantMenu
 import androidx.compose.material.icons.outlined.SearchOff
@@ -39,6 +41,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -60,7 +63,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -268,7 +273,11 @@ fun RestaurantListScreen(
                                 }
                             }
                             items(uiState.restaurants, key = { it.id }) { restaurant ->
-                                RestaurantRow(restaurant = restaurant, onClick = { onOpenRestaurant(restaurant.id) })
+                                RestaurantRow(
+                                    restaurant = restaurant,
+                                    onClick = { onOpenRestaurant(restaurant.id) },
+                                    onFavoriteToggle = viewModel::onFavoriteToggle
+                                )
                             }
                         }
                     }
@@ -362,8 +371,9 @@ private fun FilterSection(
     }
 }
 
+/** Internal rather than private: reused by [com.albertferran.eatapp.ui.favorites.FavoritesScreen]. */
 @Composable
-private fun EmptyState(
+internal fun EmptyState(
     icon: ImageVector,
     title: String,
     body: String,
@@ -403,8 +413,13 @@ private fun EmptyState(
     }
 }
 
+/** Internal rather than private: reused by [com.albertferran.eatapp.ui.favorites.FavoritesScreen]. */
 @Composable
-private fun RestaurantRow(restaurant: RestaurantUiModel, onClick: () -> Unit) {
+internal fun RestaurantRow(
+    restaurant: RestaurantUiModel,
+    onClick: () -> Unit,
+    onFavoriteToggle: (Long) -> Unit
+) {
     // The row draws name, cuisine, address, rating and price as separate icons and
     // text nodes, which a screen reader would otherwise announce one fragment at a
     // time; clearAndSetSemantics collapses the whole card into one description
@@ -422,85 +437,114 @@ private fun RestaurantRow(restaurant: RestaurantUiModel, onClick: () -> Unit) {
         priceDescription,
         restaurant.address
     ).joinToString(", ")
+    val haptic = LocalHapticFeedback.current
 
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clearAndSetSemantics { contentDescription = description }
-    ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            val tint = cuisineTint(restaurant.cuisineKey)
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    // The element the container transform into the detail screen runs on.
-                    .cuisineBadgeTransition(restaurant.id)
-                    .clip(CircleShape)
-                    .background(tint.container),
-                contentAlignment = Alignment.Center
+    // The heart lives in a Box alongside the Card rather than inside it: the Card's
+    // clearAndSetSemantics below collapses its whole subtree into one accessibility
+    // node, which would swallow the heart's own toggle semantics and leave it
+    // unreachable under TalkBack.
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clearAndSetSemantics { contentDescription = description }
+        ) {
+            Row(
+                // Extra end padding reserves room for the heart overlaid in the Box
+                // below, so it doesn't sit on top of the rating/price column.
+                modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 12.dp, end = 44.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    cuisineIcon(restaurant.cuisineKey),
-                    contentDescription = null,
-                    tint = tint.onContainer,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+                val tint = cuisineTint(restaurant.cuisineKey)
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        // The element the container transform into the detail screen runs on.
+                        .cuisineBadgeTransition(restaurant.id)
+                        .clip(CircleShape)
+                        .background(tint.container),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        cuisineIcon(restaurant.cuisineKey),
+                        contentDescription = null,
+                        tint = tint.onContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
 
-            Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(text = restaurant.name, style = MaterialTheme.typography.titleLarge)
-                Text(
-                    text = cuisineLabelText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                restaurant.address?.let { address ->
+                Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                    Text(text = restaurant.name, style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        text = cuisineLabelText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    restaurant.address?.let { address ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Outlined.LocationOn,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp).padding(end = 4.dp)
+                            )
+                            Text(
+                                text = address,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            Icons.Outlined.LocationOn,
+                            Icons.Default.Star,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp).padding(end = 4.dp)
                         )
                         Text(
-                            text = address,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            text = stringResource(R.string.rating_format, restaurant.rating),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(percent = 50),
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        modifier = Modifier.padding(top = 6.dp)
+                    ) {
+                        Text(
+                            text = restaurant.priceLabel,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                         )
                     }
                 }
             }
+        }
 
-            Column(horizontalAlignment = Alignment.End) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Star,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp).padding(end = 4.dp)
-                    )
-                    Text(
-                        text = stringResource(R.string.rating_format, restaurant.rating),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Surface(
-                    shape = RoundedCornerShape(percent = 50),
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                    modifier = Modifier.padding(top = 6.dp)
-                ) {
-                    Text(
-                        text = restaurant.priceLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                    )
-                }
-            }
+        IconToggleButton(
+            checked = restaurant.isFavorite,
+            onCheckedChange = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onFavoriteToggle(restaurant.id)
+            },
+            modifier = Modifier.align(Alignment.TopEnd)
+        ) {
+            Icon(
+                imageVector = if (restaurant.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                contentDescription = stringResource(
+                    if (restaurant.isFavorite) R.string.action_remove_favorite else R.string.action_add_favorite
+                ),
+                tint = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
@@ -523,7 +567,7 @@ private val previewRestaurant = RestaurantUiModel(
 private fun RestaurantRowPreview() {
     EatAppTheme {
         Surface {
-            RestaurantRow(restaurant = previewRestaurant, onClick = {})
+            RestaurantRow(restaurant = previewRestaurant, onClick = {}, onFavoriteToggle = {})
         }
     }
 }
