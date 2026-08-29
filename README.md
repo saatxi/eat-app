@@ -223,11 +223,24 @@ directory is gitignored and the next build overwrites it.
 
 The release buildType also sets `ndk { debugSymbolLevel = "FULL" }`, so
 `bundleRelease` additionally writes
-`app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip`.
-The app has no C/C++ of its own, but a dependency can still ship a prebuilt
-`.so`, and Play Console needs this file to symbolicate native crashes/ANRs —
-upload it alongside the `.aab`. Same lifecycle as `mapping.txt`: gitignored,
-overwritten by the next build, so archive it before then.
+`app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip`,
+which AGP embeds directly into the `.aab` — Play Console extracts and uses it
+automatically, no separate manual upload needed. The app has no C/C++ of its
+own, but `androidx.graphics.shapes` and `androidx.datastore.preferences` each
+bundle a prebuilt `.so`, and Play Console flags the bundle ("contains native
+code but you haven't uploaded debug symbols") unless it's actually populated.
+Same lifecycle as `mapping.txt`: gitignored, overwritten by the next build,
+so archive it before then (`scripts/bundle.ps1` does this for you).
+
+**This requires an installed NDK**, pinned as `ndkVersion` in
+`app/build.gradle.kts` (currently `28.2.13676358`). Without it under
+`<sdk>/ndk/<version>/`, AGP silently skips stripping those two libraries
+("Unable to strip library ... due to missing strip tool") and
+`native-debug-symbols.zip` ends up empty — the warning above is exactly what
+that looks like from Play Console's side. Install it once via Android
+Studio's SDK Manager (SDK Tools tab → NDK, side by side → check the pinned
+version) or `sdkmanager --install "ndk;28.2.13676358"`, then rebuild and
+re-upload; Gradle does not auto-download it for this step.
 
 ## Tests
 

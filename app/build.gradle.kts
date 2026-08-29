@@ -100,6 +100,16 @@ fun String.asJavaStringLiteral(): String =
 android {
     namespace = "com.saatxi.eatapp"
     compileSdk = 37
+    // The app has no C/C++ of its own, but androidx.graphics.shapes and
+    // androidx.datastore.preferences each bundle a prebuilt .so (see
+    // "Native debug symbols" in the README). Stripping and symbolicating
+    // those needs an actual NDK install -- without ndk.dir / this pinned
+    // version present under <sdk>/ndk/, AGP silently skips stripping
+    // ("Unable to strip library ... due to missing strip tool") and
+    // extractReleaseNativeDebugMetadata produces nothing to archive.
+    // Install this version via Android Studio's SDK Manager (SDK Tools ->
+    // NDK, side by side) or `sdkmanager --install "ndk;28.2.13676358"`.
+    ndkVersion = "28.2.13676358"
 
     defaultConfig {
         applicationId = "com.saatxi.eatapp"
