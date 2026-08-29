@@ -123,6 +123,9 @@ fun RouletteScreen(
                                 targetValue = 360f,
                                 animationSpec = tween(SPIN_DURATION_MS, easing = FastOutSlowInEasing)
                             )
+                            // Distinct from the press feedback below: this one marks the
+                            // card actually landing on its pick, once the flip settles.
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
                     }
 

@@ -13,9 +13,20 @@
     <string name="list_empty_no_results_body">Try a different search or rating filter.</string>
     <string name="list_action_sync">Refresh Data</string>
     <string name="list_action_clear_filters">Clear filters</string>
-    <string name="list_action_sort">Sort</string>
     <string name="list_sort_name">Name (A-Z)</string>
     <string name="list_sort_rating">Rating (highest first)</string>
+    <!-- Short forms for the segmented sort control, whose two segments split a
+         fixed width; list_sort_name/list_sort_rating stay as the accessibility
+         description for each button. -->
+    <string name="list_sort_name_short">Name</string>
+    <string name="list_sort_rating_short">Rating</string>
+    <string name="list_filters_title">Filters</string>
+    <string name="list_filters_expand">Expand filters</string>
+    <string name="list_filters_collapse">Collapse filters</string>
+    <plurals name="list_filters_active_count">
+        <item quantity="one">%1$d active filter</item>
+        <item quantity="other">%1$d active filters</item>
+    </plurals>
     <plurals name="list_sync_success">
         <item quantity="one">Data refreshed (%1$d restaurant)</item>
         <item quantity="other">Data refreshed (%1$d restaurants)</item>

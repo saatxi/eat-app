@@ -12,9 +12,18 @@
     <string name="list_empty_no_results_body">Prueba otra búsqueda o filtro de puntuación.</string>
     <string name="list_action_sync">Actualizar datos</string>
     <string name="list_action_clear_filters">Borrar filtros</string>
-    <string name="list_action_sort">Ordenar</string>
     <string name="list_sort_name">Nombre (A-Z)</string>
     <string name="list_sort_rating">Puntuación (de mayor a menor)</string>
+    <string name="list_sort_name_short">Nombre</string>
+    <string name="list_sort_rating_short">Puntuación</string>
+    <string name="list_filters_title">Filtros</string>
+    <string name="list_filters_expand">Mostrar filtros</string>
+    <string name="list_filters_collapse">Ocultar filtros</string>
+    <plurals name="list_filters_active_count">
+        <item quantity="one">%1$d filtro activo</item>
+        <item quantity="many">%1$d filtros activos</item>
+        <item quantity="other">%1$d filtros activos</item>
+    </plurals>
     <plurals name="list_sync_success">
         <item quantity="one">Datos actualizados (%1$d restaurante)</item>
         <item quantity="many">Datos actualizados (%1$d restaurantes)</item>

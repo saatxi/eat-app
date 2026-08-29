@@ -1,6 +1,9 @@
 package com.albertferran.eatapp.ui.list
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,10 +22,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -30,11 +33,10 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.RestaurantMenu
 import androidx.compose.material.icons.outlined.SearchOff
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -45,6 +47,9 @@ import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -57,11 +62,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalFocusManager
@@ -70,6 +77,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -95,7 +103,10 @@ fun RestaurantListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showSortMenu by remember { mutableStateOf(false) }
+    // Survives rotation but not process death on purpose: which filters are
+    // active is what matters across a config change, not whether the row
+    // happened to be open.
+    var filtersExpanded by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
     val syncErrorNetwork = stringResource(R.string.list_sync_error_network)
@@ -147,33 +158,6 @@ fun RestaurantListScreen(
                         IconButton(onClick = viewModel::syncNow, enabled = !uiState.isSyncing) {
                             Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.list_action_sync))
                         }
-                        IconButton(onClick = { showSortMenu = true }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.Sort,
-                                contentDescription = stringResource(R.string.list_action_sort)
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false }
-                        ) {
-                            RestaurantSort.entries.forEach { option ->
-                                DropdownMenuItem(
-                                    text = { Text(sortLabel(option)) },
-                                    onClick = {
-                                        showSortMenu = false
-                                        viewModel.onSortChange(option)
-                                    },
-                                    // The unselected entries keep an empty icon slot rather
-                                    // than none, so the labels stay put as the choice moves.
-                                    leadingIcon = {
-                                        if (option == uiState.sort) {
-                                            Icon(Icons.Default.Check, contentDescription = null)
-                                        }
-                                    }
-                                )
-                            }
-                        }
                     }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -209,6 +193,88 @@ fun RestaurantListScreen(
                 modifier = Modifier.fillMaxWidth().padding(16.dp)
             )
 
+            // Same condition the list content below switches its empty state on:
+            // nothing to sort or filter yet during the first load, or before the
+            // very first sync has ever completed.
+            if (!uiState.isInitialLoad && (uiState.restaurants.isNotEmpty() || uiState.hasActiveFilter)) {
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                    RestaurantSort.entries.forEachIndexed { index, option ->
+                        // The full "Rating (highest first)"-style wording is what
+                        // sortLabel() returns, meant for a dropdown with room to
+                        // spare; a two-way segmented row splits a fixed width in
+                        // half, so the visible text is the short form and the full
+                        // one only reaches screen readers, via the button's own
+                        // content description.
+                        val fullLabel = sortLabel(option)
+                        SegmentedButton(
+                            selected = uiState.sort == option,
+                            onClick = { viewModel.onSortChange(option) },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = RestaurantSort.entries.size),
+                            modifier = Modifier.semantics { contentDescription = fullLabel }
+                        ) {
+                            Text(sortLabelShort(option))
+                        }
+                    }
+                }
+
+                val activeFilterCount = (if (uiState.minRating != null) 1 else 0) +
+                    (if (uiState.cuisineType != null) 1 else 0)
+                val chevronRotation by animateFloatAsState(
+                    targetValue = if (filtersExpanded) 180f else 0f,
+                    label = "filters-chevron"
+                )
+                val badgeCountDescription = pluralStringResource(
+                    R.plurals.list_filters_active_count,
+                    activeFilterCount,
+                    activeFilterCount
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            onClickLabel = stringResource(
+                                if (filtersExpanded) R.string.list_filters_collapse else R.string.list_filters_expand
+                            )
+                        ) { filtersExpanded = !filtersExpanded }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.FilterList, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = stringResource(R.string.list_filters_title),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                    if (activeFilterCount > 0) {
+                        Badge(
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .semantics { contentDescription = badgeCountDescription }
+                        ) {
+                            Text(activeFilterCount.toString())
+                        }
+                    }
+                    Box(modifier = Modifier.weight(1f))
+                    Icon(
+                        Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.graphicsLayer { rotationZ = chevronRotation }
+                    )
+                }
+                AnimatedVisibility(visible = filtersExpanded) {
+                    FilterSection(
+                        minRating = uiState.minRating,
+                        onMinRatingChange = viewModel::onMinRatingChange,
+                        cuisineType = uiState.cuisineType,
+                        availableCuisines = uiState.availableCuisines,
+                        onCuisineChange = viewModel::onCuisineChange,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+
             PullToRefreshBox(
                 isRefreshing = uiState.isSyncing,
                 onRefresh = viewModel::syncNow,
@@ -233,25 +299,10 @@ fun RestaurantListScreen(
                         actionEnabled = !uiState.isSyncing
                     )
                 } else {
-                    // The filter controls live inside the list so they scroll away
-                    // instead of permanently eating vertical space — and so they stay
-                    // reachable when a filter matches nothing, which is exactly when
-                    // the user needs them most.
                     LazyColumn(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        item(key = "filters", contentType = "filters") {
-                            FilterSection(
-                                minRating = uiState.minRating,
-                                onMinRatingChange = viewModel::onMinRatingChange,
-                                cuisineType = uiState.cuisineType,
-                                availableCuisines = uiState.availableCuisines,
-                                onCuisineChange = viewModel::onCuisineChange,
-                                modifier = Modifier.animateItem()
-                            )
-                        }
-
                         if (uiState.restaurants.isEmpty()) {
                             item(key = "no-results", contentType = "empty") {
                                 EmptyState(
@@ -300,6 +351,12 @@ fun RestaurantListScreen(
 private fun sortLabel(sort: RestaurantSort): String = when (sort) {
     RestaurantSort.NAME -> stringResource(R.string.list_sort_name)
     RestaurantSort.RATING -> stringResource(R.string.list_sort_rating)
+}
+
+@Composable
+private fun sortLabelShort(sort: RestaurantSort): String = when (sort) {
+    RestaurantSort.NAME -> stringResource(R.string.list_sort_name_short)
+    RestaurantSort.RATING -> stringResource(R.string.list_sort_rating_short)
 }
 
 @Composable

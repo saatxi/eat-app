@@ -51,6 +51,23 @@ When asked to write a commit message or a tag message:
   `:baselineprofile:...AndroidTest` tasks (or the `:app:generateBaselineProfile`
   umbrella task) and never from `./gradlew test`.
 
+## Known blockers to revisit
+
+- **material3 stable version**: as of 2026-08-29, `androidx.compose.material3:material3`
+  resolves to **1.4.0** under the current `composeBom` in
+  `gradle/libs.versions.toml`, and the M3 Expressive `ButtonGroup` and
+  `MaterialShapes` APIs don't exist in it — both only ship from
+  `1.5.0-alpha01` onward, and 1.5.0 has no stable release yet (see
+  [visual-modernization-plan.md](docs/visual-modernization-plan.md)'s Phase 8
+  for how this was confirmed and worked around). **Whenever you're touching
+  this repo's dependencies or UI and it's a natural moment to check** — don't
+  go looking on a schedule — glance at
+  `https://dl.google.com/android/maven2/androidx/compose/material3/material3/maven-metadata.xml`
+  for a stable 1.5.x. If one exists, tell the user: bumping `composeBom` in
+  `gradle/libs.versions.toml` would unblock the cuisine-badge shape morphing
+  that Phase 8 deferred (`ButtonGroup` itself was already replaced with the
+  stable `SingleChoiceSegmentedButtonRow` and doesn't need revisiting).
+
 ## Build & verify
 
 ```

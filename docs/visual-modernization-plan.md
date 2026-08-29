@@ -24,7 +24,7 @@ list/detail split.
 | 5 | Bottom navigation | **Done** |
 | 6 | "What to eat" picker | **Done** |
 | 7 | Performance | **Done** |
-| 8 | Usability and M3 Expressive | Not started |
+| 8 | Usability and M3 Expressive | In progress |
 
 At the last checkpoint: `test`, `assembleDebug` and `lint` all green, 145 unit
 tests passing (up from 101), still JVM-only with no emulator.
@@ -572,22 +572,96 @@ tests.
 
 ---
 
-## Phase 8 — Usability and M3 Expressive · Not started
+## Phase 8 — Usability and M3 Expressive · In progress
 
-- **Pinned filters.** `FilterSection` is currently the first `item` of the
-  `LazyColumn` and scrolls away. Move it to a fixed, collapsible row under the
-  search field, with a badge counting active filters (`hasActiveFilter` already
-  exists on the ViewModel).
-- **`ButtonGroup`** for the name/rating sort instead of the current
-  `DropdownMenu` — one tap fewer.
-- **Shape morphing** on the cuisine badge with `MaterialShapes` +
-  `androidx.graphics:graphics-shapes` (already in the catalog): the circle
-  morphs as it travels from row to detail header, over the `sharedBounds`
-  already in
-  [SharedTransition.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/common/SharedTransition.kt).
-- **Predictive back**: `android:enableOnBackInvokedCallback="true"` in the
-  manifest.
-- **Haptics** on favouriting and on the roulette landing.
+### `ButtonGroup` and `MaterialShapes` don't exist yet on a stable BOM
+
+Both were planned against material3's M3 Expressive surface. Checked before
+writing any code: `androidx.compose.material3:material3` resolves to **1.4.0**
+under `composeBom = "2026.08.00"` (confirmed via `gradlew.bat :app:dependencies
+--configuration debugRuntimeClasspath`), and neither `ButtonGroup` nor
+`MaterialShapes` exists in that jar — both only appear starting at
+`1.5.0-alpha01` (checked against the actual `material3-android-1.4.0.aar`
+classes, not just changelogs). Per Google's `maven-metadata.xml`, **1.5.0's
+latest version is still `1.5.0-alpha27` — no stable release exists yet.** The
+Risks section below already anticipated needing `@OptIn` for these and that
+they "can change signature when the BOM moves," but not that today's stable
+BOM wouldn't carry them at all.
+
+Decision (user-confirmed): don't pull in an alpha `material3` override for
+this. Substituted with stable-API equivalents that meet the same usability
+goal instead of blocking the phase on it:
+
+- **Sort** uses `SingleChoiceSegmentedButtonRow` + `SegmentedButton` — the
+  same pattern `SettingsScreen.kt` already uses for theme mode — rather than
+  `ButtonGroup`. Still "one tap fewer" than the `DropdownMenu` it replaces.
+- **Shape morphing** on the cuisine badge is **not done**. Left out rather
+  than faked with a non-`MaterialShapes` substitute; the badge stays a plain
+  circle in both the row and the detail header, `sharedBounds` transition
+  unchanged. Revisit once material3 ships a stable 1.5.x.
+
+### Pinned, collapsible filters · Done
+
+`FilterSection` no longer lives inside the `LazyColumn` (was its first
+`item`, scrolling away with the list). It's now a fixed row between the
+search field and the list, gated behind the same condition the list's own
+empty states already use (`!isInitialLoad && (restaurants.isNotEmpty() ||
+hasActiveFilter)`) so it doesn't appear over the loading spinner or the
+first-sync empty state.
+
+The row itself is a clickable header (`FilterList` icon + "Filters" label +
+count `Badge` + a chevron that rotates via `animateFloatAsState`) toggling an
+`AnimatedVisibility` around the existing `FilterSection` composable — chip
+content unchanged, only its container moved. `activeFilterCount` is computed
+inline from `minRating`/`cuisineType` (0–2); the `Badge` only shows when it's
+nonzero, and carries its own `pluralStringResource`-driven content
+description (`list_filters_active_count`) separately from the visible digit,
+since a bare "2" read by TalkBack right after "Filters" is not self-explanatory.
+`filtersExpanded` is `rememberSaveable`, so it survives rotation.
+
+New strings: `list_filters_title`, `list_filters_expand`,
+`list_filters_collapse`, `list_filters_active_count` (plural), in both
+`values/` and `values-es/`.
+
+### Sort via `SingleChoiceSegmentedButtonRow` · Done
+
+Replaces the top app bar's sort `IconButton` + `DropdownMenu` entirely — the
+segmented row sits fixed in the body, always visible, above the filters
+header. One tap selects a sort order directly. `list_action_sort` (only ever
+used as that icon's content description) is now unused and was removed from
+both string files, the same way `list_action_more`/`list_action_about` were
+dropped in Phase 2 when their UI went away.
+
+### Predictive back · Done
+
+`android:enableOnBackInvokedCallback="true"` added to `<application>` in
+`AndroidManifest.xml`. Lint flags `UnusedAttribute` for it (`minSdk` 26 <
+33) — expected and harmless: the attribute is simply ignored below API 33,
+which is exactly the intended graceful degradation, not a real issue.
+
+### Haptics · Done
+
+Favouriting already had `HapticFeedbackType.LongPress` from Phase 3 (list and
+detail toggles) — nothing to add there. Roulette had haptic feedback on the
+pick *button press* (Phase 6) but not on the result actually landing,
+which is what this item asked for: `RouletteScreen.kt`'s `LaunchedEffect`
+now fires a second, distinct haptic once the card's flip animation
+(`rotation.animateTo`) completes, marking the moment the pick settles rather
+than the moment it was requested.
+
+### Verification
+
+`gradlew.bat test assembleDebug lint --no-daemon` — 145 tests passing
+(unchanged from Phase 7, these are UI-only changes with no new ViewModel
+logic), zero new lint warnings. Lint's `UnusedResources` dropped from 4 to 3
+after removing `list_action_sort`; the remaining 3 (`action_ok`,
+`detail_link_website`, `detail_link_instagram`) predate this phase and are
+unrelated to it — not touched.
+
+**Still to do**: shape morphing (blocked on a stable material3 1.5.x), and
+the on-device pass (pinned filters expand/collapse and the badge count on a
+real device, predictive back's system gesture actually working, both
+haptics distinguishable from each other on hardware).
 
 ---
 
@@ -696,8 +770,11 @@ Beyond that:
 
 ## Risks
 
-- **`ButtonGroup` and `MaterialShapes`** are still experimental M3 Expressive
-  APIs — they need `@OptIn` and can change signature when the BOM moves.
+- **`ButtonGroup` and `MaterialShapes`** turned out not to exist on any stable
+  material3 release at all (latest stable is 1.4.0; both ship starting
+  1.5.0-alpha01, and 1.5.0 has no stable release yet — see Phase 8). Sort was
+  rebuilt on the stable `SingleChoiceSegmentedButtonRow` instead; shape
+  morphing on the cuisine badge is deferred until 1.5.x stabilizes.
 - **APK size** — Outfit adds ~110 KB. R8 already shrinks resources, and the
   font is the only heavy new one.
 - **Baseline Profile** — generated, verified into a release APK, and its
