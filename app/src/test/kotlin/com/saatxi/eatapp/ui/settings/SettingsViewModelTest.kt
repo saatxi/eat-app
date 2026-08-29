@@ -1,5 +1,6 @@
 package com.saatxi.eatapp.ui.settings
 
+import com.saatxi.eatapp.data.prefs.AppLocaleManager
 import com.saatxi.eatapp.data.prefs.UserPreferences
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
 import com.saatxi.eatapp.data.sync.DatabaseSyncManager
@@ -30,6 +31,7 @@ class SettingsViewModelTest {
     private val dispatcher = UnconfinedTestDispatcher()
     private lateinit var preferencesRepository: FakeUserPreferencesRepository
     private lateinit var syncManager: FakeDatabaseSyncManager
+    private lateinit var localeManager: FakeAppLocaleManager
     private lateinit var viewModel: SettingsViewModel
 
     @Before
@@ -37,7 +39,8 @@ class SettingsViewModelTest {
         Dispatchers.setMain(dispatcher)
         preferencesRepository = FakeUserPreferencesRepository()
         syncManager = FakeDatabaseSyncManager()
-        viewModel = SettingsViewModel(preferencesRepository, syncManager)
+        localeManager = FakeAppLocaleManager()
+        viewModel = SettingsViewModel(preferencesRepository, syncManager, localeManager)
     }
 
     @After
@@ -80,6 +83,25 @@ class SettingsViewModelTest {
 
         assertEquals(ThemeMode.LIGHT, preferencesRepository.preferences.value.themeMode)
         assertEquals(ThemeMode.LIGHT, viewModel.uiState.value.themeMode)
+    }
+
+    @Test
+    fun `starts with the language reported by the locale manager`() = runTest {
+        localeManager.current = AppLanguage.CATALAN
+        viewModel = SettingsViewModel(preferencesRepository, syncManager, localeManager)
+        observeState()
+
+        assertEquals(AppLanguage.CATALAN, viewModel.uiState.value.language)
+    }
+
+    @Test
+    fun `changing the language writes through to the locale manager`() = runTest {
+        observeState()
+
+        viewModel.onLanguageChange(AppLanguage.SPANISH)
+
+        assertEquals(AppLanguage.SPANISH, localeManager.current)
+        assertEquals(AppLanguage.SPANISH, viewModel.uiState.value.language)
     }
 
     @Test
@@ -140,4 +162,14 @@ private class FakeDatabaseSyncManager(
     var result: DatabaseSyncResult = DatabaseSyncResult.Success(0)
 ) : DatabaseSyncManager {
     override suspend fun sync(): DatabaseSyncResult = result
+}
+
+/** Stands in for AppCompatDelegate, which is unavailable in a plain JUnit test. */
+private class FakeAppLocaleManager(
+    var current: AppLanguage = AppLanguage.Default
+) : AppLocaleManager {
+    override fun getLanguage(): AppLanguage = current
+    override fun setLanguage(language: AppLanguage) {
+        current = language
+    }
 }

@@ -6,7 +6,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
@@ -77,10 +76,11 @@ fun EatAppNavHost(navController: NavHostController = rememberNavController()) {
                             icon = {
                                 Icon(
                                     imageVector = if (selected) destination.selectedIcon else destination.unselectedIcon,
-                                    contentDescription = null
+                                    // No visible label (see below), so the icon alone
+                                    // carries the accessible name instead.
+                                    contentDescription = stringResource(destination.labelRes)
                                 )
-                            },
-                            label = { Text(stringResource(destination.labelRes)) }
+                            }
                         )
                     }
                 },

@@ -15,10 +15,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -33,7 +40,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +57,7 @@ import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.sync.RestaurantDatabaseSyncManager
 import com.saatxi.eatapp.data.sync.SyncFailureReason
 import com.saatxi.eatapp.ui.AppViewModelProvider
+import com.saatxi.eatapp.ui.common.findActivity
 import com.saatxi.eatapp.ui.common.formatRelativeTime
 import com.saatxi.eatapp.ui.list.SyncMessage
 import com.saatxi.eatapp.ui.theme.AppPalette
@@ -64,6 +74,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
     val snackbarHostState = remember { SnackbarHostState() }
 
     val syncErrorNetwork = stringResource(R.string.list_sync_error_network)
@@ -147,6 +158,44 @@ fun SettingsScreen(
                             shape = SegmentedButtonDefaults.itemShape(index = index, count = ThemeMode.entries.size)
                         ) {
                             Text(stringResource(mode.labelRes))
+                        }
+                    }
+                }
+            }
+
+            SettingsSection(title = stringResource(R.string.settings_section_language)) {
+                var languageMenuExpanded by remember { mutableStateOf(false) }
+                Box {
+                    OutlinedButton(onClick = { languageMenuExpanded = true }) {
+                        Text(stringResource(uiState.language.labelRes))
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = languageMenuExpanded,
+                        onDismissRequest = { languageMenuExpanded = false }
+                    ) {
+                        AppLanguage.entries.forEach { language ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(language.labelRes)) },
+                                onClick = {
+                                    languageMenuExpanded = false
+                                    viewModel.onLanguageChange(language)
+                                    // AppCompatDelegate applies the new locale to the
+                                    // process, but MainActivity only picks it up once
+                                    // it is recreated — the framework does this for us
+                                    // on API 33+, but some OEM builds don't reliably
+                                    // deliver that config change, so trigger it
+                                    // explicitly rather than rely on it.
+                                    activity?.recreate()
+                                },
+                                trailingIcon = if (language == uiState.language) {
+                                    { Icon(Icons.Default.Check, contentDescription = null) }
+                                } else null
+                            )
                         }
                     }
                 }

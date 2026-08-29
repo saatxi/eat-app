@@ -32,7 +32,11 @@ object AppViewModelProvider {
             )
         }
         initializer {
-            SettingsViewModel(eatApplication().userPreferences, eatApplication().syncManager)
+            SettingsViewModel(
+                eatApplication().userPreferences,
+                eatApplication().syncManager,
+                eatApplication().localeManager
+            )
         }
         initializer {
             FavoritesViewModel(eatApplication().repository, eatApplication().userPreferences)

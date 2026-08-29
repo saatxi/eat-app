@@ -1,9 +1,9 @@
 package com.saatxi.eatapp
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
@@ -18,7 +18,13 @@ import com.saatxi.eatapp.ui.theme.EatAppTheme
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
-class MainActivity : ComponentActivity() {
+// AppCompatDelegate.setApplicationLocales() (see AppLocaleManager) is a silent
+// no-op unless the Activity hosting the Compose UI extends AppCompatActivity —
+// on API 33+ it still needs an active AppCompatDelegate to look up a Context,
+// which only a ComponentActivity subclassing AppCompatActivity creates. Compose,
+// enableEdgeToEdge() and the splash screen all work the same either way, since
+// AppCompatActivity is itself a ComponentActivity.
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)

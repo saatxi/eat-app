@@ -1,0 +1,151 @@
+<resources>
+    <!-- app_name is a brand name and is intentionally left untranslated (falls back to values/strings.xml). -->
+
+    <string name="list_title">Els meus restaurants</string>
+    <string name="list_search_placeholder">Cerca restaurants</string>
+    <string name="list_search_clear">Esborra la cerca</string>
+    <string name="list_filter_min_rating">Puntuació mínima</string>
+    <string name="list_filter_cuisine">Cuina</string>
+    <string name="list_empty_first_sync_title">Encara no hi ha restaurants</string>
+    <string name="list_empty_first_sync_body">Descarrega els teus restaurants desats per començar.</string>
+    <string name="list_empty_no_results_title">Sense resultats</string>
+    <string name="list_empty_no_results_body">Prova una altra cerca o un altre filtre de puntuació.</string>
+    <string name="list_action_sync">Actualitza les dades</string>
+    <string name="list_action_clear_filters">Esborra els filtres</string>
+    <string name="list_sort_name">Nom (A-Z)</string>
+    <string name="list_sort_rating">Puntuació (de més a menys)</string>
+    <string name="list_sort_name_short">Nom</string>
+    <string name="list_sort_rating_short">Puntuació</string>
+    <string name="list_filters_title">Filtres</string>
+    <string name="list_filters_expand">Mostra els filtres</string>
+    <string name="list_filters_collapse">Amaga els filtres</string>
+    <plurals name="list_filters_active_count">
+        <item quantity="one">%1$d filtre actiu</item>
+        <item quantity="other">%1$d filtres actius</item>
+    </plurals>
+    <plurals name="list_sync_success">
+        <item quantity="one">Dades actualitzades (%1$d restaurant)</item>
+        <item quantity="other">Dades actualitzades (%1$d restaurants)</item>
+    </plurals>
+    <string name="list_sync_up_to_date">Ja està actualitzat</string>
+    <string name="list_sync_error_network">No s\'ha pogut descarregar. Comprova la connexió.</string>
+    <string name="list_sync_error_invalid">El fitxer descarregat no és vàlid.</string>
+    <string name="list_sync_error_unknown">No s\'han pogut actualitzar les dades.</string>
+    <plurals name="list_result_count">
+        <item quantity="one">%1$d restaurant</item>
+        <item quantity="other">%1$d restaurants</item>
+    </plurals>
+
+    <string name="action_back">Enrere</string>
+    <string name="action_go_back">Torna</string>
+    <string name="action_retry">Torna-ho a provar</string>
+
+    <string name="detail_not_found_title">Restaurant no trobat</string>
+    <string name="detail_not_found_body">Aquest restaurant s\'ha eliminat o les dades s\'han actualitzat.</string>
+
+    <string name="about_version_template">Versió %1$s (compilació %2$d, %3$s)</string>
+    <string name="about_last_synced">Última sincronització: %1$s</string>
+    <string name="about_last_synced_never">Encara no s\'ha sincronitzat</string>
+
+    <!--
+        Relative "last synced" wording. The number is both the plural quantity
+        and the formatting argument, so it has to stay in the translated text.
+    -->
+    <string name="relative_time_just_now">ara mateix</string>
+    <plurals name="relative_time_minutes_ago">
+        <item quantity="one">fa %1$d minut</item>
+        <item quantity="other">fa %1$d minuts</item>
+    </plurals>
+    <plurals name="relative_time_hours_ago">
+        <item quantity="one">fa %1$d hora</item>
+        <item quantity="other">fa %1$d hores</item>
+    </plurals>
+    <plurals name="relative_time_days_ago">
+        <item quantity="one">fa %1$d dia</item>
+        <item quantity="other">fa %1$d dies</item>
+    </plurals>
+
+    <string name="action_ok">D\'acord</string>
+
+    <string name="rating_format">%1$d/5</string>
+    <string name="detail_section_overview">Resum</string>
+    <string name="detail_section_rating">Puntuació i preu</string>
+
+    <!-- Screen-reader phrasing for the rating/price marks, which are drawn as stars and "$" symbols. -->
+    <string name="restaurant_rating_description">Puntuat amb %1$d de 5</string>
+    <string name="restaurant_price_description">Rang de preu %1$d de 4</string>
+
+    <!-- Bottom navigation / navigation rail. -->
+    <string name="nav_restaurants">Restaurants</string>
+    <string name="nav_favorites">Preferits</string>
+    <string name="nav_roulette">Ruleta</string>
+    <string name="nav_settings">Configuració</string>
+
+    <string name="favorites_title">Preferits</string>
+    <string name="favorites_empty_title">Encara no hi ha preferits</string>
+    <string name="favorites_empty_body">Toca el cor d\'un restaurant per desar-lo aquí.</string>
+    <string name="action_add_favorite">Afegeix als preferits</string>
+    <string name="action_remove_favorite">Elimina dels preferits</string>
+
+    <string name="roulette_title">Què mengem</string>
+    <string name="roulette_prompt">No et decideixes? Deixa que triï l\'app.</string>
+    <string name="roulette_action_pick">Tria\'n un</string>
+    <string name="roulette_action_again">Torna-ho a provar</string>
+    <string name="roulette_only_favorites">Només preferits</string>
+    <string name="roulette_empty_title">Res per triar</string>
+    <string name="roulette_empty_body">Cap restaurant coincideix amb aquests filtres.</string>
+
+    <string name="settings_title">Configuració</string>
+    <string name="settings_section_appearance">Aparença</string>
+    <string name="settings_palette">Esquema de color</string>
+    <string name="settings_theme_mode">Tema</string>
+    <string name="theme_mode_system">Sistema</string>
+    <string name="theme_mode_light">Clar</string>
+    <string name="theme_mode_dark">Fosc</string>
+    <string name="palette_saffron">Safrà</string>
+    <string name="palette_garden">Hort</string>
+    <string name="palette_indigo">Indi</string>
+    <string name="settings_section_data">Dades</string>
+    <string name="settings_section_about">Quant a</string>
+    <string name="settings_section_language">Idioma</string>
+    <string name="language_english">Anglès</string>
+    <string name="language_spanish">Espanyol</string>
+    <string name="language_catalan">Català</string>
+
+    <!-- Optional links, shown only when the synced data provides them. -->
+    <string name="detail_section_links">Enllaços</string>
+    <string name="detail_link_website">Web</string>
+    <string name="detail_link_instagram">Instagram</string>
+    <string name="detail_link_handle_format">\@%1$s</string>
+    <string name="detail_link_failed">Cap aplicació pot obrir aquest enllaç.</string>
+
+    <!--
+        Display labels for the closed cuisine vocabulary. The `.db` stores the
+        stable key (see Cuisine.kt); only these labels are ever translated, so
+        adding a new language never requires re-editing the data file.
+    -->
+    <string name="cuisine_mediterranean">Mediterrània</string>
+    <string name="cuisine_spanish">Espanyola</string>
+    <string name="cuisine_catalan">Catalana</string>
+    <string name="cuisine_basque">Basca</string>
+    <string name="cuisine_italian">Italiana</string>
+    <string name="cuisine_japanese">Japonesa</string>
+    <string name="cuisine_chinese">Xinesa</string>
+    <string name="cuisine_asian">Asiàtica</string>
+    <string name="cuisine_indian">Índia</string>
+    <string name="cuisine_middle_eastern">Orient Mitjà</string>
+    <string name="cuisine_american">Americana</string>
+    <string name="cuisine_seafood">Marisc</string>
+    <string name="cuisine_bar">Bar</string>
+    <string name="cuisine_beer_bar">Cerveseria</string>
+    <string name="cuisine_wine_bar">Vinoteca</string>
+    <string name="cuisine_cafe">Cafè</string>
+    <string name="cuisine_bakery">Fleca</string>
+    <string name="cuisine_dessert">Postres</string>
+    <string name="cuisine_breakfast">Esmorzar</string>
+    <string name="cuisine_brunch">Brunch</string>
+    <string name="cuisine_grill">Graella</string>
+    <string name="cuisine_fast_food">Menjar ràpid</string>
+    <string name="cuisine_fine_dining">Alta cuina</string>
+    <string name="cuisine_vegetarian">Vegetariana</string>
+</resources>

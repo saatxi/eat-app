@@ -212,6 +212,14 @@ tasks.register("printVersionInfo") {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    // AppCompatDelegate.setApplicationLocales is the only cross-version (API 26+,
+    // this app's minSdk) way to change the app's language at runtime; the
+    // framework's own per-app LocaleManager only exists from API 33. With
+    // Compose it only takes effect if the hosting Activity extends
+    // AppCompatActivity (see MainActivity) — without it, the call is a silent
+    // no-op even on API 33+, since it still needs an active AppCompatDelegate
+    // to look up a Context.
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)

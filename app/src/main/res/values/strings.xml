@@ -111,6 +111,10 @@
     <string name="palette_indigo">Indigo</string>
     <string name="settings_section_data">Data</string>
     <string name="settings_section_about">About</string>
+    <string name="settings_section_language">Language</string>
+    <string name="language_english">English</string>
+    <string name="language_spanish">Spanish</string>
+    <string name="language_catalan">Catalan</string>
 
     <!-- Optional links, shown only when the synced data provides them. -->
     <string name="detail_section_links">Links</string>

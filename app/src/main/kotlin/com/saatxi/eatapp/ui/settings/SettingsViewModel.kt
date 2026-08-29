@@ -2,6 +2,7 @@ package com.saatxi.eatapp.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.saatxi.eatapp.data.prefs.AppLocaleManager
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
 import com.saatxi.eatapp.data.sync.DatabaseSyncManager
 import com.saatxi.eatapp.data.sync.DatabaseSyncResult
@@ -18,26 +19,35 @@ import kotlinx.coroutines.launch
 data class SettingsUiState(
     val palette: AppPalette = AppPalette.Default,
     val themeMode: ThemeMode = ThemeMode.Default,
+    val language: AppLanguage = AppLanguage.Default,
     val isSyncing: Boolean = false,
     val pendingSyncMessage: SyncMessage? = null
 )
 
 class SettingsViewModel(
     private val preferencesRepository: UserPreferencesRepository,
-    private val syncManager: DatabaseSyncManager
+    private val syncManager: DatabaseSyncManager,
+    private val localeManager: AppLocaleManager
 ) : ViewModel() {
 
     private val isSyncing = MutableStateFlow(false)
     private val pendingSyncMessage = MutableStateFlow<SyncMessage?>(null)
 
+    // AppLocaleManager has no Flow of its own (see its kdoc): this only ever
+    // changes through onLanguageChange below, so updating it there keeps this
+    // in sync without needing to poll or observe anything external.
+    private val language = MutableStateFlow(localeManager.getLanguage())
+
     val uiState: StateFlow<SettingsUiState> = combine(
         preferencesRepository.preferences,
         isSyncing,
-        pendingSyncMessage
-    ) { preferences, syncing, syncMessage ->
+        pendingSyncMessage,
+        language
+    ) { preferences, syncing, syncMessage, language ->
         SettingsUiState(
             palette = preferences.palette,
             themeMode = preferences.themeMode,
+            language = language,
             isSyncing = syncing,
             pendingSyncMessage = syncMessage
         )
@@ -53,6 +63,11 @@ class SettingsViewModel(
 
     fun onThemeModeChange(themeMode: ThemeMode) {
         viewModelScope.launch { preferencesRepository.setThemeMode(themeMode) }
+    }
+
+    fun onLanguageChange(language: AppLanguage) {
+        localeManager.setLanguage(language)
+        this.language.value = language
     }
 
     fun syncNow() {
