@@ -58,7 +58,14 @@ class RestaurantDatabaseSyncManager(
             try {
                 deleteLegacyTempFiles()
 
-                when (val outcome = download(tempFile, getStoredETag())) {
+                // An empty local table must never be short-circuited by a stale ETag: if the
+                // database was cleared (a destructive migration, a manual reset during
+                // development) while the ETag pref survived, honoring it would make a 304
+                // permanently skip repopulating the data with no way to recover but a
+                // reinstall. Only rely on the cached ETag when there is data it can match.
+                val previousETag = if (repository.count() > 0) getStoredETag() else null
+
+                when (val outcome = download(tempFile, previousETag)) {
                     is DownloadOutcome.Failed -> return@withContext outcome.failure
 
                     DownloadOutcome.NotModified -> {
