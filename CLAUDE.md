@@ -42,9 +42,14 @@ When asked to write a commit message or a tag message:
 - **Tests**: JUnit4 unit tests under `app/src/test/kotlin/...`, mirroring the
   main source package structure. Robolectric is used for the cases that need
   an Android runtime (the `.db` reader, the Room DAO), so everything runs on
-  the JVM with `./gradlew test` and no emulator is ever required. Keep it that
-  way — `app/src/androidTest` is still empty on purpose. Fakes are written by
-  hand; there is no mocking library and adding one needs discussing first.
+  the JVM with `./gradlew test` and no emulator is ever required — that stays
+  true and does not change. `app/src/androidTest` is still empty on purpose.
+  Fakes are written by hand; there is no mocking library and adding one needs
+  discussing first. What *is* allowed is instrumented tests in the
+  `:baselineprofile` module (`com.android.test`, added for the Baseline
+  Profile — see README), which run only on demand via
+  `:baselineprofile:...AndroidTest` tasks (or the `:app:generateBaselineProfile`
+  umbrella task) and never from `./gradlew test`.
 
 ## Build & verify
 

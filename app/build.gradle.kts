@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 // --- Git-tag-based versioning ---------------------------------------------
@@ -235,6 +236,14 @@ dependencies {
 
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
+
+    // Reads app/src/main/baseline-prof.txt (once generated) at install time and
+    // hands it to ART, so a release install gets AOT-compiled hot paths without
+    // waiting for on-device profiling to warm up first.
+    implementation(libs.androidx.profileinstaller)
+    // Regenerated on demand against a connected device/emulator (API 28+) with
+    // gradlew.bat :app:generateBaselineProfile — not part of every build.
+    baselineProfile(project(":baselineprofile"))
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)

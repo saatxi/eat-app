@@ -458,27 +458,67 @@ its two `@Preview`s, and one each in `FavoritesScreen.kt` and
 `RouletteScreen.kt`. `gradlew.bat lint` confirms zero `ModifierParameter`
 occurrences.
 
-**Remaining**:
+**Also done, infrastructure only**: the `:baselineprofile` module
+(`com.android.test`, `androidx.baselineprofile` plugin) exists and builds —
+see the [README](../README.md#baseline-profile) for how to run it. **Not
+done**: `app/src/main/baseline-prof.txt` itself, since generating it needs a
+connected device or emulator on API 28+, which this environment doesn't have.
+That's the one piece of Phase 7 that can't be finished here.
 
-1. **Baseline Profile**: the `androidx.baselineprofile` plugin and a new
-   `:baselineprofile` module (`com.android.test`) with a
-   `BaselineProfileGenerator` (startup + list scroll + open detail) and a
-   `StartupBenchmark`. The generated profile is committed at
-   `app/src/main/baseline-prof.txt`.
+What's in the module: [`BaselineProfileGenerator.kt`](../baselineprofile/src/main/kotlin/com/albertferran/eatapp/baselineprofile/BaselineProfileGenerator.kt)
+(cold start, a list fling, opening a restaurant's detail, back) and
+[`StartupBenchmark.kt`](../baselineprofile/src/main/kotlin/com/albertferran/eatapp/baselineprofile/StartupBenchmark.kt)
+(cold-start `StartupTimingMetric`, once with `CompilationMode.None()` and once
+with `CompilationMode.Partial()`, for the before/after). `app/build.gradle.kts`
+gained the `androidx.baselineprofile` plugin, `implementation(libs.androidx.profileinstaller)`
+(installs the shipped profile at APK-install time) and
+`baselineProfile(project(":baselineprofile"))`.
 
-### The CLAUDE.md change this needs
+Two surprises versus the original plan, both discovered by actually running
+Gradle rather than assuming:
 
-[CLAUDE.md](../CLAUDE.md) currently says no emulator is ever required and that
-`app/src/androidTest` is empty on purpose. The rule becomes:
+- **Plugin version**: `androidx.baselineprofile` 1.4.1 (the latest *stable*
+  release at the time) fails applying to `:app` on this project's AGP 9.3.2
+  with `Module :app is not a supported android module` — 1.4.1 predates AGP 9
+  and can't recognize its extension types. `1.5.0-rc02` (the newest available,
+  matching AGP 9.3.2's own recency) applies cleanly. Worth re-checking for a
+  stable 1.5.x once one ships.
+- **No manual "benchmark" build type needed**: older Baseline Profile
+  tutorials have you hand-write a `benchmark` build type in both `:app` and
+  `:baselineprofile` (`initWith(release)`, debuggable, `matchingFallbacks`).
+  Doing that here produced a duplicated/ambiguous `assembleBenchmarkBenchmark`
+  task — plugin 1.5.0-rc02 already auto-creates `benchmarkRelease` and
+  `nonMinifiedRelease` variants on both modules by itself. The manual build
+  type was removed; the plugin's defaults are what's committed.
 
-> Unit tests (`./gradlew test`) stay **100% JVM** — Robolectric, no emulator,
-> and that does not change. What is now allowed are instrumented tests in the
-> `:baselineprofile` module (`com.android.test`), which run only on demand via
-> `:baselineprofile:...AndroidTest` and never from `./gradlew test`.
+Verified without a device: `gradlew.bat :baselineprofile:compileBenchmarkReleaseSources
+:baselineprofile:compileNonMinifiedReleaseSources` (both generator and
+benchmark classes compile), `gradlew.bat :app:assembleRelease` (the release
+build pipeline accepts the plugin wiring with no `baseline-prof.txt` present
+yet — `mergeReleaseArtProfile` / `compileReleaseArtProfile` run and just
+produce an empty profile), and `gradlew.bat test assembleDebug lint --no-daemon`
+— the exact command CI runs — confirming the new module doesn't change CI's
+outcome: `:baselineprofile:test` runs as a harmless no-op, and it has no
+`assembleDebug` or `lint` task at all, so root-level invocation skips it
+silently, exactly as planned below.
 
-CI is unaffected: it runs `test`, `assembleDebug` and `lint`, none of which
-pull in instrumented tests. Still worth confirming the workflow doesn't break
-when the new module is configured.
+**To actually finish this** (needs a device): `gradlew.bat :app:generateBaselineProfile`,
+then commit the `app/src/main/baseline-prof.txt` it writes, then
+`gradlew.bat :baselineprofile:connectedBenchmarkReleaseAndroidTest` for the
+before/after startup numbers.
+
+### The CLAUDE.md change this needed
+
+[CLAUDE.md](../CLAUDE.md) said no emulator is ever required and that
+`app/src/androidTest` is empty on purpose. Applied, in the "Tests" bullet:
+unit tests (`./gradlew test`) stay 100% JVM, unchanged; instrumented tests in
+the `:baselineprofile` module are now allowed, running only on demand via
+`:baselineprofile:...AndroidTest` tasks (or the `:app:generateBaselineProfile`
+umbrella task), never from `./gradlew test`.
+
+CI is unaffected, confirmed above by running its exact command locally: it
+runs `test`, `assembleDebug` and `lint`, none of which pull in instrumented
+tests.
 
 ---
 

@@ -251,6 +251,33 @@ What is covered:
 - `RestaurantUiModelTest` — the entity-to-UI-model mapping behind the price
   and address formatting, the link fields and the favourite flag.
 
+## Baseline Profile
+
+The `:baselineprofile` module (`com.android.test`, applying the
+`androidx.baselineprofile` Gradle plugin) generates
+`app/src/main/baseline-prof.txt`: a list of classes and methods ART should
+ahead-of-time compile at install time, rather than waiting to JIT them from a
+cold start. It's an instrumented test module, not a unit test — it needs a
+connected device or emulator running **API 28+** (a hard requirement of
+`BaselineProfileRule`, independent of the app's own `minSdk` 26) and is never
+part of `./gradlew test`:
+
+```
+./gradlew :app:generateBaselineProfile
+```
+
+This runs `BaselineProfileGenerator` (cold start, a list scroll, opening a
+restaurant's detail screen) against a non-minified release build of the app,
+and writes the result into `app/src/main/baseline-prof.txt` — commit that file
+once it's regenerated. `StartupBenchmark`, in the same module, measures cold
+startup time with and without the profile applied
+(`./gradlew :baselineprofile:connectedBenchmarkReleaseAndroidTest`), for a
+before/after comparison.
+
+The app depends on `androidx.profileinstaller` to install that profile at APK
+install time; without it the file would sit unused until the OS's own
+on-device profiling caught up after several real launches.
+
 ## Versioning
 
 The app version is derived automatically from git — there is nothing to edit

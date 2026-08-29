@@ -18,3 +18,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "EatApp"
 include(":app")
+include(":baselineprofile")
