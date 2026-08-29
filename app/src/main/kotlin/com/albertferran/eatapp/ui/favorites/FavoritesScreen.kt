@@ -64,11 +64,12 @@ fun FavoritesScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(uiState.restaurants, key = { it.id }) { restaurant ->
+                    items(uiState.restaurants, key = { it.id }, contentType = { "restaurant" }) { restaurant ->
                         RestaurantRow(
                             restaurant = restaurant,
                             onClick = { onOpenRestaurant(restaurant.id) },
-                            onFavoriteToggle = viewModel::onFavoriteToggle
+                            onFavoriteToggle = viewModel::onFavoriteToggle,
+                            modifier = Modifier.animateItem()
                         )
                     }
                 }

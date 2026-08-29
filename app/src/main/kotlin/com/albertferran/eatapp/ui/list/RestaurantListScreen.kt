@@ -235,32 +235,33 @@ fun RestaurantListScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        item(key = "filters") {
+                        item(key = "filters", contentType = "filters") {
                             FilterSection(
                                 minRating = uiState.minRating,
                                 onMinRatingChange = viewModel::onMinRatingChange,
                                 cuisineType = uiState.cuisineType,
                                 availableCuisines = uiState.availableCuisines,
-                                onCuisineChange = viewModel::onCuisineChange
+                                onCuisineChange = viewModel::onCuisineChange,
+                                modifier = Modifier.animateItem()
                             )
                         }
 
                         if (uiState.restaurants.isEmpty()) {
-                            item(key = "no-results") {
+                            item(key = "no-results", contentType = "empty") {
                                 EmptyState(
                                     icon = Icons.Outlined.SearchOff,
                                     title = stringResource(R.string.list_empty_no_results_title),
                                     body = stringResource(R.string.list_empty_no_results_body),
                                     actionLabel = stringResource(R.string.list_action_clear_filters),
                                     onAction = viewModel::clearFilters,
-                                    modifier = Modifier.fillParentMaxHeight(0.6f)
+                                    modifier = Modifier.fillParentMaxHeight(0.6f).animateItem()
                                 )
                             }
                         } else {
                             // Most useful precisely when a filter has narrowed the list down —
                             // an unfiltered count adds nothing you can't already see.
                             if (uiState.hasActiveFilter) {
-                                item(key = "result-count") {
+                                item(key = "result-count", contentType = "header") {
                                     Text(
                                         text = pluralStringResource(
                                             R.plurals.list_result_count,
@@ -268,15 +269,17 @@ fun RestaurantListScreen(
                                             uiState.restaurants.size
                                         ),
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.animateItem()
                                     )
                                 }
                             }
-                            items(uiState.restaurants, key = { it.id }) { restaurant ->
+                            items(uiState.restaurants, key = { it.id }, contentType = { "restaurant" }) { restaurant ->
                                 RestaurantRow(
                                     restaurant = restaurant,
                                     onClick = { onOpenRestaurant(restaurant.id) },
-                                    onFavoriteToggle = viewModel::onFavoriteToggle
+                                    onFavoriteToggle = viewModel::onFavoriteToggle,
+                                    modifier = Modifier.animateItem()
                                 )
                             }
                         }
@@ -299,7 +302,8 @@ private fun FilterSection(
     onMinRatingChange: (Int?) -> Unit,
     cuisineType: String?,
     availableCuisines: List<String>,
-    onCuisineChange: (String?) -> Unit
+    onCuisineChange: (String?) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val chipColors = FilterChipDefaults.filterChipColors(
         containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -308,7 +312,7 @@ private fun FilterSection(
         selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
     )
 
-    Column {
+    Column(modifier = modifier) {
         Text(
             text = stringResource(R.string.list_filter_min_rating),
             style = MaterialTheme.typography.labelMedium
@@ -418,7 +422,8 @@ internal fun EmptyState(
 internal fun RestaurantRow(
     restaurant: RestaurantUiModel,
     onClick: () -> Unit,
-    onFavoriteToggle: (Long) -> Unit
+    onFavoriteToggle: (Long) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     // The row draws name, cuisine, address, rating and price as separate icons and
     // text nodes, which a screen reader would otherwise announce one fragment at a
@@ -443,7 +448,7 @@ internal fun RestaurantRow(
     // clearAndSetSemantics below collapses its whole subtree into one accessibility
     // node, which would swallow the heart's own toggle semantics and leave it
     // unreachable under TalkBack.
-    Box(modifier = Modifier.fillMaxWidth()) {
+    Box(modifier = modifier.fillMaxWidth()) {
         Card(
             onClick = onClick,
             modifier = Modifier

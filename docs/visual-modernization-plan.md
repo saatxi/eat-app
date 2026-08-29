@@ -417,17 +417,31 @@ that invocation, so a metrics run after an unrelated no-op build can come back
 thin — force a real recompile (e.g. add `--rerun` on `compileDebugKotlin`) if
 that happens.
 
+**Also done**: `contentType` and `animateItem()` on both `LazyColumn`s
+(`RestaurantListScreen.kt`'s list and `FavoritesScreen.kt`'s) — they already
+had `key`. Each `item`/`items` call now tags a `contentType` (`"filters"`,
+`"empty"`, `"header"`, `"restaurant"`) so the layout only recycles a
+composed slot against another item of the same shape, and every item's root
+composable carries `Modifier.animateItem()` so insertions, removals and
+reorders (a filter narrowing the list, a favourite toggle removing a row from
+`FavoritesScreen`) animate instead of jump-cutting. This needed two small
+signature additions: `FilterSection` and `RestaurantRow` (`RestaurantRow` is
+also called directly from `FavoritesScreen.kt`) neither took a `Modifier`
+before — both now do, `modifier: Modifier = Modifier`, applied to each one's
+outermost layout, which is what `animateItem()` needs a stable modifier chain
+on to work at the call site rather than buried inside.
+
 **Remaining**:
 
-1. `contentType` and `animateItem()` on the `LazyColumn` items (they already
-   have `key`).
-2. `pluralStringResource` instead of `context.resources.getQuantityString`
-   (`RestaurantListScreen.kt:140`) — also clears the pending
+1. `pluralStringResource` instead of `context.resources.getQuantityString`
+   (`RestaurantListScreen.kt:117`) — also clears the pending
    `LocalContextResourcesRead` lint warning.
-3. Give `EmptyState` (`RestaurantListScreen.kt:441`) a
+2. Give `EmptyState` (`RestaurantListScreen.kt`) a
    `modifier: Modifier = Modifier` first optional parameter — clears
-   `ModifierParameter`.
-4. **Baseline Profile**: the `androidx.baselineprofile` plugin and a new
+   `ModifierParameter`. (It already takes a `modifier` param, but defaults to
+   `Modifier.fillMaxSize()` rather than a bare `Modifier`, which is what
+   trips the lint check.)
+3. **Baseline Profile**: the `androidx.baselineprofile` plugin and a new
    `:baselineprofile` module (`com.android.test`) with a
    `BaselineProfileGenerator` (startup + list scroll + open detail) and a
    `StartupBenchmark`. The generated profile is committed at
