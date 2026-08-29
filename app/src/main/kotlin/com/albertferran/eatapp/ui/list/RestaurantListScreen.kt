@@ -76,7 +76,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.content.res.Configuration
-import androidx.compose.ui.platform.LocalContext
 import com.albertferran.eatapp.R
 import com.albertferran.eatapp.data.local.RestaurantSort
 import com.albertferran.eatapp.data.sync.SyncFailureReason
@@ -97,7 +96,6 @@ fun RestaurantListScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showSortMenu by remember { mutableStateOf(false) }
-    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
     val syncErrorNetwork = stringResource(R.string.list_sync_error_network)
@@ -106,22 +104,29 @@ fun RestaurantListScreen(
     val syncUpToDate = stringResource(R.string.list_sync_up_to_date)
     val retryLabel = stringResource(R.string.action_retry)
 
+    // Resolved here rather than inside the LaunchedEffect below, because
+    // pluralStringResource (like stringResource) is a @Composable function and
+    // LaunchedEffect's block is a plain suspend lambda, not a composable one.
+    val pendingSyncMessage = uiState.pendingSyncMessage
+    val pendingSyncMessageText = when (pendingSyncMessage) {
+        is SyncMessage.Success ->
+            pluralStringResource(R.plurals.list_sync_success, pendingSyncMessage.count, pendingSyncMessage.count)
+        SyncMessage.UpToDate -> syncUpToDate
+        is SyncMessage.Error -> when (pendingSyncMessage.reason) {
+            SyncFailureReason.NETWORK -> syncErrorNetwork
+            SyncFailureReason.INVALID_FILE -> syncErrorInvalid
+            SyncFailureReason.IO_ERROR, SyncFailureReason.UNKNOWN -> syncErrorUnknown
+        }
+        null -> null
+    }
+
     // Keyed on the message itself (rather than Unit) so a message that arrives
     // across a config change is still shown. onSyncMessageShown() resets the
     // state to null once shown, which is what lets the *next* message — even an
     // identical one — trigger this effect again.
-    LaunchedEffect(uiState.pendingSyncMessage) {
-        val message = uiState.pendingSyncMessage ?: return@LaunchedEffect
-        val text = when (message) {
-            is SyncMessage.Success ->
-                context.resources.getQuantityString(R.plurals.list_sync_success, message.count, message.count)
-            SyncMessage.UpToDate -> syncUpToDate
-            is SyncMessage.Error -> when (message.reason) {
-                SyncFailureReason.NETWORK -> syncErrorNetwork
-                SyncFailureReason.INVALID_FILE -> syncErrorInvalid
-                SyncFailureReason.IO_ERROR, SyncFailureReason.UNKNOWN -> syncErrorUnknown
-            }
-        }
+    LaunchedEffect(pendingSyncMessage) {
+        val message = pendingSyncMessage ?: return@LaunchedEffect
+        val text = pendingSyncMessageText ?: return@LaunchedEffect
         val actionLabel = if (message is SyncMessage.Error) retryLabel else null
         val result = snackbarHostState.showSnackbar(text, actionLabel = actionLabel)
         if (result == SnackbarResult.ActionPerformed) {

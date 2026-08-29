@@ -431,17 +431,30 @@ before — both now do, `modifier: Modifier = Modifier`, applied to each one's
 outermost layout, which is what `animateItem()` needs a stable modifier chain
 on to work at the call site rather than buried inside.
 
+**Also done**: `pluralStringResource` instead of `context.resources.getQuantityString`
+for the sync-result snackbar text. The call site is a `LaunchedEffect`, whose
+block is a plain suspend lambda rather than `@Composable`, so
+`pluralStringResource` (like `stringResource`) can't be called from inside it
+directly — the message text is now resolved in the composable body itself,
+right before the effect, keyed the same way, and the effect reads the
+already-resolved string. Turned out the identical pattern existed twice, not
+once as the plan below assumed: `RestaurantListScreen.kt`'s sync snackbar and
+`SettingsScreen.kt`'s (its "Same pattern as the list screen's sync feedback"
+comment was correct about the code, just not about lint already catching
+both copies). Both are fixed the same way; `SettingsScreen.kt` keeps its
+`LocalContext.current` since `RestaurantDatabaseSyncManager.getLastSyncTime(context)`
+elsewhere in that file still needs it. This clears the `LocalContextResourcesRead`
+lint warning (`gradlew.bat lint` now reports zero occurrences, confirmed from
+the SARIF output).
+
 **Remaining**:
 
-1. `pluralStringResource` instead of `context.resources.getQuantityString`
-   (`RestaurantListScreen.kt:117`) — also clears the pending
-   `LocalContextResourcesRead` lint warning.
-2. Give `EmptyState` (`RestaurantListScreen.kt`) a
+1. Give `EmptyState` (`RestaurantListScreen.kt`) a
    `modifier: Modifier = Modifier` first optional parameter — clears
    `ModifierParameter`. (It already takes a `modifier` param, but defaults to
    `Modifier.fillMaxSize()` rather than a bare `Modifier`, which is what
    trips the lint check.)
-3. **Baseline Profile**: the `androidx.baselineprofile` plugin and a new
+2. **Baseline Profile**: the `androidx.baselineprofile` plugin and a new
    `:baselineprofile` module (`com.android.test`) with a
    `BaselineProfileGenerator` (startup + list scroll + open detail) and a
    `StartupBenchmark`. The generated profile is committed at

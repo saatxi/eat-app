@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -71,20 +72,27 @@ fun SettingsScreen(
     val syncUpToDate = stringResource(R.string.list_sync_up_to_date)
     val retryLabel = stringResource(R.string.action_retry)
 
+    // Resolved here rather than inside the LaunchedEffect below, because
+    // pluralStringResource (like stringResource) is a @Composable function and
+    // LaunchedEffect's block is a plain suspend lambda, not a composable one.
+    val pendingSyncMessage = uiState.pendingSyncMessage
+    val pendingSyncMessageText = when (pendingSyncMessage) {
+        is SyncMessage.Success ->
+            pluralStringResource(R.plurals.list_sync_success, pendingSyncMessage.count, pendingSyncMessage.count)
+        SyncMessage.UpToDate -> syncUpToDate
+        is SyncMessage.Error -> when (pendingSyncMessage.reason) {
+            SyncFailureReason.NETWORK -> syncErrorNetwork
+            SyncFailureReason.INVALID_FILE -> syncErrorInvalid
+            SyncFailureReason.IO_ERROR, SyncFailureReason.UNKNOWN -> syncErrorUnknown
+        }
+        null -> null
+    }
+
     // Same pattern as the list screen's sync feedback: carried in the state
     // rather than a one-shot event, so it survives a config change.
-    LaunchedEffect(uiState.pendingSyncMessage) {
-        val message = uiState.pendingSyncMessage ?: return@LaunchedEffect
-        val text = when (message) {
-            is SyncMessage.Success ->
-                context.resources.getQuantityString(R.plurals.list_sync_success, message.count, message.count)
-            SyncMessage.UpToDate -> syncUpToDate
-            is SyncMessage.Error -> when (message.reason) {
-                SyncFailureReason.NETWORK -> syncErrorNetwork
-                SyncFailureReason.INVALID_FILE -> syncErrorInvalid
-                SyncFailureReason.IO_ERROR, SyncFailureReason.UNKNOWN -> syncErrorUnknown
-            }
-        }
+    LaunchedEffect(pendingSyncMessage) {
+        val message = pendingSyncMessage ?: return@LaunchedEffect
+        val text = pendingSyncMessageText ?: return@LaunchedEffect
         val actionLabel = if (message is SyncMessage.Error) retryLabel else null
         val result = snackbarHostState.showSnackbar(text, actionLabel = actionLabel)
         if (result == SnackbarResult.ActionPerformed) {
