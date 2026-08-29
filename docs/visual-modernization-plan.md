@@ -404,6 +404,19 @@ property is a primitive or a String, so the class is stable and rows are
 skippable; the stars are computed at draw time from `rating`, which was already
 in the model.
 
+**Also done**: Compose compiler metrics behind an optional Gradle property.
+`app/build.gradle.kts` adds a `composeCompiler {}` block, gated on
+`-Peatapp.composeMetrics=true`, that points `metricsDestination` and
+`reportsDestination` at `build/compose_metrics/`. Verified the point-1 claim
+rather than just assuming it: `gradlew.bat :app:compileDebugKotlin
+-Peatapp.composeMetrics=true` produces `app-classes.txt` showing
+`stable class ...ui.model.RestaurantUiModel` with every property `stable`, and
+`app-composables.csv` showing `RestaurantRow` as `composable=1, skippable=1,
+restartable=1`. The report only reflects files Kotlin actually recompiles in
+that invocation, so a metrics run after an unrelated no-op build can come back
+thin — force a real recompile (e.g. add `--rerun` on `compileDebugKotlin`) if
+that happens.
+
 **Remaining**:
 
 1. `contentType` and `animateItem()` on the `LazyColumn` items (they already
@@ -414,10 +427,7 @@ in the model.
 3. Give `EmptyState` (`RestaurantListScreen.kt:441`) a
    `modifier: Modifier = Modifier` first optional parameter — clears
    `ModifierParameter`.
-4. Compose compiler metrics behind an optional Gradle property
-   (`eatapp.composeMetrics=true`), so the stability claim in point 1 can be
-   verified rather than assumed.
-5. **Baseline Profile**: the `androidx.baselineprofile` plugin and a new
+4. **Baseline Profile**: the `androidx.baselineprofile` plugin and a new
    `:baselineprofile` module (`com.android.test`) with a
    `BaselineProfileGenerator` (startup + list scroll + open detail) and a
    `StartupBenchmark`. The generated profile is committed at
@@ -556,9 +566,10 @@ Beyond that:
    confirm the app still loads and no links card appears. Then, with a local
    file that has them, confirm the website and `@handle` open, and that a row
    with `website = 'javascript:alert(1)'` simply draws no link.
-4. **Performance** — `eatapp.composeMetrics=true` to confirm
-   `RestaurantUiModel` reports as `stable` and `RestaurantRow` as `skippable`;
-   then the macrobenchmark on an emulator for before/after startup.
+4. **Performance** — `eatapp.composeMetrics=true` confirms `RestaurantUiModel`
+   reports as `stable` and `RestaurantRow` as `skippable` (done, see Phase 7);
+   still to run is the macrobenchmark on an emulator for before/after startup,
+   which needs the Baseline Profile module.
 
 ## Risks
 

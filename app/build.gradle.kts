@@ -167,6 +167,19 @@ kotlin {
     }
 }
 
+// Compose compiler stability/skippability reports, opt-in only: they're one .txt/.csv
+// per module dumped into build/, not something every dev needs on every build.
+// Usage: gradlew.bat assembleDebug -Peatapp.composeMetrics=true, then inspect
+// build/compose_metrics/*-composables.txt (skippable/restartable per composable) and
+// *-classes.txt (stable/unstable per class, e.g. RestaurantUiModel).
+if (project.findProperty("eatapp.composeMetrics") == "true") {
+    composeCompiler {
+        val metricsDir = layout.buildDirectory.dir("compose_metrics")
+        metricsDestination.set(metricsDir)
+        reportsDestination.set(metricsDir)
+    }
+}
+
 // Surface a missing keystore at build time rather than at install time, and only
 // when a release build is actually being run so debug builds stay quiet.
 gradle.taskGraph.whenReady {
