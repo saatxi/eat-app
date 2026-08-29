@@ -447,14 +447,20 @@ elsewhere in that file still needs it. This clears the `LocalContextResourcesRea
 lint warning (`gradlew.bat lint` now reports zero occurrences, confirmed from
 the SARIF output).
 
+**Also done**: `EmptyState`'s (`RestaurantListScreen.kt`) `modifier` default
+changed from `Modifier.fillMaxSize()` to a bare `Modifier`, which is what
+`ModifierParameter` actually wants — an optional `Modifier` parameter should
+default to the no-op `Modifier`, not bake in a specific layout behaviour the
+caller might not want. All six call sites that had been relying on that
+default now pass `modifier = Modifier.fillMaxSize()` explicitly instead, so
+behaviour is unchanged: the two in `RestaurantListScreen.kt`'s screen body and
+its two `@Preview`s, and one each in `FavoritesScreen.kt` and
+`RouletteScreen.kt`. `gradlew.bat lint` confirms zero `ModifierParameter`
+occurrences.
+
 **Remaining**:
 
-1. Give `EmptyState` (`RestaurantListScreen.kt`) a
-   `modifier: Modifier = Modifier` first optional parameter — clears
-   `ModifierParameter`. (It already takes a `modifier` param, but defaults to
-   `Modifier.fillMaxSize()` rather than a bare `Modifier`, which is what
-   trips the lint check.)
-2. **Baseline Profile**: the `androidx.baselineprofile` plugin and a new
+1. **Baseline Profile**: the `androidx.baselineprofile` plugin and a new
    `:baselineprofile` module (`com.android.test`) with a
    `BaselineProfileGenerator` (startup + list scroll + open detail) and a
    `StartupBenchmark`. The generated profile is committed at

@@ -107,7 +107,8 @@ fun RouletteScreen(
                     EmptyState(
                         icon = Icons.Outlined.Casino,
                         title = stringResource(R.string.roulette_empty_title),
-                        body = stringResource(R.string.roulette_empty_body)
+                        body = stringResource(R.string.roulette_empty_body),
+                        modifier = Modifier.fillMaxSize()
                     )
                 } else {
                     // A one-shot spin driven separately from AnimatedContent's own

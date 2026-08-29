@@ -227,6 +227,7 @@ fun RestaurantListScreen(
                         icon = Icons.Outlined.RestaurantMenu,
                         title = stringResource(R.string.list_empty_first_sync_title),
                         body = stringResource(R.string.list_empty_first_sync_body),
+                        modifier = Modifier.fillMaxSize(),
                         actionLabel = stringResource(R.string.list_action_sync),
                         onAction = viewModel::syncNow,
                         actionEnabled = !uiState.isSyncing
@@ -386,7 +387,7 @@ internal fun EmptyState(
     icon: ImageVector,
     title: String,
     body: String,
-    modifier: Modifier = Modifier.fillMaxSize(),
+    modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: () -> Unit = {},
     actionEnabled: Boolean = true
@@ -592,6 +593,7 @@ private fun EmptyStateFirstSyncPreview() {
                 icon = Icons.Outlined.RestaurantMenu,
                 title = stringResource(R.string.list_empty_first_sync_title),
                 body = stringResource(R.string.list_empty_first_sync_body),
+                modifier = Modifier.fillMaxSize(),
                 actionLabel = stringResource(R.string.list_action_sync),
                 onAction = {}
             )
@@ -609,6 +611,7 @@ private fun EmptyStateNoResultsPreview() {
                 icon = Icons.Outlined.SearchOff,
                 title = stringResource(R.string.list_empty_no_results_title),
                 body = stringResource(R.string.list_empty_no_results_body),
+                modifier = Modifier.fillMaxSize(),
                 actionLabel = stringResource(R.string.list_action_clear_filters),
                 onAction = {}
             )

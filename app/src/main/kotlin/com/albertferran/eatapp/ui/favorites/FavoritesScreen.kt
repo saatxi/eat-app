@@ -57,7 +57,8 @@ fun FavoritesScreen(
                 EmptyState(
                     icon = Icons.Outlined.FavoriteBorder,
                     title = stringResource(R.string.favorites_empty_title),
-                    body = stringResource(R.string.favorites_empty_body)
+                    body = stringResource(R.string.favorites_empty_body),
+                    modifier = Modifier.fillMaxSize()
                 )
             } else {
                 LazyColumn(
@@ -99,7 +100,8 @@ private fun FavoritesEmptyPreview() {
             EmptyState(
                 icon = Icons.Outlined.FavoriteBorder,
                 title = stringResource(R.string.favorites_empty_title),
-                body = stringResource(R.string.favorites_empty_body)
+                body = stringResource(R.string.favorites_empty_body),
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
