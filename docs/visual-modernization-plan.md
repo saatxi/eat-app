@@ -23,7 +23,7 @@ list/detail split.
 | 4 | Website and Instagram links | **Done** |
 | 5 | Bottom navigation | **Done** |
 | 6 | "What to eat" picker | **Done** |
-| 7 | Performance | Partly done |
+| 7 | Performance | **Done** |
 | 8 | Usability and M3 Expressive | Not started |
 
 At the last checkpoint: `test`, `assembleDebug` and `lint` all green, 145 unit
@@ -397,7 +397,7 @@ New [ui/roulette/RouletteViewModel.kt](../app/src/main/kotlin/com/albertferran/e
 
 ---
 
-## Phase 7 — Performance · Partly done
+## Phase 7 — Performance · Done
 
 **Done**: `RestaurantUiModel` no longer holds `stars: List<Boolean>`. Every
 property is a primitive or a String, so the class is stable and rows are
@@ -458,12 +458,57 @@ its two `@Preview`s, and one each in `FavoritesScreen.kt` and
 `RouletteScreen.kt`. `gradlew.bat lint` confirms zero `ModifierParameter`
 occurrences.
 
-**Also done, infrastructure only**: the `:baselineprofile` module
-(`com.android.test`, `androidx.baselineprofile` plugin) exists and builds —
-see the [README](../README.md#baseline-profile) for how to run it. **Not
-done**: `app/src/main/baseline-prof.txt` itself, since generating it needs a
-connected device or emulator on API 28+, which this environment doesn't have.
-That's the one piece of Phase 7 that can't be finished here.
+**Also done**: the `:baselineprofile` module (`com.android.test`,
+`androidx.baselineprofile` plugin) — see the [README](../README.md#baseline-profile)
+for how to run it — and the profile itself has now actually been generated on
+a connected physical device (Gradle reported it as `CPH2557 - 15`) via
+`gradlew.bat :app:generateBaselineProfile`, landing at
+`app/src/release/generated/baselineProfiles/baseline-prof.txt` (~8,570 rules).
+**Not** `app/src/main/baseline-prof.txt` as originally planned below and as
+this doc first said — that was wrong, corrected once an actual run showed
+where the plugin puts it for a project with no product flavors. The `Task
+:app:copyReleaseBaselineProfileIntoSrc` log line names the real destination
+directly.
+
+That path tripped a second, unrelated latent bug: `.gitignore`'s `**/release`
+rule (added for the real `app/release/` AGP APK-output directory) also
+matched `app/src/release/`, silently swallowing the profile. Fixed with a
+narrow `!app/src/release/` exception right after that rule — `app/release/`
+stays ignored, `app/src/release/` doesn't.
+
+The run also logged `No startup profile rules were generated ... because
+there are no instrumentation test with baseline profile rule, which specify
+includeInStartupProfile = true`. That's `BaselineProfileGenerator.collect()`'s
+`includeInStartupProfile` parameter (default `false`) — an even more targeted
+subset for just the startup path. Left off for now; worth an intentional
+on/off decision later rather than defaulting it by accident.
+
+`StartupBenchmark`'s two tests correctly `SKIPPED` during that run (they're
+gated to the `benchmarkRelease` variant via the plugin's own manifest-injected
+`enabledRules` flag; profile *collection* runs under `release`/`nonMinifiedRelease`)
+— confirms the variant-gating both test classes rely on to safely coexist in
+one module actually works, not just compiles.
+
+`StartupBenchmark` itself was then run with `gradlew.bat :baselineprofile:connectedBenchmarkReleaseAndroidTest`
+(and, correspondingly, `BaselineProfileGenerator.generate` `SKIPPED` this
+time — the same gating in reverse). First attempt failed with `ERRORS (not
+suppressed): DEVICE-MIRRORING` — Android Studio's "Running Devices" panel was
+mirroring the phone's screen, which adds rendering overhead the macrobenchmark
+tooling refuses to measure through, by design (there's a
+`suppressErrors`/`"DEVICE-MIRRORING"` instrumentation-runner argument to force
+past it, deliberately not used here since the whole point is accurate
+numbers, not a green checkmark). Stopping the mirroring session and rerunning
+passed cleanly. Real numbers, OPPO CPH2557 / Android 15 (API 35), 5 iterations
+each, `timeToInitialDisplayMs`:
+
+| | No profile (`CompilationMode.None()`) | With profile (`CompilationMode.Partial()`) |
+|---|---|---|
+| Median | 753.8 ms | 654.1 ms |
+| Min – max | 715.0 – 931.8 ms | 613.0 – 708.6 ms |
+
+**~13% faster cold start** (99.7 ms off the median). Raw data:
+`baselineprofile/build/outputs/connected_android_test_additional_output/benchmarkRelease/connected/CPH2557 - 15/com.albertferran.eatapp.baselineprofile-benchmarkData.json`
+(gitignored build output, not committed).
 
 What's in the module: [`BaselineProfileGenerator.kt`](../baselineprofile/src/main/kotlin/com/albertferran/eatapp/baselineprofile/BaselineProfileGenerator.kt)
 (cold start, a list fling, opening a restaurant's detail, back) and
@@ -491,21 +536,26 @@ Gradle rather than assuming:
   `nonMinifiedRelease` variants on both modules by itself. The manual build
   type was removed; the plugin's defaults are what's committed.
 
-Verified without a device: `gradlew.bat :baselineprofile:compileBenchmarkReleaseSources
+Verified along the way: `gradlew.bat :baselineprofile:compileBenchmarkReleaseSources
 :baselineprofile:compileNonMinifiedReleaseSources` (both generator and
-benchmark classes compile), `gradlew.bat :app:assembleRelease` (the release
-build pipeline accepts the plugin wiring with no `baseline-prof.txt` present
-yet — `mergeReleaseArtProfile` / `compileReleaseArtProfile` run and just
-produce an empty profile), and `gradlew.bat test assembleDebug lint --no-daemon`
-— the exact command CI runs — confirming the new module doesn't change CI's
-outcome: `:baselineprofile:test` runs as a harmless no-op, and it has no
-`assembleDebug` or `lint` task at all, so root-level invocation skips it
-silently, exactly as planned below.
+benchmark classes compile, before a device was involved), and
+`gradlew.bat test assembleDebug lint --no-daemon` — the exact command CI runs
+— confirming the new module doesn't change CI's outcome:
+`:baselineprofile:test` runs as a harmless no-op, and it has no `assembleDebug`
+or `lint` task at all, so root-level invocation skips it silently, exactly as
+planned below. `gradlew.bat :app:assembleRelease` was run twice: once before
+the profile existed (accepted the plugin wiring, `compileReleaseArtProfile`
+just produced an empty profile) and once after
+(`app/build/intermediates/r8_art_profile/release/minifyReleaseWithR8/baseline-prof.txt`
+now has 9,808 R8-remapped rules, and `app/release/baselineProfiles/{0,1}/`
+carries the packaged `.dm` files) — confirming the real profile actually flows
+through R8 and into the APK, not just that the plugin wiring compiles.
 
-**To actually finish this** (needs a device): `gradlew.bat :app:generateBaselineProfile`,
-then commit the `app/src/main/baseline-prof.txt` it writes, then
-`gradlew.bat :baselineprofile:connectedBenchmarkReleaseAndroidTest` for the
-before/after startup numbers.
+**Still outstanding**: commit `app/src/release/generated/baselineProfiles/baseline-prof.txt`
+— currently untracked (`.gitignore`'s new exception unblocked it, but nothing
+has staged/committed it yet). That's the only remaining step; the profile is
+generated, verified end-to-end into a release APK, and its startup benefit is
+measured.
 
 ### The CLAUDE.md change this needed
 
@@ -640,9 +690,9 @@ Beyond that:
    file that has them, confirm the website and `@handle` open, and that a row
    with `website = 'javascript:alert(1)'` simply draws no link.
 4. **Performance** — `eatapp.composeMetrics=true` confirms `RestaurantUiModel`
-   reports as `stable` and `RestaurantRow` as `skippable` (done, see Phase 7);
-   still to run is the macrobenchmark on an emulator for before/after startup,
-   which needs the Baseline Profile module.
+   reports as `stable` and `RestaurantRow` as `skippable`; the Baseline Profile
+   is generated, verified into a release APK, and measured at ~13% faster
+   cold start on a real device (see Phase 7).
 
 ## Risks
 
@@ -650,7 +700,7 @@ Beyond that:
   APIs — they need `@OptIn` and can change signature when the BOM moves.
 - **APK size** — Outfit adds ~110 KB. R8 already shrinks resources, and the
   font is the only heavy new one.
-- **Baseline Profile** — needs an emulator to *generate* the profile; see
-  Phase 7.
+- **Baseline Profile** — generated, verified into a release APK, and its
+  ~13% cold-start improvement measured on a real device. See Phase 7.
 - **`.db` compatibility** — the new columns are optional on purpose, so the
   currently published file keeps validating untouched.

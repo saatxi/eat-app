@@ -255,12 +255,18 @@ What is covered:
 
 The `:baselineprofile` module (`com.android.test`, applying the
 `androidx.baselineprofile` Gradle plugin) generates
-`app/src/main/baseline-prof.txt`: a list of classes and methods ART should
-ahead-of-time compile at install time, rather than waiting to JIT them from a
-cold start. It's an instrumented test module, not a unit test — it needs a
-connected device or emulator running **API 28+** (a hard requirement of
-`BaselineProfileRule`, independent of the app's own `minSdk` 26) and is never
-part of `./gradlew test`:
+`app/src/release/generated/baselineProfiles/baseline-prof.txt`: a list of
+classes and methods ART should ahead-of-time compile at install time, rather
+than waiting to JIT them from a cold start. Despite the `generated` in its
+path, that file is a committed source-set output, not build output — the
+project has no product flavors, so this is the plugin's real per-variant
+destination for a plain `release` build type, not `app/src/main/`. (It sits
+under `app/src/release/`, which `.gitignore`'s broad `**/release` rule would
+otherwise swallow along with the real `app/release/` APK output dir; there's
+an explicit `!app/src/release/` exception for that.) It's an instrumented test
+module, not a unit test — it needs a connected device or emulator running
+**API 28+** (a hard requirement of `BaselineProfileRule`, independent of the
+app's own `minSdk` 26) and is never part of `./gradlew test`:
 
 ```
 ./gradlew :app:generateBaselineProfile
@@ -268,9 +274,9 @@ part of `./gradlew test`:
 
 This runs `BaselineProfileGenerator` (cold start, a list scroll, opening a
 restaurant's detail screen) against a non-minified release build of the app,
-and writes the result into `app/src/main/baseline-prof.txt` — commit that file
-once it's regenerated. `StartupBenchmark`, in the same module, measures cold
-startup time with and without the profile applied
+and writes/updates the profile above — commit that file once it changes.
+`StartupBenchmark`, in the same module, measures cold startup time with and
+without the profile applied
 (`./gradlew :baselineprofile:connectedBenchmarkReleaseAndroidTest`), for a
 before/after comparison.
 

@@ -6,6 +6,10 @@
 /build
 **/build
 **/release
+# app/src/release/ is a real source set, not a build output: the Baseline
+# Profile plugin commits app/src/release/generated/baselineProfiles/baseline-prof.txt
+# there (app/release/ — the AGP APK output dir — stays ignored).
+!app/src/release/
 /captures
 .externalNativeBuild
 .cxx
