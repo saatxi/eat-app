@@ -40,7 +40,14 @@ function Fail        { param([string] $Message) Write-Host "x   $Message" -Foreg
 
 # --- repository -------------------------------------------------------------
 
-$repoRoot = git rev-parse --show-toplevel 2>$null
+try {
+    # try/catch because a redirected native stderr line (the "fatal: not a
+    # git repository" message) becomes a terminating error under
+    # $ErrorActionPreference = 'Stop' in PowerShell 5.1.
+    $repoRoot = git rev-parse --show-toplevel 2>$null
+} catch {
+    $repoRoot = $null
+}
 if ($LASTEXITCODE -ne 0 -or -not $repoRoot) {
     Fail 'Not inside a git repository.'
 }

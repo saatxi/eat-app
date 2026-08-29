@@ -43,7 +43,14 @@ function Fail        { param([string] $Message) Write-Host "x   $Message" -Foreg
 
 # --- repository -------------------------------------------------------------
 
-$repoRoot = git rev-parse --show-toplevel 2>$null
+try {
+    # try/catch because a redirected native stderr line (the "fatal: not a
+    # git repository" message) becomes a terminating error under
+    # $ErrorActionPreference = 'Stop' in PowerShell 5.1.
+    $repoRoot = git rev-parse --show-toplevel 2>$null
+} catch {
+    $repoRoot = $null
+}
 if ($LASTEXITCODE -ne 0 -or -not $repoRoot) {
     Fail 'Not inside a git repository.'
 }
@@ -61,8 +68,13 @@ if (-not $SkipCleanCheck) {
         }
     }
 
-    git describe --tags --exact-match > $null 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    # `git tag --points-at HEAD` never writes to stderr, unlike `git describe
+    # --exact-match` (which is fatal-and-noisy on no match) -- avoids
+    # PowerShell 5.1 treating a redirected native stderr line as a
+    # terminating error under $ErrorActionPreference = 'Stop'.
+    $tagsAtHead = git tag --points-at HEAD
+    $releaseTagAtHead = $tagsAtHead | Where-Object { $_ -match '^v[0-9]+\.[0-9]+\.[0-9]+$' } | Select-Object -First 1
+    if (-not $releaseTagAtHead) {
         Write-Warn 'HEAD is not exactly on a release tag. Run ./scripts/release.ps1 first for a real release.'
         $answer = Read-Host 'Build anyway? [y/N]'
         if ($answer -notmatch '^(y|yes)$') {
