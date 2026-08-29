@@ -1,0 +1,677 @@
+package com.saatxi.eatapp.ui.list
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.RestaurantMenu
+import androidx.compose.material.icons.outlined.SearchOff
+import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import android.content.res.Configuration
+import com.saatxi.eatapp.R
+import com.saatxi.eatapp.data.local.RestaurantSort
+import com.saatxi.eatapp.data.sync.SyncFailureReason
+import com.saatxi.eatapp.ui.AppViewModelProvider
+import com.saatxi.eatapp.ui.common.cuisineBadgeTransition
+import com.saatxi.eatapp.ui.common.cuisineIcon
+import com.saatxi.eatapp.ui.common.cuisineLabel
+import com.saatxi.eatapp.ui.common.cuisineTint
+import com.saatxi.eatapp.ui.model.RestaurantUiModel
+import com.saatxi.eatapp.ui.theme.EatAppTheme
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RestaurantListScreen(
+    onOpenRestaurant: (Long) -> Unit,
+    viewModel: RestaurantListViewModel = viewModel(factory = AppViewModelProvider.Factory)
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    // Survives rotation but not process death on purpose: which filters are
+    // active is what matters across a config change, not whether the row
+    // happened to be open.
+    var filtersExpanded by rememberSaveable { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+
+    val syncErrorNetwork = stringResource(R.string.list_sync_error_network)
+    val syncErrorInvalid = stringResource(R.string.list_sync_error_invalid)
+    val syncErrorUnknown = stringResource(R.string.list_sync_error_unknown)
+    val syncUpToDate = stringResource(R.string.list_sync_up_to_date)
+    val retryLabel = stringResource(R.string.action_retry)
+
+    // Resolved here rather than inside the LaunchedEffect below, because
+    // pluralStringResource (like stringResource) is a @Composable function and
+    // LaunchedEffect's block is a plain suspend lambda, not a composable one.
+    val pendingSyncMessage = uiState.pendingSyncMessage
+    val pendingSyncMessageText = when (pendingSyncMessage) {
+        is SyncMessage.Success ->
+            pluralStringResource(R.plurals.list_sync_success, pendingSyncMessage.count, pendingSyncMessage.count)
+        SyncMessage.UpToDate -> syncUpToDate
+        is SyncMessage.Error -> when (pendingSyncMessage.reason) {
+            SyncFailureReason.NETWORK -> syncErrorNetwork
+            SyncFailureReason.INVALID_FILE -> syncErrorInvalid
+            SyncFailureReason.IO_ERROR, SyncFailureReason.UNKNOWN -> syncErrorUnknown
+        }
+        null -> null
+    }
+
+    // Keyed on the message itself (rather than Unit) so a message that arrives
+    // across a config change is still shown. onSyncMessageShown() resets the
+    // state to null once shown, which is what lets the *next* message — even an
+    // identical one — trigger this effect again.
+    LaunchedEffect(pendingSyncMessage) {
+        val message = pendingSyncMessage ?: return@LaunchedEffect
+        val text = pendingSyncMessageText ?: return@LaunchedEffect
+        val actionLabel = if (message is SyncMessage.Error) retryLabel else null
+        val result = snackbarHostState.showSnackbar(text, actionLabel = actionLabel)
+        if (result == SnackbarResult.ActionPerformed) {
+            viewModel.syncNow()
+        }
+        viewModel.onSyncMessageShown()
+    }
+
+    Scaffold(
+        topBar = {
+            Column {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.list_title)) },
+                    actions = {
+                        // Disabled rather than swapped for a spinner while syncing: the
+                        // pull-to-refresh indicator is already showing one, and replacing
+                        // the button would shift the icons beside it every refresh.
+                        IconButton(onClick = viewModel::syncNow, enabled = !uiState.isSyncing) {
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.list_action_sync))
+                        }
+                    }
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            OutlinedTextField(
+                value = uiState.searchQuery,
+                onValueChange = viewModel::onSearchQueryChange,
+                // A placeholder rather than a label: the label would float above the
+                // text for good once the field has content, costing that height on
+                // every screen for a field whose purpose the icon already states.
+                placeholder = { Text(stringResource(R.string.list_search_placeholder)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (uiState.searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(R.string.list_search_clear)
+                            )
+                        }
+                    }
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                // Results already follow every keystroke, so the Search key has
+                // nothing left to submit — it just gets the keyboard out of the way.
+                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp)
+            )
+
+            // Same condition the list content below switches its empty state on:
+            // nothing to sort or filter yet during the first load, or before the
+            // very first sync has ever completed.
+            if (!uiState.isInitialLoad && (uiState.restaurants.isNotEmpty() || uiState.hasActiveFilter)) {
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                    RestaurantSort.entries.forEachIndexed { index, option ->
+                        // The full "Rating (highest first)"-style wording is what
+                        // sortLabel() returns, meant for a dropdown with room to
+                        // spare; a two-way segmented row splits a fixed width in
+                        // half, so the visible text is the short form and the full
+                        // one only reaches screen readers, via the button's own
+                        // content description.
+                        val fullLabel = sortLabel(option)
+                        SegmentedButton(
+                            selected = uiState.sort == option,
+                            onClick = { viewModel.onSortChange(option) },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = RestaurantSort.entries.size),
+                            modifier = Modifier.semantics { contentDescription = fullLabel }
+                        ) {
+                            Text(sortLabelShort(option))
+                        }
+                    }
+                }
+
+                val activeFilterCount = (if (uiState.minRating != null) 1 else 0) +
+                    (if (uiState.cuisineType != null) 1 else 0)
+                val chevronRotation by animateFloatAsState(
+                    targetValue = if (filtersExpanded) 180f else 0f,
+                    label = "filters-chevron"
+                )
+                val badgeCountDescription = pluralStringResource(
+                    R.plurals.list_filters_active_count,
+                    activeFilterCount,
+                    activeFilterCount
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            onClickLabel = stringResource(
+                                if (filtersExpanded) R.string.list_filters_collapse else R.string.list_filters_expand
+                            )
+                        ) { filtersExpanded = !filtersExpanded }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.FilterList, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = stringResource(R.string.list_filters_title),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                    if (activeFilterCount > 0) {
+                        Badge(
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .semantics { contentDescription = badgeCountDescription }
+                        ) {
+                            Text(activeFilterCount.toString())
+                        }
+                    }
+                    Box(modifier = Modifier.weight(1f))
+                    Icon(
+                        Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.graphicsLayer { rotationZ = chevronRotation }
+                    )
+                }
+                AnimatedVisibility(visible = filtersExpanded) {
+                    FilterSection(
+                        minRating = uiState.minRating,
+                        onMinRatingChange = viewModel::onMinRatingChange,
+                        cuisineType = uiState.cuisineType,
+                        availableCuisines = uiState.availableCuisines,
+                        onCuisineChange = viewModel::onCuisineChange,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+
+            PullToRefreshBox(
+                isRefreshing = uiState.isSyncing,
+                onRefresh = viewModel::syncNow,
+                modifier = Modifier.weight(1f).fillMaxWidth()
+            ) {
+                if (uiState.isInitialLoad) {
+                    // The database has not emitted yet, so an empty list here means
+                    // "not loaded", not "nothing to show" — painting the first-sync
+                    // empty state would flash it for a frame on every cold start.
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (uiState.restaurants.isEmpty() && !uiState.hasActiveFilter) {
+                    // Nothing has ever been synced: there are no filters to offer yet.
+                    EmptyState(
+                        icon = Icons.Outlined.RestaurantMenu,
+                        title = stringResource(R.string.list_empty_first_sync_title),
+                        body = stringResource(R.string.list_empty_first_sync_body),
+                        modifier = Modifier.fillMaxSize(),
+                        actionLabel = stringResource(R.string.list_action_sync),
+                        onAction = viewModel::syncNow,
+                        actionEnabled = !uiState.isSyncing
+                    )
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (uiState.restaurants.isEmpty()) {
+                            item(key = "no-results", contentType = "empty") {
+                                EmptyState(
+                                    icon = Icons.Outlined.SearchOff,
+                                    title = stringResource(R.string.list_empty_no_results_title),
+                                    body = stringResource(R.string.list_empty_no_results_body),
+                                    actionLabel = stringResource(R.string.list_action_clear_filters),
+                                    onAction = viewModel::clearFilters,
+                                    modifier = Modifier.fillParentMaxHeight(0.6f).animateItem()
+                                )
+                            }
+                        } else {
+                            // Most useful precisely when a filter has narrowed the list down —
+                            // an unfiltered count adds nothing you can't already see.
+                            if (uiState.hasActiveFilter) {
+                                item(key = "result-count", contentType = "header") {
+                                    Text(
+                                        text = pluralStringResource(
+                                            R.plurals.list_result_count,
+                                            uiState.restaurants.size,
+                                            uiState.restaurants.size
+                                        ),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.animateItem()
+                                    )
+                                }
+                            }
+                            items(uiState.restaurants, key = { it.id }, contentType = { "restaurant" }) { restaurant ->
+                                RestaurantRow(
+                                    restaurant = restaurant,
+                                    onClick = { onOpenRestaurant(restaurant.id) },
+                                    onFavoriteToggle = viewModel::onFavoriteToggle,
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun sortLabel(sort: RestaurantSort): String = when (sort) {
+    RestaurantSort.NAME -> stringResource(R.string.list_sort_name)
+    RestaurantSort.RATING -> stringResource(R.string.list_sort_rating)
+}
+
+@Composable
+private fun sortLabelShort(sort: RestaurantSort): String = when (sort) {
+    RestaurantSort.NAME -> stringResource(R.string.list_sort_name_short)
+    RestaurantSort.RATING -> stringResource(R.string.list_sort_rating_short)
+}
+
+@Composable
+private fun FilterSection(
+    minRating: Int?,
+    onMinRatingChange: (Int?) -> Unit,
+    cuisineType: String?,
+    availableCuisines: List<String>,
+    onCuisineChange: (String?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val chipColors = FilterChipDefaults.filterChipColors(
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+    )
+
+    Column(modifier = modifier) {
+        Text(
+            text = stringResource(R.string.list_filter_min_rating),
+            style = MaterialTheme.typography.labelMedium
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Every synced restaurant has a rating of at least 1, so a "1+" chip
+            // would filter nothing; the range starts at 2 for that reason.
+            (2..5).forEach { rating ->
+                FilterChip(
+                    selected = minRating == rating,
+                    onClick = { onMinRatingChange(if (minRating == rating) null else rating) },
+                    label = { Text("$rating+") },
+                    colors = chipColors
+                )
+            }
+        }
+
+        // Only the cuisines actually present in the synced data are offered, so the
+        // row stays short instead of listing all 24 vocabulary entries.
+        if (availableCuisines.isNotEmpty()) {
+            val sortedCuisines = availableCuisines
+                .map { key -> key to cuisineLabel(key) }
+                .sortedBy { (_, label) -> label.lowercase() }
+
+            Text(
+                text = stringResource(R.string.list_filter_cuisine),
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                sortedCuisines.forEach { (key, label) ->
+                    FilterChip(
+                        selected = cuisineType == key,
+                        onClick = { onCuisineChange(if (cuisineType == key) null else key) },
+                        label = { Text(label) },
+                        leadingIcon = {
+                            Icon(
+                                cuisineIcon(key),
+                                contentDescription = null,
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        },
+                        colors = chipColors
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Internal rather than private: reused by [com.saatxi.eatapp.ui.favorites.FavoritesScreen]. */
+@Composable
+internal fun EmptyState(
+    icon: ImageVector,
+    title: String,
+    body: String,
+    modifier: Modifier = Modifier,
+    actionLabel: String? = null,
+    onAction: () -> Unit = {},
+    actionEnabled: Boolean = true
+) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            if (actionLabel != null) {
+                Button(onClick = onAction, enabled = actionEnabled, modifier = Modifier.padding(top = 20.dp)) {
+                    Text(actionLabel)
+                }
+            }
+        }
+    }
+}
+
+/** Internal rather than private: reused by [com.saatxi.eatapp.ui.favorites.FavoritesScreen]. */
+@Composable
+internal fun RestaurantRow(
+    restaurant: RestaurantUiModel,
+    onClick: () -> Unit,
+    onFavoriteToggle: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // The row draws name, cuisine, address, rating and price as separate icons and
+    // text nodes, which a screen reader would otherwise announce one fragment at a
+    // time; clearAndSetSemantics collapses the whole card into one description
+    // instead, while the card's own click action (added by Card's onClick, on the
+    // same node) is untouched.
+    val cuisineLabelText = cuisineLabel(restaurant.cuisineKey)
+    val ratingDescription = stringResource(R.string.restaurant_rating_description, restaurant.rating)
+    val priceDescription = restaurant.priceLabel.takeIf { it.isNotEmpty() }?.let {
+        stringResource(R.string.restaurant_price_description, it.length)
+    }
+    val description = listOfNotNull(
+        restaurant.name,
+        cuisineLabelText,
+        ratingDescription,
+        priceDescription,
+        restaurant.address
+    ).joinToString(", ")
+    val haptic = LocalHapticFeedback.current
+
+    // The heart lives in a Box alongside the Card rather than inside it: the Card's
+    // clearAndSetSemantics below collapses its whole subtree into one accessibility
+    // node, which would swallow the heart's own toggle semantics and leave it
+    // unreachable under TalkBack.
+    Box(modifier = modifier.fillMaxWidth()) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clearAndSetSemantics { contentDescription = description }
+        ) {
+            Row(
+                // Extra end padding reserves room for the heart overlaid in the Box
+                // below, so it doesn't sit on top of the rating/price column.
+                modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 12.dp, end = 44.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val tint = cuisineTint(restaurant.cuisineKey)
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        // The element the container transform into the detail screen runs on.
+                        .cuisineBadgeTransition(restaurant.id)
+                        .clip(CircleShape)
+                        .background(tint.container),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        cuisineIcon(restaurant.cuisineKey),
+                        contentDescription = null,
+                        tint = tint.onContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                    Text(text = restaurant.name, style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        text = cuisineLabelText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    restaurant.address?.let { address ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Outlined.LocationOn,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp).padding(end = 4.dp)
+                            )
+                            Text(
+                                text = address,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp).padding(end = 4.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.rating_format, restaurant.rating),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(percent = 50),
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        modifier = Modifier.padding(top = 6.dp)
+                    ) {
+                        Text(
+                            text = restaurant.priceLabel,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        IconToggleButton(
+            checked = restaurant.isFavorite,
+            onCheckedChange = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onFavoriteToggle(restaurant.id)
+            },
+            modifier = Modifier.align(Alignment.TopEnd)
+        ) {
+            Icon(
+                imageVector = if (restaurant.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                contentDescription = stringResource(
+                    if (restaurant.isFavorite) R.string.action_remove_favorite else R.string.action_add_favorite
+                ),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+private val previewRestaurant = RestaurantUiModel(
+    id = 1,
+    name = "Cal Ferran",
+    cuisineKey = "mediterranean",
+    address = "Plaça Santa Anna, Mataró",
+    rating = 4,
+    priceLabel = "$$",
+    website = "https://calferran.example",
+    instagram = "calferran",
+    isFavorite = true
+)
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun RestaurantRowPreview() {
+    EatAppTheme {
+        Surface {
+            RestaurantRow(restaurant = previewRestaurant, onClick = {}, onFavoriteToggle = {})
+        }
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun EmptyStateFirstSyncPreview() {
+    EatAppTheme {
+        Surface {
+            EmptyState(
+                icon = Icons.Outlined.RestaurantMenu,
+                title = stringResource(R.string.list_empty_first_sync_title),
+                body = stringResource(R.string.list_empty_first_sync_body),
+                modifier = Modifier.fillMaxSize(),
+                actionLabel = stringResource(R.string.list_action_sync),
+                onAction = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun EmptyStateNoResultsPreview() {
+    EatAppTheme {
+        Surface {
+            EmptyState(
+                icon = Icons.Outlined.SearchOff,
+                title = stringResource(R.string.list_empty_no_results_title),
+                body = stringResource(R.string.list_empty_no_results_body),
+                modifier = Modifier.fillMaxSize(),
+                actionLabel = stringResource(R.string.list_action_clear_filters),
+                onAction = {}
+            )
+        }
+    }
+}

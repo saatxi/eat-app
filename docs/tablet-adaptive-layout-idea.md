@@ -25,7 +25,7 @@ navigate to detail, then back.
   `NavigableListDetailPaneScaffold` APIs Reply is built on). Not currently a
   project dependency — would need discussion before adding, per this repo's
   "don't add a dependency without discussing it" convention.
-- **Navigation** ([`EatAppNavHost.kt`](../app/src/main/kotlin/com/albertferran/eatapp/navigation/EatAppNavHost.kt)):
+- **Navigation** ([`EatAppNavHost.kt`](../app/src/main/kotlin/com/saatxi/eatapp/navigation/EatAppNavHost.kt)):
   the current two-route stack (`list`, `detail/{restaurantId}`) would need to
   become pane-aware — on expanded width, "navigating to detail" means
   selecting a restaurant in the list pane and rendering `RestaurantDetailScreen`

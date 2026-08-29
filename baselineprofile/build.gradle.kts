@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.albertferran.eatapp.baselineprofile"
+    namespace = "com.saatxi.eatapp.baselineprofile"
     // Baseline profile generation (BaselineProfileRule) only works on API 28+
     // devices/emulators, regardless of the app's own minSdk 26 — this module's
     // minSdk is independent of :app's.

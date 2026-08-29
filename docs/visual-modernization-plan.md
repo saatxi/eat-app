@@ -69,13 +69,13 @@ tests passing (up from 101), still JVM-only with no emulator.
 
 ### Three palettes with complete tonal ramps
 
-[Color.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/Color.kt) now
+[Color.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/theme/Color.kt) now
 holds only the shared error tones. Each palette lives in
-`ui/theme/palette/`: [SaffronPalette.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/palette/SaffronPalette.kt),
-[GardenPalette.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/palette/GardenPalette.kt),
-[IndigoPalette.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/palette/IndigoPalette.kt),
+`ui/theme/palette/`: [SaffronPalette.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/theme/palette/SaffronPalette.kt),
+[GardenPalette.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/theme/palette/GardenPalette.kt),
+[IndigoPalette.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/theme/palette/IndigoPalette.kt),
 declaring tones through the types in
-[Tones.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/Tones.kt).
+[Tones.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/theme/Tones.kt).
 
 **Saffron** (default — saffron orange + teal + plum)
 
@@ -114,25 +114,25 @@ NeutralVar 30 #45464F  50 #767680  60 #90909A  80 #C6C6D0  90 #E2E1EC
 ```
 
 The tone-to-role mapping is written **once** in
-[PaletteSchemes.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/PaletteSchemes.kt),
+[PaletteSchemes.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/theme/PaletteSchemes.kt),
 rather than per scheme. That is what makes the old contrast bug
 unreintroducible: an on-container is always the far end of its own ramp, stated
 in one place. `onXContainer` is tone 10 in light and tone 90 in dark.
 
 ### Cuisine accents: 3 → 8
 
-[CuisineAccents.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/CuisineAccents.kt)
+[CuisineAccents.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/theme/CuisineAccents.kt)
 defines `CuisineTint` and a `LocalCuisineAccents` static CompositionLocal
 carrying eight accents, published by `EatAppTheme` for the active palette.
 Light = container tone 90 / on tone 10; dark = container tone 30 / on tone 90.
 `cuisineTint` in
-[CuisineVisuals.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/common/CuisineVisuals.kt)
+[CuisineVisuals.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/common/CuisineVisuals.kt)
 now indexes `ordinal % 8`; an unknown key still falls back to `surfaceVariant`,
 so a newer data file never breaks an older app.
 
 ### Palette and mode selection
 
-[Theme.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/Theme.kt)
+[Theme.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/theme/Theme.kt)
 exposes `AppPalette` (SAFFRON / GARDEN / INDIGO) and `ThemeMode`
 (SYSTEM / LIGHT / DARK), with `EatAppTheme(palette, themeMode, content)`. Enum
 names are what gets persisted, so they must not be renamed without a migration.
@@ -148,7 +148,7 @@ Outfit carries display, headline and title; body and label stay on
 `FontFamily.Default`. Deliberate: Outfit gives the app character at large
 sizes, but at 12–16sp a system font the platform has already hinted for the
 user's screen reads better. The full M3 scale is now spelled out in
-[Type.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/Type.kt).
+[Type.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/theme/Type.kt).
 
 ---
 
@@ -156,19 +156,19 @@ user's screen reads better. The full M3 scale is now spelled out in
 
 `androidx.datastore:datastore-preferences` and `androidx.core:core-splashscreen`
 added to the version catalog;
-[UserPreferencesRepository.kt](../app/src/main/kotlin/com/albertferran/eatapp/data/prefs/UserPreferencesRepository.kt)
+[UserPreferencesRepository.kt](../app/src/main/kotlin/com/saatxi/eatapp/data/prefs/UserPreferencesRepository.kt)
 (interface + `UserPreferences`) and
-[DataStoreUserPreferencesRepository.kt](../app/src/main/kotlin/com/albertferran/eatapp/data/prefs/DataStoreUserPreferencesRepository.kt)
+[DataStoreUserPreferencesRepository.kt](../app/src/main/kotlin/com/saatxi/eatapp/data/prefs/DataStoreUserPreferencesRepository.kt)
 written and exposed as a third `by lazy` on
-[EatApplication.kt](../app/src/main/kotlin/com/albertferran/eatapp/EatApplication.kt).
+[EatApplication.kt](../app/src/main/kotlin/com/saatxi/eatapp/EatApplication.kt).
 Every stored value is read back defensively: a renamed enum or a non-numeric id
 degrades to the default rather than throwing, because the file outlives any one
 version of the app. `formatRelativeTime` moved to
-[ui/common/RelativeTime.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/common/RelativeTime.kt).
+[ui/common/RelativeTime.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/common/RelativeTime.kt).
 
 ### Wiring `MainActivity`
 
-[MainActivity.kt](../app/src/main/kotlin/com/albertferran/eatapp/MainActivity.kt)
+[MainActivity.kt](../app/src/main/kotlin/com/saatxi/eatapp/MainActivity.kt)
 calls `installSplashScreen()` before `super.onCreate`, reads
 `UserPreferences?` into a `mutableStateOf` seeded `null`, and holds the splash
 with `setKeepOnScreenCondition { preferences == null }` until the DataStore
@@ -180,12 +180,12 @@ before that first emission (which the splash is covering anyway).
 ### `SettingsScreen` and `SettingsViewModel`
 
 New `ui/settings/SettingsScreen.kt` +
-[SettingsViewModel.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/settings/SettingsViewModel.kt).
+[SettingsViewModel.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/settings/SettingsViewModel.kt).
 The palette picker is three `Card`s, each built from `palette.tones.lightScheme()`
 / `darkScheme()` directly (not the currently-applied `MaterialTheme`, since two
 of the three cards are never the active scheme) and resolved against the mode
 actually in effect via the new `isDarkTheme(mode)` helper in
-[Theme.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/Theme.kt) —
+[Theme.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/theme/Theme.kt) —
 shared with `EatAppTheme` itself so the preview can't drift from what
 selecting a palette actually produces. Mode selection reuses
 `SingleChoiceSegmentedButtonRow`. Sync feedback (last-sync time, a sync
@@ -200,7 +200,7 @@ the graph around `NavigationSuiteScaffold`; until then it's covered by its
 ViewModel test and a `@Preview`.
 
 `SettingsViewModel` added to
-[AppViewModelProvider.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/AppViewModelProvider.kt).
+[AppViewModelProvider.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/AppViewModelProvider.kt).
 
 The overflow menu and the "About" `AlertDialog` are gone from
 `RestaurantListScreen.kt`, along with the now-unused `list_action_more` /
@@ -210,7 +210,7 @@ The overflow menu and the "About" `AlertDialog` are gone from
 
 ## Phase 3 — Favourites · Done
 
-**Where they live: DataStore, not Room.** [EatAppDatabase.kt](../app/src/main/kotlin/com/albertferran/eatapp/data/local/EatAppDatabase.kt)
+**Where they live: DataStore, not Room.** [EatAppDatabase.kt](../app/src/main/kotlin/com/saatxi/eatapp/data/local/EatAppDatabase.kt)
 uses `fallbackToDestructiveMigration(dropAllTables = true)` — right for a cache
 of a re-downloadable file, wrong for user data. Favourites are a tiny
 `Set<Long>`; putting them in the cache database would mean either abandoning
@@ -261,7 +261,7 @@ drift.
 ### Optional columns
 
 `REQUIRED_COLUMNS` in
-[RestaurantDatabaseReader.kt](../app/src/main/kotlin/com/albertferran/eatapp/data/sync/RestaurantDatabaseReader.kt)
+[RestaurantDatabaseReader.kt](../app/src/main/kotlin/com/saatxi/eatapp/data/sync/RestaurantDatabaseReader.kt)
 was **not** touched. Had `website` and `instagram` gone in there, the already
 published `.db` would have stopped validating and users would have opened the
 app to an empty list. They live in a separate `OPTIONAL_COLUMNS` instead.
@@ -277,7 +277,7 @@ which returns -1 for an absent column.
 
 Both values end up in an `Intent.ACTION_VIEW`, so a hand-edited or hostile file
 could otherwise hand the system a `javascript:`, `intent:` or `file:` URI.
-[LinkValidation.kt](../app/src/main/kotlin/com/albertferran/eatapp/data/sync/LinkValidation.kt)
+[LinkValidation.kt](../app/src/main/kotlin/com/saatxi/eatapp/data/sync/LinkValidation.kt)
 is a whitelist, and deliberately free of Android imports so it can be tested as
 plain Kotlin:
 
@@ -317,7 +317,7 @@ them to an existing file.
 
 ## Phase 5 — Bottom navigation · Done
 
-New [navigation/TopLevelDestination.kt](../app/src/main/kotlin/com/albertferran/eatapp/navigation/TopLevelDestination.kt),
+New [navigation/TopLevelDestination.kt](../app/src/main/kotlin/com/saatxi/eatapp/navigation/TopLevelDestination.kt),
 exactly as planned:
 
 ```kotlin
@@ -339,7 +339,7 @@ icon was already in `material-icons-extended`, and both that dependency and
 `material3-adaptive-navigation-suite` turned out to already be wired into
 `app/build.gradle.kts` from Phase 1 — no dependency changes needed.
 
-[EatAppNavHost.kt](../app/src/main/kotlin/com/albertferran/eatapp/navigation/EatAppNavHost.kt)
+[EatAppNavHost.kt](../app/src/main/kotlin/com/saatxi/eatapp/navigation/EatAppNavHost.kt)
 restructured:
 
 - The `NavHost` is now wrapped in **`NavigationSuiteScaffold`**: bottom bar on
@@ -365,8 +365,8 @@ restructured:
 
 ## Phase 6 — "What to eat" · Done
 
-New [ui/roulette/RouletteViewModel.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/roulette/RouletteViewModel.kt)
-+ [RouletteScreen.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/roulette/RouletteScreen.kt):
+New [ui/roulette/RouletteViewModel.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/roulette/RouletteViewModel.kt)
++ [RouletteScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/roulette/RouletteScreen.kt):
 
 - Picks at random among the restaurants passing this screen's own filters,
   reusing `repository.observeFiltered(...)` unchanged — no new query. A
@@ -507,12 +507,12 @@ each, `timeToInitialDisplayMs`:
 | Min – max | 715.0 – 931.8 ms | 613.0 – 708.6 ms |
 
 **~13% faster cold start** (99.7 ms off the median). Raw data:
-`baselineprofile/build/outputs/connected_android_test_additional_output/benchmarkRelease/connected/CPH2557 - 15/com.albertferran.eatapp.baselineprofile-benchmarkData.json`
+`baselineprofile/build/outputs/connected_android_test_additional_output/benchmarkRelease/connected/CPH2557 - 15/com.saatxi.eatapp.baselineprofile-benchmarkData.json`
 (gitignored build output, not committed).
 
-What's in the module: [`BaselineProfileGenerator.kt`](../baselineprofile/src/main/kotlin/com/albertferran/eatapp/baselineprofile/BaselineProfileGenerator.kt)
+What's in the module: [`BaselineProfileGenerator.kt`](../baselineprofile/src/main/kotlin/com/saatxi/eatapp/baselineprofile/BaselineProfileGenerator.kt)
 (cold start, a list fling, opening a restaurant's detail, back) and
-[`StartupBenchmark.kt`](../baselineprofile/src/main/kotlin/com/albertferran/eatapp/baselineprofile/StartupBenchmark.kt)
+[`StartupBenchmark.kt`](../baselineprofile/src/main/kotlin/com/saatxi/eatapp/baselineprofile/StartupBenchmark.kt)
 (cold-start `StartupTimingMetric`, once with `CompilationMode.None()` and once
 with `CompilationMode.Partial()`, for the before/after). `app/build.gradle.kts`
 gained the `androidx.baselineprofile` plugin, `implementation(libs.androidx.profileinstaller)`

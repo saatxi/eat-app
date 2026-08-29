@@ -69,7 +69,7 @@ ALTER TABLE restaurants ADD COLUMN instagram TEXT;
   and path the build points at. The release URL is hardcoded as
   `releaseDatabaseUrl` in [`app/build.gradle.kts`](app/build.gradle.kts) and
   reaches the app as `BuildConfig.DATABASE_URL` through
-  [`RemoteConfig.kt`](app/src/main/kotlin/com/albertferran/eatapp/data/sync/RemoteConfig.kt);
+  [`RemoteConfig.kt`](app/src/main/kotlin/com/saatxi/eatapp/data/sync/RemoteConfig.kt);
   a debug build can be pointed elsewhere without editing source, see
   [Pointing a debug build at other data](#pointing-a-debug-build-at-other-data).
 - In the app, tap "Refresh Data" on the list screen to download and apply
@@ -126,7 +126,7 @@ added in a newer release still works on an older build, and a typo costs you
 an icon rather than a failed refresh.
 
 The vocabulary is defined in
-[`Cuisine.kt`](app/src/main/kotlin/com/albertferran/eatapp/data/local/Cuisine.kt) —
+[`Cuisine.kt`](app/src/main/kotlin/com/saatxi/eatapp/data/local/Cuisine.kt) —
 keep this table in sync with it when adding a key.
 
 ## Tech stack
@@ -141,7 +141,7 @@ keep this table in sync with it when adding a key.
 ## Project structure
 
 ```
-app/src/main/kotlin/com/albertferran/eatapp/
+app/src/main/kotlin/com/saatxi/eatapp/
 ├── data/
 │   ├── local/          # Room entity, DAO, database, type converters
 │   ├── repository/     # Repository abstraction over the data source

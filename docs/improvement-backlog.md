@@ -45,14 +45,14 @@ annotations (one plain, one with `uiMode = Configuration.UI_MODE_NIGHT_YES`) —
 the same way it would a real device, so no separate dark/light branching was
 needed beyond that.
 - **The restaurant row and both empty states**
-  ([RestaurantListScreen.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt)):
+  ([RestaurantListScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/RestaurantListScreen.kt)):
   `RestaurantRowPreview` against a hand-built `RestaurantUiModel`, and
   `EmptyStateFirstSyncPreview` / `EmptyStateNoResultsPreview` against the same
   private `EmptyState` composable the screen itself uses for its two empty
   states — a Kotlin file-private function is visible to a `@Preview` in the
   same file, so no visibility had to widen for this.
 - **The detail screen**
-  ([RestaurantDetailScreen.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/detail/RestaurantDetailScreen.kt))
+  ([RestaurantDetailScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/detail/RestaurantDetailScreen.kt))
   couldn't be previewed as directly: its entry point takes a
   `RestaurantDetailViewModel` from `viewModel(factory = AppViewModelProvider.Factory)`,
   which needs a real Android runtime to construct. The fix was to split it in
@@ -162,7 +162,7 @@ navigation-compose `2.9.8`, coroutines `1.11.0` and core-ktx `1.19.0`.
   top-level `kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }`
   block the AGP/Kotlin migration guide points at; and two `arrayOf(...)`
   calls in
-  [RestaurantDatabaseReaderTest.kt](../app/src/test/kotlin/com/albertferran/eatapp/data/sync/RestaurantDatabaseReaderTest.kt)
+  [RestaurantDatabaseReaderTest.kt](../app/src/test/kotlin/com/saatxi/eatapp/data/sync/RestaurantDatabaseReaderTest.kt)
   (building mixed-type SQLite row arrays) needed an explicit `arrayOf<Any?>`
   — Kotlin 2.4 stopped tolerating the reified type parameter inferring to an
   intersection type silently.
@@ -171,7 +171,7 @@ navigation-compose `2.9.8`, coroutines `1.11.0` and core-ktx `1.19.0`.
   confirms R8 minification still runs clean against the new dependency set.
   Lint gained two findings the previous pass didn't have —
   `ModifierParameter` (one optional `Modifier` parameter in
-  [RestaurantListScreen.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt)
+  [RestaurantListScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/RestaurantListScreen.kt)
   without a plain `Modifier` default) and `LocalContextResourcesRead` (a
   `context.resources.getQuantityString` call in the same file) — both from
   Compose lint checks that shipped with this newer toolchain and now flag
@@ -211,14 +211,14 @@ marks: `restaurant_rating_description` ("Rated %1$d of 5") and
 `restaurant_price_description` ("Price range %1$d of 4", fed the price mark
 count since the model only carries the rendered `"$"`-repeated label, not the
 raw integer). The list row's `Card` in
-[RestaurantListScreen.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/list/RestaurantListScreen.kt)
+[RestaurantListScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/RestaurantListScreen.kt)
 now carries `Modifier.clearAndSetSemantics { contentDescription = ... }`
 joining name, cuisine, rating, price and address (when present) into one
 sentence, so the whole card is one screen-reader stop instead of five separate
 text fragments; the card's own click action is untouched, since it comes from
 `Card`'s `onClick` on the same layout node, one level inside where
 `clearAndSetSemantics` only cuts the merge from *descendant* nodes. On the
-detail screen ([RestaurantDetailScreen.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/detail/RestaurantDetailScreen.kt))
+detail screen ([RestaurantDetailScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/detail/RestaurantDetailScreen.kt))
 the star row and the price chip get the same treatment individually, each
 replacing what would otherwise merge into "3 slash 5" and "dollar dollar"
 with the real phrase. `clearAndSetSemantics`'s lambda isn't `@Composable`, so
@@ -246,7 +246,7 @@ when the system is in dark mode, instead of always flashing white.
 ### Colour scheme pass
 
 - **F-41 · Half the colour scheme is still Material's default — Done.**
-  [Color.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/Color.kt) gained
+  [Color.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/theme/Color.kt) gained
   a `Neutral*`/`NeutralVariant*` tonal family, hand-derived from the Terracotta
   seed's hue (24°) at the low saturations M3's neutral (6%) and neutral-variant
   (14%) palettes use, at exactly the tone steps the baseline scheme maps onto
@@ -256,7 +256,7 @@ when the system is in dark mode, instead of always flashing white.
   are the one family left untouched in hue: they use the standard M3 baseline red
   tones, since error is a semantic colour independent of brand and red doesn't
   clash with terracotta or sage. Both `lightColorScheme()` and `darkColorScheme()`
-  in [Theme.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/theme/Theme.kt)
+  in [Theme.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/theme/Theme.kt)
   now set every role the M3 baseline scheme defines, including the
   `surfaceContainer*` tiers, `surfaceDim`/`surfaceBright`,
   `inverseSurface`/`inverseOnSurface` and `scrim`. `inversePrimary` reuses the
@@ -291,7 +291,7 @@ one change: F-35 removes the hero, so F-38 needed somewhere else to land.
   same 320 ms; the default horizontal slide would have dragged the badge
   sideways along with everything else. The two scopes Compose needs are
   published as CompositionLocals from the NavHost
-  ([SharedTransition.kt](../app/src/main/kotlin/com/albertferran/eatapp/ui/common/SharedTransition.kt))
+  ([SharedTransition.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/common/SharedTransition.kt))
   rather than threaded through every screen signature, and the modifier is a
   no-op when they are absent, so the screens stay composable outside the graph —
   which matters for F-51. `androidx.compose.animation:animation` was added to
@@ -527,7 +527,7 @@ Four columns removed from the entity, the reader, the UI and `data/eatapp.db`.
   matched English keywords (`pizza`, `japan`, `bar`) against Spanish values
   (`Japonesa`, `Mediterránea`, `Frankfurt`), so *every* row fell back to the
   generic icon. Replaced with an exact match against the closed 22-key
-  vocabulary in [Cuisine.kt](../app/src/main/kotlin/com/albertferran/eatapp/data/local/Cuisine.kt),
+  vocabulary in [Cuisine.kt](../app/src/main/kotlin/com/saatxi/eatapp/data/local/Cuisine.kt),
   each key with its own distinct icon.
 - **F-40 · Arbitrary cuisine colours — Done.** `cuisineTint` keyed off
   `cuisineType.hashCode().mod(3)`; it now keys off the enum ordinal, which is

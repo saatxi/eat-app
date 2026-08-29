@@ -98,11 +98,11 @@ fun String.asJavaStringLiteral(): String =
 // ---------------------------------------------------------------------------
 
 android {
-    namespace = "com.albertferran.eatapp"
+    namespace = "com.saatxi.eatapp"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.albertferran.eatapp"
+        applicationId = "com.saatxi.eatapp"
         minSdk = 26
         targetSdk = 36
         versionCode = gitVersionCode

@@ -85,7 +85,7 @@ code change before reporting it as done.
 ## Project structure
 
 ```
-app/src/main/kotlin/com/albertferran/eatapp/
+app/src/main/kotlin/com/saatxi/eatapp/
 ├── data/
 │   ├── local/        # Room entity, DAO, database, type converters
 │   ├── repository/   # Repository abstraction over the data source
@@ -110,10 +110,10 @@ app/src/main/kotlin/com/albertferran/eatapp/
   English regardless of locale.
 - **Cuisine vocabulary**: the `.db` column `cuisineType` stores stable,
   language-independent keys (`japanese`, `fast_food`, etc.), never display
-  labels. Each key has its own icon in [CuisineVisuals.kt](app/src/main/kotlin/com/albertferran/eatapp/ui/common/CuisineVisuals.kt)
+  labels. Each key has its own icon in [CuisineVisuals.kt](app/src/main/kotlin/com/saatxi/eatapp/ui/common/CuisineVisuals.kt)
   and a translatable label in `strings.xml`. This design means adding a
   second language later is just a new `values-xx/strings.xml` file — the
-  data never changes. The full 24-key vocabulary is in [Cuisine.kt](app/src/main/kotlin/com/albertferran/eatapp/data/local/Cuisine.kt)
+  data never changes. The full 24-key vocabulary is in [Cuisine.kt](app/src/main/kotlin/com/saatxi/eatapp/data/local/Cuisine.kt)
   and documented in the README. An unrecognised key degrades gracefully: the
   app falls back to a generic icon and shows the raw string.
 - `versionCode`/`versionName` in `app/build.gradle.kts` are derived
@@ -127,7 +127,7 @@ app/src/main/kotlin/com/albertferran/eatapp/
 
 - The only network call is an HTTPS GET to the public URL exposed as
   `DATABASE_URL` by
-  [`RemoteConfig.kt`](app/src/main/kotlin/com/albertferran/eatapp/data/sync/RemoteConfig.kt),
+  [`RemoteConfig.kt`](app/src/main/kotlin/com/saatxi/eatapp/data/sync/RemoteConfig.kt),
   which reads it from `BuildConfig`. The release value is hardcoded as
   `releaseDatabaseUrl` in `app/build.gradle.kts`; only debug builds honour the
   `eatapp.database.url` / `EATAPP_DATABASE_URL` override, and the build rejects
