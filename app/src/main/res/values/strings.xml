@@ -71,7 +71,7 @@
     <!-- Bottom navigation / navigation rail. -->
     <string name="nav_restaurants">Restaurants</string>
     <string name="nav_favorites">Favorites</string>
-    <string name="nav_roulette">What to eat</string>
+    <string name="nav_roulette">Roulette</string>
     <string name="nav_settings">Settings</string>
 
     <string name="favorites_title">Favorites</string>
