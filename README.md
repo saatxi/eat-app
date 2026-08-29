@@ -381,6 +381,14 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
    ```
    ./gradlew bundleRelease
    ```
+   [`scripts/bundle.ps1`](scripts/bundle.ps1) wraps the `bundleRelease`
+   path above: it fails fast if signing isn't configured, warns if the
+   working tree is dirty or HEAD isn't on a release tag, prints the
+   resolved version, and archives `mapping.txt` next to the built `.aab` so
+   a later build doesn't overwrite it before you've saved a copy.
+   ```
+   ./scripts/bundle.ps1
+   ```
 4. Verify the packaged version before distributing:
    ```
    ./gradlew :app:printVersionInfo
