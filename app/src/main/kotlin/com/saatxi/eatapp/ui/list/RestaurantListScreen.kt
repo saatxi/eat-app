@@ -387,9 +387,7 @@ private fun FilterSection(
                 .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Every synced restaurant has a rating of at least 1, so a "1+" chip
-            // would filter nothing; the range starts at 2 for that reason.
-            (2..5).forEach { rating ->
+            (1..5).forEach { rating ->
                 FilterChip(
                     selected = minRating == rating,
                     onClick = { onMinRatingChange(if (minRating == rating) null else rating) },

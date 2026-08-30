@@ -10,16 +10,17 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -183,15 +184,16 @@ private fun RouletteFilters(
         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
         selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
     )
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    // FlowRow rather than a horizontally scrolling Row: this fixed, short set of
+    // chips doesn't need scrolling to fit, and unlike the list screen's filter
+    // rows, cropping the last chip against the screen edge here left no visible
+    // affordance that there was more to scroll to.
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Same "no 1+ chip" reasoning as the list screen's filter row: every
-        // synced restaurant already has a rating of at least 1.
-        (2..5).forEach { rating ->
+        (1..5).forEach { rating ->
             FilterChip(
                 selected = minRating == rating,
                 onClick = { onMinRatingChange(if (minRating == rating) null else rating) },
@@ -226,9 +228,17 @@ private fun RouletteResultCard(restaurant: RestaurantUiModel, onClick: () -> Uni
         shape = MaterialTheme.shapes.large,
         modifier = Modifier.fillMaxWidth()
     ) {
+        // The card sits in a fixed-height slot (the weighted Box in
+        // RouletteScreen); Card clips to its own bounds, so a longer name or a
+        // two-line address could otherwise get cut off cleanly at the card edge
+        // instead of just being unreachable. Scrolling — a no-op when everything
+        // already fits — makes it reachable instead of invisible.
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth().padding(24.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp)
         ) {
             Box(
                 modifier = Modifier
