@@ -46,6 +46,9 @@
     <string name="detail_not_found_title">Restaurante no encontrado</string>
     <string name="detail_not_found_body">Este restaurante se eliminó o los datos se actualizaron.</string>
 
+    <string name="detail_placeholder_title">Selecciona un restaurante</string>
+    <string name="detail_placeholder_body">Elige uno de la lista para ver aquí sus detalles.</string>
+
     <string name="about_version_template">Versión %1$s (compilación %2$d, %3$s)</string>
     <string name="about_last_synced">Última sincronización: %1$s</string>
     <string name="about_last_synced_never">Aún no se ha sincronizado</string>

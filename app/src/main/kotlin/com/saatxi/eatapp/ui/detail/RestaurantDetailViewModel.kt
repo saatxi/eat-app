@@ -1,6 +1,5 @@
 package com.saatxi.eatapp.ui.detail
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
@@ -23,10 +22,8 @@ sealed interface DetailUiState {
 class RestaurantDetailViewModel(
     repository: RestaurantRepository,
     private val preferencesRepository: UserPreferencesRepository,
-    savedStateHandle: SavedStateHandle
+    private val restaurantId: Long
 ) : ViewModel() {
-
-    private val restaurantId: Long = checkNotNull(savedStateHandle["restaurantId"])
 
     val uiState: StateFlow<DetailUiState> = combine(
         repository.observeById(restaurantId),

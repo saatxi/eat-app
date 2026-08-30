@@ -5,13 +5,23 @@ import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.RestaurantMenu
 import androidx.compose.material3.Icon
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.compose.material3.adaptive.layout.AnimatedPane
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
+import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
+import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -23,14 +33,18 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.window.core.layout.WindowSizeClass
+import com.saatxi.eatapp.R
 import com.saatxi.eatapp.ui.common.LocalNavAnimatedVisibilityScope
 import com.saatxi.eatapp.ui.common.LocalSharedTransitionScope
 import com.saatxi.eatapp.ui.common.SCREEN_TRANSITION_DURATION_MS
 import com.saatxi.eatapp.ui.detail.RestaurantDetailScreen
 import com.saatxi.eatapp.ui.favorites.FavoritesScreen
+import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.list.RestaurantListScreen
 import com.saatxi.eatapp.ui.roulette.RouletteScreen
 import com.saatxi.eatapp.ui.settings.SettingsScreen
+import kotlinx.coroutines.launch
 
 private const val ARG_RESTAURANT_ID = "restaurantId"
 
@@ -50,6 +64,13 @@ fun EatAppNavHost(navController: NavHostController = rememberNavController()) {
     // The bottom bar / rail has nowhere to live on the detail screen — it has no
     // tab of its own, it's reached by tapping into one of the other four.
     val isDetailRoute = currentDestination?.route == Routes.DETAIL
+
+    // Below this width, List/Favorites/Roulette keep pushing the full-screen
+    // detail/{id} route exactly as before — shared-element transition, hidden
+    // nav rail, the works. At/above it, they host the detail pane alongside
+    // the list instead of navigating to it, via ListDetailPaneHost below.
+    val useListDetailPanes = currentWindowAdaptiveInfoV2().windowSizeClass
+        .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
 
     // Wraps the whole graph so an element can be matched across two destinations;
     // the scope is published as a CompositionLocal rather than passed down, see
@@ -106,20 +127,38 @@ fun EatAppNavHost(navController: NavHostController = rememberNavController()) {
                         CompositionLocalProvider(
                             LocalNavAnimatedVisibilityScope provides animatedVisibilityScope
                         ) {
-                            RestaurantListScreen(
+                            if (useListDetailPanes) {
+                                ListDetailPaneHost { onOpenRestaurant ->
+                                    RestaurantListScreen(onOpenRestaurant = onOpenRestaurant)
+                                }
+                            } else {
+                                RestaurantListScreen(
+                                    onOpenRestaurant = { id -> navController.navigate(detailRoute(id)) }
+                                )
+                            }
+                        }
+                    }
+                    composable(TopLevelDestination.FAVORITES.route) {
+                        if (useListDetailPanes) {
+                            ListDetailPaneHost { onOpenRestaurant ->
+                                FavoritesScreen(onOpenRestaurant = onOpenRestaurant)
+                            }
+                        } else {
+                            FavoritesScreen(
                                 onOpenRestaurant = { id -> navController.navigate(detailRoute(id)) }
                             )
                         }
                     }
-                    composable(TopLevelDestination.FAVORITES.route) {
-                        FavoritesScreen(
-                            onOpenRestaurant = { id -> navController.navigate(detailRoute(id)) }
-                        )
-                    }
                     composable(TopLevelDestination.ROULETTE.route) {
-                        RouletteScreen(
-                            onOpenRestaurant = { id -> navController.navigate(detailRoute(id)) }
-                        )
+                        if (useListDetailPanes) {
+                            ListDetailPaneHost { onOpenRestaurant ->
+                                RouletteScreen(onOpenRestaurant = onOpenRestaurant)
+                            }
+                        } else {
+                            RouletteScreen(
+                                onOpenRestaurant = { id -> navController.navigate(detailRoute(id)) }
+                            )
+                        }
                     }
                     composable(TopLevelDestination.SETTINGS.route) {
                         SettingsScreen()
@@ -141,4 +180,50 @@ fun EatAppNavHost(navController: NavHostController = rememberNavController()) {
             }
         }
     }
+}
+
+/**
+ * Hosts a list screen and [RestaurantDetailScreen] side by side (or, below
+ * [WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND], one at a time) instead of
+ * pushing a nav-graph route for the detail screen. [listContent] is one of
+ * RestaurantListScreen/FavoritesScreen/RouletteScreen, wired to call the
+ * `onOpenRestaurant` it's handed instead of the NavHostController.
+ *
+ * The selected restaurant lives in [navigator], not in a ViewModel: it's the
+ * pane equivalent of the `detail/{id}` nav-graph argument, not app state.
+ */
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
+@Composable
+private fun ListDetailPaneHost(listContent: @Composable (onOpenRestaurant: (Long) -> Unit) -> Unit) {
+    val navigator = rememberListDetailPaneScaffoldNavigator<Long>()
+    val scope = rememberCoroutineScope()
+
+    NavigableListDetailPaneScaffold(
+        navigator = navigator,
+        listPane = {
+            AnimatedPane {
+                listContent { id ->
+                    scope.launch { navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, id) }
+                }
+            }
+        },
+        detailPane = {
+            AnimatedPane {
+                val selectedId = navigator.currentDestination?.contentKey
+                if (selectedId != null) {
+                    RestaurantDetailScreen(
+                        restaurantId = selectedId,
+                        onBack = { scope.launch { navigator.navigateBack() } }
+                    )
+                } else {
+                    EmptyState(
+                        icon = Icons.Outlined.RestaurantMenu,
+                        title = stringResource(R.string.detail_placeholder_title),
+                        body = stringResource(R.string.detail_placeholder_body),
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+    )
 }

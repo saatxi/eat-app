@@ -1,5 +1,6 @@
 package com.saatxi.eatapp.ui
 
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -28,7 +29,7 @@ object AppViewModelProvider {
             RestaurantDetailViewModel(
                 eatApplication().repository,
                 eatApplication().userPreferences,
-                createSavedStateHandle()
+                restaurantId = checkNotNull(createSavedStateHandle()["restaurantId"])
             )
         }
         initializer {
@@ -43,6 +44,22 @@ object AppViewModelProvider {
         }
         initializer {
             RouletteViewModel(eatApplication().repository, eatApplication().userPreferences)
+        }
+    }
+
+    /**
+     * Used only by the two-pane list-detail layout: there the selected
+     * restaurant id comes from the pane navigator's own state, not from a
+     * nav-backstack entry's [android.os.Bundle], so there is no
+     * [androidx.lifecycle.SavedStateHandle] to read it from.
+     */
+    fun detailViewModelFactory(restaurantId: Long): ViewModelProvider.Factory = viewModelFactory {
+        initializer {
+            RestaurantDetailViewModel(
+                eatApplication().repository,
+                eatApplication().userPreferences,
+                restaurantId = restaurantId
+            )
         }
     }
 }

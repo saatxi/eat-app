@@ -43,6 +43,9 @@
     <string name="detail_not_found_title">Restaurant no trobat</string>
     <string name="detail_not_found_body">Aquest restaurant s\'ha eliminat o les dades s\'han actualitzat.</string>
 
+    <string name="detail_placeholder_title">Selecciona un restaurant</string>
+    <string name="detail_placeholder_body">Tria\'n un de la llista per veure\'n els detalls aquí.</string>
+
     <string name="about_version_template">Versió %1$s (compilació %2$d, %3$s)</string>
     <string name="about_last_synced">Última sincronització: %1$s</string>
     <string name="about_last_synced_never">Encara no s\'ha sincronitzat</string>

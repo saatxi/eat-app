@@ -1,6 +1,5 @@
 package com.saatxi.eatapp.ui.detail
 
-import androidx.lifecycle.SavedStateHandle
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.prefs.UserPreferences
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
@@ -42,7 +41,7 @@ class RestaurantDetailViewModelTest {
         viewModel = RestaurantDetailViewModel(
             repository = repository,
             preferencesRepository = preferencesRepository,
-            savedStateHandle = SavedStateHandle(mapOf("restaurantId" to 1L))
+            restaurantId = 1L
         )
     }
 

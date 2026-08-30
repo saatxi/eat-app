@@ -78,7 +78,15 @@ private val CUISINE_BADGE_SIZE = 32.dp
 @Composable
 fun RestaurantDetailScreen(
     onBack: () -> Unit,
-    viewModel: RestaurantDetailViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    // Non-null only when hosted inside a list-detail pane (EatAppNavHost's
+    // ListDetailPaneHost): there the id comes from the pane navigator, not
+    // from a nav-backstack entry, so the default SavedStateHandle-backed
+    // factory has nothing to read it from.
+    restaurantId: Long? = null,
+    viewModel: RestaurantDetailViewModel = viewModel(
+        key = restaurantId?.let { "detail-$it" },
+        factory = restaurantId?.let(AppViewModelProvider::detailViewModelFactory) ?: AppViewModelProvider.Factory
+    )
 ) {
     val uiState by viewModel.uiState.collectAsState()
     RestaurantDetailContent(uiState = uiState, onBack = onBack, onFavoriteToggle = viewModel::onFavoriteToggle)
