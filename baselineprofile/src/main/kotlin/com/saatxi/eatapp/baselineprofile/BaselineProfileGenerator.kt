@@ -23,8 +23,10 @@ class BaselineProfileGenerator {
         pressHome()
         startActivityAndWait()
 
-        // Cold start lands on the restaurant list; give the initial DB read /
-        // first sync a moment before touching it.
+        // Cold start lands on the restaurant list; give the initial DB read a
+        // moment before touching it. Needs at least one restaurant already
+        // added on the device/emulator this runs against, or the fling/click
+        // below find nothing.
         device.wait(Until.hasObject(By.scrollable(true)), 5_000)
         val list = device.findObject(By.scrollable(true)) ?: return@collect
         list.fling(Direction.DOWN)

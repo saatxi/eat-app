@@ -2,9 +2,8 @@ package com.saatxi.eatapp.data.local
 
 import androidx.room.Dao
 import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Transaction
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -41,7 +40,7 @@ interface RestaurantDao {
 
     /**
      * The cuisine keys actually present in the data, so the filter row can offer
-     * only those instead of all 22 entries of the vocabulary.
+     * only those instead of all 24 entries of the vocabulary.
      */
     @Query("SELECT DISTINCT cuisineType FROM restaurants")
     fun observeCuisineTypes(): Flow<List<String>>
@@ -49,18 +48,13 @@ interface RestaurantDao {
     @Query("SELECT * FROM restaurants WHERE id = :id")
     fun observeById(id: Long): Flow<Restaurant?>
 
-    @Query("SELECT COUNT(*) FROM restaurants")
-    suspend fun count(): Int
+    /** [Restaurant.id] must be 0 (the default) so Room assigns a fresh one. */
+    @Insert
+    suspend fun insert(restaurant: Restaurant): Long
 
-    @Query("DELETE FROM restaurants")
-    suspend fun deleteAll()
+    @Update
+    suspend fun update(restaurant: Restaurant)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(restaurants: List<Restaurant>)
-
-    @Transaction
-    suspend fun replaceAll(restaurants: List<Restaurant>) {
-        deleteAll()
-        insertAll(restaurants)
-    }
+    @Query("DELETE FROM restaurants WHERE id = :id")
+    suspend fun delete(id: Long)
 }

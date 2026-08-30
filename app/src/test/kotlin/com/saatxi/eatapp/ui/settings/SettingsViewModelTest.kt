@@ -3,10 +3,6 @@ package com.saatxi.eatapp.ui.settings
 import com.saatxi.eatapp.data.prefs.AppLocaleManager
 import com.saatxi.eatapp.data.prefs.UserPreferences
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
-import com.saatxi.eatapp.data.sync.DatabaseSyncManager
-import com.saatxi.eatapp.data.sync.DatabaseSyncResult
-import com.saatxi.eatapp.data.sync.SyncFailureReason
-import com.saatxi.eatapp.ui.list.SyncMessage
 import com.saatxi.eatapp.ui.theme.AppPalette
 import com.saatxi.eatapp.ui.theme.ThemeMode
 import kotlinx.coroutines.Dispatchers
@@ -20,8 +16,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
@@ -30,7 +24,6 @@ class SettingsViewModelTest {
 
     private val dispatcher = UnconfinedTestDispatcher()
     private lateinit var preferencesRepository: FakeUserPreferencesRepository
-    private lateinit var syncManager: FakeDatabaseSyncManager
     private lateinit var localeManager: FakeAppLocaleManager
     private lateinit var viewModel: SettingsViewModel
 
@@ -38,9 +31,8 @@ class SettingsViewModelTest {
     fun setUp() {
         Dispatchers.setMain(dispatcher)
         preferencesRepository = FakeUserPreferencesRepository()
-        syncManager = FakeDatabaseSyncManager()
         localeManager = FakeAppLocaleManager()
-        viewModel = SettingsViewModel(preferencesRepository, syncManager, localeManager)
+        viewModel = SettingsViewModel(preferencesRepository, localeManager)
     }
 
     @After
@@ -88,7 +80,7 @@ class SettingsViewModelTest {
     @Test
     fun `starts with the language reported by the locale manager`() = runTest {
         localeManager.current = AppLanguage.CATALAN
-        viewModel = SettingsViewModel(preferencesRepository, syncManager, localeManager)
+        viewModel = SettingsViewModel(preferencesRepository, localeManager)
         observeState()
 
         assertEquals(AppLanguage.CATALAN, viewModel.uiState.value.language)
@@ -102,37 +94,6 @@ class SettingsViewModelTest {
 
         assertEquals(AppLanguage.SPANISH, localeManager.current)
         assertEquals(AppLanguage.SPANISH, viewModel.uiState.value.language)
-    }
-
-    @Test
-    fun `syncNow reports success`() = runTest {
-        syncManager.result = DatabaseSyncResult.Success(3)
-        observeState()
-
-        viewModel.syncNow()
-
-        assertFalse(viewModel.uiState.value.isSyncing)
-        assertEquals(SyncMessage.Success(3), viewModel.uiState.value.pendingSyncMessage)
-    }
-
-    @Test
-    fun `syncNow reports a failure`() = runTest {
-        syncManager.result = DatabaseSyncResult.Failure(SyncFailureReason.NETWORK)
-        observeState()
-
-        viewModel.syncNow()
-
-        assertEquals(SyncMessage.Error(SyncFailureReason.NETWORK), viewModel.uiState.value.pendingSyncMessage)
-    }
-
-    @Test
-    fun `onSyncMessageShown clears the pending message`() = runTest {
-        observeState()
-        viewModel.syncNow()
-
-        viewModel.onSyncMessageShown()
-
-        assertNull(viewModel.uiState.value.pendingSyncMessage)
     }
 }
 
@@ -155,13 +116,6 @@ private class FakeUserPreferencesRepository : UserPreferencesRepository {
             favoriteIds = if (restaurantId in current) current - restaurantId else current + restaurantId
         )
     }
-}
-
-/** Never touches the network: records the last requested sync and replays a canned result. */
-private class FakeDatabaseSyncManager(
-    var result: DatabaseSyncResult = DatabaseSyncResult.Success(0)
-) : DatabaseSyncManager {
-    override suspend fun sync(): DatabaseSyncResult = result
 }
 
 /** Stands in for AppCompatDelegate, which is unavailable in a plain JUnit test. */

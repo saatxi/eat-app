@@ -5,24 +5,30 @@ decisions preses es troben al pla de la conversa; aquest fitxer és només la
 llista de comprovació per saber, en qualsevol moment, què està fet i què
 falta.
 
-## Part 1 — App buida + CRUD de restaurants propis
+## Part 1 — App buida + CRUD de restaurants propis — Feta
 
-- [ ] Eliminar `data/eatapp.db` (fitxer curat)
-- [ ] Eliminar `RemoteConfig.kt`
-- [ ] Eliminar `RestaurantDatabaseReader.kt`
-- [ ] Eliminar `RestaurantDatabaseSyncManager.kt`
-- [ ] Eliminar `DatabaseSyncResult.kt`
-- [ ] Conservar/moure la validació de website/Instagram de `LinkValidation.kt`
-      cap al formulari nou
-- [ ] Eliminar `DATABASE_URL` / `releaseDatabaseUrl` de `build.gradle.kts`
+- [x] Eliminar `data/eatapp.db` (fitxer curat)
+- [x] Eliminar `RemoteConfig.kt`
+- [x] Eliminar `RestaurantDatabaseReader.kt`
+- [x] Eliminar `RestaurantDatabaseSyncManager.kt`
+- [x] Eliminar `DatabaseSyncResult.kt`
+- [x] Conservar/moure la validació de website/Instagram (ara
+      `data/local/LinkValidation.kt`) cap al formulari nou
+- [x] Eliminar `DATABASE_URL` / `releaseDatabaseUrl` de `build.gradle.kts`
       (i l'override `eatapp.database.url` / `EATAPP_DATABASE_URL`)
-- [ ] Eliminar el botó "Refresh Data" / "Actualitzar dades"
-- [ ] `RestaurantDao`/`RestaurantRepository`: substituir `replaceAll()` per
+- [x] Eliminar el botó "Refresh Data" / "Actualitzar dades"
+- [x] `RestaurantDao`/`RestaurantRepository`: substituir `replaceAll()` per
       `insert(restaurant)`, `update(restaurant)`, `delete(id)`
-- [ ] Nova pantalla "Afegir/Editar restaurant" (nom, tipus de cuina, adreça,
-      puntuació, rang de preu, web, Instagram)
-- [ ] Acció d'esborrar des de la pantalla de detall
-- [ ] Estat buit amb crida a l'acció ("Afegeix el teu primer restaurant")
+- [x] Nova pantalla "Afegir/Editar restaurant" (nom, tipus de cuina, adreça,
+      puntuació, rang de preu, web, Instagram) — `ui/edit/`
+- [x] Acció d'esborrar des de la pantalla de detall (amb confirmació)
+- [x] Estat buit amb crida a l'acció ("Afegeix el teu primer restaurant")
+
+Extra fet en aquesta passada, perquè se'n derivava directament: eliminats els
+permisos `INTERNET`/`ACCESS_NETWORK_STATE` del manifest (ja no queda cap
+codi de xarxa) i actualitzats README.md/CLAUDE.md perquè no descriguin un
+flux de sync que ja no existeix. `./gradlew test` i `./gradlew assembleDebug`
+verds.
 
 ## Part 2 — Compartir restaurants (un o tots)
 
@@ -51,7 +57,8 @@ falta.
 
 ## Part 4 — Seguretat
 
-- [ ] Eliminar permisos `INTERNET` i `ACCESS_NETWORK_STATE` del manifest
+- [x] Eliminar permisos `INTERNET` i `ACCESS_NETWORK_STATE` del manifest
+      (fet amb la Part 1, ja que en depenia directament)
 - [ ] Import (Part 2) amb límit de mida de fitxer
 - [ ] Parsing JSON amb `kotlinx.serialization` (sense reflexió)
 - [ ] Validació de camps a l'import (nom/cuina no buits, rating 0..5, preu

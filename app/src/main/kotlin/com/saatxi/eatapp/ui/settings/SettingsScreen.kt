@@ -18,7 +18,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -30,14 +29,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,19 +42,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.saatxi.eatapp.BuildConfig
 import com.saatxi.eatapp.R
-import com.saatxi.eatapp.data.sync.RestaurantDatabaseSyncManager
-import com.saatxi.eatapp.data.sync.SyncFailureReason
 import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.findActivity
-import com.saatxi.eatapp.ui.common.formatRelativeTime
-import com.saatxi.eatapp.ui.list.SyncMessage
 import com.saatxi.eatapp.ui.theme.AppPalette
 import com.saatxi.eatapp.ui.theme.EatAppTheme
 import com.saatxi.eatapp.ui.theme.ThemeMode
@@ -75,46 +65,9 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    val syncErrorNetwork = stringResource(R.string.list_sync_error_network)
-    val syncErrorInvalid = stringResource(R.string.list_sync_error_invalid)
-    val syncErrorUnknown = stringResource(R.string.list_sync_error_unknown)
-    val syncUpToDate = stringResource(R.string.list_sync_up_to_date)
-    val retryLabel = stringResource(R.string.action_retry)
-
-    // Resolved here rather than inside the LaunchedEffect below, because
-    // pluralStringResource (like stringResource) is a @Composable function and
-    // LaunchedEffect's block is a plain suspend lambda, not a composable one.
-    val pendingSyncMessage = uiState.pendingSyncMessage
-    val pendingSyncMessageText = when (pendingSyncMessage) {
-        is SyncMessage.Success ->
-            pluralStringResource(R.plurals.list_sync_success, pendingSyncMessage.count, pendingSyncMessage.count)
-        SyncMessage.UpToDate -> syncUpToDate
-        is SyncMessage.Error -> when (pendingSyncMessage.reason) {
-            SyncFailureReason.NETWORK -> syncErrorNetwork
-            SyncFailureReason.INVALID_FILE -> syncErrorInvalid
-            SyncFailureReason.IO_ERROR, SyncFailureReason.UNKNOWN -> syncErrorUnknown
-        }
-        null -> null
-    }
-
-    // Same pattern as the list screen's sync feedback: carried in the state
-    // rather than a one-shot event, so it survives a config change.
-    LaunchedEffect(pendingSyncMessage) {
-        val message = pendingSyncMessage ?: return@LaunchedEffect
-        val text = pendingSyncMessageText ?: return@LaunchedEffect
-        val actionLabel = if (message is SyncMessage.Error) retryLabel else null
-        val result = snackbarHostState.showSnackbar(text, actionLabel = actionLabel)
-        if (result == SnackbarResult.ActionPerformed) {
-            viewModel.syncNow()
-        }
-        viewModel.onSyncMessageShown()
-    }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.settings_title)) }) },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.settings_title)) }) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -198,23 +151,6 @@ fun SettingsScreen(
                             )
                         }
                     }
-                }
-            }
-
-            SettingsSection(title = stringResource(R.string.settings_section_data)) {
-                val lastSyncTime = RestaurantDatabaseSyncManager.getLastSyncTime(context)
-                val lastSyncText = if (lastSyncTime > 0) {
-                    stringResource(R.string.about_last_synced, formatRelativeTime(lastSyncTime))
-                } else {
-                    stringResource(R.string.about_last_synced_never)
-                }
-                Text(text = lastSyncText, style = MaterialTheme.typography.bodyMedium)
-                Button(
-                    onClick = viewModel::syncNow,
-                    enabled = !uiState.isSyncing,
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(stringResource(R.string.list_action_sync))
                 }
             }
 

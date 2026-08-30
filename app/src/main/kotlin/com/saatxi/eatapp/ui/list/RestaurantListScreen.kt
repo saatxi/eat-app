@@ -22,11 +22,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -40,6 +40,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,21 +51,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -86,7 +81,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import android.content.res.Configuration
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.RestaurantSort
-import com.saatxi.eatapp.data.sync.SyncFailureReason
 import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.cuisineBadgeTransition
 import com.saatxi.eatapp.ui.common.cuisineIcon
@@ -99,71 +93,28 @@ import com.saatxi.eatapp.ui.theme.EatAppTheme
 @Composable
 fun RestaurantListScreen(
     onOpenRestaurant: (Long) -> Unit,
+    onAddRestaurant: () -> Unit,
     viewModel: RestaurantListViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
     // Survives rotation but not process death on purpose: which filters are
     // active is what matters across a config change, not whether the row
     // happened to be open.
     var filtersExpanded by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
-    val syncErrorNetwork = stringResource(R.string.list_sync_error_network)
-    val syncErrorInvalid = stringResource(R.string.list_sync_error_invalid)
-    val syncErrorUnknown = stringResource(R.string.list_sync_error_unknown)
-    val syncUpToDate = stringResource(R.string.list_sync_up_to_date)
-    val retryLabel = stringResource(R.string.action_retry)
-
-    // Resolved here rather than inside the LaunchedEffect below, because
-    // pluralStringResource (like stringResource) is a @Composable function and
-    // LaunchedEffect's block is a plain suspend lambda, not a composable one.
-    val pendingSyncMessage = uiState.pendingSyncMessage
-    val pendingSyncMessageText = when (pendingSyncMessage) {
-        is SyncMessage.Success ->
-            pluralStringResource(R.plurals.list_sync_success, pendingSyncMessage.count, pendingSyncMessage.count)
-        SyncMessage.UpToDate -> syncUpToDate
-        is SyncMessage.Error -> when (pendingSyncMessage.reason) {
-            SyncFailureReason.NETWORK -> syncErrorNetwork
-            SyncFailureReason.INVALID_FILE -> syncErrorInvalid
-            SyncFailureReason.IO_ERROR, SyncFailureReason.UNKNOWN -> syncErrorUnknown
-        }
-        null -> null
-    }
-
-    // Keyed on the message itself (rather than Unit) so a message that arrives
-    // across a config change is still shown. onSyncMessageShown() resets the
-    // state to null once shown, which is what lets the *next* message — even an
-    // identical one — trigger this effect again.
-    LaunchedEffect(pendingSyncMessage) {
-        val message = pendingSyncMessage ?: return@LaunchedEffect
-        val text = pendingSyncMessageText ?: return@LaunchedEffect
-        val actionLabel = if (message is SyncMessage.Error) retryLabel else null
-        val result = snackbarHostState.showSnackbar(text, actionLabel = actionLabel)
-        if (result == SnackbarResult.ActionPerformed) {
-            viewModel.syncNow()
-        }
-        viewModel.onSyncMessageShown()
-    }
-
     Scaffold(
         topBar = {
             Column {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.list_title)) },
-                    actions = {
-                        // Disabled rather than swapped for a spinner while syncing: the
-                        // pull-to-refresh indicator is already showing one, and replacing
-                        // the button would shift the icons beside it every refresh.
-                        IconButton(onClick = viewModel::syncNow, enabled = !uiState.isSyncing) {
-                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.list_action_sync))
-                        }
-                    }
-                )
+                TopAppBar(title = { Text(stringResource(R.string.list_title)) })
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        floatingActionButton = {
+            FloatingActionButton(onClick = onAddRestaurant) {
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.list_action_add_restaurant))
+            }
+        }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             OutlinedTextField(
@@ -194,8 +145,8 @@ fun RestaurantListScreen(
             )
 
             // Same condition the list content below switches its empty state on:
-            // nothing to sort or filter yet during the first load, or before the
-            // very first sync has ever completed.
+            // nothing to sort or filter yet during the first load, or before any
+            // restaurant has ever been added.
             if (!uiState.isInitialLoad && (uiState.restaurants.isNotEmpty() || uiState.hasActiveFilter)) {
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                     RestaurantSort.entries.forEachIndexed { index, option ->
@@ -275,28 +226,23 @@ fun RestaurantListScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
 
-            PullToRefreshBox(
-                isRefreshing = uiState.isSyncing,
-                onRefresh = viewModel::syncNow,
-                modifier = Modifier.weight(1f).fillMaxWidth()
-            ) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 if (uiState.isInitialLoad) {
                     // The database has not emitted yet, so an empty list here means
-                    // "not loaded", not "nothing to show" — painting the first-sync
-                    // empty state would flash it for a frame on every cold start.
+                    // "not loaded", not "nothing to show" — painting the empty state
+                    // would flash it for a frame on every cold start.
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 } else if (uiState.restaurants.isEmpty() && !uiState.hasActiveFilter) {
-                    // Nothing has ever been synced: there are no filters to offer yet.
+                    // Nothing has ever been added: there are no filters to offer yet.
                     EmptyState(
                         icon = Icons.Outlined.RestaurantMenu,
-                        title = stringResource(R.string.list_empty_first_sync_title),
-                        body = stringResource(R.string.list_empty_first_sync_body),
+                        title = stringResource(R.string.list_empty_title),
+                        body = stringResource(R.string.list_empty_body),
                         modifier = Modifier.fillMaxSize(),
-                        actionLabel = stringResource(R.string.list_action_sync),
-                        onAction = viewModel::syncNow,
-                        actionEnabled = !uiState.isSyncing
+                        actionLabel = stringResource(R.string.list_action_add_restaurant),
+                        onAction = onAddRestaurant
                     )
                 } else {
                     LazyColumn(
@@ -397,7 +343,7 @@ private fun FilterSection(
             }
         }
 
-        // Only the cuisines actually present in the synced data are offered, so the
+        // Only the cuisines actually present in the data are offered, so the
         // row stays short instead of listing all 24 vocabulary entries.
         if (availableCuisines.isNotEmpty()) {
             val sortedCuisines = availableCuisines
@@ -641,15 +587,15 @@ private fun RestaurantRowPreview() {
 @Preview(name = "Light")
 @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun EmptyStateFirstSyncPreview() {
+private fun EmptyStateFirstAddPreview() {
     EatAppTheme {
         Surface {
             EmptyState(
                 icon = Icons.Outlined.RestaurantMenu,
-                title = stringResource(R.string.list_empty_first_sync_title),
-                body = stringResource(R.string.list_empty_first_sync_body),
+                title = stringResource(R.string.list_empty_title),
+                body = stringResource(R.string.list_empty_body),
                 modifier = Modifier.fillMaxSize(),
-                actionLabel = stringResource(R.string.list_action_sync),
+                actionLabel = stringResource(R.string.list_action_add_restaurant),
                 onAction = {}
             )
         }

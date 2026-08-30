@@ -7,11 +7,11 @@
     <string name="list_search_clear">Clear search</string>
     <string name="list_filter_min_rating">Minimum rating</string>
     <string name="list_filter_cuisine">Cuisine</string>
-    <string name="list_empty_first_sync_title">No restaurants yet</string>
-    <string name="list_empty_first_sync_body">Download your saved restaurants to get started.</string>
+    <string name="list_empty_title">No restaurants yet</string>
+    <string name="list_empty_body">Add your first restaurant to get started.</string>
     <string name="list_empty_no_results_title">No matches</string>
     <string name="list_empty_no_results_body">Try a different search or rating filter.</string>
-    <string name="list_action_sync">Refresh Data</string>
+    <string name="list_action_add_restaurant">Add restaurant</string>
     <string name="list_action_clear_filters">Clear filters</string>
     <string name="list_sort_name">Name (A-Z)</string>
     <string name="list_sort_rating">Rating (highest first)</string>
@@ -27,14 +27,6 @@
         <item quantity="one">%1$d active filter</item>
         <item quantity="other">%1$d active filters</item>
     </plurals>
-    <plurals name="list_sync_success">
-        <item quantity="one">Data refreshed (%1$d restaurant)</item>
-        <item quantity="other">Data refreshed (%1$d restaurants)</item>
-    </plurals>
-    <string name="list_sync_up_to_date">Already up to date</string>
-    <string name="list_sync_error_network">Couldn\'t download. Check your connection.</string>
-    <string name="list_sync_error_invalid">The downloaded file is invalid.</string>
-    <string name="list_sync_error_unknown">Couldn\'t refresh the data.</string>
     <plurals name="list_result_count">
         <item quantity="one">%1$d restaurant</item>
         <item quantity="other">%1$d restaurants</item>
@@ -43,34 +35,20 @@
     <string name="action_back">Back</string>
     <string name="action_go_back">Go back</string>
     <string name="action_retry">Retry</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
 
     <string name="detail_not_found_title">Restaurant not found</string>
-    <string name="detail_not_found_body">This restaurant was removed or the data was refreshed.</string>
+    <string name="detail_not_found_body">This restaurant was removed.</string>
+    <string name="detail_action_edit">Edit</string>
+    <string name="detail_action_delete">Delete</string>
+    <string name="detail_delete_confirm_title">Delete this restaurant?</string>
+    <string name="detail_delete_confirm_body">This can\'t be undone.</string>
 
     <string name="detail_placeholder_title">Select a restaurant</string>
     <string name="detail_placeholder_body">Choose one from the list to see its details here.</string>
 
     <string name="about_version_template">Version %1$s (build %2$d, %3$s)</string>
-    <string name="about_last_synced">Last synced: %1$s</string>
-    <string name="about_last_synced_never">No sync completed yet</string>
-
-    <!--
-        Relative "last synced" wording. The number is both the plural quantity
-        and the formatting argument, so it has to stay in the translated text.
-    -->
-    <string name="relative_time_just_now">just now</string>
-    <plurals name="relative_time_minutes_ago">
-        <item quantity="one">%1$d minute ago</item>
-        <item quantity="other">%1$d minutes ago</item>
-    </plurals>
-    <plurals name="relative_time_hours_ago">
-        <item quantity="one">%1$d hour ago</item>
-        <item quantity="other">%1$d hours ago</item>
-    </plurals>
-    <plurals name="relative_time_days_ago">
-        <item quantity="one">%1$d day ago</item>
-        <item quantity="other">%1$d days ago</item>
-    </plurals>
 
     <string name="action_ok">OK</string>
 
@@ -112,14 +90,30 @@
     <string name="palette_saffron">Saffron</string>
     <string name="palette_garden">Garden</string>
     <string name="palette_indigo">Indigo</string>
-    <string name="settings_section_data">Data</string>
     <string name="settings_section_about">About</string>
     <string name="settings_section_language">Language</string>
     <string name="language_english">English</string>
     <string name="language_spanish">Spanish</string>
     <string name="language_catalan">Catalan</string>
 
-    <!-- Optional links, shown only when the synced data provides them. -->
+    <!-- Add/edit restaurant form. -->
+    <string name="edit_title_add">Add restaurant</string>
+    <string name="edit_title_edit">Edit restaurant</string>
+    <string name="edit_action_save">Save</string>
+    <string name="edit_field_name">Name</string>
+    <string name="edit_field_cuisine">Cuisine</string>
+    <string name="edit_cuisine_placeholder">Select a cuisine</string>
+    <string name="edit_field_address">Address (optional)</string>
+    <string name="edit_field_rating">Rating</string>
+    <string name="edit_field_price_range">Price range</string>
+    <string name="edit_field_website">Website (optional)</string>
+    <string name="edit_field_instagram">Instagram (optional)</string>
+    <string name="edit_error_name_required">Name is required</string>
+    <string name="edit_error_cuisine_required">Choose a cuisine</string>
+    <string name="edit_error_website_invalid">Enter a valid http/https web address</string>
+    <string name="edit_error_instagram_invalid">Enter a valid Instagram handle</string>
+
+    <!-- Optional links, shown only when the restaurant has them. -->
     <string name="detail_section_links">Links</string>
     <string name="detail_link_website">Website</string>
     <string name="detail_link_instagram">Instagram</string>
@@ -127,9 +121,8 @@
     <string name="detail_link_failed">No app can open this link.</string>
 
     <!--
-        Display labels for the closed cuisine vocabulary. The `.db` stores the
-        stable key (see Cuisine.kt); only these labels are ever translated, so
-        adding a new language never requires re-editing the data file.
+        Display labels for the closed cuisine vocabulary. `cuisineType` stores
+        the stable key (see Cuisine.kt); only these labels are ever translated.
     -->
     <string name="cuisine_mediterranean">Mediterranean</string>
     <string name="cuisine_spanish">Spanish</string>

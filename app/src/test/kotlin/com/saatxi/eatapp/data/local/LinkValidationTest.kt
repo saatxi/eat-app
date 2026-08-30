@@ -1,14 +1,14 @@
-package com.saatxi.eatapp.data.sync
+package com.saatxi.eatapp.data.local
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * These two functions stand between a hand-edited data file and an
- * `Intent.ACTION_VIEW`, so the rejection cases matter more than the happy path:
- * a scheme that slipped through here would let the `.db` choose what the app
- * launches.
+ * These two functions stand between a user-entered value and an
+ * `Intent.ACTION_VIEW`, so the rejection cases matter more than the happy
+ * path: a scheme that slipped through here would let a restaurant's own data
+ * choose what the app launches.
  *
  * Plain Kotlin, no Robolectric — the rules deliberately don't touch `Uri`.
  */
@@ -21,7 +21,7 @@ class LinkValidationTest {
     }
 
     @Test
-    fun `assumes https for a bare host, which is how data files tend to be written`() {
+    fun `assumes https for a bare host, which is how people tend to type it`() {
         assertEquals("https://example.com", normalizeWebsite("example.com"))
         assertEquals("https://example.com/menu", normalizeWebsite("example.com/menu"))
     }
@@ -66,7 +66,7 @@ class LinkValidationTest {
         assertNull(normalizeInstagramHandle("cal ferran"))
         assertNull(normalizeInstagramHandle("cal/ferran"))
         assertNull(normalizeInstagramHandle("cal-ferran"))
-        // A full URL is not a handle: storing one would hand the file control
+        // A full URL is not a handle: storing one would hand user input control
         // over the scheme, which is exactly what this design avoids.
         assertNull(normalizeInstagramHandle("https://instagram.com/cal_ferran"))
     }

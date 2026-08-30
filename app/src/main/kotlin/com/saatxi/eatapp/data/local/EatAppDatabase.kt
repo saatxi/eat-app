@@ -17,8 +17,10 @@ fun buildEatAppDatabase(context: Context): EatAppDatabase =
         EatAppDatabase::class.java,
         "eatapp.db"
     )
-        // The local database is a pure cache of a re-downloadable .db file, so
-        // discarding it on a schema change and re-syncing is the correct
-        // behaviour rather than a shortcut.
+        // The restaurants here are entered by hand and not recoverable from
+        // anywhere else, unlike the old re-downloadable .db cache this used to
+        // hold. The next time `version` changes, this MUST be replaced with a
+        // real Migration — falling back to this would silently delete every
+        // restaurant the user has ever added.
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()

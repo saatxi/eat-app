@@ -39,6 +39,7 @@ import com.saatxi.eatapp.ui.common.LocalNavAnimatedVisibilityScope
 import com.saatxi.eatapp.ui.common.LocalSharedTransitionScope
 import com.saatxi.eatapp.ui.common.SCREEN_TRANSITION_DURATION_MS
 import com.saatxi.eatapp.ui.detail.RestaurantDetailScreen
+import com.saatxi.eatapp.ui.edit.RestaurantEditScreen
 import com.saatxi.eatapp.ui.favorites.FavoritesScreen
 import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.list.RestaurantListScreen
@@ -50,9 +51,12 @@ private const val ARG_RESTAURANT_ID = "restaurantId"
 
 private object Routes {
     const val DETAIL = "detail/{restaurantId}"
+    const val ADD = "add"
+    const val EDIT = "edit/{restaurantId}"
 }
 
 private fun detailRoute(restaurantId: Long) = "detail/$restaurantId"
+private fun editRoute(restaurantId: Long) = "edit/$restaurantId"
 
 private fun NavDestination?.isTopLevelDestinationInHierarchy(destination: TopLevelDestination): Boolean =
     this?.hierarchy?.any { it.route == destination.route } == true
@@ -61,9 +65,10 @@ private fun NavDestination?.isTopLevelDestinationInHierarchy(destination: TopLev
 @Composable
 fun EatAppNavHost(navController: NavHostController = rememberNavController()) {
     val currentDestination = navController.currentBackStackEntryAsState().value?.destination
-    // The bottom bar / rail has nowhere to live on the detail screen — it has no
-    // tab of its own, it's reached by tapping into one of the other four.
-    val isDetailRoute = currentDestination?.route == Routes.DETAIL
+    // The bottom bar / rail has nowhere to live on the detail, add or edit
+    // screens — none of them has a tab of its own, they're reached by tapping
+    // into one of the other four.
+    val isFullScreenRoute = currentDestination?.route in setOf(Routes.DETAIL, Routes.ADD, Routes.EDIT)
 
     // Below this width, List/Favorites/Roulette keep pushing the full-screen
     // detail/{id} route exactly as before — shared-element transition, hidden
@@ -105,7 +110,7 @@ fun EatAppNavHost(navController: NavHostController = rememberNavController()) {
                         )
                     }
                 },
-                layoutType = if (isDetailRoute) {
+                layoutType = if (isFullScreenRoute) {
                     NavigationSuiteType.None
                 } else {
                     NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfoV2())
@@ -128,19 +133,27 @@ fun EatAppNavHost(navController: NavHostController = rememberNavController()) {
                             LocalNavAnimatedVisibilityScope provides animatedVisibilityScope
                         ) {
                             if (useListDetailPanes) {
-                                ListDetailPaneHost { onOpenRestaurant ->
-                                    RestaurantListScreen(onOpenRestaurant = onOpenRestaurant)
+                                ListDetailPaneHost(
+                                    onEditRestaurant = { id -> navController.navigate(editRoute(id)) }
+                                ) { onOpenRestaurant ->
+                                    RestaurantListScreen(
+                                        onOpenRestaurant = onOpenRestaurant,
+                                        onAddRestaurant = { navController.navigate(Routes.ADD) }
+                                    )
                                 }
                             } else {
                                 RestaurantListScreen(
-                                    onOpenRestaurant = { id -> navController.navigate(detailRoute(id)) }
+                                    onOpenRestaurant = { id -> navController.navigate(detailRoute(id)) },
+                                    onAddRestaurant = { navController.navigate(Routes.ADD) }
                                 )
                             }
                         }
                     }
                     composable(TopLevelDestination.FAVORITES.route) {
                         if (useListDetailPanes) {
-                            ListDetailPaneHost { onOpenRestaurant ->
+                            ListDetailPaneHost(
+                                onEditRestaurant = { id -> navController.navigate(editRoute(id)) }
+                            ) { onOpenRestaurant ->
                                 FavoritesScreen(onOpenRestaurant = onOpenRestaurant)
                             }
                         } else {
@@ -151,7 +164,9 @@ fun EatAppNavHost(navController: NavHostController = rememberNavController()) {
                     }
                     composable(TopLevelDestination.ROULETTE.route) {
                         if (useListDetailPanes) {
-                            ListDetailPaneHost { onOpenRestaurant ->
+                            ListDetailPaneHost(
+                                onEditRestaurant = { id -> navController.navigate(editRoute(id)) }
+                            ) { onOpenRestaurant ->
                                 RouletteScreen(onOpenRestaurant = onOpenRestaurant)
                             }
                         } else {
@@ -172,9 +187,25 @@ fun EatAppNavHost(navController: NavHostController = rememberNavController()) {
                             LocalNavAnimatedVisibilityScope provides animatedVisibilityScope
                         ) {
                             RestaurantDetailScreen(
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
+                                onEditRestaurant = { id -> navController.navigate(editRoute(id)) }
                             )
                         }
+                    }
+                    composable(Routes.ADD) {
+                        RestaurantEditScreen(
+                            onBack = { navController.popBackStack() },
+                            restaurantId = null
+                        )
+                    }
+                    composable(
+                        route = Routes.EDIT,
+                        arguments = listOf(navArgument(ARG_RESTAURANT_ID) { type = NavType.LongType })
+                    ) { backStackEntry ->
+                        RestaurantEditScreen(
+                            onBack = { navController.popBackStack() },
+                            restaurantId = backStackEntry.arguments?.getLong(ARG_RESTAURANT_ID)
+                        )
                     }
                 }
             }
@@ -194,7 +225,10 @@ fun EatAppNavHost(navController: NavHostController = rememberNavController()) {
  */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-private fun ListDetailPaneHost(listContent: @Composable (onOpenRestaurant: (Long) -> Unit) -> Unit) {
+private fun ListDetailPaneHost(
+    onEditRestaurant: (Long) -> Unit,
+    listContent: @Composable (onOpenRestaurant: (Long) -> Unit) -> Unit
+) {
     val navigator = rememberListDetailPaneScaffoldNavigator<Long>()
     val scope = rememberCoroutineScope()
 
@@ -213,7 +247,8 @@ private fun ListDetailPaneHost(listContent: @Composable (onOpenRestaurant: (Long
                 if (selectedId != null) {
                     RestaurantDetailScreen(
                         restaurantId = selectedId,
-                        onBack = { scope.launch { navigator.navigateBack() } }
+                        onBack = { scope.launch { navigator.navigateBack() } },
+                        onEditRestaurant = onEditRestaurant
                     )
                 } else {
                     EmptyState(

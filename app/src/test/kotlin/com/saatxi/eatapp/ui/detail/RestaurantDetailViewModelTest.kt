@@ -102,6 +102,18 @@ class RestaurantDetailViewModelTest {
         assertEquals(emptySet<Long>(), preferencesRepository.preferences.value.favoriteIds)
     }
 
+    @Test
+    fun `onDelete removes the restaurant and calls back once done`() = runTest {
+        observeState()
+        repository.restaurants.value = listOf(restaurant(1))
+        var deleted = false
+
+        viewModel.onDelete(onDeleted = { deleted = true })
+
+        assertTrue(deleted)
+        assertEquals(emptyList<Restaurant>(), repository.restaurants.value)
+    }
+
     private fun restaurant(id: Long) = Restaurant(
         id = id,
         name = "Cal Ferran",
@@ -128,10 +140,14 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override fun observeById(id: Long): Flow<Restaurant?> =
         restaurants.map { list -> list.firstOrNull { it.id == id } }
 
-    override suspend fun count(): Int = restaurants.value.size
+    override suspend fun insert(restaurant: Restaurant): Long =
+        throw NotImplementedError("Not used by RestaurantDetailViewModel")
 
-    override suspend fun replaceAll(restaurants: List<Restaurant>) {
-        this.restaurants.value = restaurants
+    override suspend fun update(restaurant: Restaurant) =
+        throw NotImplementedError("Not used by RestaurantDetailViewModel")
+
+    override suspend fun delete(id: Long) {
+        restaurants.value = restaurants.value.filterNot { it.id == id }
     }
 }
 

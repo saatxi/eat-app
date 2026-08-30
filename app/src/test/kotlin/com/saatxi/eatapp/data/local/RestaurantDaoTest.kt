@@ -55,7 +55,9 @@ class RestaurantDaoTest {
         priceRange = priceRange
     )
 
-    private suspend fun seed(vararg restaurants: Restaurant) = dao.replaceAll(restaurants.toList())
+    private suspend fun seed(vararg restaurants: Restaurant) {
+        restaurants.forEach { dao.insert(it) }
+    }
 
     private suspend fun search(query: String?) =
         repository.observeFiltered(query, null, null).first().map { it.name }
@@ -282,20 +284,34 @@ class RestaurantDaoTest {
         assertNull(repository.observeById(99).first())
     }
 
-    @Test
-    fun `replaceAll wipes the previous contents rather than merging`() = runTest {
-        seed(restaurant(1, "Old One"), restaurant(2, "Old Two"))
-        seed(restaurant(3, "New One"))
+    // --- writes: insert, update, delete --------------------------------------
 
-        assertEquals(listOf("New One"), search(null))
+    @Test
+    fun `insert assigns a fresh id when given zero`() = runTest {
+        val id = dao.insert(restaurant(0, "Cal Ferran"))
+
+        assertEquals(listOf("Cal Ferran"), search(null))
+        assertEquals("Cal Ferran", repository.observeById(id).first()?.name)
     }
 
     @Test
-    fun `replaceAll accepts an empty list`() = runTest {
-        seed(restaurant(1, "Cal Ferran"))
-        dao.replaceAll(emptyList())
+    fun `update changes an existing row in place`() = runTest {
+        val id = dao.insert(restaurant(0, "Old Name", rating = 2))
 
-        assertEquals(emptyList<String>(), search(null))
+        dao.update(restaurant(id, "New Name", rating = 5))
+
+        val updated = repository.observeById(id).first()
+        assertEquals("New Name", updated?.name)
+        assertEquals(5, updated?.rating)
+    }
+
+    @Test
+    fun `delete removes only the matching row`() = runTest {
+        seed(restaurant(1, "Keep"), restaurant(2, "Remove"))
+
+        dao.delete(2)
+
+        assertEquals(listOf("Keep"), search(null))
     }
 
     // --- LIKE metacharacters, which is F-15 ---------------------------------
@@ -333,19 +349,5 @@ class RestaurantDaoTest {
         seed(restaurant(1, "Cal\\Ferran"), restaurant(2, "Bar Nil"))
 
         assertEquals(listOf("Cal\\Ferran"), search("cal\\ferran"))
-    }
-
-    // --- count(), which drives F-08's auto-sync-on-empty-database check -----
-
-    @Test
-    fun `count is zero for an empty database`() = runTest {
-        assertEquals(0, dao.count())
-    }
-
-    @Test
-    fun `count reflects every row regardless of filters`() = runTest {
-        seed(restaurant(1, "Alga"), restaurant(2, "Bar Nil"))
-
-        assertEquals(2, dao.count())
     }
 }

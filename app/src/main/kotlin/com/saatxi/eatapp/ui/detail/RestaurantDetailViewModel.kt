@@ -20,7 +20,7 @@ sealed interface DetailUiState {
 }
 
 class RestaurantDetailViewModel(
-    repository: RestaurantRepository,
+    private val repository: RestaurantRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val restaurantId: Long
 ) : ViewModel() {
@@ -41,5 +41,13 @@ class RestaurantDetailViewModel(
 
     fun onFavoriteToggle() {
         viewModelScope.launch { preferencesRepository.toggleFavorite(restaurantId) }
+    }
+
+    /** [onDeleted] is called once the row is gone, so the screen can navigate back. */
+    fun onDelete(onDeleted: () -> Unit) {
+        viewModelScope.launch {
+            repository.delete(restaurantId)
+            onDeleted()
+        }
     }
 }

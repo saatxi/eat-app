@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.saatxi.eatapp.EatApplication
 import com.saatxi.eatapp.ui.detail.RestaurantDetailViewModel
+import com.saatxi.eatapp.ui.edit.RestaurantEditViewModel
 import com.saatxi.eatapp.ui.favorites.FavoritesViewModel
 import com.saatxi.eatapp.ui.list.RestaurantListViewModel
 import com.saatxi.eatapp.ui.roulette.RouletteViewModel
@@ -21,7 +22,6 @@ object AppViewModelProvider {
         initializer {
             RestaurantListViewModel(
                 eatApplication().repository,
-                eatApplication().syncManager,
                 eatApplication().userPreferences
             )
         }
@@ -35,7 +35,6 @@ object AppViewModelProvider {
         initializer {
             SettingsViewModel(
                 eatApplication().userPreferences,
-                eatApplication().syncManager,
                 eatApplication().localeManager
             )
         }
@@ -60,6 +59,13 @@ object AppViewModelProvider {
                 eatApplication().userPreferences,
                 restaurantId = restaurantId
             )
+        }
+    }
+
+    /** `restaurantId == null` means "add a new restaurant" rather than edit an existing one. */
+    fun editViewModelFactory(restaurantId: Long?): ViewModelProvider.Factory = viewModelFactory {
+        initializer {
+            RestaurantEditViewModel(eatApplication().repository, restaurantId = restaurantId)
         }
     }
 }

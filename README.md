@@ -9,96 +9,41 @@ address, rating and price range.
   (accent- and case-insensitive), and filterable by minimum rating and
   cuisine type
 - Sort the list by name or by rating (highest first), from the app bar
-- View restaurant details (read-only), including links to the restaurant's
-  website and Instagram when the data provides them
-- Refresh restaurant data on demand from a prebuilt SQLite file hosted on
-  GitHub ("Refresh Data")
+- Add, edit and delete your own restaurants from the phone, including links
+  to the restaurant's website and Instagram when you provide them
 - View the current app version from the overflow menu ("About")
 
-## Data source & updating restaurant data
+## Managing your restaurants
 
-The app is read-only: there is no way to add, edit, or delete restaurants
-from the phone. Instead, the restaurant data comes from a SQLite `.db` file
-you maintain on a PC and publish to a public GitHub repository.
+The app installs with an empty list — there is no bundled or downloaded
+dataset. Every restaurant is entered by hand, from the phone:
 
-- Edit the data with any SQLite client (e.g. [DB Browser for
-  SQLite](https://sqlitebrowser.org/) or the `sqlite3` CLI) against a single
-  table named `restaurants`. Six columns are **required** — `id`, `name`,
-  `cuisineType`, `address`, `rating`, `priceRange` — and two are **optional**:
-  `website` and `instagram`.
-- `cuisineType` must be one of the **cuisine keys** listed below — a stable,
-  language-independent identifier such as `fast_food`, never a display label
-  such as `Fast food`. The app maps the key to both an icon and a translated
-  label, which is what makes adding a second language later a matter of adding
-  `values-es/strings.xml` and nothing else: the data file never has to change.
-- `address` is the only nullable *required* column; the other five are
-  `NOT NULL`.
-- Extra columns are ignored rather than rejected, so a file that still carries
-  the dropped `notes`, `createdAt`, `visitDate` or `photoUri` columns keeps
-  importing unchanged.
+- Tap the **+** button on the list screen to add a restaurant: name, cuisine,
+  address, rating, price range, and the two optional links below.
+- Tap a restaurant's **Edit** action on its detail screen to change any of
+  those fields, or **Delete** to remove it (with a confirmation prompt first).
+- `cuisineType` is chosen from a closed, **stable, language-independent**
+  vocabulary — a key such as `fast_food`, never a display label such as
+  `Fast food`. The app maps the key to both an icon and a translated label,
+  which is what makes adding a second language later a matter of adding
+  `values-xx/strings.xml` and nothing else.
 
-#### The optional link columns
+#### The optional links
 
-`website` and `instagram` add a "Links" section to the restaurant detail
-screen. Both are nullable, and a file that omits the columns entirely imports
-exactly as before — so adding them is opt-in, and an older data file never
-stops working. To add them to a file you already have:
+Website and Instagram add a "Links" section to the restaurant detail screen.
+Both are validated as you type, the same whitelist either way:
 
-```sql
-ALTER TABLE restaurants ADD COLUMN website TEXT;
-ALTER TABLE restaurants ADD COLUMN instagram TEXT;
-```
-
-- `website` is a normal web address. A bare host (`calferran.example`) is
-  accepted and read as `https://`. **Only `http` and `https` are allowed** —
-  the app opens this value with an `ACTION_VIEW` intent, so anything else
-  (`javascript:`, `intent:`, `file:`, a custom scheme) is a way of choosing
-  what the app launches and is discarded.
-- `instagram` is the **handle**, not a URL: `cal_ferran` or `@cal_ferran`, up
-  to 30 letters, digits, periods and underscores. The app builds
+- **Website** must be a plain `http`/`https` web address. A bare host
+  (`calferran.example`) is accepted and read as `https://`. Anything else
+  (`javascript:`, `intent:`, `file:`, a custom scheme) is rejected with an
+  inline error rather than saved — the app opens this value with an
+  `ACTION_VIEW` intent, so this is what stops a link from choosing what the
+  app launches.
+- **Instagram** is the **handle**, not a URL: `cal_ferran` or `@cal_ferran`,
+  up to 30 letters, digits, periods and underscores. The app builds
   `https://instagram.com/<handle>` itself, which is what makes the scheme
-  impossible to influence from the data file. Android deep-links that URL into
+  impossible to influence from user input. Android deep-links that URL into
   the Instagram app when it's installed.
-- A value that fails either rule is dropped — that one link isn't drawn — and
-  the rest of the file still imports. One bad cell never costs you the whole
-  dataset.
-- No Room-specific bookkeeping (e.g. `room_master_table`) is required in the
-  file; the app reads it with plain SQLite and imports the rows into its own
-  local database.
-- Publish the updated `.db` with `git add`/`commit`/`push` to the repo, branch
-  and path the build points at. The release URL is hardcoded as
-  `releaseDatabaseUrl` in [`app/build.gradle.kts`](app/build.gradle.kts) and
-  reaches the app as `BuildConfig.DATABASE_URL` through
-  [`RemoteConfig.kt`](app/src/main/kotlin/com/saatxi/eatapp/data/sync/RemoteConfig.kt);
-  a debug build can be pointed elsewhere without editing source, see
-  [Pointing a debug build at other data](#pointing-a-debug-build-at-other-data).
-- In the app, tap "Refresh Data" on the list screen to download and apply
-  the latest published file. Sync is entirely manual — there's no
-  version/freshness check, and every tap re-downloads and replaces the local
-  data. A failed or invalid download leaves existing data untouched and shows
-  an error. A file with zero rows is *not* an error: it is how you empty the
-  list, so publishing one clears the app's data on the next refresh.
-
-### Pointing a debug build at other data
-
-Testing against a branch, a fork or a second data file doesn't need a source
-edit. Set the URL in `local.properties` (gitignored):
-
-```
-eatapp.database.url=https://raw.githubusercontent.com/<you>/<fork>/<branch>/data/eatapp.db
-```
-
-or as an environment variable, which is what CI would use:
-
-| `local.properties` | Environment variable |
-| --- | --- |
-| `eatapp.database.url` | `EATAPP_DATABASE_URL` |
-
-Only **debug** builds read it — a release build always uses the hardcoded
-release URL, so an override can't escape into a published APK. The value must
-start with `https://`; anything else fails the build at configuration time,
-since the app declares no cleartext traffic permission and would only fail
-later with a confusing network error.
 
 ### Cuisine keys
 
@@ -120,14 +65,13 @@ the list screen offers a filter chip for every key present in your data.
 | `american` | American | | `fine_dining` | Fine dining |
 | `seafood` | Seafood | | `vegetarian` | Vegetarian |
 
-An unrecognised value never breaks a sync: the app falls back to a generic
-icon and displays the raw string as-is. That means a data file using a key
-added in a newer release still works on an older build, and a typo costs you
-an icon rather than a failed refresh.
-
-The vocabulary is defined in
+The add/edit form only ever writes a key from this closed list, so an
+"unrecognised value" can only happen if a key is ever renamed or dropped from
 [`Cuisine.kt`](app/src/main/kotlin/com/saatxi/eatapp/data/local/Cuisine.kt) —
-keep this table in sync with it when adding a key.
+in that case existing rows still using the old key degrade gracefully to a
+generic icon and the raw string, rather than crashing.
+
+Keep this table in sync with `Cuisine.kt` when adding a key.
 
 ## Tech stack
 
@@ -135,21 +79,19 @@ keep this table in sync with it when adding a key.
 - Navigation Compose for screen navigation
 - Room for local persistence
 - Kotlin Coroutines
-- Plain `HttpURLConnection` for the one-shot data sync (no extra networking
-  dependency)
 
 ## Project structure
 
 ```
 app/src/main/kotlin/com/saatxi/eatapp/
 ├── data/
-│   ├── local/          # Room entity, DAO, database, type converters
-│   ├── repository/     # Repository abstraction over the data source
-│   └── sync/           # Remote .db download, validation, and import
+│   ├── local/          # Room entity, DAO, database, link validation
+│   └── repository/     # Repository abstraction over the data source
 ├── navigation/         # NavHost and route definitions
 └── ui/
     ├── list/           # Restaurant list screen + ViewModel
     ├── detail/         # Restaurant detail screen + ViewModel
+    ├── edit/           # Add/edit restaurant form + ViewModel
     └── theme/          # Compose theming (color, type, shape)
 ```
 
@@ -250,25 +192,24 @@ re-upload; Gradle does not auto-download it for this step.
 
 Unit tests live in `app/src/test/kotlin/`, mirroring the main package
 structure. They run on the JVM with no emulator or device: the ones that need
-an Android runtime — the `.db` reader and the Room DAO — use Robolectric, so a
-single command covers everything.
+an Android runtime — the Room DAO — use Robolectric, so a single command
+covers everything.
 
 What is covered:
 
 - `SearchNormalizerTest` — the accent and case folding behind the search.
 - `CuisineTest` — resolving `cuisineType` keys, including unknown ones.
-- `RestaurantDatabaseReaderTest` — validation of the downloaded `.db`: missing
-  columns, NULL and blank fields, out-of-range ratings and price ranges, files
-  that are not SQLite at all, and the optional link columns (present, absent
-  and unsafe).
 - `LinkValidationTest` — the whitelist behind `website` and `instagram`,
   including every scheme the app refuses to open.
 - `ColorSchemeContrastTest` — WCAG AA contrast for every on-colour of every
   palette, in both light and dark, plus all eight cuisine accents.
-- `RestaurantDaoTest` — the filter query and both sort orders against an
-  in-memory Room database.
+- `RestaurantDaoTest` — the filter query, both sort orders, and insert/update/
+  delete, against an in-memory Room database.
 - `RestaurantListViewModelTest` — how the filter and sort inputs combine into
   one query and one UI state.
+- `RestaurantEditViewModelTest` — form validation (required name and cuisine,
+  rejected website/Instagram values) and the insert-vs-update branch.
+- `RestaurantDetailViewModelTest` — favourite toggling and deletion.
 - `RestaurantUiModelTest` — the entity-to-UI-model mapping behind the price
   and address formatting, the link fields and the favourite flag.
 
@@ -425,8 +366,8 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
    ```
 5. Because release builds are optimized by R8 while debug builds are not, install
    the release artifact on a device and smoke-test it — open the list, search,
-   filter, open a detail screen and run a data sync — before handing it to
-   anyone. Archive `app/build/outputs/mapping/release/mapping.txt` and
+   filter, add/edit/delete a restaurant and open its detail screen — before
+   handing it to anyone. Archive `app/build/outputs/mapping/release/mapping.txt` and
    `app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip`
    alongside the artifact: without them, crash reports from that build are
    unreadable, and the next build overwrites both files (see **App
