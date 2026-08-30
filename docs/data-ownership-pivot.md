@@ -57,15 +57,28 @@ opció per obrir qualsevol fitxer `.json` del sistema — mitigat perquè
 `RestaurantImportReader` rebutja amb un missatge clar (`import_error_invalid`)
 qualsevol JSON que no porti el tag `"format": "eatapp.restaurants.v1"`.
 
-## Part 3 — Backup
+## Part 3 — Backup — Feta
 
-- [ ] Escriure `backup.json` a `context.filesDir` automàticament en cada
-      `insert`/`update`/`delete`
-- [ ] Botó "Exporta/Comparteix les meves dades" que comparteix `backup.json`
-      amb el mateix mecanisme de la Part 2
-- [ ] Confirmar que `android:allowBackup="true"` i les regles de backup
-      actuals es mantenen sense canvis (ja correctes un cop tot Room és
-      dada d'usuari)
+- [x] Escriure `backup.json` a `context.filesDir` automàticament en cada
+      `insert`/`update`/`delete` (`data/share/BackupWriter.kt`, cridat des de
+      `RoomRestaurantRepository`, l'únic punt d'escriptura de l'app)
+- [x] Botó "Exporta/Comparteix les meves dades" a la pantalla de Settings
+      (`ui/settings/`) que comparteix tots els restaurants amb el mateix
+      mecanisme de la Part 2 (`shareRestaurants`/`ACTION_SEND`)
+- [x] Confirmat que `android:allowBackup="true"` i les regles de backup
+      actuals (`backup_rules.xml`, `data_extraction_rules.xml`, totes dues
+      sense exclusions) es mantenen sense canvis — ja cobreixen tot
+      `filesDir`, `backup.json` inclòs
+
+**Nota de disseny**: `backup.json` es reescriu sencer (totes les files) a
+cada `insert`/`update`/`delete`, no de manera incremental — per a la mida de
+dades d'aquesta app (desenes/centenars de restaurants) reescriure el fitxer
+sencer és prou barat i evita mantenir cap estat addicional. El botó de la
+Part 3 no comparteix literalment el fitxer `backup.json` (que viu a
+`filesDir`, no exposat pel `FileProvider`): torna a generar el mateix JSON a
+partir de la llista actual i el comparteix pel mecanisme ja existent de la
+Part 2 (`cacheDir/shared/`), ja que `file_paths.xml` no s'ha d'eixamplar per
+exposar `filesDir` (vegeu CLAUDE.md, secció de seguretat).
 
 ## Part 4 — Seguretat
 
@@ -77,7 +90,8 @@ qualsevol JSON que no porti el tag `"format": "eatapp.restaurants.v1"`.
       0..4, whitelist website/Instagram) abans d'escriure a Room
 - [ ] Ids sempre generats localment en importar, mai confiats de l'exterior
 - [ ] `FileProvider` amb `file_paths.xml` restringit (revisat a Part 2)
-- [ ] `backup.json` només a emmagatzematge privat de l'app
+- [x] `backup.json` només a emmagatzematge privat de l'app (`context.filesDir`,
+      mai `cacheDir`, i no exposat pel `FileProvider` — Part 3)
 
 ## Fora d'abast (backlog separat, no d'aquesta feina)
 

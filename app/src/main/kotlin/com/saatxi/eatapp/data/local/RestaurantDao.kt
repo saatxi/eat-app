@@ -48,6 +48,10 @@ interface RestaurantDao {
     @Query("SELECT * FROM restaurants WHERE id = :id")
     fun observeById(id: Long): Flow<Restaurant?>
 
+    /** A one-shot snapshot of every row, used to write the full `backup.json` after each write. */
+    @Query("SELECT * FROM restaurants ORDER BY name COLLATE NOCASE ASC")
+    suspend fun getAll(): List<Restaurant>
+
     /** [Restaurant.id] must be 0 (the default) so Room assigns a fresh one. */
     @Insert
     suspend fun insert(restaurant: Restaurant): Long

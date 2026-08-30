@@ -1,13 +1,18 @@
 package com.saatxi.eatapp.ui.settings
 
+import com.saatxi.eatapp.data.local.Restaurant
+import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.prefs.AppLocaleManager
 import com.saatxi.eatapp.data.prefs.UserPreferences
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
+import com.saatxi.eatapp.data.repository.RestaurantRepository
 import com.saatxi.eatapp.ui.theme.AppPalette
 import com.saatxi.eatapp.ui.theme.ThemeMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -25,6 +30,7 @@ class SettingsViewModelTest {
     private val dispatcher = UnconfinedTestDispatcher()
     private lateinit var preferencesRepository: FakeUserPreferencesRepository
     private lateinit var localeManager: FakeAppLocaleManager
+    private lateinit var repository: FakeRestaurantRepository
     private lateinit var viewModel: SettingsViewModel
 
     @Before
@@ -32,7 +38,8 @@ class SettingsViewModelTest {
         Dispatchers.setMain(dispatcher)
         preferencesRepository = FakeUserPreferencesRepository()
         localeManager = FakeAppLocaleManager()
-        viewModel = SettingsViewModel(preferencesRepository, localeManager)
+        repository = FakeRestaurantRepository()
+        viewModel = SettingsViewModel(preferencesRepository, localeManager, repository)
     }
 
     @After
@@ -80,7 +87,7 @@ class SettingsViewModelTest {
     @Test
     fun `starts with the language reported by the locale manager`() = runTest {
         localeManager.current = AppLanguage.CATALAN
-        viewModel = SettingsViewModel(preferencesRepository, localeManager)
+        viewModel = SettingsViewModel(preferencesRepository, localeManager, repository)
         observeState()
 
         assertEquals(AppLanguage.CATALAN, viewModel.uiState.value.language)
@@ -126,4 +133,31 @@ private class FakeAppLocaleManager(
     override fun setLanguage(language: AppLanguage) {
         current = language
     }
+}
+
+/** Only exists to satisfy the constructor — onExportData needs a real Context to go further, so it is not exercised here. */
+private class FakeRestaurantRepository : RestaurantRepository {
+
+    val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
+
+    override fun observeFiltered(
+        query: String?,
+        minRating: Int?,
+        cuisineType: String?,
+        sort: RestaurantSort
+    ): Flow<List<Restaurant>> = restaurants
+
+    override fun observeCuisineTypes(): Flow<List<String>> = MutableStateFlow(emptyList())
+
+    override fun observeById(id: Long): Flow<Restaurant?> =
+        restaurants.map { list -> list.firstOrNull { it.id == id } }
+
+    override suspend fun insert(restaurant: Restaurant): Long =
+        throw NotImplementedError("Not used by SettingsViewModel")
+
+    override suspend fun update(restaurant: Restaurant) =
+        throw NotImplementedError("Not used by SettingsViewModel")
+
+    override suspend fun delete(id: Long) =
+        throw NotImplementedError("Not used by SettingsViewModel")
 }

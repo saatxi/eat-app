@@ -37,7 +37,8 @@ object AppViewModelProvider {
         initializer {
             SettingsViewModel(
                 eatApplication().userPreferences,
-                eatApplication().localeManager
+                eatApplication().localeManager,
+                eatApplication().repository
             )
         }
         initializer {

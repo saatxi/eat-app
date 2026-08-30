@@ -1,12 +1,17 @@
 package com.saatxi.eatapp.data.local
 
+import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.saatxi.eatapp.data.repository.RoomRestaurantRepository
+import com.saatxi.eatapp.data.share.RestaurantShareFile
+import java.io.File
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -20,23 +25,25 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class RestaurantDaoTest {
 
+    private lateinit var context: Context
     private lateinit var database: EatAppDatabase
     private lateinit var dao: RestaurantDao
     private lateinit var repository: RoomRestaurantRepository
 
     @Before
     fun setUp() {
-        database = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            EatAppDatabase::class.java
-        ).allowMainThreadQueries().build()
+        context = ApplicationProvider.getApplicationContext()
+        database = Room.inMemoryDatabaseBuilder(context, EatAppDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
         dao = database.restaurantDao()
-        repository = RoomRestaurantRepository(dao)
+        repository = RoomRestaurantRepository(dao, context)
     }
 
     @After
     fun tearDown() {
         database.close()
+        File(context.filesDir, "backup.json").delete()
     }
 
     private fun restaurant(
@@ -312,6 +319,46 @@ class RestaurantDaoTest {
         dao.delete(2)
 
         assertEquals(listOf("Keep"), search(null))
+    }
+
+    // --- Part 3: backup.json, written through the repository -----------------
+
+    private fun backupFile() = File(context.filesDir, "backup.json")
+
+    private fun backupNames(): List<String> {
+        val shareFile = Json.decodeFromString(RestaurantShareFile.serializer(), backupFile().readText())
+        return shareFile.restaurants.map { it.name }
+    }
+
+    @Test
+    fun `no backup file exists before any write`() {
+        assertFalse(backupFile().exists())
+    }
+
+    @Test
+    fun `insert writes a backup file with the new row`() = runTest {
+        repository.insert(restaurant(0, "Cal Ferran"))
+
+        assertEquals(listOf("Cal Ferran"), backupNames())
+    }
+
+    @Test
+    fun `update rewrites the backup file with the change`() = runTest {
+        val id = repository.insert(restaurant(0, "Old Name"))
+
+        repository.update(restaurant(id, "New Name"))
+
+        assertEquals(listOf("New Name"), backupNames())
+    }
+
+    @Test
+    fun `delete rewrites the backup file without the removed row`() = runTest {
+        repository.insert(restaurant(0, "Keep"))
+        val removeId = repository.insert(restaurant(0, "Remove"))
+
+        repository.delete(removeId)
+
+        assertEquals(listOf("Keep"), backupNames())
     }
 
     // --- LIKE metacharacters, which is F-15 ---------------------------------

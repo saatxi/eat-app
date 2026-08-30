@@ -92,6 +92,9 @@
     <string name="palette_saffron">Saffron</string>
     <string name="palette_garden">Garden</string>
     <string name="palette_indigo">Indigo</string>
+    <string name="settings_section_data">Data</string>
+    <string name="settings_data_description">Export all your restaurants as a JSON file you can keep as a backup or share with a friend.</string>
+    <string name="settings_action_export_data">Export / share my data</string>
     <string name="settings_section_about">About</string>
     <string name="settings_section_language">Language</string>
     <string name="language_english">English</string>

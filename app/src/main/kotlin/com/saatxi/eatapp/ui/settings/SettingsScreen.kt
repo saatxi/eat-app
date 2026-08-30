@@ -154,6 +154,17 @@ fun SettingsScreen(
                 }
             }
 
+            SettingsSection(title = stringResource(R.string.settings_section_data)) {
+                Text(
+                    text = stringResource(R.string.settings_data_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                OutlinedButton(onClick = { viewModel.onExportData(context) }) {
+                    Text(stringResource(R.string.settings_action_export_data))
+                }
+            }
+
             SettingsSection(title = stringResource(R.string.settings_section_about)) {
                 Text(
                     text = stringResource(

@@ -88,6 +88,9 @@
     <string name="palette_saffron">Safrà</string>
     <string name="palette_garden">Hort</string>
     <string name="palette_indigo">Indi</string>
+    <string name="settings_section_data">Dades</string>
+    <string name="settings_data_description">Exporta tots els teus restaurants com a fitxer JSON que pots desar com a còpia de seguretat o compartir amb un amic.</string>
+    <string name="settings_action_export_data">Exporta / comparteix les meves dades</string>
     <string name="settings_section_about">Quant a</string>
     <string name="settings_section_language">Idioma</string>
     <string name="language_english">Anglès</string>

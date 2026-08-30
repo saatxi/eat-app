@@ -12,7 +12,7 @@ import com.saatxi.eatapp.data.repository.RoomRestaurantRepository
 class EatApplication : Application() {
 
     val repository: RestaurantRepository by lazy {
-        RoomRestaurantRepository(buildEatAppDatabase(this).restaurantDao())
+        RoomRestaurantRepository(buildEatAppDatabase(this).restaurantDao(), applicationContext)
     }
 
     val userPreferences: UserPreferencesRepository by lazy {
