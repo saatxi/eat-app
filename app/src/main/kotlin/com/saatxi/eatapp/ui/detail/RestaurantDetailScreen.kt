@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.RestaurantMenu
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -70,11 +71,13 @@ import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.instagramUrl
+import com.saatxi.eatapp.data.share.RestaurantExport
 import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.cuisineBadgeTransition
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
+import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.model.MAX_RATING
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
@@ -160,6 +163,9 @@ private fun RestaurantDetailContent(
                 onFavoriteToggle = onFavoriteToggle,
                 onEdit = onEdit,
                 onDeleteRequest = { showDeleteConfirm = true },
+                onShare = {
+                    (uiState as? DetailUiState.Loaded)?.restaurant?.let { context.shareRestaurants(listOf(it.toExport())) }
+                },
                 scrollBehavior = scrollBehavior
             )
         }
@@ -377,6 +383,21 @@ private fun LinksCard(
  * that app is installed, which is why no `instagram://` scheme is needed here
  * and no `<queries>` entry in the manifest.
  */
+/**
+ * [RestaurantUiModel] only carries the formatted "$$" [RestaurantUiModel.priceLabel],
+ * not the raw price range — its length recovers the original number, the same
+ * trick the price content description already relies on above.
+ */
+private fun RestaurantUiModel.toExport() = RestaurantExport(
+    name = name,
+    cuisineType = cuisineKey,
+    address = address,
+    rating = rating,
+    priceRange = priceLabel.length,
+    website = website,
+    instagram = instagram
+)
+
 private fun Context.openUri(uri: String) {
     try {
         startActivity(Intent(Intent.ACTION_VIEW, uri.toUri()))
@@ -399,6 +420,7 @@ private fun DetailTopBar(
     onFavoriteToggle: () -> Unit,
     onEdit: (Long) -> Unit,
     onDeleteRequest: () -> Unit,
+    onShare: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior
 ) {
     val haptic = LocalHapticFeedback.current
@@ -445,6 +467,9 @@ private fun DetailTopBar(
             }
             IconButton(onClick = { onEdit(restaurant.id) }) {
                 Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.detail_action_edit))
+            }
+            IconButton(onClick = onShare) {
+                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.detail_action_share))
             }
             IconButton(onClick = onDeleteRequest) {
                 Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.detail_action_delete))

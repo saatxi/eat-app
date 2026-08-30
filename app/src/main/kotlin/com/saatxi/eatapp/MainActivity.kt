@@ -1,5 +1,6 @@
 package com.saatxi.eatapp
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -40,12 +41,16 @@ class MainActivity : AppCompatActivity() {
             .onEach { preferences = it }
             .launchIn(lifecycleScope)
 
+        // Non-null only when the app was opened by tapping a shared restaurant
+        // file from another app ("Open with EatApp") rather than the launcher.
+        val importUri = intent?.takeIf { it.action == Intent.ACTION_VIEW }?.data
+
         enableEdgeToEdge()
         setContent {
             val currentPreferences = preferences ?: UserPreferences.Defaults
             EatAppTheme(palette = currentPreferences.palette, themeMode = currentPreferences.themeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    EatAppNavHost()
+                    EatAppNavHost(startImportUri = importUri)
                 }
             }
         }

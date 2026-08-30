@@ -1,9 +1,9 @@
 # CLAUDE.md
 
 Development instructions for Claude Code when working in this repository.
-See [README.md](README.md) for the full project overview, data sync setup,
-versioning scheme, and release process — this file only covers things
-specific to *how Claude should work in this repo*.
+See [README.md](README.md) for the full project overview, the restaurant
+sharing/import feature, versioning scheme, and release process — this file
+only covers things specific to *how Claude should work in this repo*.
 
 ## Commit and tag messages
 
@@ -27,8 +27,10 @@ When asked to write a commit message or a tag message:
 
 - **Language**: Kotlin only (no Java sources).
 - **UI**: Jetpack Compose + Material 3. No XML layouts.
-- **Navigation**: Navigation Compose (`navigation/EatAppNavHost.kt`), two
-  routes: `list` and `detail/{restaurantId}`.
+- **Navigation**: Navigation Compose (`navigation/EatAppNavHost.kt`) — the
+  four top-level tabs (`list`, `favorites`, `roulette`, `settings`) plus
+  `detail/{restaurantId}`, `add`, `edit/{restaurantId}` and
+  `import/{uri}`.
 - **Persistence**: Room (local cache) — entity/DAO/database live under
   `data/local/`.
 - **Networking**: none. The app makes no network calls — every restaurant is
@@ -87,15 +89,17 @@ code change before reporting it as done.
 ```
 app/src/main/kotlin/com/saatxi/eatapp/
 ├── data/
-│   ├── local/        # Room entity, DAO, database, type converters
-│   ├── repository/   # Repository abstraction over the data source
-│   └── sync/         # Remote .db download, validation, and import
+│   ├── local/         # Room entity, DAO, database, link validation
+│   ├── repository/    # Repository abstraction over the data source
+│   └── share/         # Export/import models, JSON (de)serialization, FileProvider writer
 ├── navigation/        # NavHost and route definitions
 └── ui/
-    ├── common/        # Shared composable helpers (cuisine icon, label, tint)
+    ├── common/        # Shared composable helpers (cuisine icon/label/tint, sharing intent)
     ├── model/         # UI models the screens draw, mapped from the entity
     ├── list/          # Restaurant list screen + ViewModel
     ├── detail/        # Restaurant detail screen + ViewModel
+    ├── edit/          # Add/edit restaurant form + ViewModel
+    ├── importing/     # Received-file review/confirm screen + ViewModel
     └── theme/         # Compose theming (color, type, shape)
 ```
 
@@ -104,10 +108,10 @@ app/src/main/kotlin/com/saatxi/eatapp/
 - All in-app strings live in `strings.xml` — no hardcoded UI text in Kotlin.
   `app/src/main/res/values/strings.xml` is the default locale, **English**;
   other languages are added as `values-xx/strings.xml` overrides of the same
-  resource names, never by touching the data (`Cuisine.kt`'s keys and the
-  `.db` itself stay language-independent — see the cuisine vocabulary note
-  below). `values-es/strings.xml` covers Spanish. Code comments are in
-  English regardless of locale.
+  resource names, never by touching the data (`Cuisine.kt`'s keys stay
+  language-independent — see the cuisine vocabulary note below).
+  `values-es/strings.xml` covers Spanish, `values-ca/strings.xml` Catalan.
+  Code comments are in English regardless of locale.
 - **Cuisine vocabulary**: the `cuisineType` column stores stable,
   language-independent keys (`japanese`, `fast_food`, etc.), never display
   labels — the add/edit form's dropdown only ever writes a key from this
@@ -123,25 +127,40 @@ app/src/main/kotlin/com/saatxi/eatapp/
   them. See README's "Versioning" section for the full scheme.
 - The app is the source of truth for its own data: restaurants are created,
   edited and deleted entirely on-device, via the add/edit form
-  (`ui/edit/`) and the detail screen's delete action — there is no external
-  file or remote source feeding it.
+  (`ui/edit/`) and the detail screen's delete action. The one exception is
+  importing a restaurant file shared by another EatApp user
+  (`ui/importing/`), and even then nothing is written until the user reviews
+  and confirms it on that screen.
 
 ## Security guidelines
 
 - The app makes no network calls at all — every restaurant is entered,
-  edited and deleted on-device, and there is no remote or file-based data
-  source to fetch. Don't reintroduce a networking dependency or a remote
-  data source without discussing it first. If that ever changes (e.g. the
-  planned restaurant-sharing feature in
-  [docs/data-ownership-pivot.md](docs/data-ownership-pivot.md)), re-apply the
-  same rigor the old `.db` sync used: treat anything from outside the app as
-  untrusted input, validate it field-by-field before it reaches Room, HTTPS
-  only, and never embed API keys, tokens, or credentials anywhere in this
-  repo (there are none today; keep it that way).
+  edited and deleted on-device. The only way data ever crosses into or out of
+  the app is the restaurant-sharing feature (`data/share/`), which is local
+  IPC (`Intent.ACTION_SEND`/`ACTION_VIEW` + a `FileProvider`), never a
+  network request. Don't add a networking dependency or a remote data source
+  without discussing it first.
+- A file received through the sharing intent-filter (`MainActivity`'s second
+  `<intent-filter>`, matching `application/json`) is untrusted input, the
+  same way the old synced `.db` was: capped at `MAX_IMPORT_BYTES` before
+  parsing (`data/share/ContentFiles.kt`), parsed with `kotlinx.serialization`
+  rather than a reflection-based library, gated on the `format` tag in
+  `RestaurantShareModels.kt`, and validated field-by-field
+  (`RestaurantExport.toRestaurantOrNull`) before anything reaches Room — a
+  row that fails validation is dropped rather than failing the whole file.
+  The confirmation screen (`ui/importing/`) is the last line of defence nothing
+  is written until the user reviews and confirms it. Don't relax any of this
+  when touching the import path.
+- The `FileProvider` (`res/xml/file_paths.xml`) only exposes
+  `cacheDir/shared/`, the folder `RestaurantShareWriter.kt` writes to — never
+  widen it to a broader path, and keep `android:exported="false"` on the
+  `<provider>` entry.
 - `AndroidManifest.xml` declares no permissions at all — `INTERNET` and
   `ACCESS_NETWORK_STATE`, left over from the removed remote sync feature,
-  were removed along with it. Don't add any permission (network, location,
-  contacts, storage, etc.) without an explicit, discussed reason.
+  were removed along with it, and the sharing feature needs none either
+  (`FileProvider` grants are per-Intent, not a permission). Don't add any
+  permission (network, location, contacts, storage, etc.) without an
+  explicit, discussed reason.
 - The app stores no user credentials, no PII beyond what the user
   themselves enters for their own restaurants, and does no analytics or
   tracking — keep it that way unless the user asks for it explicitly.

@@ -1,10 +1,13 @@
 package com.saatxi.eatapp.ui.list
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
 import com.saatxi.eatapp.data.repository.RestaurantRepository
+import com.saatxi.eatapp.data.share.toExport
+import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.model.toUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -118,6 +122,17 @@ class RestaurantListViewModel(
 
     fun onFavoriteToggle(restaurantId: Long) {
         viewModelScope.launch { preferencesRepository.toggleFavorite(restaurantId) }
+    }
+
+    /**
+     * Shares every restaurant, ignoring the active filters — "share all"
+     * means all, not just what's currently visible.
+     */
+    fun onShareAll(context: Context) {
+        viewModelScope.launch {
+            val all = repository.observeFiltered(query = null, minRating = null, cuisineType = null).first()
+            context.shareRestaurants(all.map { it.toExport() })
+        }
     }
 
     // Deliberately leaves the sort order alone: it is reached from the "no

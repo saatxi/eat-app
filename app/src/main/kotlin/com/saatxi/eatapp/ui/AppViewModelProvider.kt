@@ -1,5 +1,6 @@
 package com.saatxi.eatapp.ui
 
+import android.net.Uri
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.createSavedStateHandle
@@ -10,6 +11,7 @@ import com.saatxi.eatapp.EatApplication
 import com.saatxi.eatapp.ui.detail.RestaurantDetailViewModel
 import com.saatxi.eatapp.ui.edit.RestaurantEditViewModel
 import com.saatxi.eatapp.ui.favorites.FavoritesViewModel
+import com.saatxi.eatapp.ui.importing.RestaurantImportViewModel
 import com.saatxi.eatapp.ui.list.RestaurantListViewModel
 import com.saatxi.eatapp.ui.roulette.RouletteViewModel
 import com.saatxi.eatapp.ui.settings.SettingsViewModel
@@ -66,6 +68,16 @@ object AppViewModelProvider {
     fun editViewModelFactory(restaurantId: Long?): ViewModelProvider.Factory = viewModelFactory {
         initializer {
             RestaurantEditViewModel(eatApplication().repository, restaurantId = restaurantId)
+        }
+    }
+
+    fun importViewModelFactory(uri: Uri): ViewModelProvider.Factory = viewModelFactory {
+        initializer {
+            RestaurantImportViewModel(
+                appContext = eatApplication().applicationContext,
+                repository = eatApplication().repository,
+                uri = uri
+            )
         }
     }
 }

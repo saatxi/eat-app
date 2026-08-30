@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LocationOn
@@ -79,6 +80,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalContext
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.ui.AppViewModelProvider
@@ -102,11 +104,19 @@ fun RestaurantListScreen(
     // happened to be open.
     var filtersExpanded by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
             Column {
-                TopAppBar(title = { Text(stringResource(R.string.list_title)) })
+                TopAppBar(
+                    title = { Text(stringResource(R.string.list_title)) },
+                    actions = {
+                        IconButton(onClick = { viewModel.onShareAll(context) }) {
+                            Icon(Icons.Default.Share, contentDescription = stringResource(R.string.list_action_share_all))
+                        }
+                    }
+                )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         },

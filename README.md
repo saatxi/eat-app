@@ -11,6 +11,9 @@ address, rating and price range.
 - Sort the list by name or by rating (highest first), from the app bar
 - Add, edit and delete your own restaurants from the phone, including links
   to the restaurant's website and Instagram when you provide them
+- Share one restaurant, or your whole list, with anyone through Android's
+  normal share sheet (WhatsApp, Gmail, Drive...) — no account or server
+  involved
 - View the current app version from the overflow menu ("About")
 
 ## Managing your restaurants
@@ -73,12 +76,41 @@ generic icon and the raw string, rather than crashing.
 
 Keep this table in sync with `Cuisine.kt` when adding a key.
 
+## Sharing restaurants
+
+Tap the share icon on the list screen to send your whole list, or on a
+restaurant's detail screen to send just that one. Either opens Android's
+normal share sheet — WhatsApp, Gmail, Drive, or anywhere else that accepts a
+file — with a small JSON attachment (no photos, no account, no server).
+
+Receiving one works the same way in reverse: opening a restaurant file
+someone sent you (from WhatsApp, Files, or wherever it landed) offers "Open
+with EatApp", which shows a review screen before anything is saved. Each
+restaurant in the file is shown individually, and:
+
+- If it looks like something already in your list (same name and address),
+  it's flagged and defaults to **Skip**; you can still choose **Add anyway**
+  or **Replace** the existing one.
+- Otherwise it defaults to **Add**.
+- Nothing is written to your list until you tap **Import** — closing the
+  screen (or backing out) discards the whole review with no changes made.
+
+The file is untrusted input, handled with the same rigor the app used to
+apply to the synced `.db`: it's size-capped, parsed with
+`kotlinx.serialization`, and every row is validated field-by-field
+(name/cuisine present, rating 0-5, price range 0-4, the same website/
+Instagram whitelist as the add/edit form) before it ever reaches Room — a row
+that fails is dropped rather than failing the whole file. See
+[`data/share/`](app/src/main/kotlin/com/saatxi/eatapp/data/share) for the
+implementation.
+
 ## Tech stack
 
 - Kotlin, Jetpack Compose, Material 3
 - Navigation Compose for screen navigation
 - Room for local persistence
 - Kotlin Coroutines
+- kotlinx.serialization for the share/import JSON format
 
 ## Project structure
 
@@ -86,12 +118,14 @@ Keep this table in sync with `Cuisine.kt` when adding a key.
 app/src/main/kotlin/com/saatxi/eatapp/
 ├── data/
 │   ├── local/          # Room entity, DAO, database, link validation
-│   └── repository/     # Repository abstraction over the data source
+│   ├── repository/     # Repository abstraction over the data source
+│   └── share/          # Export/import models, JSON parsing, FileProvider writer
 ├── navigation/         # NavHost and route definitions
 └── ui/
     ├── list/           # Restaurant list screen + ViewModel
     ├── detail/         # Restaurant detail screen + ViewModel
     ├── edit/           # Add/edit restaurant form + ViewModel
+    ├── importing/      # Received-file review/confirm screen + ViewModel
     └── theme/          # Compose theming (color, type, shape)
 ```
 
@@ -210,6 +244,12 @@ What is covered:
 - `RestaurantEditViewModelTest` — form validation (required name and cuisine,
   rejected website/Instagram values) and the insert-vs-update branch.
 - `RestaurantDetailViewModelTest` — favourite toggling and deletion.
+- `RestaurantShareModelsTest` — the entity/export mapping and the same
+  field-by-field validation the add/edit form applies, now applied to a
+  received file.
+- `RestaurantImportReaderTest` — the share file's `format` gate, malformed
+  and unrelated JSON, and per-row validation that drops a bad row without
+  failing the whole file.
 - `RestaurantUiModelTest` — the entity-to-UI-model mapping behind the price
   and address formatting, the link fields and the favourite flag.
 
@@ -366,8 +406,9 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
    ```
 5. Because release builds are optimized by R8 while debug builds are not, install
    the release artifact on a device and smoke-test it — open the list, search,
-   filter, add/edit/delete a restaurant and open its detail screen — before
-   handing it to anyone. Archive `app/build/outputs/mapping/release/mapping.txt` and
+   filter, add/edit/delete a restaurant, open its detail screen, and share a
+   restaurant to another app and reopen the resulting file with "Open with
+   EatApp" — before handing it to anyone. Archive `app/build/outputs/mapping/release/mapping.txt` and
    `app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip`
    alongside the artifact: without them, crash reports from that build are
    unreadable, and the next build overwrites both files (see **App

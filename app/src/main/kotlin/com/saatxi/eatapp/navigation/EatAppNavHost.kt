@@ -20,9 +20,11 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import android.net.Uri
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -41,6 +43,7 @@ import com.saatxi.eatapp.ui.common.SCREEN_TRANSITION_DURATION_MS
 import com.saatxi.eatapp.ui.detail.RestaurantDetailScreen
 import com.saatxi.eatapp.ui.edit.RestaurantEditScreen
 import com.saatxi.eatapp.ui.favorites.FavoritesScreen
+import com.saatxi.eatapp.ui.importing.RestaurantImportScreen
 import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.list.RestaurantListScreen
 import com.saatxi.eatapp.ui.roulette.RouletteScreen
@@ -48,27 +51,39 @@ import com.saatxi.eatapp.ui.settings.SettingsScreen
 import kotlinx.coroutines.launch
 
 private const val ARG_RESTAURANT_ID = "restaurantId"
+private const val ARG_URI = "uri"
 
 private object Routes {
     const val DETAIL = "detail/{restaurantId}"
     const val ADD = "add"
     const val EDIT = "edit/{restaurantId}"
+    const val IMPORT = "import/{uri}"
 }
 
 private fun detailRoute(restaurantId: Long) = "detail/$restaurantId"
 private fun editRoute(restaurantId: Long) = "edit/$restaurantId"
+private fun importRoute(uri: Uri) = "import/${Uri.encode(uri.toString())}"
 
 private fun NavDestination?.isTopLevelDestinationInHierarchy(destination: TopLevelDestination): Boolean =
     this?.hierarchy?.any { it.route == destination.route } == true
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun EatAppNavHost(navController: NavHostController = rememberNavController()) {
+fun EatAppNavHost(
+    navController: NavHostController = rememberNavController(),
+    // Non-null only on the cold start that opened the app via "Open with
+    // EatApp" on a shared restaurant file, rather than the launcher icon.
+    startImportUri: Uri? = null
+) {
+    LaunchedEffect(startImportUri) {
+        startImportUri?.let { navController.navigate(importRoute(it)) }
+    }
+
     val currentDestination = navController.currentBackStackEntryAsState().value?.destination
-    // The bottom bar / rail has nowhere to live on the detail, add or edit
-    // screens — none of them has a tab of its own, they're reached by tapping
-    // into one of the other four.
-    val isFullScreenRoute = currentDestination?.route in setOf(Routes.DETAIL, Routes.ADD, Routes.EDIT)
+    // The bottom bar / rail has nowhere to live on the detail, add, edit or
+    // import screens — none of them has a tab of its own, they're reached by
+    // tapping into one of the other four (or, for import, from outside the app).
+    val isFullScreenRoute = currentDestination?.route in setOf(Routes.DETAIL, Routes.ADD, Routes.EDIT, Routes.IMPORT)
 
     // Below this width, List/Favorites/Roulette keep pushing the full-screen
     // detail/{id} route exactly as before — shared-element transition, hidden
@@ -206,6 +221,18 @@ fun EatAppNavHost(navController: NavHostController = rememberNavController()) {
                             onBack = { navController.popBackStack() },
                             restaurantId = backStackEntry.arguments?.getLong(ARG_RESTAURANT_ID)
                         )
+                    }
+                    composable(
+                        route = Routes.IMPORT,
+                        arguments = listOf(navArgument(ARG_URI) { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val uri = backStackEntry.arguments?.getString(ARG_URI)?.let { Uri.parse(Uri.decode(it)) }
+                        if (uri != null) {
+                            RestaurantImportScreen(
+                                uri = uri,
+                                onDone = { navController.popBackStack() }
+                            )
+                        }
                     }
                 }
             }

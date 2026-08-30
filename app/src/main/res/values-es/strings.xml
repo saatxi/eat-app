@@ -11,6 +11,7 @@
     <string name="list_empty_no_results_title">Sin resultados</string>
     <string name="list_empty_no_results_body">Prueba otra búsqueda o filtro de puntuación.</string>
     <string name="list_action_add_restaurant">Añadir restaurante</string>
+    <string name="list_action_share_all">Compartir todos los restaurantes</string>
     <string name="list_action_clear_filters">Borrar filtros</string>
     <string name="list_sort_name">Nombre (A-Z)</string>
     <string name="list_sort_rating">Puntuación (de mayor a menor)</string>
@@ -39,6 +40,7 @@
     <string name="detail_not_found_title">Restaurante no encontrado</string>
     <string name="detail_not_found_body">Este restaurante se ha eliminado.</string>
     <string name="detail_action_edit">Editar</string>
+    <string name="detail_action_share">Compartir</string>
     <string name="detail_action_delete">Eliminar</string>
     <string name="detail_delete_confirm_title">¿Eliminar este restaurante?</string>
     <string name="detail_delete_confirm_body">Esta acción no se puede deshacer.</string>
@@ -110,6 +112,25 @@
     <string name="edit_error_cuisine_required">Elige una cocina</string>
     <string name="edit_error_website_invalid">Introduce una dirección web http/https válida</string>
     <string name="edit_error_instagram_invalid">Introduce un usuario de Instagram válido</string>
+
+    <!-- Importing a restaurant file shared from another app. -->
+    <string name="import_title">Importar restaurantes</string>
+    <string name="import_empty_title">Nada que importar</string>
+    <string name="import_empty_body">Este archivo no contiene ningún restaurante.</string>
+    <string name="import_error_title">No se puede abrir este archivo</string>
+    <string name="import_error_too_large">Este archivo es demasiado grande.</string>
+    <string name="import_error_invalid">Esto no parece un archivo de restaurantes de EatApp.</string>
+    <string name="import_error_io">No se ha podido leer este archivo.</string>
+    <string name="import_action_confirm">Importar</string>
+    <string name="import_duplicate_label">Ya está en tu lista</string>
+    <string name="import_decision_add">Añadir</string>
+    <string name="import_decision_skip">Omitir</string>
+    <string name="import_decision_replace">Reemplazar</string>
+    <plurals name="import_skipped_invalid">
+        <item quantity="one">%1$d restaurante tenía datos no válidos y se ha omitido</item>
+        <item quantity="many">%1$d restaurantes tenían datos no válidos y se han omitido</item>
+        <item quantity="other">%1$d restaurantes tenían datos no válidos y se han omitido</item>
+    </plurals>
 
     <!-- Optional links, shown only when the restaurant has them. -->
     <string name="detail_section_links">Enlaces</string>

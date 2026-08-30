@@ -11,6 +11,7 @@
     <string name="list_empty_no_results_title">Sense resultats</string>
     <string name="list_empty_no_results_body">Prova una altra cerca o un altre filtre de puntuació.</string>
     <string name="list_action_add_restaurant">Afegeix un restaurant</string>
+    <string name="list_action_share_all">Comparteix tots els restaurants</string>
     <string name="list_action_clear_filters">Esborra els filtres</string>
     <string name="list_sort_name">Nom (A-Z)</string>
     <string name="list_sort_rating">Puntuació (de més a menys)</string>
@@ -37,6 +38,7 @@
     <string name="detail_not_found_title">Restaurant no trobat</string>
     <string name="detail_not_found_body">Aquest restaurant s\'ha eliminat.</string>
     <string name="detail_action_edit">Edita</string>
+    <string name="detail_action_share">Comparteix</string>
     <string name="detail_action_delete">Elimina</string>
     <string name="detail_delete_confirm_title">Vols eliminar aquest restaurant?</string>
     <string name="detail_delete_confirm_body">Aquesta acció no es pot desfer.</string>
@@ -108,6 +110,24 @@
     <string name="edit_error_cuisine_required">Tria una cuina</string>
     <string name="edit_error_website_invalid">Introdueix una adreça web http/https vàlida</string>
     <string name="edit_error_instagram_invalid">Introdueix un usuari d\'Instagram vàlid</string>
+
+    <!-- Importing a restaurant file shared from another app. -->
+    <string name="import_title">Importa restaurants</string>
+    <string name="import_empty_title">Res per importar</string>
+    <string name="import_empty_body">Aquest fitxer no conté cap restaurant.</string>
+    <string name="import_error_title">No es pot obrir aquest fitxer</string>
+    <string name="import_error_too_large">Aquest fitxer és massa gran.</string>
+    <string name="import_error_invalid">Això no sembla un fitxer de restaurants d\'EatApp.</string>
+    <string name="import_error_io">No s\'ha pogut llegir aquest fitxer.</string>
+    <string name="import_action_confirm">Importa</string>
+    <string name="import_duplicate_label">Ja hi és a la teva llista</string>
+    <string name="import_decision_add">Afegeix</string>
+    <string name="import_decision_skip">Ometre</string>
+    <string name="import_decision_replace">Reemplaça</string>
+    <plurals name="import_skipped_invalid">
+        <item quantity="one">%1$d restaurant tenia dades no vàlides i s\'ha omès</item>
+        <item quantity="other">%1$d restaurants tenien dades no vàlides i s\'han omès</item>
+    </plurals>
 
     <!-- Optional links, shown only when the restaurant has them. -->
     <string name="detail_section_links">Enllaços</string>

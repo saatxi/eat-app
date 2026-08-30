@@ -30,20 +30,32 @@ codi de xarxa) i actualitzats README.md/CLAUDE.md perquè no descriguin un
 flux de sync que ja no existeix. `./gradlew test` i `./gradlew assembleDebug`
 verds.
 
-## Part 2 — Compartir restaurants (un o tots)
+## Part 2 — Compartir restaurants (un o tots) — Feta
 
-- [ ] Generar fitxer JSON (un restaurant o tota la llista) sense l'`id`
-- [ ] `FileProvider` configurat (`exported="false"`, `grantUriPermissions`,
-      `file_paths.xml` restringit a una subcarpeta de cau)
-- [ ] Enviar amb `Intent.ACTION_SEND` + MIME propi (`application/vnd.eatapp+json`,
-      extensió `.eatapp.json`)
-- [ ] `<intent-filter>` per rebre (`ACTION_VIEW` + MIME/extensió propis)
-- [ ] Pantalla de confirmació abans d'importar (mostra el/els restaurant/s
-      rebuts)
-- [ ] Detecció de duplicats per nom + adreça, amb opció d'afegir igualment /
-      ometre / reemplaçar
-- [ ] Compartir "tots els restaurants" reutilitzant el mateix flux amb un
-      array
+- [x] Generar fitxer JSON (un restaurant o tota la llista) sense l'`id`
+      (`data/share/RestaurantShareModels.kt` + `RestaurantShareWriter.kt`)
+- [x] `FileProvider` configurat (`exported="false"`, `grantUriPermissions`,
+      `file_paths.xml` restringit a `cacheDir/shared/`)
+- [x] Enviar amb `Intent.ACTION_SEND`
+- [x] `<intent-filter>` a `MainActivity` per rebre (`ACTION_VIEW`)
+- [x] Pantalla de confirmació abans d'importar (`ui/importing/`, mostra
+      el/els restaurant/s rebuts amb una fila per candidat)
+- [x] Detecció de duplicats per nom + adreça, amb opció Afegeix / Ometre /
+      Reemplaça per fila (per defecte Ometre si sembla duplicat, Afegeix si no)
+- [x] Compartir "tots els restaurants" reutilitzant el mateix fitxer/flux amb
+      un array (botó a la `TopAppBar` de la llista)
+
+**Desviació deliberada del disseny original**: en lloc del MIME/extensió
+propis (`application/vnd.eatapp+json` / `.eatapp.json`), s'ha fet servir el
+MIME estàndard `application/json` i l'extensió `.json`. Raó: un MIME/extensió
+personalitzats no es preserven de manera fiable quan un fitxer passa per
+WhatsApp/Gmail/etc. (moltes apps el reinterpreten per extensió amb el
+`MimeTypeMap` del sistema, que no coneix `.eatapp.json`), cosa que faria que
+"Obrir amb EatApp" no aparegués sovint. Amb `application/json` es garanteix
+que l'intent-filter es dispara sempre; a canvi, EatApp apareix també com a
+opció per obrir qualsevol fitxer `.json` del sistema — mitigat perquè
+`RestaurantImportReader` rebutja amb un missatge clar (`import_error_invalid`)
+qualsevol JSON que no porti el tag `"format": "eatapp.restaurants.v1"`.
 
 ## Part 3 — Backup
 

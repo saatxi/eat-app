@@ -12,6 +12,7 @@
     <string name="list_empty_no_results_title">No matches</string>
     <string name="list_empty_no_results_body">Try a different search or rating filter.</string>
     <string name="list_action_add_restaurant">Add restaurant</string>
+    <string name="list_action_share_all">Share all restaurants</string>
     <string name="list_action_clear_filters">Clear filters</string>
     <string name="list_sort_name">Name (A-Z)</string>
     <string name="list_sort_rating">Rating (highest first)</string>
@@ -41,6 +42,7 @@
     <string name="detail_not_found_title">Restaurant not found</string>
     <string name="detail_not_found_body">This restaurant was removed.</string>
     <string name="detail_action_edit">Edit</string>
+    <string name="detail_action_share">Share</string>
     <string name="detail_action_delete">Delete</string>
     <string name="detail_delete_confirm_title">Delete this restaurant?</string>
     <string name="detail_delete_confirm_body">This can\'t be undone.</string>
@@ -112,6 +114,24 @@
     <string name="edit_error_cuisine_required">Choose a cuisine</string>
     <string name="edit_error_website_invalid">Enter a valid http/https web address</string>
     <string name="edit_error_instagram_invalid">Enter a valid Instagram handle</string>
+
+    <!-- Importing a restaurant file shared from another app. -->
+    <string name="import_title">Import restaurants</string>
+    <string name="import_empty_title">Nothing to import</string>
+    <string name="import_empty_body">This file doesn\'t contain any restaurants.</string>
+    <string name="import_error_title">Can\'t open this file</string>
+    <string name="import_error_too_large">This file is too large.</string>
+    <string name="import_error_invalid">This doesn\'t look like an EatApp restaurant file.</string>
+    <string name="import_error_io">Couldn\'t read this file.</string>
+    <string name="import_action_confirm">Import</string>
+    <string name="import_duplicate_label">Already in your list</string>
+    <string name="import_decision_add">Add</string>
+    <string name="import_decision_skip">Skip</string>
+    <string name="import_decision_replace">Replace</string>
+    <plurals name="import_skipped_invalid">
+        <item quantity="one">%1$d restaurant had invalid data and was skipped</item>
+        <item quantity="other">%1$d restaurants had invalid data and were skipped</item>
+    </plurals>
 
     <!-- Optional links, shown only when the restaurant has them. -->
     <string name="detail_section_links">Links</string>
