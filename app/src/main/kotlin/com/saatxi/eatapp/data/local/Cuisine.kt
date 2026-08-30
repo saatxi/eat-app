@@ -6,13 +6,12 @@ import com.saatxi.eatapp.R
 /**
  * The closed vocabulary of cuisine types the app understands.
  *
- * The `restaurants.cuisineType` column of the synced `.db` stores [key] — a
- * stable, language-independent identifier — never a display label. Only
- * [labelRes] is ever translated, so adding a language means adding a
- * `values-xx/strings.xml` and nothing else: the data file is never touched.
+ * The `restaurants.cuisineType` column stores [key] — a stable,
+ * language-independent identifier — never a display label. Only [labelRes]
+ * is ever translated, so adding a language means adding a
+ * `values-xx/strings.xml` and nothing else.
  *
- * The vocabulary is documented for data authors in the README's
- * "Data source & updating restaurant data" section. Keep the two in sync.
+ * The vocabulary is documented in the README. Keep the two in sync.
  */
 enum class Cuisine(val key: String, @StringRes val labelRes: Int) {
     // Origin

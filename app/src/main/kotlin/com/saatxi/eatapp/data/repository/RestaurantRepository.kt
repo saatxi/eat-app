@@ -14,6 +14,9 @@ interface RestaurantRepository {
 
     fun observeCuisineTypes(): Flow<List<String>>
     fun observeById(id: Long): Flow<Restaurant?>
-    suspend fun count(): Int
-    suspend fun replaceAll(restaurants: List<Restaurant>)
+
+    /** Returns the newly assigned id. [restaurant] must have `id == 0`. */
+    suspend fun insert(restaurant: Restaurant): Long
+    suspend fun update(restaurant: Restaurant)
+    suspend fun delete(id: Long)
 }

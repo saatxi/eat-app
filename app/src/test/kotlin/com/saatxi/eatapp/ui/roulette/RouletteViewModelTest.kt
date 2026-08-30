@@ -174,11 +174,14 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override fun observeById(id: Long): Flow<Restaurant?> =
         throw NotImplementedError("Not used by RouletteViewModel")
 
-    override suspend fun count(): Int = restaurants.value.size
+    override suspend fun insert(restaurant: Restaurant): Long =
+        throw NotImplementedError("Not used by RouletteViewModel")
 
-    override suspend fun replaceAll(restaurants: List<Restaurant>) {
-        this.restaurants.value = restaurants
-    }
+    override suspend fun update(restaurant: Restaurant) =
+        throw NotImplementedError("Not used by RouletteViewModel")
+
+    override suspend fun delete(id: Long) =
+        throw NotImplementedError("Not used by RouletteViewModel")
 }
 
 private class FakeUserPreferencesRepository : UserPreferencesRepository {

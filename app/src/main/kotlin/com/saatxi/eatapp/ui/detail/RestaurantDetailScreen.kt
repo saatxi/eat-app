@@ -28,6 +28,10 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.RestaurantMenu
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,12 +43,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -62,12 +70,14 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.saatxi.eatapp.R
-import com.saatxi.eatapp.data.sync.instagramUrl
+import com.saatxi.eatapp.data.local.instagramUrl
+import com.saatxi.eatapp.data.share.RestaurantExport
 import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.cuisineBadgeTransition
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
+import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.model.MAX_RATING
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
@@ -78,6 +88,7 @@ private val CUISINE_BADGE_SIZE = 32.dp
 @Composable
 fun RestaurantDetailScreen(
     onBack: () -> Unit,
+    onEditRestaurant: (Long) -> Unit,
     // Non-null only when hosted inside a list-detail pane (EatAppNavHost's
     // ListDetailPaneHost): there the id comes from the pane navigator, not
     // from a nav-backstack entry, so the default SavedStateHandle-backed
@@ -89,7 +100,13 @@ fun RestaurantDetailScreen(
     )
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    RestaurantDetailContent(uiState = uiState, onBack = onBack, onFavoriteToggle = viewModel::onFavoriteToggle)
+    RestaurantDetailContent(
+        uiState = uiState,
+        onBack = onBack,
+        onFavoriteToggle = viewModel::onFavoriteToggle,
+        onEdit = onEditRestaurant,
+        onDelete = { viewModel.onDelete(onDeleted = onBack) }
+    )
 }
 
 /**
@@ -102,16 +119,40 @@ fun RestaurantDetailScreen(
 private fun RestaurantDetailContent(
     uiState: DetailUiState,
     onBack: () -> Unit,
-    onFavoriteToggle: () -> Unit = {}
+    onFavoriteToggle: () -> Unit = {},
+    onEdit: (Long) -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     // Guarded rather than the default `{ true }`: on a detail page short enough to
     // fit, an unguarded fling would still collapse the bar and leave a blank strip
     // under it, because there is no content to scroll up into the freed space.
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
         canScroll = { scrollState.canScrollForward || scrollState.canScrollBackward }
     )
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text(stringResource(R.string.detail_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.detail_delete_confirm_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    onDelete()
+                }) {
+                    Text(stringResource(R.string.action_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -120,6 +161,11 @@ private fun RestaurantDetailContent(
                 restaurant = (uiState as? DetailUiState.Loaded)?.restaurant,
                 onBack = onBack,
                 onFavoriteToggle = onFavoriteToggle,
+                onEdit = onEdit,
+                onDeleteRequest = { showDeleteConfirm = true },
+                onShare = {
+                    (uiState as? DetailUiState.Loaded)?.restaurant?.let { context.shareRestaurants(listOf(it.toExport())) }
+                },
                 scrollBehavior = scrollBehavior
             )
         }
@@ -337,6 +383,21 @@ private fun LinksCard(
  * that app is installed, which is why no `instagram://` scheme is needed here
  * and no `<queries>` entry in the manifest.
  */
+/**
+ * [RestaurantUiModel] only carries the formatted "$$" [RestaurantUiModel.priceLabel],
+ * not the raw price range — its length recovers the original number, the same
+ * trick the price content description already relies on above.
+ */
+private fun RestaurantUiModel.toExport() = RestaurantExport(
+    name = name,
+    cuisineType = cuisineKey,
+    address = address,
+    rating = rating,
+    priceRange = priceLabel.length,
+    website = website,
+    instagram = instagram
+)
+
 private fun Context.openUri(uri: String) {
     try {
         startActivity(Intent(Intent.ACTION_VIEW, uri.toUri()))
@@ -357,6 +418,9 @@ private fun DetailTopBar(
     restaurant: RestaurantUiModel?,
     onBack: () -> Unit,
     onFavoriteToggle: () -> Unit,
+    onEdit: (Long) -> Unit,
+    onDeleteRequest: () -> Unit,
+    onShare: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior
 ) {
     val haptic = LocalHapticFeedback.current
@@ -400,6 +464,15 @@ private fun DetailTopBar(
                         if (restaurant.isFavorite) R.string.action_remove_favorite else R.string.action_add_favorite
                     )
                 )
+            }
+            IconButton(onClick = { onEdit(restaurant.id) }) {
+                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.detail_action_edit))
+            }
+            IconButton(onClick = onShare) {
+                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.detail_action_share))
+            }
+            IconButton(onClick = onDeleteRequest) {
+                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.detail_action_delete))
             }
             Icon(
                 cuisineIcon(restaurant.cuisineKey),

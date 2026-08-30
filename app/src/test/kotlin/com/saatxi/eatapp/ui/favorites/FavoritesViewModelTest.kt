@@ -112,11 +112,14 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override fun observeById(id: Long): Flow<Restaurant?> =
         throw NotImplementedError("Not used by FavoritesViewModel")
 
-    override suspend fun count(): Int = restaurants.value.size
+    override suspend fun insert(restaurant: Restaurant): Long =
+        throw NotImplementedError("Not used by FavoritesViewModel")
 
-    override suspend fun replaceAll(restaurants: List<Restaurant>) {
-        this.restaurants.value = restaurants
-    }
+    override suspend fun update(restaurant: Restaurant) =
+        throw NotImplementedError("Not used by FavoritesViewModel")
+
+    override suspend fun delete(id: Long) =
+        throw NotImplementedError("Not used by FavoritesViewModel")
 }
 
 private class FakeUserPreferencesRepository : UserPreferencesRepository {

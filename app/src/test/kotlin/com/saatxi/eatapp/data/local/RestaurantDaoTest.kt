@@ -1,12 +1,17 @@
 package com.saatxi.eatapp.data.local
 
+import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.saatxi.eatapp.data.repository.RoomRestaurantRepository
+import com.saatxi.eatapp.data.share.RestaurantShareFile
+import java.io.File
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -20,23 +25,25 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class RestaurantDaoTest {
 
+    private lateinit var context: Context
     private lateinit var database: EatAppDatabase
     private lateinit var dao: RestaurantDao
     private lateinit var repository: RoomRestaurantRepository
 
     @Before
     fun setUp() {
-        database = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            EatAppDatabase::class.java
-        ).allowMainThreadQueries().build()
+        context = ApplicationProvider.getApplicationContext()
+        database = Room.inMemoryDatabaseBuilder(context, EatAppDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
         dao = database.restaurantDao()
-        repository = RoomRestaurantRepository(dao)
+        repository = RoomRestaurantRepository(dao, context)
     }
 
     @After
     fun tearDown() {
         database.close()
+        File(context.filesDir, "backup.json").delete()
     }
 
     private fun restaurant(
@@ -55,7 +62,9 @@ class RestaurantDaoTest {
         priceRange = priceRange
     )
 
-    private suspend fun seed(vararg restaurants: Restaurant) = dao.replaceAll(restaurants.toList())
+    private suspend fun seed(vararg restaurants: Restaurant) {
+        restaurants.forEach { dao.insert(it) }
+    }
 
     private suspend fun search(query: String?) =
         repository.observeFiltered(query, null, null).first().map { it.name }
@@ -282,20 +291,74 @@ class RestaurantDaoTest {
         assertNull(repository.observeById(99).first())
     }
 
-    @Test
-    fun `replaceAll wipes the previous contents rather than merging`() = runTest {
-        seed(restaurant(1, "Old One"), restaurant(2, "Old Two"))
-        seed(restaurant(3, "New One"))
+    // --- writes: insert, update, delete --------------------------------------
 
-        assertEquals(listOf("New One"), search(null))
+    @Test
+    fun `insert assigns a fresh id when given zero`() = runTest {
+        val id = dao.insert(restaurant(0, "Cal Ferran"))
+
+        assertEquals(listOf("Cal Ferran"), search(null))
+        assertEquals("Cal Ferran", repository.observeById(id).first()?.name)
     }
 
     @Test
-    fun `replaceAll accepts an empty list`() = runTest {
-        seed(restaurant(1, "Cal Ferran"))
-        dao.replaceAll(emptyList())
+    fun `update changes an existing row in place`() = runTest {
+        val id = dao.insert(restaurant(0, "Old Name", rating = 2))
 
-        assertEquals(emptyList<String>(), search(null))
+        dao.update(restaurant(id, "New Name", rating = 5))
+
+        val updated = repository.observeById(id).first()
+        assertEquals("New Name", updated?.name)
+        assertEquals(5, updated?.rating)
+    }
+
+    @Test
+    fun `delete removes only the matching row`() = runTest {
+        seed(restaurant(1, "Keep"), restaurant(2, "Remove"))
+
+        dao.delete(2)
+
+        assertEquals(listOf("Keep"), search(null))
+    }
+
+    // --- Part 3: backup.json, written through the repository -----------------
+
+    private fun backupFile() = File(context.filesDir, "backup.json")
+
+    private fun backupNames(): List<String> {
+        val shareFile = Json.decodeFromString(RestaurantShareFile.serializer(), backupFile().readText())
+        return shareFile.restaurants.map { it.name }
+    }
+
+    @Test
+    fun `no backup file exists before any write`() {
+        assertFalse(backupFile().exists())
+    }
+
+    @Test
+    fun `insert writes a backup file with the new row`() = runTest {
+        repository.insert(restaurant(0, "Cal Ferran"))
+
+        assertEquals(listOf("Cal Ferran"), backupNames())
+    }
+
+    @Test
+    fun `update rewrites the backup file with the change`() = runTest {
+        val id = repository.insert(restaurant(0, "Old Name"))
+
+        repository.update(restaurant(id, "New Name"))
+
+        assertEquals(listOf("New Name"), backupNames())
+    }
+
+    @Test
+    fun `delete rewrites the backup file without the removed row`() = runTest {
+        repository.insert(restaurant(0, "Keep"))
+        val removeId = repository.insert(restaurant(0, "Remove"))
+
+        repository.delete(removeId)
+
+        assertEquals(listOf("Keep"), backupNames())
     }
 
     // --- LIKE metacharacters, which is F-15 ---------------------------------
@@ -333,19 +396,5 @@ class RestaurantDaoTest {
         seed(restaurant(1, "Cal\\Ferran"), restaurant(2, "Bar Nil"))
 
         assertEquals(listOf("Cal\\Ferran"), search("cal\\ferran"))
-    }
-
-    // --- count(), which drives F-08's auto-sync-on-empty-database check -----
-
-    @Test
-    fun `count is zero for an empty database`() = runTest {
-        assertEquals(0, dao.count())
-    }
-
-    @Test
-    fun `count reflects every row regardless of filters`() = runTest {
-        seed(restaurant(1, "Alga"), restaurant(2, "Bar Nil"))
-
-        assertEquals(2, dao.count())
     }
 }

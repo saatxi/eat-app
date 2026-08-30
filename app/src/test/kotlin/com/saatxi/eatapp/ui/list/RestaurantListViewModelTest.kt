@@ -5,8 +5,6 @@ import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.prefs.UserPreferences
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
 import com.saatxi.eatapp.data.repository.RestaurantRepository
-import com.saatxi.eatapp.data.sync.DatabaseSyncManager
-import com.saatxi.eatapp.data.sync.DatabaseSyncResult
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.AppPalette
 import com.saatxi.eatapp.ui.theme.ThemeMode
@@ -39,22 +37,16 @@ class RestaurantListViewModelTest {
 
     private val dispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: FakeRestaurantRepository
-    private lateinit var syncManager: FakeDatabaseSyncManager
     private lateinit var preferencesRepository: FakeUserPreferencesRepository
     private lateinit var viewModel: RestaurantListViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
-        // Non-zero, so the F-08 auto-sync-on-empty behaviour (covered separately
-        // below, against its own fresh repository) doesn't fire for every other
-        // test in this class.
-        repository = FakeRestaurantRepository(count = 1)
-        syncManager = FakeDatabaseSyncManager()
+        repository = FakeRestaurantRepository()
         preferencesRepository = FakeUserPreferencesRepository()
         viewModel = RestaurantListViewModel(
             repository = repository,
-            syncManager = syncManager,
             preferencesRepository = preferencesRepository
         )
     }
@@ -77,7 +69,7 @@ class RestaurantListViewModelTest {
     // --- initial state ------------------------------------------------------
 
     @Test
-    fun `starts empty, with no filter and not syncing`() = runTest {
+    fun `starts empty, with no filter`() = runTest {
         observeState()
 
         val state = viewModel.uiState.value
@@ -85,7 +77,6 @@ class RestaurantListViewModelTest {
         assertNull(state.minRating)
         assertNull(state.cuisineType)
         assertEquals(emptyList<RestaurantUiModel>(), state.restaurants)
-        assertFalse(state.isSyncing)
         assertFalse(state.hasActiveFilter)
     }
 
@@ -300,38 +291,6 @@ class RestaurantListViewModelTest {
         priceRange = 2
     )
 
-    // --- F-08: automatic first sync ------------------------------------------
-    // Each test here builds its own ViewModel against a fresh repository, since
-    // the count the auto-sync check reacts to has to be set before construction.
-
-    @Test
-    fun `syncs automatically on init when the local database is empty`() = runTest {
-        val emptyRepository = FakeRestaurantRepository(count = 0)
-        val freshSyncManager = FakeDatabaseSyncManager()
-
-        RestaurantListViewModel(
-            repository = emptyRepository,
-            syncManager = freshSyncManager,
-            preferencesRepository = FakeUserPreferencesRepository()
-        )
-
-        assertEquals(1, freshSyncManager.syncCallCount)
-    }
-
-    @Test
-    fun `does not sync automatically when the local database already has data`() = runTest {
-        val nonEmptyRepository = FakeRestaurantRepository(count = 1)
-        val freshSyncManager = FakeDatabaseSyncManager()
-
-        RestaurantListViewModel(
-            repository = nonEmptyRepository,
-            syncManager = freshSyncManager,
-            preferencesRepository = FakeUserPreferencesRepository()
-        )
-
-        assertEquals(0, freshSyncManager.syncCallCount)
-    }
-
     // --- Phase 3: favourites ------------------------------------------------
 
     @Test
@@ -360,7 +319,7 @@ class RestaurantListViewModelTest {
  * Records the arguments the ViewModel passes down and replays whatever the test
  * pushes into it. It deliberately does not filter: that is the DAO's job.
  */
-private class FakeRestaurantRepository(var count: Int = 0) : RestaurantRepository {
+private class FakeRestaurantRepository : RestaurantRepository {
 
     val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
     val cuisines = MutableStateFlow<List<String>>(emptyList())
@@ -392,11 +351,14 @@ private class FakeRestaurantRepository(var count: Int = 0) : RestaurantRepositor
     override fun observeById(id: Long): Flow<Restaurant?> =
         restaurants.map { list -> list.firstOrNull { it.id == id } }
 
-    override suspend fun count(): Int = count
+    override suspend fun insert(restaurant: Restaurant): Long =
+        throw NotImplementedError("Not used by RestaurantListViewModel")
 
-    override suspend fun replaceAll(restaurants: List<Restaurant>) {
-        this.restaurants.value = restaurants
-    }
+    override suspend fun update(restaurant: Restaurant) =
+        throw NotImplementedError("Not used by RestaurantListViewModel")
+
+    override suspend fun delete(id: Long) =
+        throw NotImplementedError("Not used by RestaurantListViewModel")
 }
 
 /** Replays whatever the test pushes into [preferences] and records favourite writes. */
@@ -417,19 +379,5 @@ private class FakeUserPreferencesRepository : UserPreferencesRepository {
         preferences.value = preferences.value.copy(
             favoriteIds = if (restaurantId in current) current - restaurantId else current + restaurantId
         )
-    }
-}
-
-/** Never touches the network: records how often sync() was asked for and replays a canned result. */
-private class FakeDatabaseSyncManager(
-    private val result: DatabaseSyncResult = DatabaseSyncResult.Success(0)
-) : DatabaseSyncManager {
-
-    var syncCallCount = 0
-        private set
-
-    override suspend fun sync(): DatabaseSyncResult {
-        syncCallCount++
-        return result
     }
 }

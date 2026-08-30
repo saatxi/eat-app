@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Matches writeRestaurantShareFile's cacheDir/shared/ — nothing else
+         under the app's storage is exposed through the FileProvider. -->
+    <cache-path name="shared" path="shared/" />
+</paths>

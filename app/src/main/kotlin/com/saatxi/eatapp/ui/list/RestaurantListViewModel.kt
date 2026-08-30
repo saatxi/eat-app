@@ -1,13 +1,13 @@
 package com.saatxi.eatapp.ui.list
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
 import com.saatxi.eatapp.data.repository.RestaurantRepository
-import com.saatxi.eatapp.data.sync.DatabaseSyncManager
-import com.saatxi.eatapp.data.sync.DatabaseSyncResult
-import com.saatxi.eatapp.data.sync.SyncFailureReason
+import com.saatxi.eatapp.data.share.toExport
+import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.model.toUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -36,22 +37,10 @@ data class RestaurantListUiState(
     // initial (empty) state is indistinguishable from a genuinely empty
     // database, and the "No restaurants yet" screen flashes for a frame on
     // every cold start.
-    val isInitialLoad: Boolean = true,
-    val isSyncing: Boolean = false,
-    val pendingSyncMessage: SyncMessage? = null
+    val isInitialLoad: Boolean = true
 ) {
     val hasActiveFilter: Boolean
         get() = searchQuery.isNotBlank() || minRating != null || cuisineType != null
-}
-
-// Carried in the UI state rather than a SharedFlow event, so a message
-// survives a config change instead of depending on a collector being
-// attached at the exact moment it is emitted. The screen calls
-// onSyncMessageShown() once it has displayed it.
-sealed interface SyncMessage {
-    data class Success(val count: Int) : SyncMessage
-    data object UpToDate : SyncMessage
-    data class Error(val reason: SyncFailureReason) : SyncMessage
 }
 
 private data class Filters(
@@ -66,24 +55,10 @@ private data class Filters(
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 class RestaurantListViewModel(
     private val repository: RestaurantRepository,
-    private val syncManager: DatabaseSyncManager,
     private val preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val filters = MutableStateFlow(Filters())
-    private val isSyncing = MutableStateFlow(false)
-    private val pendingSyncMessage = MutableStateFlow<SyncMessage?>(null)
-
-    init {
-        // A fresh install has an empty local database and no way to reach it other
-        // than the manual "Refresh Data" button; this is what lets the first launch
-        // fill itself in instead of sitting on the empty state until a tap.
-        viewModelScope.launch {
-            if (repository.count() == 0) {
-                syncNow()
-            }
-        }
-    }
 
     // The search box updates the visible text on every keystroke (via
     // `filters` below), but only debounces the query actually sent to the
@@ -110,10 +85,8 @@ class RestaurantListViewModel(
     val uiState: StateFlow<RestaurantListUiState> = combine(
         filters,
         restaurantsWithFavorites,
-        repository.observeCuisineTypes(),
-        isSyncing,
-        pendingSyncMessage
-    ) { activeFilters, restaurants, availableCuisines, syncing, syncMessage ->
+        repository.observeCuisineTypes()
+    ) { activeFilters, restaurants, availableCuisines ->
         RestaurantListUiState(
             searchQuery = activeFilters.query,
             minRating = activeFilters.minRating,
@@ -123,9 +96,7 @@ class RestaurantListViewModel(
             restaurants = restaurants,
             // Reaching this block at all means the database has emitted, since
             // combine produces nothing until every source has.
-            isInitialLoad = false,
-            isSyncing = syncing,
-            pendingSyncMessage = syncMessage
+            isInitialLoad = false
         )
     }.stateIn(
         scope = viewModelScope,
@@ -153,30 +124,22 @@ class RestaurantListViewModel(
         viewModelScope.launch { preferencesRepository.toggleFavorite(restaurantId) }
     }
 
+    /**
+     * Shares every restaurant, ignoring the active filters — "share all"
+     * means all, not just what's currently visible.
+     */
+    fun onShareAll(context: Context) {
+        viewModelScope.launch {
+            val all = repository.observeFiltered(query = null, minRating = null, cuisineType = null).first()
+            context.shareRestaurants(all.map { it.toExport() })
+        }
+    }
+
     // Deliberately leaves the sort order alone: it is reached from the "no
     // matches" state, where the user wants their restaurants back, not their
     // chosen order undone.
     fun clearFilters() {
         filters.value = Filters(sort = filters.value.sort)
-    }
-
-    fun syncNow() {
-        if (isSyncing.value) return
-        viewModelScope.launch {
-            isSyncing.value = true
-            val message = when (val result = syncManager.sync()) {
-                is DatabaseSyncResult.Success -> SyncMessage.Success(result.importedCount)
-                DatabaseSyncResult.UpToDate -> SyncMessage.UpToDate
-                is DatabaseSyncResult.Failure -> SyncMessage.Error(result.reason)
-            }
-            isSyncing.value = false
-            pendingSyncMessage.value = message
-        }
-    }
-
-    /** Called once the screen has displayed the pending message, so it isn't shown again. */
-    fun onSyncMessageShown() {
-        pendingSyncMessage.value = null
     }
 
     private companion object {

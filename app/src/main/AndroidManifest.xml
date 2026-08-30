@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Lets sync check connectivity before a download attempt (F-09) rather than
-         waiting out the full connect timeout for an answer it already knows. -->
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -25,7 +20,30 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Lets a restaurant file shared from another app (WhatsApp,
+                 Gmail, Files...) reopen EatApp with "Open with EatApp". The
+                 file itself is untrusted input, validated before anything
+                 reaches Room — see data/share/RestaurantImportReader.kt. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/json" />
+            </intent-filter>
         </activity>
+
+        <!-- Exposes cacheDir/shared/ (see res/xml/file_paths.xml) as a
+             content:// Uri so the file built by writeRestaurantShareFile can
+             be handed to another app via Intent.ACTION_SEND without granting
+             it broader filesystem access. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

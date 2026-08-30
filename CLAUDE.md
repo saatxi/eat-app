@@ -1,9 +1,9 @@
 # CLAUDE.md
 
 Development instructions for Claude Code when working in this repository.
-See [README.md](README.md) for the full project overview, data sync setup,
-versioning scheme, and release process — this file only covers things
-specific to *how Claude should work in this repo*.
+See [README.md](README.md) for the full project overview, the restaurant
+sharing/import feature, versioning scheme, and release process — this file
+only covers things specific to *how Claude should work in this repo*.
 
 ## Commit and tag messages
 
@@ -27,13 +27,15 @@ When asked to write a commit message or a tag message:
 
 - **Language**: Kotlin only (no Java sources).
 - **UI**: Jetpack Compose + Material 3. No XML layouts.
-- **Navigation**: Navigation Compose (`navigation/EatAppNavHost.kt`), two
-  routes: `list` and `detail/{restaurantId}`.
+- **Navigation**: Navigation Compose (`navigation/EatAppNavHost.kt`) — the
+  four top-level tabs (`list`, `favorites`, `roulette`, `settings`) plus
+  `detail/{restaurantId}`, `add`, `edit/{restaurantId}` and
+  `import/{uri}`.
 - **Persistence**: Room (local cache) — entity/DAO/database live under
   `data/local/`.
-- **Networking**: plain `HttpURLConnection` for the one-shot `.db` sync, no
-  Retrofit/OkHttp/Ktor dependency. Don't add a networking library for a
-  single GET request without discussing it first.
+- **Networking**: none. The app makes no network calls — every restaurant is
+  entered, edited and deleted on-device via Room. Don't add a networking
+  library or a remote/file-based data source without discussing it first.
 - **Build**: Gradle Kotlin DSL (`build.gradle.kts`), AGP + version catalog
   (`gradle/libs.versions.toml`) for dependency versions — add new
   dependencies there, not as inline coordinates.
@@ -41,7 +43,7 @@ When asked to write a commit message or a tag message:
   Match the existing style in the file you're editing.
 - **Tests**: JUnit4 unit tests under `app/src/test/kotlin/...`, mirroring the
   main source package structure. Robolectric is used for the cases that need
-  an Android runtime (the `.db` reader, the Room DAO), so everything runs on
+  an Android runtime (the Room DAO), so everything runs on
   the JVM with `./gradlew test` and no emulator is ever required — that stays
   true and does not change. `app/src/androidTest` is still empty on purpose.
   Fakes are written by hand; there is no mocking library and adding one needs
@@ -87,15 +89,17 @@ code change before reporting it as done.
 ```
 app/src/main/kotlin/com/saatxi/eatapp/
 ├── data/
-│   ├── local/        # Room entity, DAO, database, type converters
-│   ├── repository/   # Repository abstraction over the data source
-│   └── sync/         # Remote .db download, validation, and import
+│   ├── local/         # Room entity, DAO, database, link validation
+│   ├── repository/    # Repository abstraction over the data source
+│   └── share/         # Export/import models, JSON (de)serialization, FileProvider writer
 ├── navigation/        # NavHost and route definitions
 └── ui/
-    ├── common/        # Shared composable helpers (cuisine icon, label, tint)
+    ├── common/        # Shared composable helpers (cuisine icon/label/tint, sharing intent)
     ├── model/         # UI models the screens draw, mapped from the entity
     ├── list/          # Restaurant list screen + ViewModel
     ├── detail/        # Restaurant detail screen + ViewModel
+    ├── edit/          # Add/edit restaurant form + ViewModel
+    ├── importing/     # Received-file review/confirm screen + ViewModel
     └── theme/         # Compose theming (color, type, shape)
 ```
 
@@ -104,52 +108,61 @@ app/src/main/kotlin/com/saatxi/eatapp/
 - All in-app strings live in `strings.xml` — no hardcoded UI text in Kotlin.
   `app/src/main/res/values/strings.xml` is the default locale, **English**;
   other languages are added as `values-xx/strings.xml` overrides of the same
-  resource names, never by touching the data (`Cuisine.kt`'s keys and the
-  `.db` itself stay language-independent — see the cuisine vocabulary note
-  below). `values-es/strings.xml` covers Spanish. Code comments are in
-  English regardless of locale.
-- **Cuisine vocabulary**: the `.db` column `cuisineType` stores stable,
+  resource names, never by touching the data (`Cuisine.kt`'s keys stay
+  language-independent — see the cuisine vocabulary note below).
+  `values-es/strings.xml` covers Spanish, `values-ca/strings.xml` Catalan.
+  Code comments are in English regardless of locale.
+- **Cuisine vocabulary**: the `cuisineType` column stores stable,
   language-independent keys (`japanese`, `fast_food`, etc.), never display
-  labels. Each key has its own icon in [CuisineVisuals.kt](app/src/main/kotlin/com/saatxi/eatapp/ui/common/CuisineVisuals.kt)
+  labels — the add/edit form's dropdown only ever writes a key from this
+  closed list. Each key has its own icon in [CuisineVisuals.kt](app/src/main/kotlin/com/saatxi/eatapp/ui/common/CuisineVisuals.kt)
   and a translatable label in `strings.xml`. This design means adding a
-  second language later is just a new `values-xx/strings.xml` file — the
-  data never changes. The full 24-key vocabulary is in [Cuisine.kt](app/src/main/kotlin/com/saatxi/eatapp/data/local/Cuisine.kt)
-  and documented in the README. An unrecognised key degrades gracefully: the
-  app falls back to a generic icon and shows the raw string.
+  second language later is just a new `values-xx/strings.xml` file. The
+  full 24-key vocabulary is in [Cuisine.kt](app/src/main/kotlin/com/saatxi/eatapp/data/local/Cuisine.kt)
+  and documented in the README. An unrecognised key (only possible if a key
+  is ever renamed or dropped, orphaning existing rows) degrades gracefully:
+  the app falls back to a generic icon and shows the raw string.
 - `versionCode`/`versionName` in `app/build.gradle.kts` are derived
   automatically from git (commit count / nearest tag) — never hardcode
   them. See README's "Versioning" section for the full scheme.
-- Keep the app read-only from the device's perspective: there is
-  intentionally no create/edit/delete UI for restaurants. Data changes
-  happen by editing the source `.db` file and syncing.
+- The app is the source of truth for its own data: restaurants are created,
+  edited and deleted entirely on-device, via the add/edit form
+  (`ui/edit/`) and the detail screen's delete action. The one exception is
+  importing a restaurant file shared by another EatApp user
+  (`ui/importing/`), and even then nothing is written until the user reviews
+  and confirms it on that screen.
 
 ## Security guidelines
 
-- The only network call is an HTTPS GET to the public URL exposed as
-  `DATABASE_URL` by
-  [`RemoteConfig.kt`](app/src/main/kotlin/com/saatxi/eatapp/data/sync/RemoteConfig.kt),
-  which reads it from `BuildConfig`. The release value is hardcoded as
-  `releaseDatabaseUrl` in `app/build.gradle.kts`; only debug builds honour the
-  `eatapp.database.url` / `EATAPP_DATABASE_URL` override, and the build rejects
-  anything that is not `https://`. It's a public raw GitHub content URL by
-  design, not a secret — but never point it at anything requiring auth, never
-  let the override reach the release build type, and never embed API keys,
-  tokens, or credentials anywhere in this repo (there are none today; keep it
-  that way).
-- The downloaded `.db` file is untrusted input: it's opened `OPEN_READONLY`
-  and validated in `RestaurantDatabaseReader.kt` — the 16-byte SQLite header
-  first, then the `REQUIRED_COLUMNS` check, then every row — before anything
-  is imported. Don't relax this validation, don't switch to a writable
-  connection, and don't execute SQL built from the file's own content — keep
-  using parameterized reads. (An empty `restaurants` table is deliberately
-  accepted: it's a valid dataset, not a malformed file.)
-- `INTERNET` and `ACCESS_NETWORK_STATE` (the latter used only to skip a sync
-  attempt when there's no connection, per F-09) are the only Android
-  permissions the app declares (`AndroidManifest.xml`). Don't add further
-  permissions (location, contacts, storage, etc.) without an explicit,
-  discussed reason.
+- The app makes no network calls at all — every restaurant is entered,
+  edited and deleted on-device. The only way data ever crosses into or out of
+  the app is the restaurant-sharing feature (`data/share/`), which is local
+  IPC (`Intent.ACTION_SEND`/`ACTION_VIEW` + a `FileProvider`), never a
+  network request. Don't add a networking dependency or a remote data source
+  without discussing it first.
+- A file received through the sharing intent-filter (`MainActivity`'s second
+  `<intent-filter>`, matching `application/json`) is untrusted input, the
+  same way the old synced `.db` was: capped at `MAX_IMPORT_BYTES` before
+  parsing (`data/share/ContentFiles.kt`), parsed with `kotlinx.serialization`
+  rather than a reflection-based library, gated on the `format` tag in
+  `RestaurantShareModels.kt`, and validated field-by-field
+  (`RestaurantExport.toRestaurantOrNull`) before anything reaches Room — a
+  row that fails validation is dropped rather than failing the whole file.
+  The confirmation screen (`ui/importing/`) is the last line of defence nothing
+  is written until the user reviews and confirms it. Don't relax any of this
+  when touching the import path.
+- The `FileProvider` (`res/xml/file_paths.xml`) only exposes
+  `cacheDir/shared/`, the folder `RestaurantShareWriter.kt` writes to — never
+  widen it to a broader path, and keep `android:exported="false"` on the
+  `<provider>` entry.
+- `AndroidManifest.xml` declares no permissions at all — `INTERNET` and
+  `ACCESS_NETWORK_STATE`, left over from the removed remote sync feature,
+  were removed along with it, and the sharing feature needs none either
+  (`FileProvider` grants are per-Intent, not a permission). Don't add any
+  permission (network, location, contacts, storage, etc.) without an
+  explicit, discussed reason.
 - The app stores no user credentials, no PII beyond what the user
-  themselves entered into their own `.db` file, and does no analytics or
+  themselves enters for their own restaurants, and does no analytics or
   tracking — keep it that way unless the user asks for it explicitly.
 - Release builds are optimized by R8 (`optimization { enable = true }` in
   `app/build.gradle.kts`), which shrinks and obfuscates code and strips

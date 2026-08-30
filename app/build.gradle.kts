@@ -3,6 +3,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.baselineprofile)
 }
@@ -74,29 +75,6 @@ val hasReleaseSigning = releaseKeystoreFile?.exists() == true &&
     releaseKeyPassword != null
 // ---------------------------------------------------------------------------
 
-// --- Remote database URL ---------------------------------------------------
-// Release is always the public raw GitHub URL, hardcoded here. Debug builds can be
-// pointed at a branch or a fork through eatapp.database.url in local.properties or
-// the EATAPP_DATABASE_URL environment variable, so testing against other data does
-// not need a source edit and a rebuild of the release value.
-val releaseDatabaseUrl = "https://raw.githubusercontent.com/saatxi/eat-app/main/data/eatapp.db"
-
-val debugDatabaseUrl = localOrEnv("eatapp.database.url", "EATAPP_DATABASE_URL")
-    ?.also {
-        // The app declares no cleartext traffic permission, so anything but HTTPS
-        // would only fail at runtime with a confusing network error.
-        require(it.startsWith("https://")) {
-            "eatapp.database.url / EATAPP_DATABASE_URL must be an https:// URL, got: $it"
-        }
-    }
-    ?: releaseDatabaseUrl
-
-// The value is pasted into generated Java source, so it has to survive being a
-// string literal there.
-fun String.asJavaStringLiteral(): String =
-    "\"" + replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-// ---------------------------------------------------------------------------
-
 android {
     namespace = "com.saatxi.eatapp"
     compileSdk = 37
@@ -132,11 +110,7 @@ android {
     }
 
     buildTypes {
-        debug {
-            buildConfigField("String", "DATABASE_URL", debugDatabaseUrl.asJavaStringLiteral())
-        }
         release {
-            buildConfigField("String", "DATABASE_URL", releaseDatabaseUrl.asJavaStringLiteral())
             // R8 code shrinking, obfuscation and resource shrinking, enabled only for
             // release builds so debug stays fast and debuggable. This is the AGP 9.3+
             // `optimization {}` DSL, which replaces isMinifyEnabled / isShrinkResources /
@@ -265,6 +239,7 @@ dependencies {
 
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
 
     // Reads app/src/main/baseline-prof.txt (once generated) at install time and
     // hands it to ART, so a release install gets AOT-compiled hot paths without

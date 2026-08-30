@@ -6,11 +6,12 @@
     <string name="list_search_clear">Borrar búsqueda</string>
     <string name="list_filter_min_rating">Puntuación mínima</string>
     <string name="list_filter_cuisine">Cocina</string>
-    <string name="list_empty_first_sync_title">Aún no hay restaurantes</string>
-    <string name="list_empty_first_sync_body">Descarga tus restaurantes guardados para empezar.</string>
+    <string name="list_empty_title">Aún no hay restaurantes</string>
+    <string name="list_empty_body">Añade tu primer restaurante para empezar.</string>
     <string name="list_empty_no_results_title">Sin resultados</string>
     <string name="list_empty_no_results_body">Prueba otra búsqueda o filtro de puntuación.</string>
-    <string name="list_action_sync">Actualizar datos</string>
+    <string name="list_action_add_restaurant">Añadir restaurante</string>
+    <string name="list_action_share_all">Compartir todos los restaurantes</string>
     <string name="list_action_clear_filters">Borrar filtros</string>
     <string name="list_sort_name">Nombre (A-Z)</string>
     <string name="list_sort_rating">Puntuación (de mayor a menor)</string>
@@ -24,15 +25,6 @@
         <item quantity="many">%1$d filtros activos</item>
         <item quantity="other">%1$d filtros activos</item>
     </plurals>
-    <plurals name="list_sync_success">
-        <item quantity="one">Datos actualizados (%1$d restaurante)</item>
-        <item quantity="many">Datos actualizados (%1$d restaurantes)</item>
-        <item quantity="other">Datos actualizados (%1$d restaurantes)</item>
-    </plurals>
-    <string name="list_sync_up_to_date">Ya está actualizado</string>
-    <string name="list_sync_error_network">No se pudo descargar. Comprueba tu conexión.</string>
-    <string name="list_sync_error_invalid">El archivo descargado no es válido.</string>
-    <string name="list_sync_error_unknown">No se pudieron actualizar los datos.</string>
     <plurals name="list_result_count">
         <item quantity="one">%1$d restaurante</item>
         <item quantity="many">%1$d restaurantes</item>
@@ -42,37 +34,21 @@
     <string name="action_back">Atrás</string>
     <string name="action_go_back">Volver</string>
     <string name="action_retry">Reintentar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_delete">Eliminar</string>
 
     <string name="detail_not_found_title">Restaurante no encontrado</string>
-    <string name="detail_not_found_body">Este restaurante se eliminó o los datos se actualizaron.</string>
+    <string name="detail_not_found_body">Este restaurante se ha eliminado.</string>
+    <string name="detail_action_edit">Editar</string>
+    <string name="detail_action_share">Compartir</string>
+    <string name="detail_action_delete">Eliminar</string>
+    <string name="detail_delete_confirm_title">¿Eliminar este restaurante?</string>
+    <string name="detail_delete_confirm_body">Esta acción no se puede deshacer.</string>
 
     <string name="detail_placeholder_title">Selecciona un restaurante</string>
     <string name="detail_placeholder_body">Elige uno de la lista para ver aquí sus detalles.</string>
 
     <string name="about_version_template">Versión %1$s (compilación %2$d, %3$s)</string>
-    <string name="about_last_synced">Última sincronización: %1$s</string>
-    <string name="about_last_synced_never">Aún no se ha sincronizado</string>
-
-    <!--
-        Relative "last synced" wording. The number is both the plural quantity
-        and the formatting argument, so it has to stay in the translated text.
-    -->
-    <string name="relative_time_just_now">justo ahora</string>
-    <plurals name="relative_time_minutes_ago">
-        <item quantity="one">hace %1$d minuto</item>
-        <item quantity="many">hace %1$d minutos</item>
-        <item quantity="other">hace %1$d minutos</item>
-    </plurals>
-    <plurals name="relative_time_hours_ago">
-        <item quantity="one">hace %1$d hora</item>
-        <item quantity="many">hace %1$d horas</item>
-        <item quantity="other">hace %1$d horas</item>
-    </plurals>
-    <plurals name="relative_time_days_ago">
-        <item quantity="one">hace %1$d día</item>
-        <item quantity="many">hace %1$d días</item>
-        <item quantity="other">hace %1$d días</item>
-    </plurals>
 
     <string name="action_ok">Aceptar</string>
 
@@ -115,13 +91,51 @@
     <string name="palette_garden">Huerto</string>
     <string name="palette_indigo">Índigo</string>
     <string name="settings_section_data">Datos</string>
+    <string name="settings_data_description">Exporta todos tus restaurantes como un archivo JSON que puedes guardar como copia de seguridad o compartir con un amigo.</string>
+    <string name="settings_action_export_data">Exportar / compartir mis datos</string>
     <string name="settings_section_about">Acerca de</string>
     <string name="settings_section_language">Idioma</string>
     <string name="language_english">Inglés</string>
     <string name="language_spanish">Español</string>
     <string name="language_catalan">Catalán</string>
 
-    <!-- Optional links, shown only when the synced data provides them. -->
+    <!-- Add/edit restaurant form. -->
+    <string name="edit_title_add">Añadir restaurante</string>
+    <string name="edit_title_edit">Editar restaurante</string>
+    <string name="edit_action_save">Guardar</string>
+    <string name="edit_field_name">Nombre</string>
+    <string name="edit_field_cuisine">Cocina</string>
+    <string name="edit_cuisine_placeholder">Selecciona una cocina</string>
+    <string name="edit_field_address">Dirección (opcional)</string>
+    <string name="edit_field_rating">Puntuación</string>
+    <string name="edit_field_price_range">Rango de precio</string>
+    <string name="edit_field_website">Web (opcional)</string>
+    <string name="edit_field_instagram">Instagram (opcional)</string>
+    <string name="edit_error_name_required">El nombre es obligatorio</string>
+    <string name="edit_error_cuisine_required">Elige una cocina</string>
+    <string name="edit_error_website_invalid">Introduce una dirección web http/https válida</string>
+    <string name="edit_error_instagram_invalid">Introduce un usuario de Instagram válido</string>
+
+    <!-- Importing a restaurant file shared from another app. -->
+    <string name="import_title">Importar restaurantes</string>
+    <string name="import_empty_title">Nada que importar</string>
+    <string name="import_empty_body">Este archivo no contiene ningún restaurante.</string>
+    <string name="import_error_title">No se puede abrir este archivo</string>
+    <string name="import_error_too_large">Este archivo es demasiado grande.</string>
+    <string name="import_error_invalid">Esto no parece un archivo de restaurantes de EatApp.</string>
+    <string name="import_error_io">No se ha podido leer este archivo.</string>
+    <string name="import_action_confirm">Importar</string>
+    <string name="import_duplicate_label">Ya está en tu lista</string>
+    <string name="import_decision_add">Añadir</string>
+    <string name="import_decision_skip">Omitir</string>
+    <string name="import_decision_replace">Reemplazar</string>
+    <plurals name="import_skipped_invalid">
+        <item quantity="one">%1$d restaurante tenía datos no válidos y se ha omitido</item>
+        <item quantity="many">%1$d restaurantes tenían datos no válidos y se han omitido</item>
+        <item quantity="other">%1$d restaurantes tenían datos no válidos y se han omitido</item>
+    </plurals>
+
+    <!-- Optional links, shown only when the restaurant has them. -->
     <string name="detail_section_links">Enlaces</string>
     <string name="detail_link_website">Web</string>
     <string name="detail_link_instagram">Instagram</string>
@@ -129,9 +143,8 @@
     <string name="detail_link_failed">Ninguna app puede abrir este enlace.</string>
 
     <!--
-        Display labels for the closed cuisine vocabulary. The `.db` stores the
-        stable key (see Cuisine.kt); only these labels are ever translated, so
-        adding a new language never requires re-editing the data file.
+        Display labels for the closed cuisine vocabulary. `cuisineType` stores
+        the stable key (see Cuisine.kt); only these labels are ever translated.
     -->
     <string name="cuisine_mediterranean">Mediterránea</string>
     <string name="cuisine_spanish">Española</string>
