@@ -10,7 +10,10 @@ import com.saatxi.eatapp.data.share.writeRestaurantShareFile
  * `<intent-filter>` that lets a received file reopen the app. A plain,
  * standard `application/json` — not a custom type — is what makes "Open with
  * EatApp" reliably show up for a file forwarded through another app, since
- * those apps generally can't be trusted to preserve a custom MIME type.
+ * those apps generally can't be trusted to preserve a custom MIME type. The
+ * manifest also matches the file's ".eatapp" extension directly (see
+ * RestaurantShareWriter.kt) as a fallback for apps that determine the type
+ * from the extension instead of preserving what we set here.
  */
 const val RESTAURANT_SHARE_MIME_TYPE = "application/json"
 

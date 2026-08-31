@@ -29,6 +29,30 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/json" />
             </intent-filter>
+            <!-- Fallback for the ".eatapp" extension RestaurantShareWriter.kt
+                 now names the file with. Apps that relay the shared file
+                 generally can't be trusted to preserve the MIME type we set
+                 on the outgoing ACTION_SEND (see RESTAURANT_SHARE_MIME_TYPE's
+                 comment), so a file manager or downloads app opening the
+                 file straight off local storage often looks up the type from
+                 the extension instead — and won't recognise ".eatapp",
+                 falling back to a generic type. Matching on the extension
+                 itself, independent of whatever MIME type accompanies it,
+                 keeps "Open with EatApp" working in that case too. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="content"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\.eatapp" />
+                <data
+                    android:scheme="file"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\.eatapp" />
+            </intent-filter>
         </activity>
 
         <!-- Exposes cacheDir/shared/ (see res/xml/file_paths.xml) as a

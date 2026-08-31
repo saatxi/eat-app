@@ -8,7 +8,7 @@ import kotlinx.serialization.json.Json
 
 private val json = Json
 private const val SHARE_SUBDIR = "shared"
-private const val SHARE_FILE_NAME = "restaurants.json"
+private const val SHARE_FILE_NAME = "restaurants.eatapp"
 
 /**
  * Writes [restaurants] to a file under `cacheDir/shared/` — the only
