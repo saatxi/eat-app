@@ -28,17 +28,27 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/json" />
+                <!-- Cloud apps (Drive, Gmail...) hand back an opaque
+                     content:// Uri on reopen — its path is a document id,
+                     not the filename, so the ".eatapp" pathPattern fallback
+                     below can never match it. The only way EatApp can still
+                     show up in "Open with" there is by MIME type, and those
+                     apps don't reliably keep "application/json" for a file
+                     extension Android doesn't recognise — confirmed on-device
+                     that Drive-style opaque Uris only resolve to EatApp when
+                     one of these generic types is also matched. -->
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
             <!-- Fallback for the ".eatapp" extension RestaurantShareWriter.kt
-                 now names the file with. Apps that relay the shared file
-                 generally can't be trusted to preserve the MIME type we set
-                 on the outgoing ACTION_SEND (see RESTAURANT_SHARE_MIME_TYPE's
-                 comment), so a file manager or downloads app opening the
-                 file straight off local storage often looks up the type from
-                 the extension instead — and won't recognise ".eatapp",
-                 falling back to a generic type. Matching on the extension
-                 itself, independent of whatever MIME type accompanies it,
-                 keeps "Open with EatApp" working in that case too. -->
+                 names the file with. Local file managers commonly hand back
+                 a content:// Uri whose path mirrors the real filename, and
+                 look up the type from the extension instead of preserving
+                 the MIME type we set on the outgoing ACTION_SEND (see
+                 RESTAURANT_SHARE_MIME_TYPE's comment) — falling back to a
+                 generic type Android won't recognise ".eatapp" from. Matching
+                 on the extension itself, independent of whatever MIME type
+                 accompanies it, keeps "Open with EatApp" working there. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
