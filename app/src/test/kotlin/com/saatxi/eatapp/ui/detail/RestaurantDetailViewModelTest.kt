@@ -149,6 +149,10 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override suspend fun delete(id: Long) {
         restaurants.value = restaurants.value.filterNot { it.id == id }
     }
+
+    override suspend fun deleteAll() {
+        restaurants.value = emptyList()
+    }
 }
 
 private class FakeUserPreferencesRepository : UserPreferencesRepository {

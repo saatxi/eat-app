@@ -359,6 +359,9 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     override suspend fun delete(id: Long) =
         throw NotImplementedError("Not used by RestaurantListViewModel")
+
+    override suspend fun deleteAll() =
+        throw NotImplementedError("Not used by RestaurantListViewModel")
 }
 
 /** Replays whatever the test pushes into [preferences] and records favourite writes. */

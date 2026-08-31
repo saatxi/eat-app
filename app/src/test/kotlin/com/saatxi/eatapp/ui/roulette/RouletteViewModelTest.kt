@@ -182,6 +182,9 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     override suspend fun delete(id: Long) =
         throw NotImplementedError("Not used by RouletteViewModel")
+
+    override suspend fun deleteAll() =
+        throw NotImplementedError("Not used by RouletteViewModel")
 }
 
 private class FakeUserPreferencesRepository : UserPreferencesRepository {

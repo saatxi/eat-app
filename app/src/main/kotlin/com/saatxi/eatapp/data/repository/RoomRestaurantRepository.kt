@@ -50,6 +50,11 @@ class RoomRestaurantRepository(
         writeBackup()
     }
 
+    override suspend fun deleteAll() {
+        dao.deleteAll()
+        writeBackup()
+    }
+
     /** Keeps `backup.json` a full, current snapshot after every write — see [writeBackupFile]. */
     private suspend fun writeBackup() {
         writeBackupFile(context, dao.getAll().map { it.toExport() })

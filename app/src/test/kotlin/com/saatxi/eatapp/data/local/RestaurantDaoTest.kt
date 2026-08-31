@@ -321,6 +321,15 @@ class RestaurantDaoTest {
         assertEquals(listOf("Keep"), search(null))
     }
 
+    @Test
+    fun `deleteAll removes every row`() = runTest {
+        seed(restaurant(1, "One"), restaurant(2, "Two"))
+
+        dao.deleteAll()
+
+        assertEquals(emptyList<String>(), search(null))
+    }
+
     // --- Part 3: backup.json, written through the repository -----------------
 
     private fun backupFile() = File(context.filesDir, "backup.json")
@@ -359,6 +368,16 @@ class RestaurantDaoTest {
         repository.delete(removeId)
 
         assertEquals(listOf("Keep"), backupNames())
+    }
+
+    @Test
+    fun `deleteAll rewrites the backup file as empty`() = runTest {
+        repository.insert(restaurant(0, "Keep"))
+        repository.insert(restaurant(0, "Remove"))
+
+        repository.deleteAll()
+
+        assertEquals(emptyList<String>(), backupNames())
     }
 
     // --- LIKE metacharacters, which is F-15 ---------------------------------

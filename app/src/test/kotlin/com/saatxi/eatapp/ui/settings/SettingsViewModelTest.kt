@@ -102,6 +102,17 @@ class SettingsViewModelTest {
         assertEquals(AppLanguage.SPANISH, localeManager.current)
         assertEquals(AppLanguage.SPANISH, viewModel.uiState.value.language)
     }
+
+    @Test
+    fun `deleting all data clears every restaurant`() = runTest {
+        repository.restaurants.value = listOf(
+            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = null, rating = 4, priceRange = 2)
+        )
+
+        viewModel.onDeleteAllData()
+
+        assertEquals(emptyList<Restaurant>(), repository.restaurants.value)
+    }
 }
 
 /** Replays whatever the test pushes into [preferences] and records writes. */
@@ -160,4 +171,8 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     override suspend fun delete(id: Long) =
         throw NotImplementedError("Not used by SettingsViewModel")
+
+    override suspend fun deleteAll() {
+        restaurants.value = emptyList()
+    }
 }

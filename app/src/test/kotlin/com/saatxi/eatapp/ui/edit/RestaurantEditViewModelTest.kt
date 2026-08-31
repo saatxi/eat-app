@@ -207,4 +207,7 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     override suspend fun delete(id: Long) =
         throw NotImplementedError("Not used by RestaurantEditViewModel")
+
+    override suspend fun deleteAll() =
+        throw NotImplementedError("Not used by RestaurantEditViewModel")
 }

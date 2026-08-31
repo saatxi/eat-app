@@ -70,4 +70,9 @@ class SettingsViewModel(
             context.shareRestaurants(all.map { it.toExport() })
         }
     }
+
+    /** Irreversible: wipes every restaurant. The screen confirms with the user before calling this. */
+    fun onDeleteAllData() {
+        viewModelScope.launch { repository.deleteAll() }
+    }
 }

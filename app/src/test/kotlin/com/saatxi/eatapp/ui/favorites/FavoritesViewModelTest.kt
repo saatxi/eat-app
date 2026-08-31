@@ -120,6 +120,9 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     override suspend fun delete(id: Long) =
         throw NotImplementedError("Not used by FavoritesViewModel")
+
+    override suspend fun deleteAll() =
+        throw NotImplementedError("Not used by FavoritesViewModel")
 }
 
 private class FakeUserPreferencesRepository : UserPreferencesRepository {

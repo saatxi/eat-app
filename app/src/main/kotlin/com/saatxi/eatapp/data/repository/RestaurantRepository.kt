@@ -19,4 +19,5 @@ interface RestaurantRepository {
     suspend fun insert(restaurant: Restaurant): Long
     suspend fun update(restaurant: Restaurant)
     suspend fun delete(id: Long)
+    suspend fun deleteAll()
 }

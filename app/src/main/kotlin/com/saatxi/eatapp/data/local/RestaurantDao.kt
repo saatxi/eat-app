@@ -61,4 +61,7 @@ interface RestaurantDao {
 
     @Query("DELETE FROM restaurants WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Query("DELETE FROM restaurants")
+    suspend fun deleteAll()
 }
