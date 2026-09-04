@@ -18,11 +18,19 @@ Large-screen and tablet support is deliberately not covered here; see
 
 ## Where to start
 
-Nothing in *this* file is open — every entry below is marked **Done**.
+The **Open** section below (F-56 onward) is the backlog side of a second
+redesign pass, started 2026-09-04 with a UI/UX audit —
+[visual-redesign-proposal.html](visual-redesign-proposal.html) — that found
+the app's theming/navigation foundations solid (see
+[visual-modernization-plan.md](visual-modernization-plan.md)) but its data
+model and a few screens thin: no photos anywhere, no notes or tags, no
+visited/want-to-try status (F-55, now done), a flat Settings screen and an
+ungrouped edit form. F-63 (photos) and F-64 (a stats screen) are the two
+highest-impact items still open.
 
-Active work lives in
-[visual-modernization-plan.md](visual-modernization-plan.md): the redesign pass
-started 2026-08-28 (three selectable colour schemes, bottom navigation,
+Active work on the *first* pass still lives in
+[visual-modernization-plan.md](visual-modernization-plan.md): the redesign
+pass started 2026-08-28 (three selectable colour schemes, bottom navigation,
 favourites, a "what to eat" picker, optional link columns, and a performance
 pass). Phases 1 and 4 are done; that file tracks the rest.
 
@@ -31,9 +39,170 @@ For what's deliberately out of scope in both, see
 
 ---
 
+## Open
+
+### F-63 · No restaurant photos — High / M
+
+Every restaurant is represented purely by a cuisine icon in a coloured
+circle — list rows, the detail header and the roulette result card all look
+generic without a photo, which the audit flagged as the single biggest gap.
+**Fix:** add a nullable `photoUri` column to `Restaurant`, let the user pick
+one via the system Android Photo Picker (no storage permission needed on
+API 26+ through the backport library), copy it into the app's internal cache
+and store that path. Show it as the row's leading image (replacing or
+layering over the cuisine badge), as a hero image behind the detail screen's
+`LargeTopAppBar`, and in the roulette result card. Decide what export/import
+does with photos — most likely skip them in the JSON and let a re-shared
+restaurant re-prompt for a photo on the receiving device, since embedding
+images would blow past `MAX_IMPORT_BYTES`.
+
+### F-64 · No statistics screen — High / M
+
+Nothing surfaces the aggregate picture: most-picked cuisines, average
+rating, price-tier spread, visited vs. want-to-try split. **Fix:** a new
+screen (reachable from Settings) backed by a couple of `GROUP BY` queries in
+`RestaurantDao`, rendered as simple stat tiles/bars — no charting library
+needed, everything is computed locally from Room with no network call.
+
+### F-56 · No free-text notes per restaurant — High / S
+
+The data model has no field for "ask for the burrata" or "go on a weekday" —
+the kind of detail that's more useful than most of what's already stored.
+**Fix:** add `notes: String?` to `Restaurant`, a multiline
+`OutlinedTextField` in the edit form (after Address), a card on the detail
+screen, and the matching `RestaurantExport` field with the same
+default-on-missing backward-compatibility treatment F-55 used for `visited`.
+
+### F-59 · No free-form tags — Medium / M
+
+"Terraza", "para grupos", "llevar niños" — recurring, user-invented labels
+that don't fit the closed cuisine vocabulary and shouldn't. **Fix:** a `Tag`
+entity plus a `RestaurantTag` join table, a chip-entry field in the edit form
+(suggesting existing tags), and small pill badges under the cuisine label in
+list/detail rows, reusing the `FilterChip` pattern already built for cuisine
+filtering.
+
+### F-62 · Edit/add form is one long ungrouped column — Medium / S
+
+Eight fields in a single scrolling `Column` with no sectioning, unlike the
+detail screen's card-grouped layout. **Fix:** split into "Basics" (name,
+cuisine, address), "Status and rating" (visited toggle, rating, price) and
+"Links" (website, instagram) cards, mirroring `RestaurantDetailScreen`'s
+Overview / Rating and price / Links split.
+
+### F-57 · The cuisine dropdown in the edit form has no icons — Low / XS
+
+The list screen's cuisine filter chips each show the cuisine's icon
+(`cuisineIcon(key)`); the edit form's `ExposedDropdownMenu` for the same
+24-entry vocabulary shows plain text only. **Fix:** add a `leadingIcon` to
+each `DropdownMenuItem` in `CuisineDropdown`, reusing the same lookup.
+
+### F-58 · Rating-and-price markup is copy-pasted three times — Medium / S
+
+The stars-plus-"N/5"-plus-price-pill block is hand-duplicated across
+`RestaurantListScreen.RestaurantRow`, `RestaurantDetailScreen` and
+`RouletteScreen.RouletteResultCard`, with the risk that a future tweak to one
+copy silently drifts from the other two. **Fix:** extract one shared
+`RatingAndPriceRow` composable and have all three call it.
+
+### F-60 · Favorites has no search or filters — Medium / S
+
+Favorites reuses `RestaurantRow` and `EmptyState` from the list screen but
+has none of its search bar, sort control or filter chips, even though it
+shows the same kind of list — an inconsistency between two screens with
+near-identical content. **Fix:** lift the list screen's search/sort/filter
+UI (and the matching `RestaurantListViewModel` filtering logic) into
+`FavoritesViewModel`/`FavoritesScreen`, or extract a shared composable both
+screens call.
+
+### F-61 · Import candidate rows have no cuisine badge — Low / S
+
+`RestaurantImportScreen`'s candidate rows are plain text — name, cuisine
+label, address — while every other list-shaped screen (list, favorites,
+roulette) leads with the circular cuisine-icon badge. **Fix:** add the same
+48dp badge to `ImportCandidateRow`.
+
+### F-65 · No swipe actions on list rows — Medium / M
+
+Every mutation (favorite, delete) requires either the row's heart icon or a
+trip into the detail screen. **Fix:** wrap `RestaurantRow` in a
+`SwipeToDismissBox` for a quick favorite-toggle or delete gesture — needs
+care around the existing `clearAndSetSemantics` collapse and the heart
+`IconToggleButton` overlaid outside the card (see F-44's accessibility
+notes).
+
+### F-66 · Empty search shows a blank box — Medium / S
+
+There's no guidance before the user types anything. **Fix:** when the search
+query is empty, show a short list of suggestions (e.g. top-rated, or a
+frequently-filtered cuisine) instead of nothing.
+
+### F-67 · Loading states are a single generic spinner — Medium / S
+
+Every loading state across the app (list, detail, edit) is a centred
+`CircularProgressIndicator`. **Fix:** shape-matching skeleton/shimmer
+placeholders for the list and detail screens would read as faster even at
+the same actual load time. Lower priority than F-56/F-63/F-64 — loads are
+already near-instant against a local Room database.
+
+### F-68 · No home-screen widget — Medium / L
+
+A Glance widget surfacing the latest roulette pick or the next
+want-to-try restaurant, without opening the app. Needs its own investigation
+into the Glance library and widget lifecycle; lowest priority of this batch,
+kept for when the rest of the list is done.
+
+---
+
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-55 · No visited / want-to-try status — Done.
+
+First entry closed out of the second redesign pass (see "Where to start"
+above and [visual-redesign-proposal.html](visual-redesign-proposal.html)).
+Every restaurant used to be stored as if it had already been eaten at; there
+was no way to note down a place worth trying without pretending a visit
+already happened.
+
+- `Restaurant` gained a `visited: Boolean` column (default `true`, so a
+  hand-built entity keeps today's implicit behaviour). A real
+  `MIGRATION_5_6` in
+  [EatAppDatabase.kt](../app/src/main/kotlin/com/saatxi/eatapp/data/local/EatAppDatabase.kt)
+  adds the column and backfills it — `UPDATE restaurants SET visited = 0
+  WHERE rating = 0` — treating an unrated row as more likely a wishlist entry
+  than a forgotten review, rather than falling back to the destructive
+  migration the file's own comment warns against.
+- `RestaurantDao.observeFiltered` gained a fifth, nullable `visited`
+  parameter, following the same `:param IS NULL OR column = :param` pattern
+  already used for `minRating`/`cuisineType`, threaded through
+  `RestaurantRepository`/`RoomRestaurantRepository` and into
+  `RestaurantListViewModel`'s `Filters`.
+- The edit form gained a two-way `SingleChoiceSegmentedButtonRow` ("Quiero
+  ir" / "Ya he ido"), the list screen a matching filter-chip pair plus a
+  small "Por probar" pill on unvisited rows (reusing the price-pill's
+  `Surface`/`RoundedCornerShape(percent = 50)` styling), and the detail
+  screen an extra `InfoRow` in the Overview card when the restaurant hasn't
+  been visited yet. Favorites inherits the badge for free through the shared
+  `RestaurantRow`.
+- `RestaurantExport`/`RestaurantShareFile` gained a `visited` field
+  defaulting to `true`, so a share file written before this change still
+  imports as "visited" rather than silently becoming a wishlist entry no one
+  asked for.
+- English, Spanish and Catalan strings added (`visit_status_visited`,
+  `visit_status_want_to_try`, `list_filter_visit_status`,
+  `edit_field_visit_status`).
+- Verified with `./gradlew test assembleDebug` — new DAO cases for the
+  `visited` filter (no filter / true / false), export/import round-trip and
+  backward-compatibility cases, a UI-model carry-through case, and edit/list
+  ViewModel cases for the new toggle and filter; every other ViewModel's fake
+  repository updated to the new `observeFiltered` signature to keep
+  compiling. Not covered: a dedicated `MigrationTestHelper` test for
+  `MIGRATION_5_6` itself, since that needs a new `androidx.room:room-testing`
+  test dependency not yet in
+  [libs.versions.toml](../gradle/libs.versions.toml) — worth adding next time
+  a migration test is needed, rather than for this one change alone.
 
 ### F-51 · No `@Preview` composables — Done.
 
