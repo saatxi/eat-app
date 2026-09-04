@@ -311,6 +311,7 @@ private val previewPick = RestaurantUiModel(
     address = "Plaça Santa Anna, Mataró",
     rating = 4,
     priceLabel = "$$",
+    visited = true,
     website = null,
     instagram = null,
     isFavorite = false

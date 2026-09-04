@@ -9,7 +9,8 @@ interface RestaurantRepository {
         query: String?,
         minRating: Int?,
         cuisineType: String?,
-        sort: RestaurantSort = RestaurantSort.NAME
+        sort: RestaurantSort = RestaurantSort.NAME,
+        visited: Boolean? = null
     ): Flow<List<Restaurant>>
 
     fun observeCuisineTypes(): Flow<List<String>>

@@ -27,6 +27,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -67,6 +70,7 @@ fun RestaurantEditScreen(
         onNameChange = viewModel::onNameChange,
         onCuisineChange = viewModel::onCuisineChange,
         onAddressChange = viewModel::onAddressChange,
+        onVisitedChange = viewModel::onVisitedChange,
         onRatingChange = viewModel::onRatingChange,
         onPriceRangeChange = viewModel::onPriceRangeChange,
         onWebsiteChange = viewModel::onWebsiteChange,
@@ -84,6 +88,7 @@ private fun RestaurantEditContent(
     onNameChange: (String) -> Unit,
     onCuisineChange: (String) -> Unit,
     onAddressChange: (String) -> Unit,
+    onVisitedChange: (Boolean) -> Unit,
     onRatingChange: (Int) -> Unit,
     onPriceRangeChange: (Int) -> Unit,
     onWebsiteChange: (String) -> Unit,
@@ -155,6 +160,26 @@ private fun RestaurantEditContent(
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                 modifier = Modifier.fillMaxWidth()
             )
+
+            Column {
+                Text(stringResource(R.string.edit_field_visit_status), style = MaterialTheme.typography.labelLarge)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.padding(top = 4.dp)) {
+                    SegmentedButton(
+                        selected = !uiState.visited,
+                        onClick = { onVisitedChange(false) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                    ) {
+                        Text(stringResource(R.string.visit_status_want_to_try))
+                    }
+                    SegmentedButton(
+                        selected = uiState.visited,
+                        onClick = { onVisitedChange(true) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                    ) {
+                        Text(stringResource(R.string.visit_status_visited))
+                    }
+                }
+            }
 
             Column {
                 Text(stringResource(R.string.edit_field_rating), style = MaterialTheme.typography.labelLarge)
@@ -291,6 +316,7 @@ private fun RestaurantEditScreenPreview() {
             onNameChange = {},
             onCuisineChange = {},
             onAddressChange = {},
+            onVisitedChange = {},
             onRatingChange = {},
             onPriceRangeChange = {},
             onWebsiteChange = {},

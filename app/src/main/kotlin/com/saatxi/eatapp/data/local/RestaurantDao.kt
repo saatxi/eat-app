@@ -26,6 +26,7 @@ interface RestaurantDao {
         WHERE (:query IS NULL OR searchText LIKE '%' || :query || '%' ESCAPE '\')
           AND (:minRating IS NULL OR rating >= :minRating)
           AND (:cuisineType IS NULL OR cuisineType = :cuisineType)
+          AND (:visited IS NULL OR visited = :visited)
         ORDER BY
           CASE WHEN :sortByRating THEN rating ELSE 0 END DESC,
           name COLLATE NOCASE ASC
@@ -35,7 +36,8 @@ interface RestaurantDao {
         query: String?,
         minRating: Int?,
         cuisineType: String?,
-        sortByRating: Boolean
+        sortByRating: Boolean,
+        visited: Boolean? = null
     ): Flow<List<Restaurant>>
 
     /**

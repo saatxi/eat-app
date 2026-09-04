@@ -28,6 +28,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.RestaurantMenu
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
@@ -239,6 +240,13 @@ private fun RestaurantDetailContent(
                                 icon = cuisineIcon(current.cuisineKey),
                                 text = cuisineLabel(current.cuisineKey)
                             )
+                            if (!current.visited) {
+                                InfoRow(
+                                    icon = Icons.Outlined.Schedule,
+                                    text = stringResource(R.string.visit_status_want_to_try),
+                                    topPadding = 10.dp
+                                )
+                            }
                             current.address?.let { address ->
                                 InfoRow(
                                     icon = Icons.Outlined.LocationOn,
@@ -394,6 +402,7 @@ private fun RestaurantUiModel.toExport() = RestaurantExport(
     address = address,
     rating = rating,
     priceRange = priceLabel.length,
+    visited = visited,
     website = website,
     instagram = instagram
 )
@@ -527,6 +536,7 @@ private val previewRestaurant = RestaurantUiModel(
     address = "Plaça Santa Anna, Mataró",
     rating = 4,
     priceLabel = "$$",
+    visited = true,
     website = "https://calferran.example",
     instagram = "calferran",
     isFavorite = true

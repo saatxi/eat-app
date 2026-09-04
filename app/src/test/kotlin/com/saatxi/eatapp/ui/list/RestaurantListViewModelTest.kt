@@ -172,6 +172,30 @@ class RestaurantListViewModelTest {
         assertFalse(state.hasActiveFilter)
     }
 
+    // --- visit status filter -------------------------------------------------
+
+    @Test
+    fun `a visited filter lands in the state and in the query`() = runTest {
+        observeState()
+
+        viewModel.onVisitedChange(false)
+
+        assertEquals(false, viewModel.uiState.value.visited)
+        assertEquals(false, repository.lastVisited)
+        assertTrue(viewModel.uiState.value.hasActiveFilter)
+    }
+
+    @Test
+    fun `clearFilters also resets the visited filter`() = runTest {
+        observeState()
+        viewModel.onVisitedChange(true)
+
+        viewModel.clearFilters()
+
+        assertNull(viewModel.uiState.value.visited)
+        assertFalse(viewModel.uiState.value.hasActiveFilter)
+    }
+
     // --- hasActiveFilter, which drives the "Clear filters" empty state ------
 
     @Test
@@ -332,17 +356,21 @@ private class FakeRestaurantRepository : RestaurantRepository {
         private set
     var lastSort: RestaurantSort? = null
         private set
+    var lastVisited: Boolean? = null
+        private set
 
     override fun observeFiltered(
         query: String?,
         minRating: Int?,
         cuisineType: String?,
-        sort: RestaurantSort
+        sort: RestaurantSort,
+        visited: Boolean?
     ): Flow<List<Restaurant>> {
         lastQuery = query
         lastMinRating = minRating
         lastCuisine = cuisineType
         lastSort = sort
+        lastVisited = visited
         return restaurants
     }
 

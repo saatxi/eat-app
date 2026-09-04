@@ -52,14 +52,16 @@ class RestaurantDaoTest {
         cuisineType: String = "mediterranean",
         address: String? = "Rambla 1",
         rating: Int = 3,
-        priceRange: Int = 2
+        priceRange: Int = 2,
+        visited: Boolean = true
     ) = Restaurant(
         id = id,
         name = name,
         cuisineType = cuisineType,
         address = address,
         rating = rating,
-        priceRange = priceRange
+        priceRange = priceRange,
+        visited = visited
     )
 
     private suspend fun seed(vararg restaurants: Restaurant) {
@@ -71,6 +73,9 @@ class RestaurantDaoTest {
 
     private suspend fun sortedBy(sort: RestaurantSort) =
         repository.observeFiltered(null, null, null, sort).first().map { it.name }
+
+    private suspend fun filteredByVisited(visited: Boolean?) =
+        repository.observeFiltered(null, null, null, RestaurantSort.NAME, visited).first().map { it.name }
 
     // --- ordering and the unfiltered case -----------------------------------
 
@@ -262,6 +267,27 @@ class RestaurantDaoTest {
 
         val names = repository.observeFiltered(null, null, "  ").first().map { it.name }
         assertEquals(listOf("Sakura"), names)
+    }
+
+    @Test
+    fun `no visited filter returns both visited and want-to-try rows`() = runTest {
+        seed(restaurant(1, "Been There", visited = true), restaurant(2, "Want To Go", visited = false))
+
+        assertEquals(listOf("Been There", "Want To Go"), filteredByVisited(null))
+    }
+
+    @Test
+    fun `filtering by visited true returns only visited rows`() = runTest {
+        seed(restaurant(1, "Been There", visited = true), restaurant(2, "Want To Go", visited = false))
+
+        assertEquals(listOf("Been There"), filteredByVisited(true))
+    }
+
+    @Test
+    fun `filtering by visited false returns only want-to-try rows`() = runTest {
+        seed(restaurant(1, "Been There", visited = true), restaurant(2, "Want To Go", visited = false))
+
+        assertEquals(listOf("Want To Go"), filteredByVisited(false))
     }
 
     // --- the other queries --------------------------------------------------

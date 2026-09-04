@@ -32,6 +32,8 @@ data class RestaurantUiModel(
     val rating: Int,
     /** For example "$$". Empty when the row has no price range. */
     val priceLabel: String,
+    /** False marks a place the user still wants to try, not one they've been to. */
+    val visited: Boolean,
     /** Validated on import; null when absent or not safe to open. */
     val website: String?,
     /** Bare handle, no leading `@`. */
@@ -53,6 +55,7 @@ fun Restaurant.toUiModel(isFavorite: Boolean = false): RestaurantUiModel = Resta
     // The reader already rejects out-of-range values, but clamping keeps a
     // hand-built entity from producing an absurdly long chip.
     priceLabel = "$".repeat(priceRange.coerceIn(0, MAX_PRICE_RANGE)),
+    visited = visited,
     website = website,
     instagram = instagram,
     isFavorite = isFavorite

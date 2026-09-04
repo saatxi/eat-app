@@ -17,6 +17,13 @@ data class Restaurant(
     val rating: Int,
     val priceRange: Int,
     /**
+     * True once the user has actually been — false marks a place they still
+     * want to try. Defaults true so a hand-built entity (tests, older data
+     * paths) keeps today's implicit behaviour instead of silently becoming a
+     * wishlist entry.
+     */
+    val visited: Boolean = true,
+    /**
      * Optional links. Both are validated on import (see `LinkValidation.kt`) and
      * are null whenever the source `.db` omits the column, leaves it empty, or
      * holds something that isn't safe to open — the detail screen simply doesn't

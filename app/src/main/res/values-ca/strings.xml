@@ -6,6 +6,7 @@
     <string name="list_search_clear">Esborra la cerca</string>
     <string name="list_filter_min_rating">Puntuació mínima</string>
     <string name="list_filter_cuisine">Cuina</string>
+    <string name="list_filter_visit_status">Estat</string>
     <string name="list_empty_title">Encara no hi ha restaurants</string>
     <string name="list_empty_body">Afegeix el teu primer restaurant per començar.</string>
     <string name="list_empty_no_results_title">Sense resultats</string>
@@ -53,6 +54,11 @@
     <string name="rating_format">%1$d/5</string>
     <string name="detail_section_overview">Resum</string>
     <string name="detail_section_rating">Puntuació i preu</string>
+
+    <!-- Visited vs. want-to-try, shared across the list filter, the row badge,
+         the detail overview and the edit form's toggle. -->
+    <string name="visit_status_visited">Visitat</string>
+    <string name="visit_status_want_to_try">Per provar</string>
 
     <!-- Screen-reader phrasing for the rating/price marks, which are drawn as stars and "$" symbols. -->
     <string name="restaurant_rating_description">Puntuat amb %1$d de 5</string>
@@ -108,6 +114,7 @@
     <string name="edit_field_cuisine">Cuina</string>
     <string name="edit_cuisine_placeholder">Selecciona una cuina</string>
     <string name="edit_field_address">Adreça (opcional)</string>
+    <string name="edit_field_visit_status">Estat</string>
     <string name="edit_field_rating">Puntuació</string>
     <string name="edit_field_price_range">Rang de preu</string>
     <string name="edit_field_website">Web (opcional)</string>

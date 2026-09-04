@@ -6,6 +6,7 @@
     <string name="list_search_clear">Borrar búsqueda</string>
     <string name="list_filter_min_rating">Puntuación mínima</string>
     <string name="list_filter_cuisine">Cocina</string>
+    <string name="list_filter_visit_status">Estado</string>
     <string name="list_empty_title">Aún no hay restaurantes</string>
     <string name="list_empty_body">Añade tu primer restaurante para empezar.</string>
     <string name="list_empty_no_results_title">Sin resultados</string>
@@ -55,6 +56,11 @@
     <string name="rating_format">%1$d/5</string>
     <string name="detail_section_overview">General</string>
     <string name="detail_section_rating">Puntuación y precio</string>
+
+    <!-- Visited vs. want-to-try, shared across the list filter, the row badge,
+         the detail overview and the edit form's toggle. -->
+    <string name="visit_status_visited">Visitado</string>
+    <string name="visit_status_want_to_try">Por probar</string>
 
     <!-- Screen-reader phrasing for the rating/price marks, which are drawn as stars and "$" symbols. -->
     <string name="restaurant_rating_description">Puntuación %1$d de 5</string>
@@ -110,6 +116,7 @@
     <string name="edit_field_cuisine">Cocina</string>
     <string name="edit_cuisine_placeholder">Selecciona una cocina</string>
     <string name="edit_field_address">Dirección (opcional)</string>
+    <string name="edit_field_visit_status">Estado</string>
     <string name="edit_field_rating">Puntuación</string>
     <string name="edit_field_price_range">Rango de precio</string>
     <string name="edit_field_website">Web (opcional)</string>

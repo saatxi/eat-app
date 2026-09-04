@@ -179,7 +179,8 @@ fun RestaurantListScreen(
                 }
 
                 val activeFilterCount = (if (uiState.minRating != null) 1 else 0) +
-                    (if (uiState.cuisineType != null) 1 else 0)
+                    (if (uiState.cuisineType != null) 1 else 0) +
+                    (if (uiState.visited != null) 1 else 0)
                 val chevronRotation by animateFloatAsState(
                     targetValue = if (filtersExpanded) 180f else 0f,
                     label = "filters-chevron"
@@ -230,6 +231,8 @@ fun RestaurantListScreen(
                         cuisineType = uiState.cuisineType,
                         availableCuisines = uiState.availableCuisines,
                         onCuisineChange = viewModel::onCuisineChange,
+                        visited = uiState.visited,
+                        onVisitedChange = viewModel::onVisitedChange,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                     )
                 }
@@ -322,6 +325,8 @@ private fun FilterSection(
     cuisineType: String?,
     availableCuisines: List<String>,
     onCuisineChange: (String?) -> Unit,
+    visited: Boolean?,
+    onVisitedChange: (Boolean?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val chipColors = FilterChipDefaults.filterChipColors(
@@ -333,8 +338,31 @@ private fun FilterSection(
 
     Column(modifier = modifier) {
         Text(
-            text = stringResource(R.string.list_filter_min_rating),
+            text = stringResource(R.string.list_filter_visit_status),
             style = MaterialTheme.typography.labelMedium
+        )
+        Row(
+            modifier = Modifier.padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = visited == false,
+                onClick = { onVisitedChange(if (visited == false) null else false) },
+                label = { Text(stringResource(R.string.visit_status_want_to_try)) },
+                colors = chipColors
+            )
+            FilterChip(
+                selected = visited == true,
+                onClick = { onVisitedChange(if (visited == true) null else true) },
+                label = { Text(stringResource(R.string.visit_status_visited)) },
+                colors = chipColors
+            )
+        }
+
+        Text(
+            text = stringResource(R.string.list_filter_min_rating),
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(top = 8.dp)
         )
         Row(
             modifier = Modifier
@@ -452,12 +480,18 @@ internal fun RestaurantRow(
     val priceDescription = restaurant.priceLabel.takeIf { it.isNotEmpty() }?.let {
         stringResource(R.string.restaurant_price_description, it.length)
     }
+    val visitStatusText = stringResource(
+        if (restaurant.visited) R.string.visit_status_visited else R.string.visit_status_want_to_try
+    )
     val description = listOfNotNull(
         restaurant.name,
         cuisineLabelText,
         ratingDescription,
         priceDescription,
-        restaurant.address
+        restaurant.address,
+        // Only worth announcing for the exception case; "visited" is the
+        // default and every row already implies it by omission.
+        visitStatusText.takeIf { !restaurant.visited }
     ).joinToString(", ")
     val haptic = LocalHapticFeedback.current
 
@@ -498,6 +532,20 @@ internal fun RestaurantRow(
 
                 Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
                     Text(text = restaurant.name, style = MaterialTheme.typography.titleLarge)
+                    if (!restaurant.visited) {
+                        Surface(
+                            shape = RoundedCornerShape(percent = 50),
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.padding(top = 2.dp, bottom = 2.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.visit_status_want_to_try),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
                     Text(
                         text = cuisineLabelText,
                         style = MaterialTheme.typography.bodyMedium,
@@ -578,9 +626,20 @@ private val previewRestaurant = RestaurantUiModel(
     address = "Plaça Santa Anna, Mataró",
     rating = 4,
     priceLabel = "$$",
+    visited = true,
     website = "https://calferran.example",
     instagram = "calferran",
     isFavorite = true
+)
+
+private val previewWantToTryRestaurant = previewRestaurant.copy(
+    id = 2,
+    name = "Ramen Ko",
+    cuisineKey = "japanese",
+    rating = 0,
+    priceLabel = "",
+    visited = false,
+    isFavorite = false
 )
 
 @Preview(name = "Light")
@@ -590,6 +649,17 @@ private fun RestaurantRowPreview() {
     EatAppTheme {
         Surface {
             RestaurantRow(restaurant = previewRestaurant, onClick = {}, onFavoriteToggle = {})
+        }
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun RestaurantRowWantToTryPreview() {
+    EatAppTheme {
+        Surface {
+            RestaurantRow(restaurant = previewWantToTryRestaurant, onClick = {}, onFavoriteToggle = {})
         }
     }
 }

@@ -103,7 +103,8 @@ private class FakeRestaurantRepository : RestaurantRepository {
         query: String?,
         minRating: Int?,
         cuisineType: String?,
-        sort: RestaurantSort
+        sort: RestaurantSort,
+        visited: Boolean?
     ): Flow<List<Restaurant>> = restaurants
 
     override fun observeCuisineTypes(): Flow<List<String>> =

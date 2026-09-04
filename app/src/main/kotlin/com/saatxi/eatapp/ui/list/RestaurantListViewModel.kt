@@ -30,6 +30,7 @@ data class RestaurantListUiState(
     val searchQuery: String = "",
     val minRating: Int? = null,
     val cuisineType: String? = null,
+    val visited: Boolean? = null,
     val sort: RestaurantSort = RestaurantSort.NAME,
     val availableCuisines: List<String> = emptyList(),
     val restaurants: List<RestaurantUiModel> = emptyList(),
@@ -40,13 +41,14 @@ data class RestaurantListUiState(
     val isInitialLoad: Boolean = true
 ) {
     val hasActiveFilter: Boolean
-        get() = searchQuery.isNotBlank() || minRating != null || cuisineType != null
+        get() = searchQuery.isNotBlank() || minRating != null || cuisineType != null || visited != null
 }
 
 private data class Filters(
     val query: String = "",
     val minRating: Int? = null,
     val cuisineType: String? = null,
+    val visited: Boolean? = null,
     // Not a filter in the "narrows the list down" sense — it rides along here
     // because it is the fourth input the repository query is built from.
     val sort: RestaurantSort = RestaurantSort.NAME
@@ -68,6 +70,7 @@ class RestaurantListViewModel(
         filters.map { it.query }.debounce { query -> if (query.isBlank()) 0L else SEARCH_DEBOUNCE_MS },
         filters.map { it.minRating }.distinctUntilChanged(),
         filters.map { it.cuisineType }.distinctUntilChanged(),
+        filters.map { it.visited }.distinctUntilChanged(),
         filters.map { it.sort }.distinctUntilChanged(),
         ::Filters
     )
@@ -76,7 +79,9 @@ class RestaurantListViewModel(
     // kotlinx.coroutines' 5-flow overload instead of dropping to the untyped
     // vararg one.
     private val restaurantsWithFavorites: Flow<List<RestaurantUiModel>> = combine(
-        queryFilters.flatMapLatest { repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort) },
+        queryFilters.flatMapLatest {
+            repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort, it.visited)
+        },
         preferencesRepository.preferences.map { it.favoriteIds }
     ) { restaurants, favoriteIds ->
         restaurants.map { it.toUiModel(isFavorite = it.id in favoriteIds) }
@@ -91,6 +96,7 @@ class RestaurantListViewModel(
             searchQuery = activeFilters.query,
             minRating = activeFilters.minRating,
             cuisineType = activeFilters.cuisineType,
+            visited = activeFilters.visited,
             sort = activeFilters.sort,
             availableCuisines = availableCuisines,
             restaurants = restaurants,
@@ -114,6 +120,10 @@ class RestaurantListViewModel(
 
     fun onCuisineChange(cuisineType: String?) {
         filters.update { it.copy(cuisineType = cuisineType) }
+    }
+
+    fun onVisitedChange(visited: Boolean?) {
+        filters.update { it.copy(visited = visited) }
     }
 
     fun onSortChange(sort: RestaurantSort) {

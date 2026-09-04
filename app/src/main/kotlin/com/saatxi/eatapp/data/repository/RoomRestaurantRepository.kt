@@ -19,7 +19,8 @@ class RoomRestaurantRepository(
         query: String?,
         minRating: Int?,
         cuisineType: String?,
-        sort: RestaurantSort
+        sort: RestaurantSort,
+        visited: Boolean?
     ): Flow<List<Restaurant>> =
         dao.observeFiltered(
             query = query?.takeIf { it.isNotBlank() }?.let(::normalizeForSearch)?.let(::escapeLikeWildcards),
@@ -27,7 +28,8 @@ class RoomRestaurantRepository(
             cuisineType = cuisineType?.takeIf { it.isNotBlank() },
             // The DAO takes a flag rather than the enum, so the ordering stays a
             // bound parameter instead of SQL assembled from a value.
-            sortByRating = sort == RestaurantSort.RATING
+            sortByRating = sort == RestaurantSort.RATING,
+            visited = visited
         )
 
     override fun observeCuisineTypes(): Flow<List<String>> = dao.observeCuisineTypes()

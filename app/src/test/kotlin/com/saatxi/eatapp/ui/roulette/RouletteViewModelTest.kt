@@ -162,7 +162,8 @@ private class FakeRestaurantRepository : RestaurantRepository {
         query: String?,
         minRating: Int?,
         cuisineType: String?,
-        sort: RestaurantSort
+        sort: RestaurantSort,
+        visited: Boolean?
     ): Flow<List<Restaurant>> {
         lastMinRating = minRating
         return restaurants

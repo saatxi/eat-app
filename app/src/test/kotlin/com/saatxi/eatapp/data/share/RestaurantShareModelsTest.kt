@@ -13,6 +13,7 @@ class RestaurantShareModelsTest {
         address: String? = "Rambla 1",
         rating: Int = 4,
         priceRange: Int = 2,
+        visited: Boolean = true,
         website: String? = null,
         instagram: String? = null
     ) = Restaurant(
@@ -22,6 +23,7 @@ class RestaurantShareModelsTest {
         address = address,
         rating = rating,
         priceRange = priceRange,
+        visited = visited,
         website = website,
         instagram = instagram
     )
@@ -39,6 +41,21 @@ class RestaurantShareModelsTest {
         assertEquals(2, export.priceRange)
         assertEquals("https://example.com", export.website)
         assertEquals("cal_ferran", export.instagram)
+    }
+
+    @Test
+    fun `toExport carries a want-to-try restaurant's visited flag through as false`() {
+        val export = restaurant(visited = false).toExport()
+
+        assertEquals(false, export.visited)
+    }
+
+    @Test
+    fun `visited defaults to true when a share file predates the field`() {
+        // Mirrors decoding an older export whose JSON has no "visited" key at all.
+        val export = RestaurantExport(name = "Cal Ferran", cuisineType = "mediterranean", rating = 4, priceRange = 2)
+
+        assertEquals(true, export.visited)
     }
 
     // --- RestaurantExport -> Restaurant, which is where untrusted data is validated ---
@@ -113,5 +130,14 @@ class RestaurantShareModelsTest {
         val export = RestaurantExport(name = "A", cuisineType = "bar", address = "   ", rating = 3, priceRange = 1)
 
         assertNull(export.toRestaurantOrNull()?.address)
+    }
+
+    @Test
+    fun `toRestaurantOrNull carries the visited flag through, both ways`() {
+        val wantToTry = RestaurantExport(name = "A", cuisineType = "bar", rating = 3, priceRange = 1, visited = false)
+        val visited = RestaurantExport(name = "B", cuisineType = "bar", rating = 3, priceRange = 1, visited = true)
+
+        assertEquals(false, wantToTry.toRestaurantOrNull()?.visited)
+        assertEquals(true, visited.toRestaurantOrNull()?.visited)
     }
 }

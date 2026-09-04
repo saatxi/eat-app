@@ -54,6 +54,30 @@ class RestaurantEditViewModelTest {
         assertFalse(state.isLoading)
         assertEquals("", state.name)
         assertNull(state.cuisineType)
+        assertTrue(state.visited)
+    }
+
+    @Test
+    fun `onVisitedChange updates the state`() = runTest {
+        val viewModel = RestaurantEditViewModel(repository, restaurantId = null)
+        observeState(viewModel)
+
+        viewModel.onVisitedChange(false)
+
+        assertFalse(viewModel.uiState.value.visited)
+    }
+
+    @Test
+    fun `saving a want-to-try restaurant carries visited false through to the insert`() = runTest {
+        val viewModel = RestaurantEditViewModel(repository, restaurantId = null)
+        observeState(viewModel)
+        viewModel.onNameChange("Cal Ferran")
+        viewModel.onCuisineChange("mediterranean")
+        viewModel.onVisitedChange(false)
+
+        viewModel.onSave(onSaved = {})
+
+        assertFalse(repository.lastInserted?.visited ?: true)
     }
 
     @Test
@@ -143,7 +167,10 @@ class RestaurantEditViewModelTest {
     @Test
     fun `edit mode loads the existing restaurant into the form`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = "Rambla 1", rating = 4, priceRange = 2)
+            Restaurant(
+                id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = "Rambla 1",
+                rating = 4, priceRange = 2, visited = false
+            )
         )
         val viewModel = RestaurantEditViewModel(repository, restaurantId = 1L)
         observeState(viewModel)
@@ -153,6 +180,7 @@ class RestaurantEditViewModelTest {
         assertEquals("Cal Ferran", state.name)
         assertEquals("mediterranean", state.cuisineType)
         assertEquals(4, state.rating)
+        assertFalse(state.visited)
     }
 
     @Test
@@ -187,7 +215,8 @@ private class FakeRestaurantRepository : RestaurantRepository {
         query: String?,
         minRating: Int?,
         cuisineType: String?,
-        sort: RestaurantSort
+        sort: RestaurantSort,
+        visited: Boolean?
     ): Flow<List<Restaurant>> = restaurants
 
     override fun observeCuisineTypes(): Flow<List<String>> =

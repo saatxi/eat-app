@@ -20,6 +20,7 @@ class RestaurantUiModelTest {
         address: String? = "Carrer Gran 1",
         rating: Int = 3,
         priceRange: Int = 2,
+        visited: Boolean = true,
         website: String? = null,
         instagram: String? = null
     ) = Restaurant(
@@ -29,6 +30,7 @@ class RestaurantUiModelTest {
         address = address,
         rating = rating,
         priceRange = priceRange,
+        visited = visited,
         website = website,
         instagram = instagram
     )
@@ -88,5 +90,11 @@ class RestaurantUiModelTest {
     fun `favourite state comes from the caller, defaulting to not favourited`() {
         assertFalse(entity().toUiModel().isFavorite)
         assertTrue(entity().toUiModel(isFavorite = true).isFavorite)
+    }
+
+    @Test
+    fun `visited is carried through unchanged, both ways`() {
+        assertTrue(entity(visited = true).toUiModel().visited)
+        assertFalse(entity(visited = false).toUiModel().visited)
     }
 }

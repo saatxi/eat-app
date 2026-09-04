@@ -86,6 +86,7 @@ private val previewFavorite = RestaurantUiModel(
     address = "Plaça Santa Anna, Mataró",
     rating = 4,
     priceLabel = "$$",
+    visited = true,
     website = null,
     instagram = null,
     isFavorite = true
