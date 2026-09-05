@@ -4,6 +4,8 @@
     <string name="list_title">Mis restaurantes</string>
     <string name="list_search_placeholder">Buscar restaurantes</string>
     <string name="list_search_clear">Borrar búsqueda</string>
+    <string name="list_suggestions_title">Prueba una de estas</string>
+    <string name="list_suggestion_top_rated">Mejor valorados</string>
     <string name="list_filter_min_rating">Puntuación mínima</string>
     <string name="list_filter_cuisine">Cocina</string>
     <string name="list_filter_visit_status">Estado</string>

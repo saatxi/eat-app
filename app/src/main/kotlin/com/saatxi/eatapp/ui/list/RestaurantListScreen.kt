@@ -31,9 +31,11 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.RestaurantMenu
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
@@ -59,6 +61,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -291,7 +294,9 @@ fun RestaurantListScreen(
                             }
                         } else {
                             // Most useful precisely when a filter has narrowed the list down —
-                            // an unfiltered count adds nothing you can't already see.
+                            // an unfiltered count adds nothing you can't already see. When
+                            // browsing everything instead (F-66), that same spot offers a
+                            // starting point rather than sitting blank.
                             if (uiState.hasActiveFilter) {
                                 item(key = "result-count", contentType = "header") {
                                     Text(
@@ -302,6 +307,19 @@ fun RestaurantListScreen(
                                         ),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.animateItem()
+                                    )
+                                }
+                            } else {
+                                item(key = "suggestions", contentType = "header") {
+                                    val topCuisine = remember(uiState.restaurants) {
+                                        uiState.restaurants.groupingBy { it.cuisineKey }.eachCount().maxByOrNull { it.value }?.key
+                                    }
+                                    SearchSuggestionsRow(
+                                        topCuisine = topCuisine,
+                                        onMinRatingChange = viewModel::onMinRatingChange,
+                                        onVisitedChange = viewModel::onVisitedChange,
+                                        onCuisineChange = viewModel::onCuisineChange,
                                         modifier = Modifier.animateItem()
                                     )
                                 }
@@ -431,6 +449,76 @@ private fun FilterSection(
                         colors = chipColors
                     )
                 }
+            }
+        }
+    }
+}
+
+/** What "top rated" means for the [SearchSuggestionsRow] shortcut — same threshold [FilterSection]'s own "4+" chip offers. */
+private const val TOP_RATED_MIN_RATING = 4
+
+/**
+ * A starting point for browsing shown in place of the (otherwise blank)
+ * space above the list once there's nothing to search or filter by yet
+ * (F-66) — each chip is a shortcut into one of [FilterSection]'s own
+ * filters, not a separate feature of its own. [topCuisine] is whichever key
+ * appears most often in the restaurants currently on screen (null only when
+ * there are none, in which case this composable isn't reached at all).
+ */
+@Composable
+private fun SearchSuggestionsRow(
+    topCuisine: String?,
+    onMinRatingChange: (Int?) -> Unit,
+    onVisitedChange: (Boolean?) -> Unit,
+    onCuisineChange: (String?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val chipColors = FilterChipDefaults.filterChipColors(
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+
+    Column(modifier = modifier) {
+        Text(
+            text = stringResource(R.string.list_suggestions_title),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(top = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = false,
+                onClick = { onMinRatingChange(TOP_RATED_MIN_RATING) },
+                label = { Text(stringResource(R.string.list_suggestion_top_rated)) },
+                leadingIcon = {
+                    Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
+                },
+                colors = chipColors
+            )
+            FilterChip(
+                selected = false,
+                onClick = { onVisitedChange(false) },
+                label = { Text(stringResource(R.string.visit_status_want_to_try)) },
+                leadingIcon = {
+                    Icon(Icons.Outlined.Schedule, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
+                },
+                colors = chipColors
+            )
+            topCuisine?.let { cuisine ->
+                FilterChip(
+                    selected = false,
+                    onClick = { onCuisineChange(cuisine) },
+                    label = { Text(cuisineLabel(cuisine)) },
+                    leadingIcon = {
+                        Icon(cuisineIcon(cuisine), contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
+                    },
+                    colors = chipColors
+                )
             }
         }
     }
@@ -714,6 +802,23 @@ private fun RestaurantRowWantToTryPreview() {
     EatAppTheme {
         Surface {
             RestaurantRow(restaurant = previewWantToTryRestaurant, onClick = {}, onFavoriteToggle = {})
+        }
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun SearchSuggestionsRowPreview() {
+    EatAppTheme {
+        Surface {
+            SearchSuggestionsRow(
+                topCuisine = "japanese",
+                onMinRatingChange = {},
+                onVisitedChange = {},
+                onCuisineChange = {},
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
 }

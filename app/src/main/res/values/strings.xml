@@ -5,6 +5,8 @@
     <string name="list_title">My Restaurants</string>
     <string name="list_search_placeholder">Search restaurants</string>
     <string name="list_search_clear">Clear search</string>
+    <string name="list_suggestions_title">Try one of these</string>
+    <string name="list_suggestion_top_rated">Top rated</string>
     <string name="list_filter_min_rating">Minimum rating</string>
     <string name="list_filter_cuisine">Cuisine</string>
     <string name="list_filter_visit_status">Status</string>

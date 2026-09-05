@@ -24,10 +24,11 @@ redesign pass, started 2026-09-04 with a UI/UX audit —
 the app's theming/navigation foundations solid (see
 [visual-modernization-plan.md](visual-modernization-plan.md)) but its data
 model and a few screens thin: no photos anywhere (F-63, now done), no notes
-(F-56, now done) or tags, no visited/want-to-try status (F-55, now done), a
-flat Settings screen and an ungrouped edit form (F-62, now done), and no
-statistics screen (F-64, now done). F-59 (tags) is the largest item still
-open in this pass; everything else left is Medium impact or smaller.
+(F-56, now done) or tags (F-59, now done), no visited/want-to-try status
+(F-55, now done), a flat Settings screen and an ungrouped edit form (F-62,
+now done), and no statistics screen (F-64, now done). F-65 (swipe actions)
+is the largest item still open in this pass; everything else left is Medium
+impact or smaller.
 
 Active work on the *first* pass still lives in
 [visual-modernization-plan.md](visual-modernization-plan.md): the redesign
@@ -41,15 +42,6 @@ For what's deliberately out of scope in both, see
 ---
 
 ## Open
-
-### F-59 · No free-form tags — Medium / M
-
-"Terraza", "para grupos", "llevar niños" — recurring, user-invented labels
-that don't fit the closed cuisine vocabulary and shouldn't. **Fix:** a `Tag`
-entity plus a `RestaurantTag` join table, a chip-entry field in the edit form
-(suggesting existing tags), and small pill badges under the cuisine label in
-list/detail rows, reusing the `FilterChip` pattern already built for cuisine
-filtering.
 
 ### F-60 · Favorites has no search or filters — Medium / S
 
@@ -70,17 +62,137 @@ care around the existing `clearAndSetSemantics` collapse and the heart
 `IconToggleButton` overlaid outside the card (see F-44's accessibility
 notes).
 
-### F-66 · Empty search shows a blank box — Medium / S
-
-There's no guidance before the user types anything. **Fix:** when the search
-query is empty, show a short list of suggestions (e.g. top-rated, or a
-frequently-filtered cuisine) instead of nothing.
-
 ---
 
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-66 · Empty search shows a blank box — Done.
+
+There was no guidance before the user typed anything — with no query and no
+filter active, the space above the list where a result count sometimes shows
+just sat blank. The entry's own wording (a "short list of suggestions") left
+the exact shape of the fix a genuine open question, since this app has no
+existing search-suggestions affordance to extend and the full list already
+shows below regardless — resolved with the user before writing code: a row
+of quick-filter chips, shown only while browsing everything (no query or
+filter active), each one a shortcut into an existing filter rather than a
+new feature of its own.
+
+- **New `SearchSuggestionsRow`**
+  ([RestaurantListScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/RestaurantListScreen.kt))
+  takes over the exact spot the "N restaurants" result count already occupies
+  when a filter is active — `else` branch of the same `if
+  (uiState.hasActiveFilter)` check, so the two are mutually exclusive by
+  construction rather than by a second condition that could drift out of
+  sync. Three chips, reusing `FilterSection`'s own `FilterChip` look: "Top
+  rated" (`onMinRatingChange(4)`, the same threshold `FilterSection`'s own
+  "4+" chip already offers), "Want to try" (`onVisitedChange(false)`,
+  reusing the existing `visit_status_want_to_try` string), and whichever
+  cuisine appears most often among the restaurants currently on screen
+  (`groupingBy { it.cuisineKey }.eachCount().maxByOrNull { it.value }`,
+  computed from the same unfiltered list already in state — no new
+  repository query needed since this branch is only reached when nothing is
+  filtering the list down).
+- **Tapping a chip applies the real filter** (not a separate "suggestion"
+  state) by calling straight into `RestaurantListViewModel`'s existing
+  `onMinRatingChange`/`onVisitedChange`/`onCuisineChange` — the row then
+  disappears on the next recomposition since `hasActiveFilter` is now true,
+  same as if the user had opened the filter panel themselves.
+- Two new strings (`list_suggestions_title`, `list_suggestion_top_rated`)
+  added to `values/`, `values-es/` and `values-ca/`.
+- Verified with `./gradlew test assembleDebug lint` — 212 tests passing
+  (unchanged; this is a UI-only change with no ViewModel logic — the
+  `onXChange` methods it calls already existed and are already covered),
+  lint report unchanged (`UnusedResources` still the same pre-existing 3, no
+  new `MissingTranslation`). A new light/dark `@Preview` pair covers the row
+  itself. Not verified: how it actually looks or behaves on a real device or
+  emulator, only that it compiles and the preview is well-formed.
+
+### F-59 · No free-form tags — Done.
+
+"Terraza", "para grupos", "llevar niños" — recurring, user-invented labels
+that don't fit the closed cuisine vocabulary. Built essentially as the
+entry's own `Fix` described, plus two scope decisions made with the user
+before writing code: tags round-trip through the restaurant
+sharing/export-import feature (not deferred to a later item), and matching a
+typed name against an existing tag is case-insensitive — reusing the
+existing tag, keeping its original casing, rather than creating a
+near-duplicate.
+
+- **Room**: new `Tag` (`@ColumnInfo(collate = ColumnInfo.NOCASE)` on `name`
+  plus a unique index — a case-insensitive uniqueness constraint at the
+  SQLite level, for free) and `RestaurantTag` join entities (composite
+  primary key, both foreign keys `ON DELETE CASCADE`) — this app's first use
+  of `@ForeignKey`/a composite key anywhere. `EatAppDatabase` → version 9
+  with a real `MIGRATION_8_9`, not the destructive fallback.
+  [`TagDao`](../app/src/main/kotlin/com/saatxi/eatapp/data/local/TagDao.kt)
+  is an `abstract class`, not an `interface`: this project sets no
+  `-Xjvm-default` compiler flag, so whether `@Transaction` on a Kotlin
+  interface default method is honoured by Room's codegen is
+  toolchain-dependent — an abstract class with one concrete `@Transaction`
+  method calling its own abstract methods sidesteps that ambiguity entirely.
+- **`setTags(restaurantId, tagNames)`** replaces every link for a restaurant
+  in one transaction: finds-or-creates each tag case-insensitively,
+  de-duplicates the input up front, and both inserts use
+  `OnConflictStrategy.IGNORE` — defensive hardening so a stray
+  case-insensitive duplicate in the input is a no-op instead of a
+  `SQLiteConstraintException` aborting the whole save.
+- **Repository**: `insert`/`update` now take the tags to save and commit
+  them in the same `database.withTransaction { }` as the restaurant row
+  itself, rather than a second call the ViewModel makes afterward — the
+  latter would leave the on-device `backup.json` one write stale after every
+  tagged save (it's written from inside `insert`/`update`) and risked a
+  restaurant persisting with no tags at all if the process died between two
+  separate calls. `deleteAll()` also clears the `tags` table directly, since
+  cascade only cleans up `restaurant_tags` when restaurants are deleted.
+- **UI model**: `RestaurantUiModel`'s own doc comment is explicit that a
+  `List` property would make the whole class Compose-unstable and hurt every
+  list row's recomposition, so tags are carried as `tagsLabel: String`
+  (comma-and-space-joined, mirroring `priceLabel`) rather than a list —
+  composables split it back apart only at render time, never storing the
+  split result. Tag names are validated to never contain a comma, which is
+  what keeps that split unambiguous.
+- **Display**: a new shared
+  [`TagPillRow`](../app/src/main/kotlin/com/saatxi/eatapp/ui/common/TagPills.kt)
+  (`FlowRow` plus the same pill `Surface` shape the list row's "want to try"
+  badge already used) draws under the cuisine label on list rows (capped at
+  3 with a "+N" overflow, so row heights stay predictable across restaurants
+  with wildly different tag counts), the detail screen's Overview card
+  (unbounded), and the import review row (unbounded) — so a shared or
+  imported file's tags are visible before the user confirms anything.
+- **Edit form**: a new "Tags" section — a text field that commits a tag on
+  IME Done or a typed comma, existing-tag suggestions filtered by what's
+  typed so far (reusing the `FilterChip` and colours already built for
+  cuisine filtering), and the tags already added as removable `InputChip`s.
+- **Sharing/import**: `RestaurantExport` gained `tags: List<String> =
+  emptyList()` (the same backward-compatibility treatment `notes`/`visited`
+  got); import validates each tag the same per-row-lenient way the rest of a
+  row already is (`normalizeTagName` — trimmed, rejected outright rather
+  than silently stripped if it contains a comma or is over 40 characters),
+  dedupes case-insensitively, and caps a single row at 20 tags so one
+  malicious file can't create unbounded junk.
+- **Favorites doesn't show tag pills yet**: `FavoritesViewModel` reuses
+  `RestaurantRow` (the same one the list screen uses — see F-60) but doesn't
+  thread tags into its `toUiModel()` calls, so a restaurant's `tagsLabel`
+  defaults to empty there rather than showing anything. Left for whoever
+  picks up F-60, which already tracks bringing Favorites in line with the
+  list screen.
+- Verified with `./gradlew test assembleDebug lint` — 212 tests passing (25
+  new: DAO/repository coverage for case-insensitive find-or-create, replace
+  semantics, cascade delete and `deleteAll`; a from-scratch migration
+  regression test building the pre-migration schema by hand rather than
+  adding a `room-testing`/`MigrationTestHelper` dependency, since that needs
+  `exportSchema = true` schema JSON this project deliberately doesn't
+  generate; edit/list/detail ViewModel cases; export/import validation
+  cases), all seven `RestaurantRepository` fakes across the test suite
+  updated to the changed interface, lint report unchanged (`UnusedResources`
+  still the same pre-existing 3, no new `MissingTranslation` across the
+  three new strings × three locales). Not verified: the chip-entry field,
+  the pill badges, and the whole flow on a real device or emulator — only
+  that it compiles, the ViewModel/DAO logic is covered by tests, and the
+  migration opens a real pre-existing database cleanly.
 
 ### F-58 · Rating-and-price markup is copy-pasted three times — Done.
 
