@@ -112,6 +112,9 @@
     <string name="edit_title_add">Añadir restaurante</string>
     <string name="edit_title_edit">Editar restaurante</string>
     <string name="edit_action_save">Guardar</string>
+    <string name="edit_section_basics">Datos básicos</string>
+    <string name="edit_section_status_rating">Estado y puntuación</string>
+    <string name="edit_section_links">Enlaces</string>
     <string name="edit_field_name">Nombre</string>
     <string name="edit_field_cuisine">Cocina</string>
     <string name="edit_cuisine_placeholder">Selecciona una cocina</string>

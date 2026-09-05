@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -131,97 +133,122 @@ private fun RestaurantEditContent(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            OutlinedTextField(
-                value = uiState.name,
-                onValueChange = onNameChange,
-                label = { Text(stringResource(R.string.edit_field_name)) },
-                isError = uiState.nameError,
-                supportingText = {
-                    if (uiState.nameError) Text(stringResource(R.string.edit_error_name_required))
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                modifier = Modifier.fillMaxWidth()
-            )
+            EditSectionCard(title = stringResource(R.string.edit_section_basics)) {
+                OutlinedTextField(
+                    value = uiState.name,
+                    onValueChange = onNameChange,
+                    label = { Text(stringResource(R.string.edit_field_name)) },
+                    isError = uiState.nameError,
+                    supportingText = {
+                        if (uiState.nameError) Text(stringResource(R.string.edit_error_name_required))
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-            CuisineDropdown(
-                selected = uiState.cuisineType,
-                isError = uiState.cuisineError,
-                onSelect = onCuisineChange
-            )
+                CuisineDropdown(
+                    selected = uiState.cuisineType,
+                    isError = uiState.cuisineError,
+                    onSelect = onCuisineChange
+                )
 
-            OutlinedTextField(
-                value = uiState.address,
-                onValueChange = onAddressChange,
-                label = { Text(stringResource(R.string.edit_field_address)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                modifier = Modifier.fillMaxWidth()
-            )
+                OutlinedTextField(
+                    value = uiState.address,
+                    onValueChange = onAddressChange,
+                    label = { Text(stringResource(R.string.edit_field_address)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
-            Column {
-                Text(stringResource(R.string.edit_field_visit_status), style = MaterialTheme.typography.labelLarge)
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.padding(top = 4.dp)) {
-                    SegmentedButton(
-                        selected = !uiState.visited,
-                        onClick = { onVisitedChange(false) },
-                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                    ) {
-                        Text(stringResource(R.string.visit_status_want_to_try))
+            EditSectionCard(title = stringResource(R.string.edit_section_status_rating)) {
+                Column {
+                    Text(stringResource(R.string.edit_field_visit_status), style = MaterialTheme.typography.labelLarge)
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.padding(top = 4.dp)) {
+                        SegmentedButton(
+                            selected = !uiState.visited,
+                            onClick = { onVisitedChange(false) },
+                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                        ) {
+                            Text(stringResource(R.string.visit_status_want_to_try))
+                        }
+                        SegmentedButton(
+                            selected = uiState.visited,
+                            onClick = { onVisitedChange(true) },
+                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                        ) {
+                            Text(stringResource(R.string.visit_status_visited))
+                        }
                     }
-                    SegmentedButton(
-                        selected = uiState.visited,
-                        onClick = { onVisitedChange(true) },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                    ) {
-                        Text(stringResource(R.string.visit_status_visited))
-                    }
+                }
+
+                Column {
+                    Text(stringResource(R.string.edit_field_rating), style = MaterialTheme.typography.labelLarge)
+                    RatingPicker(
+                        rating = uiState.rating,
+                        onRatingChange = onRatingChange,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
+                Column {
+                    Text(stringResource(R.string.edit_field_price_range), style = MaterialTheme.typography.labelLarge)
+                    PriceRangePicker(
+                        priceRange = uiState.priceRange,
+                        onPriceRangeChange = onPriceRangeChange,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
             }
 
-            Column {
-                Text(stringResource(R.string.edit_field_rating), style = MaterialTheme.typography.labelLarge)
-                RatingPicker(
-                    rating = uiState.rating,
-                    onRatingChange = onRatingChange,
-                    modifier = Modifier.padding(top = 4.dp)
+            EditSectionCard(title = stringResource(R.string.edit_section_links)) {
+                OutlinedTextField(
+                    value = uiState.website,
+                    onValueChange = onWebsiteChange,
+                    label = { Text(stringResource(R.string.edit_field_website)) },
+                    isError = uiState.websiteError,
+                    supportingText = {
+                        if (uiState.websiteError) Text(stringResource(R.string.edit_error_website_invalid))
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = uiState.instagram,
+                    onValueChange = onInstagramChange,
+                    label = { Text(stringResource(R.string.edit_field_instagram)) },
+                    isError = uiState.instagramError,
+                    supportingText = {
+                        if (uiState.instagramError) Text(stringResource(R.string.edit_error_instagram_invalid))
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
+        }
+    }
+}
 
-            Column {
-                Text(stringResource(R.string.edit_field_price_range), style = MaterialTheme.typography.labelLarge)
-                PriceRangePicker(
-                    priceRange = uiState.priceRange,
-                    onPriceRangeChange = onPriceRangeChange,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-
-            OutlinedTextField(
-                value = uiState.website,
-                onValueChange = onWebsiteChange,
-                label = { Text(stringResource(R.string.edit_field_website)) },
-                isError = uiState.websiteError,
-                supportingText = {
-                    if (uiState.websiteError) Text(stringResource(R.string.edit_error_website_invalid))
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = uiState.instagram,
-                onValueChange = onInstagramChange,
-                label = { Text(stringResource(R.string.edit_field_instagram)) },
-                isError = uiState.instagramError,
-                supportingText = {
-                    if (uiState.instagramError) Text(stringResource(R.string.edit_error_instagram_invalid))
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+/**
+ * One titled card grouping a handful of related fields — the same
+ * [Card] + title-then-content shape [RestaurantDetailScreen] uses for its own
+ * Overview / Rating and price / Links cards, so the form now reads as the
+ * same kind of document as the screen that shows it back.
+ */
+@Composable
+private fun EditSectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            content()
         }
     }
 }

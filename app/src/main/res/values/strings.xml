@@ -114,6 +114,9 @@
     <string name="edit_title_add">Add restaurant</string>
     <string name="edit_title_edit">Edit restaurant</string>
     <string name="edit_action_save">Save</string>
+    <string name="edit_section_basics">Basics</string>
+    <string name="edit_section_status_rating">Status and rating</string>
+    <string name="edit_section_links">Links</string>
     <string name="edit_field_name">Name</string>
     <string name="edit_field_cuisine">Cuisine</string>
     <string name="edit_cuisine_placeholder">Select a cuisine</string>

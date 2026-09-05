@@ -25,8 +25,8 @@ the app's theming/navigation foundations solid (see
 [visual-modernization-plan.md](visual-modernization-plan.md)) but its data
 model and a few screens thin: no photos anywhere, no notes or tags, no
 visited/want-to-try status (F-55, now done), a flat Settings screen and an
-ungrouped edit form. F-63 (photos) and F-64 (a stats screen) are the two
-highest-impact items still open.
+ungrouped edit form (F-62, now done). F-63 (photos) and F-64 (a stats screen)
+are the two highest-impact items still open.
 
 Active work on the *first* pass still lives in
 [visual-modernization-plan.md](visual-modernization-plan.md): the redesign
@@ -81,14 +81,6 @@ entity plus a `RestaurantTag` join table, a chip-entry field in the edit form
 (suggesting existing tags), and small pill badges under the cuisine label in
 list/detail rows, reusing the `FilterChip` pattern already built for cuisine
 filtering.
-
-### F-62 · Edit/add form is one long ungrouped column — Medium / S
-
-Eight fields in a single scrolling `Column` with no sectioning, unlike the
-detail screen's card-grouped layout. **Fix:** split into "Basics" (name,
-cuisine, address), "Status and rating" (visited toggle, rating, price) and
-"Links" (website, instagram) cards, mirroring `RestaurantDetailScreen`'s
-Overview / Rating and price / Links split.
 
 ### F-57 · The cuisine dropdown in the edit form has no icons — Low / XS
 
@@ -157,6 +149,38 @@ kept for when the rest of the list is done.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-62 · Edit/add form is one long ungrouped column — Done.
+
+[RestaurantEditScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/edit/RestaurantEditScreen.kt)'s
+eight fields were one flat `Column` with no sectioning, unlike the detail
+screen's card-grouped layout right next to it in the navigation graph. Split
+into the three cards the entry named, each built from a new private
+`EditSectionCard(title, content)` helper — a `Card` with a `titleMedium`
+heading followed by its fields, `verticalArrangement = Arrangement.spacedBy(16.dp)`
+inside — which is the same title-then-content shape
+`RestaurantDetailScreen`'s Overview / Rating and price / Links cards already
+use, so the form now reads as the same kind of document as the screen that
+shows it back:
+
+- **Basics** — name, cuisine dropdown, address.
+- **Status and rating** — the visited/want-to-try segmented row, the star
+  rating picker, the price-range picker. Unchanged from the detail screen's
+  own grouping is that this pairs status with rating/price rather than with
+  Basics, matching the entry's own split rather than the detail screen's
+  (which folds visited status into Overview instead) — the two screens don't
+  need to group identically, just to both read as sectioned.
+- **Links** — website, Instagram handle.
+
+No field's own behaviour, validation or error text changed — this was purely
+`RestaurantEditContent`'s layout. Three new strings
+(`edit_section_basics`/`_status_rating`/`_links`) added to `values/`,
+`values-es/` and `values-ca/`, alongside the other `edit_*` strings.
+- Verified with `./gradlew test assembleDebug lint` — all green, no new lint
+  findings (`UnusedResources` still at 3, the same pre-existing set
+  `action_ok`/`detail_link_website`/`detail_link_instagram` the F-51 entry
+  already named — the three new section-title strings are consumed
+  immediately by the cards that use them).
 
 ### F-55 · No visited / want-to-try status — Done.
 

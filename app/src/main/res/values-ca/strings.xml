@@ -110,6 +110,9 @@
     <string name="edit_title_add">Afegeix un restaurant</string>
     <string name="edit_title_edit">Edita el restaurant</string>
     <string name="edit_action_save">Desa</string>
+    <string name="edit_section_basics">Dades bàsiques</string>
+    <string name="edit_section_status_rating">Estat i puntuació</string>
+    <string name="edit_section_links">Enllaços</string>
     <string name="edit_field_name">Nom</string>
     <string name="edit_field_cuisine">Cuina</string>
     <string name="edit_cuisine_placeholder">Selecciona una cuina</string>
