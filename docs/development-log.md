@@ -5,7 +5,7 @@ design-history record of the two redesign passes that shaped it, so none of
 it gets lost between sessions. The backlog below is a menu, not a plan —
 nothing in it is committed to, and items can be picked off in any order.
 
-Every backlog entry has a stable ID (`F-01`…`F-73`). Use those in commit
+Every backlog entry has a stable ID (`F-01`…`F-74`). Use those in commit
 messages and when asking for something to be worked on; they never get
 renumbered, and items that get done stay in the list marked **Done** rather
 than being deleted, so the file keeps a record of what changed and why.
@@ -52,6 +52,34 @@ Nothing open right now — see **Done** below.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-74 · Roulette can't filter by visited status — Done.
+
+Requested directly, not from the redesign audit: the list screen has had a
+want-to-try/visited filter-chip pair since F-55, but Roulette's own light
+filters (rating, favourites-only) never grew the same pair, even though
+`RestaurantRepository.observeFiltered` already takes a `visited` parameter.
+
+- **`RouletteViewModel`**: `minRating`, `favoritesOnly` and the new `visited`
+  are now grouped into one private `RouletteFilters` state (a single
+  `MutableStateFlow`), the same reason `RestaurantListViewModel`'s own
+  `RestaurantFilters` exists — adding `visited` as a fourth standalone flow to
+  the existing `combine()` calls would have pushed either one out of
+  kotlinx.coroutines' typed 5-flow overload and into the untyped vararg one.
+  New `onVisitedChange(visited: Boolean?)`, threaded into
+  `repository.observeFiltered(..., visited = f.visited)` the same way
+  `minRating` already was.
+- **`RouletteScreen`**: two more `FilterChip`s in the same `FlowRow`, reusing
+  `visit_status_want_to_try`/`visit_status_visited` — no new strings — with
+  the identical toggle-to-clear behaviour the list screen's own pair uses
+  (`onVisitedChange(if (visited == false) null else false)`, and the
+  opposite for the other chip).
+- Verified with `./gradlew test assembleDebug lint` — 269 tests passing (2
+  new: the repository query receiving `visited`, and that it doesn't disturb
+  `minRating`/`favoritesOnly`), lint clean. Not verified: how the two new
+  chips actually look wrapped in the `FlowRow` on a real device, only that
+  they compile and the existing/new tests pass — no emulator or physical
+  device was available to check.
 
 ### F-70 · No test coverage for the import confirmation path — Done.
 

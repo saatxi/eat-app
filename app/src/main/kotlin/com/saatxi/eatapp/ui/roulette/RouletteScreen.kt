@@ -95,7 +95,9 @@ fun RouletteScreen(
                 minRating = uiState.minRating,
                 onMinRatingChange = viewModel::onMinRatingChange,
                 favoritesOnly = uiState.favoritesOnly,
-                onFavoritesOnlyChange = viewModel::onFavoritesOnlyChange
+                onFavoritesOnlyChange = viewModel::onFavoritesOnlyChange,
+                visited = uiState.visited,
+                onVisitedChange = viewModel::onVisitedChange
             )
 
             Box(
@@ -176,7 +178,9 @@ private fun RouletteFilters(
     minRating: Int?,
     onMinRatingChange: (Int?) -> Unit,
     favoritesOnly: Boolean,
-    onFavoritesOnlyChange: (Boolean) -> Unit
+    onFavoritesOnlyChange: (Boolean) -> Unit,
+    visited: Boolean?,
+    onVisitedChange: (Boolean?) -> Unit
 ) {
     val chipColors = FilterChipDefaults.filterChipColors(
         containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -201,6 +205,18 @@ private fun RouletteFilters(
                 colors = chipColors
             )
         }
+        FilterChip(
+            selected = visited == false,
+            onClick = { onVisitedChange(if (visited == false) null else false) },
+            label = { Text(stringResource(R.string.visit_status_want_to_try)) },
+            colors = chipColors
+        )
+        FilterChip(
+            selected = visited == true,
+            onClick = { onVisitedChange(if (visited == true) null else true) },
+            label = { Text(stringResource(R.string.visit_status_visited)) },
+            colors = chipColors
+        )
         FilterChip(
             selected = favoritesOnly,
             onClick = { onFavoritesOnlyChange(!favoritesOnly) },

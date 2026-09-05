@@ -15,11 +15,20 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlin.random.Random
+
+/** Grouped into one state so a `combine()` adding [visited] doesn't grow past kotlinx.coroutines' typed 5-flow overload. */
+private data class RouletteFilters(
+    val minRating: Int? = null,
+    val favoritesOnly: Boolean = false,
+    val visited: Boolean? = null
+)
 
 data class RouletteUiState(
     val minRating: Int? = null,
     val favoritesOnly: Boolean = false,
+    val visited: Boolean? = null,
     val candidates: List<RestaurantUiModel> = emptyList(),
     val picked: RestaurantUiModel? = null,
     // Bumped on every pick(), so the UI can retrigger its shuffle animation even
@@ -42,31 +51,32 @@ class RouletteViewModel(
     private val random: Random = Random.Default
 ) : ViewModel() {
 
-    private val minRating = MutableStateFlow<Int?>(null)
-    private val favoritesOnly = MutableStateFlow(false)
+    private val filters = MutableStateFlow(RouletteFilters())
     private val picked = MutableStateFlow<RestaurantUiModel?>(null)
     private val pickCount = MutableStateFlow(0)
 
     private val candidates: Flow<List<RestaurantUiModel>> = combine(
-        minRating.flatMapLatest { rating -> repository.observeFiltered(query = null, minRating = rating, cuisineType = null) },
+        filters.flatMapLatest { f ->
+            repository.observeFiltered(query = null, minRating = f.minRating, cuisineType = null, visited = f.visited)
+        },
         preferencesRepository.preferences.map { it.favoriteIds },
-        favoritesOnly
-    ) { restaurants, favoriteIds, onlyFavorites ->
+        filters
+    ) { restaurants, favoriteIds, f ->
         restaurants
-            .filter { !onlyFavorites || it.id in favoriteIds }
+            .filter { !f.favoritesOnly || it.id in favoriteIds }
             .map { it.toUiModel(isFavorite = it.id in favoriteIds) }
     }
 
     val uiState: StateFlow<RouletteUiState> = combine(
-        minRating,
-        favoritesOnly,
+        filters,
         candidates,
         picked,
         pickCount
-    ) { rating, onlyFavorites, candidateList, pickedRestaurant, count ->
+    ) { f, candidateList, pickedRestaurant, count ->
         RouletteUiState(
-            minRating = rating,
-            favoritesOnly = onlyFavorites,
+            minRating = f.minRating,
+            favoritesOnly = f.favoritesOnly,
+            visited = f.visited,
             candidates = candidateList,
             // Cleared once the filters move it out of the candidate pool, so the
             // screen falls back to the "pick one" prompt instead of showing a
@@ -82,11 +92,15 @@ class RouletteViewModel(
     )
 
     fun onMinRatingChange(rating: Int?) {
-        minRating.value = rating
+        filters.update { it.copy(minRating = rating) }
     }
 
     fun onFavoritesOnlyChange(favoritesOnly: Boolean) {
-        this.favoritesOnly.value = favoritesOnly
+        filters.update { it.copy(favoritesOnly = favoritesOnly) }
+    }
+
+    fun onVisitedChange(visited: Boolean?) {
+        filters.update { it.copy(visited = visited) }
     }
 
     fun pick() {

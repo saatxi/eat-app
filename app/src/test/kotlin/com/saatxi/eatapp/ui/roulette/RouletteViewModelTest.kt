@@ -116,6 +116,31 @@ class RouletteViewModelTest {
     }
 
     @Test
+    fun `visited narrows the candidates via the repository query`() = runTest {
+        val viewModel = viewModel()
+        observeState(viewModel)
+
+        viewModel.onVisitedChange(false)
+
+        assertEquals(false, repository.lastVisited)
+        assertEquals(false, viewModel.uiState.value.visited)
+    }
+
+    @Test
+    fun `visited only affects the repository query, not favoritesOnly or minRating`() = runTest {
+        val viewModel = viewModel()
+        observeState(viewModel)
+        viewModel.onMinRatingChange(3)
+        viewModel.onFavoritesOnlyChange(true)
+
+        viewModel.onVisitedChange(true)
+
+        assertEquals(3, viewModel.uiState.value.minRating)
+        assertTrue(viewModel.uiState.value.favoritesOnly)
+        assertEquals(true, viewModel.uiState.value.visited)
+    }
+
+    @Test
     fun `favoritesOnly narrows the candidates to favourited ids`() = runTest {
         val viewModel = viewModel()
         observeState(viewModel)
@@ -159,6 +184,8 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     var lastMinRating: Int? = null
         private set
+    var lastVisited: Boolean? = null
+        private set
 
     override fun observeFiltered(
         query: String?,
@@ -168,6 +195,7 @@ private class FakeRestaurantRepository : RestaurantRepository {
         visited: Boolean?
     ): Flow<List<Restaurant>> {
         lastMinRating = minRating
+        lastVisited = visited
         return restaurants
     }
 
