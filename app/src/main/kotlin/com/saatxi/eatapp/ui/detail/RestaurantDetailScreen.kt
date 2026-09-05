@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -36,7 +37,6 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -84,6 +84,7 @@ import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
 import com.saatxi.eatapp.ui.common.shareRestaurants
+import com.saatxi.eatapp.ui.common.shimmerPlaceholder
 import com.saatxi.eatapp.ui.model.MAX_RATING
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
@@ -178,14 +179,9 @@ private fun RestaurantDetailContent(
     ) { padding ->
         when (val state = uiState) {
             DetailUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                // Shape-matching skeleton cards (F-67) instead of a centred spinner —
+                // reads as faster even though the actual wait is identical.
+                RestaurantDetailSkeleton(modifier = Modifier.fillMaxSize().padding(padding))
             }
 
             DetailUiState.NotFound -> {
@@ -354,6 +350,42 @@ private fun RestaurantDetailContent(
                             onOpen = { url -> context.openUri(url) }
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Stands in for the loaded screen's Overview and Rating-and-price cards while
+ * the restaurant is still being fetched (F-67) — same two-card shape, pulsing
+ * placeholders instead of real text, so the wait reads as loading rather than
+ * as a blank page.
+ */
+@Composable
+private fun RestaurantDetailSkeleton(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .padding(horizontal = 16.dp)
+            .padding(top = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Box(modifier = Modifier.fillMaxWidth(0.4f).height(20.dp).shimmerPlaceholder())
+                Box(modifier = Modifier.padding(top = 16.dp).fillMaxWidth(0.75f).height(16.dp).shimmerPlaceholder())
+                Box(modifier = Modifier.padding(top = 10.dp).fillMaxWidth(0.55f).height(16.dp).shimmerPlaceholder())
+            }
+        }
+        Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Box(modifier = Modifier.fillMaxWidth(0.35f).height(20.dp).shimmerPlaceholder())
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(modifier = Modifier.width(110.dp).height(18.dp).shimmerPlaceholder())
+                    Box(modifier = Modifier.width(36.dp).height(20.dp).shimmerPlaceholder())
                 }
             }
         }
@@ -589,5 +621,14 @@ private val previewRestaurant = RestaurantUiModel(
 private fun RestaurantDetailScreenPreview() {
     EatAppTheme {
         RestaurantDetailContent(uiState = DetailUiState.Loaded(previewRestaurant), onBack = {})
+    }
+}
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun RestaurantDetailScreenLoadingPreview() {
+    EatAppTheme {
+        RestaurantDetailContent(uiState = DetailUiState.Loading, onBack = {})
     }
 }

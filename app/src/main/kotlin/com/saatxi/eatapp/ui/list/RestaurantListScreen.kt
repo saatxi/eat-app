@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -37,7 +39,6 @@ import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -90,6 +91,8 @@ import com.saatxi.eatapp.ui.common.cuisineBadgeTransition
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
+import com.saatxi.eatapp.ui.common.shimmerCircle
+import com.saatxi.eatapp.ui.common.shimmerPlaceholder
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
 
@@ -245,9 +248,14 @@ fun RestaurantListScreen(
                 if (uiState.isInitialLoad) {
                     // The database has not emitted yet, so an empty list here means
                     // "not loaded", not "nothing to show" — painting the empty state
-                    // would flash it for a frame on every cold start.
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    // would flash it for a frame on every cold start. Shape-matching
+                    // skeleton rows (F-67) read as faster than a centred spinner even
+                    // though the actual wait is identical.
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        repeat(SKELETON_ROW_COUNT) { RestaurantRowSkeleton() }
                     }
                 } else if (uiState.restaurants.isEmpty() && !uiState.hasActiveFilter) {
                     // Nothing has ever been added: there are no filters to offer yet.
@@ -630,6 +638,37 @@ internal fun RestaurantRow(
     }
 }
 
+/** How many skeleton rows fill the initial-load state — enough to fill a typical phone screen. */
+private const val SKELETON_ROW_COUNT = 6
+
+/**
+ * Stands in for [RestaurantRow] while the first load is still pending (F-67):
+ * the same badge-plus-two-lines-plus-trailing-column shape, pulsing instead
+ * of drawing real content, so the list reads as loading rather than empty.
+ */
+@Composable
+private fun RestaurantRowSkeleton() {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.size(48.dp).shimmerCircle())
+
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                Box(modifier = Modifier.fillMaxWidth(0.55f).height(18.dp).shimmerPlaceholder())
+                Box(modifier = Modifier.padding(top = 8.dp).fillMaxWidth(0.35f).height(14.dp).shimmerPlaceholder())
+                Box(modifier = Modifier.padding(top = 8.dp).fillMaxWidth(0.7f).height(14.dp).shimmerPlaceholder())
+            }
+
+            Column(horizontalAlignment = Alignment.End) {
+                Box(modifier = Modifier.width(44.dp).height(14.dp).shimmerPlaceholder())
+                Box(modifier = Modifier.padding(top = 8.dp).width(28.dp).height(18.dp).shimmerPlaceholder())
+            }
+        }
+    }
+}
+
 private val previewRestaurant = RestaurantUiModel(
     id = 1,
     name = "Cal Ferran",
@@ -652,6 +691,17 @@ private val previewWantToTryRestaurant = previewRestaurant.copy(
     visited = false,
     isFavorite = false
 )
+
+@Preview(name = "Light")
+@Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun RestaurantRowSkeletonPreview() {
+    EatAppTheme {
+        Surface {
+            RestaurantRowSkeleton()
+        }
+    }
+}
 
 @Preview(name = "Light")
 @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
