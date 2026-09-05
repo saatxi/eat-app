@@ -66,6 +66,7 @@ import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.Cuisine
 import com.saatxi.eatapp.ui.AppViewModelProvider
+import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
 
@@ -375,6 +376,9 @@ private fun CuisineDropdown(
             Cuisine.entries.forEach { cuisine ->
                 DropdownMenuItem(
                     text = { Text(cuisineLabel(cuisine.key)) },
+                    leadingIcon = {
+                        Icon(cuisineIcon(cuisine.key), contentDescription = null)
+                    },
                     onClick = {
                         onSelect(cuisine.key)
                         expanded = false

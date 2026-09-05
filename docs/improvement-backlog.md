@@ -67,13 +67,6 @@ entity plus a `RestaurantTag` join table, a chip-entry field in the edit form
 list/detail rows, reusing the `FilterChip` pattern already built for cuisine
 filtering.
 
-### F-57 · The cuisine dropdown in the edit form has no icons — Low / XS
-
-The list screen's cuisine filter chips each show the cuisine's icon
-(`cuisineIcon(key)`); the edit form's `ExposedDropdownMenu` for the same
-24-entry vocabulary shows plain text only. **Fix:** add a `leadingIcon` to
-each `DropdownMenuItem` in `CuisineDropdown`, reusing the same lookup.
-
 ### F-58 · Rating-and-price markup is copy-pasted three times — Medium / S
 
 The stars-plus-"N/5"-plus-price-pill block is hand-duplicated across
@@ -134,6 +127,18 @@ kept for when the rest of the list is done.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-57 · The cuisine dropdown in the edit form has no icons — Done.
+
+The list screen's cuisine filter chips each already showed the cuisine's
+icon (`cuisineIcon(key)`); `CuisineDropdown`'s `DropdownMenuItem`s
+([RestaurantEditScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/edit/RestaurantEditScreen.kt))
+now do too — a `leadingIcon` calling the exact same `cuisineIcon` lookup,
+one line per entry across the 24-key vocabulary. The closed field itself
+(the `OutlinedTextField` showing the current selection) was left as
+text-only, matching the narrow scope the entry actually asked for.
+- Verified with `./gradlew test assembleDebug lint` — all green, no new
+  lint findings.
 
 ### F-63 · No restaurant photos — Done.
 
