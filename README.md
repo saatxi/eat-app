@@ -1,7 +1,7 @@
 # EatApp
 
 An Android app to browse restaurants you've visited — name, cuisine type,
-address, rating, price range and an optional photo.
+address, rating, price range, an optional photo and your own notes.
 
 ## Features
 
@@ -10,8 +10,8 @@ address, rating, price range and an optional photo.
   cuisine type
 - Sort the list by name or by rating (highest first), from the app bar
 - Add, edit and delete your own restaurants from the phone, including a
-  photo and links to the restaurant's website and Instagram when you
-  provide them
+  photo, a free-text note, and links to the restaurant's website and
+  Instagram when you provide them
 - Share one restaurant, or your whole list, with anyone through Android's
   normal share sheet (WhatsApp, Gmail, Drive...) — no account or server
   involved
@@ -26,8 +26,8 @@ The app installs with an empty list — there is no bundled or downloaded
 dataset. Every restaurant is entered by hand, from the phone:
 
 - Tap the **+** button on the list screen to add a restaurant: name, cuisine,
-  address, rating, price range, an optional photo, and the two optional
-  links below.
+  address, rating, price range, an optional photo, a free-text note ("ask
+  for the burrata", "go on a weekday"), and the two optional links below.
 - The photo comes from the system Photo Picker — no storage permission
   needed. The app copies it into its own private storage and shows it in
   place of the cuisine badge on the list row, the roulette result, and a

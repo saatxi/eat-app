@@ -58,6 +58,7 @@
     <string name="rating_format">%1$d/5</string>
     <string name="detail_section_overview">Overview</string>
     <string name="detail_section_rating">Rating and price</string>
+    <string name="detail_section_notes">Notes</string>
 
     <!-- Visited vs. want-to-try, shared across the list filter, the row badge,
          the detail overview and the edit form's toggle. -->
@@ -125,6 +126,7 @@
     <string name="edit_field_cuisine">Cuisine</string>
     <string name="edit_cuisine_placeholder">Select a cuisine</string>
     <string name="edit_field_address">Address (optional)</string>
+    <string name="edit_field_notes">Notes (optional)</string>
     <string name="edit_field_visit_status">Status</string>
     <string name="edit_field_rating">Rating</string>
     <string name="edit_field_price_range">Price range</string>

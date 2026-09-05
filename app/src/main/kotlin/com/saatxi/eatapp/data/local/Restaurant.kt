@@ -42,6 +42,13 @@ data class Restaurant(
      */
     val photoPath: String? = null,
     /**
+     * Free-text, user-written ("ask for the burrata", "go on a weekday").
+     * Deliberately not folded into [searchText] — this field is for the
+     * detail screen to show back, not another thing to search by; adding it
+     * to search is a separate decision the F-56 entry didn't ask for.
+     */
+    val notes: String? = null,
+    /**
      * Accent-stripped, lowercased concatenation of every searchable field.
      * Derived by default so it can never drift from the fields it mirrors; see
      * [buildSearchText].

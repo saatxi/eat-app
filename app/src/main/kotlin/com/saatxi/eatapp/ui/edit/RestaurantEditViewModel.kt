@@ -25,6 +25,7 @@ data class RestaurantEditUiState(
     val name: String = "",
     val cuisineType: String? = null,
     val address: String = "",
+    val notes: String = "",
     val visited: Boolean = true,
     val rating: Int = 0,
     val priceRange: Int = 0,
@@ -74,6 +75,7 @@ class RestaurantEditViewModel(
                             name = restaurant.name,
                             cuisineType = restaurant.cuisineType,
                             address = restaurant.address.orEmpty(),
+                            notes = restaurant.notes.orEmpty(),
                             visited = restaurant.visited,
                             rating = restaurant.rating,
                             priceRange = restaurant.priceRange,
@@ -99,6 +101,10 @@ class RestaurantEditViewModel(
 
     fun onAddressChange(address: String) {
         _uiState.update { it.copy(address = address) }
+    }
+
+    fun onNotesChange(notes: String) {
+        _uiState.update { it.copy(notes = notes) }
     }
 
     fun onVisitedChange(visited: Boolean) {
@@ -176,6 +182,7 @@ class RestaurantEditViewModel(
                 name = trimmedName,
                 cuisineType = state.cuisineType,
                 address = state.address.trim().takeIf { it.isNotBlank() },
+                notes = state.notes.trim().takeIf { it.isNotBlank() },
                 visited = state.visited,
                 rating = state.rating,
                 priceRange = state.priceRange,

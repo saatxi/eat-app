@@ -87,6 +87,41 @@ class RestaurantEditViewModelTest {
     }
 
     @Test
+    fun `onNotesChange updates the state`() = runTest {
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        observeState(viewModel)
+
+        viewModel.onNotesChange("Ask for the burrata")
+
+        assertEquals("Ask for the burrata", viewModel.uiState.value.notes)
+    }
+
+    @Test
+    fun `saving trims notes and treats a blank note as none`() = runTest {
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        observeState(viewModel)
+        viewModel.onNameChange("Cal Ferran")
+        viewModel.onCuisineChange("mediterranean")
+        viewModel.onNotesChange("  Ask for the burrata  ")
+
+        viewModel.onSave(onSaved = {})
+
+        assertEquals("Ask for the burrata", repository.lastInserted?.notes)
+    }
+
+    @Test
+    fun `saving without touching notes leaves them null`() = runTest {
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        observeState(viewModel)
+        viewModel.onNameChange("Cal Ferran")
+        viewModel.onCuisineChange("mediterranean")
+
+        viewModel.onSave(onSaved = {})
+
+        assertNull(repository.lastInserted?.notes)
+    }
+
+    @Test
     fun `saving without a name flags the name field and does not insert`() = runTest {
         val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
         observeState(viewModel)
@@ -175,7 +210,7 @@ class RestaurantEditViewModelTest {
         repository.restaurants.value = listOf(
             Restaurant(
                 id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = "Rambla 1",
-                rating = 4, priceRange = 2, visited = false
+                rating = 4, priceRange = 2, visited = false, notes = "Ask for the burrata"
             )
         )
         val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = 1L)
@@ -187,6 +222,7 @@ class RestaurantEditViewModelTest {
         assertEquals("mediterranean", state.cuisineType)
         assertEquals(4, state.rating)
         assertFalse(state.visited)
+        assertEquals("Ask for the burrata", state.notes)
     }
 
     @Test

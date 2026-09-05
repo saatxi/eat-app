@@ -23,7 +23,8 @@ class RestaurantUiModelTest {
         visited: Boolean = true,
         website: String? = null,
         instagram: String? = null,
-        photoPath: String? = null
+        photoPath: String? = null,
+        notes: String? = null
     ) = Restaurant(
         id = id,
         name = name,
@@ -34,7 +35,8 @@ class RestaurantUiModelTest {
         visited = visited,
         website = website,
         instagram = instagram,
-        photoPath = photoPath
+        photoPath = photoPath,
+        notes = notes
     )
 
     @Test
@@ -74,6 +76,14 @@ class RestaurantUiModelTest {
 
         assertEquals("https://example.com", model.website)
         assertEquals("cal_ferran", model.instagram)
+    }
+
+    /** Drives whether the detail screen draws a Notes card at all. */
+    @Test
+    fun `notes are carried through, with a blank one treated as none`() {
+        assertNull(entity().toUiModel().notes)
+        assertNull(entity(notes = "   ").toUiModel().notes)
+        assertEquals("Ask for the burrata", entity(notes = "Ask for the burrata").toUiModel().notes)
     }
 
     /** Drives whether the detail screen draws a Links card at all. */

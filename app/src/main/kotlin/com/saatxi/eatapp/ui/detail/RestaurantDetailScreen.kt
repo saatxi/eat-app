@@ -67,6 +67,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -342,6 +343,10 @@ private fun RestaurantDetailContent(
                         }
                     }
 
+                    current.notes?.let { notes ->
+                        NotesCard(notes = notes)
+                    }
+
                     if (current.hasLinks) {
                         LinksCard(
                             website = current.website,
@@ -351,6 +356,24 @@ private fun RestaurantDetailContent(
                     }
                 }
             }
+        }
+    }
+}
+
+/** The user's own free-text note — drawn only when there is one. */
+@Composable
+private fun NotesCard(notes: String) {
+    Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.detail_section_notes),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            Text(
+                text = notes,
+                style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic)
+            )
         }
     }
 }
@@ -420,7 +443,8 @@ private fun RestaurantUiModel.toExport() = RestaurantExport(
     priceRange = priceLabel.length,
     visited = visited,
     website = website,
-    instagram = instagram
+    instagram = instagram,
+    notes = notes
 )
 
 private fun Context.openUri(uri: String) {
@@ -555,7 +579,8 @@ private val previewRestaurant = RestaurantUiModel(
     visited = true,
     website = "https://calferran.example",
     instagram = "calferran",
-    isFavorite = true
+    isFavorite = true,
+    notes = "Ask for the burrata to start. Book ahead on Fridays."
 )
 
 @Preview(name = "Light")

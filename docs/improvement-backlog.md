@@ -24,10 +24,10 @@ redesign pass, started 2026-09-04 with a UI/UX audit —
 the app's theming/navigation foundations solid (see
 [visual-modernization-plan.md](visual-modernization-plan.md)) but its data
 model and a few screens thin: no photos anywhere (F-63, now done), no notes
-or tags, no visited/want-to-try status (F-55, now done), a flat Settings
-screen and an ungrouped edit form (F-62, now done), and no statistics
-screen (F-64, now done). F-56 (notes) is now the highest-impact item still
-open.
+(F-56, now done) or tags, no visited/want-to-try status (F-55, now done), a
+flat Settings screen and an ungrouped edit form (F-62, now done), and no
+statistics screen (F-64, now done). F-59 (tags) is the largest item still
+open in this pass; everything else left is Medium impact or smaller.
 
 Active work on the *first* pass still lives in
 [visual-modernization-plan.md](visual-modernization-plan.md): the redesign
@@ -41,15 +41,6 @@ For what's deliberately out of scope in both, see
 ---
 
 ## Open
-
-### F-56 · No free-text notes per restaurant — High / S
-
-The data model has no field for "ask for the burrata" or "go on a weekday" —
-the kind of detail that's more useful than most of what's already stored.
-**Fix:** add `notes: String?` to `Restaurant`, a multiline
-`OutlinedTextField` in the edit form (after Address), a card on the detail
-screen, and the matching `RestaurantExport` field with the same
-default-on-missing backward-compatibility treatment F-55 used for `visited`.
 
 ### F-59 · No free-form tags — Medium / M
 
@@ -113,6 +104,43 @@ kept for when the rest of the list is done.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-56 · No free-text notes per restaurant — Done.
+
+Restaurants had nowhere to record "ask for the burrata" or "go on a
+weekday" — exactly the kind of detail more useful than most of what was
+already stored. Built as the entry's own `Fix` described, field for field:
+
+- `Restaurant.notes: String?` (nullable, no default — a real
+  `MIGRATION_7_8` adds the column, `EatAppDatabase` → version 8), with a
+  KDoc note that it's deliberately **not** folded into `searchText`: the
+  entry asked for a field to show back on the detail screen, not another
+  thing to search by, and touching `buildSearchText`/the DAO's search query
+  is a separate decision this entry didn't raise.
+- **Edit form**: a multiline `OutlinedTextField` (`minLines = 3`) right
+  after Address in the "Basics" card
+  ([RestaurantEditScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/edit/RestaurantEditScreen.kt),
+  the card F-62 built) — exactly the placement the entry asked for. No
+  validation: an empty note is just no note, the same as a blank address.
+- **Detail screen**: a new `NotesCard`, the same title-then-content `Card`
+  shape every other section on that screen uses, body text rendered
+  italic; omitted entirely when there's no note, the same
+  omit-rather-than-empty treatment the Links card already gets.
+- **`RestaurantExport`** gained `notes: String? = null` — defaults null so
+  a share file written before this field existed still imports fine, just
+  without a note, the exact backward-compatibility treatment F-55 used for
+  `visited`. Both `toExport()` (two call sites: the repository's own and
+  `RestaurantDetailScreen`'s single-restaurant share) and
+  `toRestaurantOrNull()` (trims and treats a blank note as none, same as
+  address) carry it through.
+- `RestaurantUiModel` gained `notes`, blank-to-null in the mapper, the same
+  treatment `address` gets.
+- Verified with `./gradlew test assembleDebug assembleRelease lint` — 185
+  unit tests passing (9 new: mapper carry-through, edit-form
+  change/trim/default-empty cases, export/import backward-compatibility
+  and trim/blank cases mirroring F-55's own `visited` tests, and a DAO
+  round-trip), release build unaffected, lint report unchanged
+  (`UnusedResources` still the same pre-existing 3).
 
 ### F-64 · No statistics screen — Done.
 

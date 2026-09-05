@@ -15,7 +15,8 @@ class RestaurantShareModelsTest {
         priceRange: Int = 2,
         visited: Boolean = true,
         website: String? = null,
-        instagram: String? = null
+        instagram: String? = null,
+        notes: String? = null
     ) = Restaurant(
         id = 7,
         name = name,
@@ -25,7 +26,8 @@ class RestaurantShareModelsTest {
         priceRange = priceRange,
         visited = visited,
         website = website,
-        instagram = instagram
+        instagram = instagram,
+        notes = notes
     )
 
     // --- Restaurant -> RestaurantExport --------------------------------
@@ -56,6 +58,21 @@ class RestaurantShareModelsTest {
         val export = RestaurantExport(name = "Cal Ferran", cuisineType = "mediterranean", rating = 4, priceRange = 2)
 
         assertEquals(true, export.visited)
+    }
+
+    @Test
+    fun `toExport carries notes through`() {
+        val export = restaurant(notes = "Ask for the burrata").toExport()
+
+        assertEquals("Ask for the burrata", export.notes)
+    }
+
+    @Test
+    fun `notes default to null when a share file predates the field`() {
+        // Mirrors decoding an older export whose JSON has no "notes" key at all.
+        val export = RestaurantExport(name = "Cal Ferran", cuisineType = "mediterranean", rating = 4, priceRange = 2)
+
+        assertNull(export.notes)
     }
 
     // --- RestaurantExport -> Restaurant, which is where untrusted data is validated ---
@@ -130,6 +147,23 @@ class RestaurantShareModelsTest {
         val export = RestaurantExport(name = "A", cuisineType = "bar", address = "   ", rating = 3, priceRange = 1)
 
         assertNull(export.toRestaurantOrNull()?.address)
+    }
+
+    @Test
+    fun `toRestaurantOrNull trims whitespace from notes`() {
+        val export = RestaurantExport(
+            name = "A", cuisineType = "bar", rating = 3, priceRange = 1,
+            notes = "  Ask for the burrata  "
+        )
+
+        assertEquals("Ask for the burrata", export.toRestaurantOrNull()?.notes)
+    }
+
+    @Test
+    fun `toRestaurantOrNull treats a blank note as no note`() {
+        val export = RestaurantExport(name = "A", cuisineType = "bar", rating = 3, priceRange = 1, notes = "   ")
+
+        assertNull(export.toRestaurantOrNull()?.notes)
     }
 
     @Test

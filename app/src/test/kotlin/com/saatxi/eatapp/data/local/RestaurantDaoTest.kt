@@ -341,6 +341,13 @@ class RestaurantDaoTest {
     }
 
     @Test
+    fun `notes persist through insert and read back unchanged`() = runTest {
+        val id = dao.insert(restaurant(0, "Cal Ferran").copy(notes = "Ask for the burrata"))
+
+        assertEquals("Ask for the burrata", repository.observeById(id).first()?.notes)
+    }
+
+    @Test
     fun `delete removes only the matching row`() = runTest {
         seed(restaurant(1, "Keep"), restaurant(2, "Remove"))
 

@@ -23,7 +23,11 @@ data class RestaurantExport(
     // entry no one asked for.
     val visited: Boolean = true,
     val website: String? = null,
-    val instagram: String? = null
+    val instagram: String? = null,
+    // Defaults null so a file written before this field existed still imports
+    // fine, just without a note — the same backward-compatibility treatment
+    // `visited` got in F-55.
+    val notes: String? = null
 )
 
 /**
@@ -49,7 +53,8 @@ fun Restaurant.toExport(): RestaurantExport = RestaurantExport(
     priceRange = priceRange,
     visited = visited,
     website = website,
-    instagram = instagram
+    instagram = instagram,
+    notes = notes
 )
 
 /**
@@ -74,6 +79,7 @@ fun RestaurantExport.toRestaurantOrNull(): Restaurant? {
         priceRange = priceRange,
         visited = visited,
         website = website?.let(::normalizeWebsite),
-        instagram = instagram?.let(::normalizeInstagramHandle)
+        instagram = instagram?.let(::normalizeInstagramHandle),
+        notes = notes?.trim()?.takeIf { it.isNotBlank() }
     )
 }

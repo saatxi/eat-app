@@ -54,6 +54,7 @@
     <string name="rating_format">%1$d/5</string>
     <string name="detail_section_overview">Resum</string>
     <string name="detail_section_rating">Puntuació i preu</string>
+    <string name="detail_section_notes">Notes</string>
 
     <!-- Visited vs. want-to-try, shared across the list filter, the row badge,
          the detail overview and the edit form's toggle. -->
@@ -121,6 +122,7 @@
     <string name="edit_field_cuisine">Cuina</string>
     <string name="edit_cuisine_placeholder">Selecciona una cuina</string>
     <string name="edit_field_address">Adreça (opcional)</string>
+    <string name="edit_field_notes">Notes (opcional)</string>
     <string name="edit_field_visit_status">Estat</string>
     <string name="edit_field_rating">Puntuació</string>
     <string name="edit_field_price_range">Rang de preu</string>

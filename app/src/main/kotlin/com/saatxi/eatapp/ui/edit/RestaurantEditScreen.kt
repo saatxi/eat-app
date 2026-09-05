@@ -88,6 +88,7 @@ fun RestaurantEditScreen(
         onNameChange = viewModel::onNameChange,
         onCuisineChange = viewModel::onCuisineChange,
         onAddressChange = viewModel::onAddressChange,
+        onNotesChange = viewModel::onNotesChange,
         onVisitedChange = viewModel::onVisitedChange,
         onRatingChange = viewModel::onRatingChange,
         onPriceRangeChange = viewModel::onPriceRangeChange,
@@ -108,6 +109,7 @@ private fun RestaurantEditContent(
     onNameChange: (String) -> Unit,
     onCuisineChange: (String) -> Unit,
     onAddressChange: (String) -> Unit,
+    onNotesChange: (String) -> Unit,
     onVisitedChange: (Boolean) -> Unit,
     onRatingChange: (Int) -> Unit,
     onPriceRangeChange: (Int) -> Unit,
@@ -187,6 +189,14 @@ private fun RestaurantEditContent(
                     label = { Text(stringResource(R.string.edit_field_address)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = uiState.notes,
+                    onValueChange = onNotesChange,
+                    label = { Text(stringResource(R.string.edit_field_notes)) },
+                    minLines = 3,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -441,6 +451,7 @@ private fun RestaurantEditScreenPreview() {
             onNameChange = {},
             onCuisineChange = {},
             onAddressChange = {},
+            onNotesChange = {},
             onVisitedChange = {},
             onRatingChange = {},
             onPriceRangeChange = {},
