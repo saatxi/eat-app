@@ -16,6 +16,10 @@ When asked to write a commit message or a tag message:
   overrides the usual "wrap git messages at ~72 columns" convention).
 - **Never** append a `Co-Authored-By:` trailer (or any other attribution
   trailer). This overrides Claude Code's default of co-authoring its commits.
+- Present the message inside a fenced code block (` ``` `), not as plain
+  text or bold/italic formatting — most chat UIs (including this one) render
+  a copy button on code blocks, which is what makes it easy to copy
+  straight into `git commit`.
 
 ## Tech stack & tools
 
