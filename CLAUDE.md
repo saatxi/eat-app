@@ -73,15 +73,19 @@ When asked to write a commit message or a tag message:
   that Phase 8 deferred (`ButtonGroup` itself was already replaced with the
   stable `SingleChoiceSegmentedButtonRow` and doesn't need revisiting).
   `material3Adaptive` (`1.3.0` in the same catalog, versioned independently)
-  is worth re-checking at the same time — see
+  is worth re-checking at the same time — last checked 2026-09-05, still no
+  stable release past `1.3.0` (latest overall is `1.4.0-alpha01`) — see
   [development-log.md](docs/development-log.md)'s F-73.
 - **Baseline Profile plugin pinned to a pre-release**: `androidx.baselineprofile`
   is pinned to `1.5.0-rc02` because the latest *stable* release (1.4.1)
   doesn't recognize this project's AGP 9.3.2 (see
   [development-log.md](docs/development-log.md)'s Appendix A, Phase 7, and
   F-73). Same "revisit once stable ships" shape as the material3 entry
-  above — check for a stable `1.5.x` release of
-  `androidx.baselineprofile` at the same time you check material3.
+  above — check for a stable `1.5.x` release of `androidx.baselineprofile`
+  (via `androidx.benchmark:benchmark-macro-junit4`'s `maven-metadata.xml`)
+  at the same time you check material3. Last checked 2026-09-05: `1.5.0-rc02`
+  is still the newest version on that line, and `1.4.1` is still the newest
+  stable one.
 
 ## Build & verify
 

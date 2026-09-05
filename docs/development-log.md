@@ -87,27 +87,36 @@ split candidate before it grows further.
 out per F-60) and `RestaurantRow`/`RestaurantRowSkeleton` into their own
 files under `ui/list/`.
 
-### F-73 · `material3Adaptive` and the Baseline Profile plugin are pinned off their own stable lines
-
-**Impact**: Low · **Effort**: XS to re-check, more if a bump needs migration
-
-`material3Adaptive` sits at `1.3.0` in
-[libs.versions.toml](../gradle/libs.versions.toml), versioned independently
-of `composeBom` — worth re-checking alongside any future material3 bump
-(see CLAUDE.md's "Known blockers to revisit"). Separately,
-`androidx.baselineprofile` is pinned to a pre-release, `1.5.0-rc02`, because
-the latest *stable* release (1.4.1) doesn't recognize this project's AGP
-9.3.2 (see Appendix A's Phase 7) — the same "revisit once stable ships"
-situation as the material3 entry, just not yet listed alongside it.
-
-**Fix**: now also tracked in CLAUDE.md's "Known blockers to revisit" — check
-that section next time dependencies are touched.
-
 ---
 
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-73 · `material3Adaptive` and the Baseline Profile plugin are pinned off their own stable lines — Done.
+
+Checked both against Google's Maven `maven-metadata.xml` rather than
+assuming either was still current:
+
+- **`material3Adaptive`**: latest version overall is `1.4.0-alpha01`; the
+  newest *stable* release is still `1.3.0`, already what's pinned in
+  [libs.versions.toml](../gradle/libs.versions.toml). Nothing to bump.
+- **`androidx.baselineprofile`** (via `androidx.benchmark:benchmark-macro-junit4`,
+  same `baselineProfile` version ref): the newest stable release is still
+  `1.4.1` — the one Appendix A's Phase 7 already found incompatible with
+  this project's AGP 9.3.2 — and `1.5.0-rc02`, already what's pinned, is
+  still the latest version available on the `1.5.0` line. Nothing to bump.
+
+**Fix**: no dependency change needed this time; both pins are already the
+right ones. CLAUDE.md's "Known blockers to revisit" section now carries a
+"last checked 2026-09-05" note on both the material3 and baselineprofile
+entries, so a future pass through this list doesn't have to re-derive
+which artifact each pin is even for.
+
+- Verified with `./gradlew test assembleDebug lint` — no dependency version
+  changed, so no new test/build/lint behaviour to check beyond confirming
+  the build is still green. Not verified: nothing else, since this entry
+  was a version check with no resulting code change.
 
 ### F-65 · No swipe actions on list rows — Done.
 
