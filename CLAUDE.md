@@ -26,7 +26,12 @@ When asked to write a commit message or a tag message:
 ## Tech stack & tools
 
 - **Language**: Kotlin only (no Java sources).
-- **UI**: Jetpack Compose + Material 3. No XML layouts.
+- **UI**: Jetpack Compose + Material 3. No XML layouts, with one narrow,
+  unavoidable exception: the home-screen widget's AppWidget provider XML
+  requires an `initialLayout` pointing at a real RemoteViews layout
+  (`res/layout/widget_loading.xml`) — a framework requirement, not a
+  regression. The widget's actual content (`widget/WantToTryWidget.kt`) is
+  Glance, not a View-based layout.
 - **Navigation**: Navigation Compose (`navigation/EatAppNavHost.kt`) — the
   four top-level tabs (`list`, `favorites`, `roulette`, `settings`) plus
   `detail/{restaurantId}`, `add`, `edit/{restaurantId}` and
@@ -93,6 +98,7 @@ app/src/main/kotlin/com/saatxi/eatapp/
 │   ├── repository/    # Repository abstraction over the data source
 │   └── share/         # Export/import models, JSON (de)serialization, FileProvider writer
 ├── navigation/        # NavHost and route definitions
+├── widget/            # Home-screen widget (Glance), not part of the nav graph
 └── ui/
     ├── common/        # Shared composable helpers (cuisine icon/label/tint, sharing intent)
     ├── model/         # UI models the screens draw, mapped from the entity
@@ -155,6 +161,10 @@ app/src/main/kotlin/com/saatxi/eatapp/
   `cacheDir/shared/`, the folder `RestaurantShareWriter.kt` writes to — never
   widen it to a broader path, and keep `android:exported="false"` on the
   `<provider>` entry.
+- The home-screen widget's `<receiver>` (`widget/WantToTryWidgetReceiver.kt`)
+  is `android:exported="false"`: the system delivers `APPWIDGET_UPDATE` (a
+  protected, system-only broadcast) directly, so the launcher never needs to
+  call it. It reads from Room and needs no permission; keep it that way.
 - `AndroidManifest.xml` declares no permissions at all — `INTERNET` and
   `ACCESS_NETWORK_STATE`, left over from the removed remote sync feature,
   were removed along with it, and the sharing feature needs none either

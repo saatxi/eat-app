@@ -30,4 +30,7 @@ interface RestaurantRepository {
     fun observeAverageRating(): Flow<Double?>
     fun observeCuisineCounts(): Flow<List<CuisineCount>>
     fun observePriceRangeCounts(): Flow<List<PriceRangeCount>>
+
+    /** For the home-screen widget (F-68) — see `RestaurantDao.getRandomWantToTry`. */
+    suspend fun getRandomWantToTry(): Restaurant?
 }

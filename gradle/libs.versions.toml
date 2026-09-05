@@ -17,6 +17,7 @@ graphicsShapes = "1.1.0"
 material3Adaptive = "1.3.0"
 coil = "3.6.2"
 exifinterface = "1.4.2"
+glance = "1.2.0"
 junit = "4.13.2"
 robolectric = "4.16.1"
 androidxTest = "1.7.0"
@@ -63,6 +64,10 @@ coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref 
 # writes to internal storage is baked in right-side-up, regardless of how the
 # source camera/gallery app rotated it.
 androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
+# The home-screen widget (F-68). Renders as RemoteViews under the hood, so it
+# needs no network access and stays consistent with the rest of the app being
+# local-only.
+androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 
 # Test-only
 junit = { group = "junit", name = "junit", version.ref = "junit" }

@@ -18,6 +18,9 @@ address, rating, price range, an optional photo and your own notes.
 - A statistics screen (Settings → View statistics) with the aggregate
   picture — total restaurants, visited vs. want-to-try, average rating,
   most-picked cuisines and price-tier spread — computed locally from Room
+- A home-screen widget showing a random want-to-try restaurant, with its own
+  shuffle button to get another without opening the app; tapping the
+  restaurant opens its detail screen directly
 - View the current app version from the overflow menu ("About")
 
 ## Managing your restaurants
@@ -173,6 +176,8 @@ Two things worth knowing:
 - Coil for decoding/displaying restaurant photos, and AndroidX ExifInterface
   to orient a freshly picked one correctly — both local-only, no networking
   capability
+- Glance for the home-screen widget (renders as `RemoteViews`, not a
+  Composable UI screen)
 
 ## Project structure
 
@@ -184,6 +189,7 @@ app/src/main/kotlin/com/saatxi/eatapp/
 │   ├── photo/          # Restaurant photo copy-in/decode/cleanup
 │   └── share/          # Export/import models, JSON parsing, FileProvider writer
 ├── navigation/         # NavHost and route definitions
+├── widget/             # Home-screen widget (Glance), not part of the nav graph
 └── ui/
     ├── list/           # Restaurant list screen + ViewModel
     ├── detail/         # Restaurant detail screen + ViewModel

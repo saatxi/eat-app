@@ -246,6 +246,9 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.androidx.exifinterface)
 
+    // Home-screen widget (F-68).
+    implementation(libs.androidx.glance.appwidget)
+
     // Reads app/src/main/baseline-prof.txt (once generated) at install time and
     // hands it to ART, so a release install gets AOT-compiled hot paths without
     // waiting for on-device profiling to warm up first.

@@ -84,26 +84,111 @@ There's no guidance before the user types anything. **Fix:** when the search
 query is empty, show a short list of suggestions (e.g. top-rated, or a
 frequently-filtered cuisine) instead of nothing.
 
-### F-67 · Loading states are a single generic spinner — Medium / S
-
-Every loading state across the app (list, detail, edit) is a centred
-`CircularProgressIndicator`. **Fix:** shape-matching skeleton/shimmer
-placeholders for the list and detail screens would read as faster even at
-the same actual load time. Lower priority than F-56/F-63/F-64 — loads are
-already near-instant against a local Room database.
-
-### F-68 · No home-screen widget — Medium / L
-
-A Glance widget surfacing the latest roulette pick or the next
-want-to-try restaurant, without opening the app. Needs its own investigation
-into the Glance library and widget lifecycle; lowest priority of this batch,
-kept for when the rest of the list is done.
-
 ---
 
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-68 · No home-screen widget — Done.
+
+The entry itself said this needed "its own investigation" and offered two
+contradictory contents (the latest roulette pick, or the next want-to-try
+restaurant) — genuinely different implementations, not a detail to guess at.
+Resolved with the user before writing any code:
+
+- **Content: a random want-to-try restaurant**, re-picked each time the
+  widget refreshes — not the actual last Roulette result, which only ever
+  lives in `RouletteViewModel`'s in-memory state; persisting it just so a
+  separate widget process could read it would mean a second source of
+  truth for what both screens agree is disposable UI state. A new one-shot
+  `RestaurantDao.getRandomWantToTry()` (`SELECT ... WHERE visited = 0 ORDER
+  BY RANDOM() LIMIT 1`) backs it, exposed through `RestaurantRepository`.
+- **Tap target: opens that restaurant's detail screen directly**, via an
+  explicit intent naming `MainActivity` with a `EXTRA_RESTAURANT_ID` extra —
+  `EatAppNavHost` gained a `startRestaurantId` parameter and a
+  `LaunchedEffect` that navigates to it on cold start, mirroring the
+  existing `startImportUri` mechanism exactly.
+- New `androidx.glance:glance-appwidget:1.2.0` dependency (latest stable
+  confirmed against maven-metadata.xml first) —
+  [`WantToTryWidget.kt`](../app/src/main/kotlin/com/saatxi/eatapp/widget/WantToTryWidget.kt)
+  (the `GlanceAppWidget` + its composable content + a `ShuffleAction` that
+  re-picks and re-renders in place, without leaving the widget) and
+  [`WantToTryWidgetReceiver.kt`](../app/src/main/kotlin/com/saatxi/eatapp/widget/WantToTryWidgetReceiver.kt).
+  Refreshes every 4 hours on its own
+  ([`want_to_try_widget_info.xml`](../app/src/main/res/xml/want_to_try_widget_info.xml))
+  or on demand via its own shuffle button; an empty state covers having
+  nothing marked want-to-try.
+- **The one unavoidable XML layout** in an otherwise all-Compose app: the
+  AppWidget framework requires `initialLayout` to name a real RemoteViews
+  layout ([`widget_loading.xml`](../app/src/main/res/layout/widget_loading.xml)),
+  shown for a frame before Glance's own content replaces it. `CLAUDE.md`'s
+  "no XML layouts" rule now says so explicitly, as a narrow, framework-forced
+  exception rather than a quiet regression.
+- **Colours can't follow the in-app palette choice**: Glance's content
+  colours don't have access to the app's Compose theme (`AppPalette`,
+  dynamic light/dark), so the widget uses a fixed light/dark pair lifted
+  from the default Saffron palette's tones
+  ([`colors.xml`](../app/src/main/res/values/colors.xml) +
+  `values-night/colors.xml`) rather than the user's actual selected palette
+  — a deliberate, documented simplification, not an oversight.
+- **A real, undocumented API gap hit along the way**: Glance 1.2.0's
+  `ColorProvider(@ColorRes Int)` — the whole point of which is resolving a
+  colour resource's own day/night qualifiers, exactly what's needed here —
+  is flagged by lint as `RestrictedApi` (library-internal), and no public
+  day/night-pair constructor exists in this version to use instead.
+  Suppressed with `@Suppress("RestrictedApi")` and a comment explaining why,
+  rather than worked around with fixed non-adaptive colours, which would
+  have been a real dark-mode regression to dodge a lint false alarm.
+- **The receiver is `android:exported="false"`**: `APPWIDGET_UPDATE` is a
+  protected, system-only broadcast the OS delivers directly, so the
+  launcher never calls this component itself. No new permission needed.
+- **Known, accepted limitation**: tapping the widget while the app is
+  already open pushes a second `MainActivity` instance on top (no
+  `onNewIntent`/`singleTop` handling) — the same characteristic the
+  existing "Open with EatApp" import flow already has and was never flagged
+  as a bug, so this isn't a new regression, just the same shape of rough
+  edge in a second place.
+- Verified with `./gradlew test assembleDebug assembleRelease lint` — 187
+  tests passing (2 new DAO cases for `getRandomWantToTry`), R8 still
+  minifies cleanly with Glance added (`app-release.apk` ~3.3 MB, up from
+  ~2.6 MB), lint clean after fixing a real (if trivial) `Overdraw` finding
+  on the loading layout's redundant background and confirming the two new
+  `UnusedAttribute` warnings (`targetCellWidth`/`targetCellHeight`, API 31+
+  on a 26 min) are the same benign below-minSdk pattern already accepted
+  for `enableOnBackInvokedCallback`/`localeConfig`. Not verified: actually
+  placing the widget on a home screen, the shuffle action, or the detail
+  deep-link — none of which run outside a real device or emulator.
+
+### F-67 · Loading states are a single generic spinner — Done.
+
+List and detail both showed one centred `CircularProgressIndicator` while
+loading — exactly the scope the entry's `Fix` named (edit's own loading
+spinner, mentioned only in the entry's problem statement and not its fix,
+was left alone).
+
+- New [`Shimmer.kt`](../app/src/main/kotlin/com/saatxi/eatapp/ui/common/Shimmer.kt):
+  `Modifier.shimmerPlaceholder()`/`.shimmerCircle()`, a plain
+  `rememberInfiniteTransition` fading a tinted `onSurface`-alpha box in and
+  out — no animation/shimmer library needed for something this simple.
+- **List**: a new `RestaurantRowSkeleton`
+  ([RestaurantListScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/RestaurantListScreen.kt))
+  mirrors `RestaurantRow`'s exact shape — circular badge, two text lines,
+  trailing rating/price column — six of them fill the initial-load state
+  instead of a spinner.
+- **Detail**: a new `RestaurantDetailSkeleton`
+  ([RestaurantDetailScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/detail/RestaurantDetailScreen.kt))
+  mirrors the Overview and Rating-and-price cards the loaded screen always
+  shows; the optional photo/notes/links cards aren't guessed at, since
+  whether they'll exist isn't known until the row actually loads.
+- Favorites' own initial-load state (currently blank, not even a spinner)
+  and Roulette/Settings weren't touched — outside the entry's stated scope,
+  left for a follow-up if wanted.
+- Verified with `./gradlew test assembleDebug assembleRelease lint` — 185
+  tests passing (unchanged; this is a UI-only change with no ViewModel
+  logic), lint report unchanged (`UnusedResources` still the same
+  pre-existing 3). Each skeleton got its own light/dark `@Preview` pair.
+  Not verified: how the pulse actually looks/feels on a real device.
 
 ### F-56 · No free-text notes per restaurant — Done.
 

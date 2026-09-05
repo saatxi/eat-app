@@ -193,4 +193,7 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
         throw NotImplementedError("Not used by SettingsViewModel")
+
+    override suspend fun getRandomWantToTry(): Restaurant? =
+        throw NotImplementedError("Not used by SettingsViewModel")
 }

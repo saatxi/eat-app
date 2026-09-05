@@ -133,4 +133,7 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override fun observeAverageRating(): Flow<Double?> = averageRating
     override fun observeCuisineCounts(): Flow<List<CuisineCount>> = cuisineCounts
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> = priceRangeCounts
+
+    override suspend fun getRandomWantToTry(): Restaurant? =
+        throw NotImplementedError("Not used by StatisticsViewModel")
 }

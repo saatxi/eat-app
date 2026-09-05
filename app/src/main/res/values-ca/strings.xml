@@ -201,4 +201,10 @@
     <string name="stats_price_not_set">Sense definir</string>
     <string name="stats_empty_title">Encara no hi ha res a mostrar</string>
     <string name="stats_empty_body">Afegeix un restaurant per veure aquí les teves estadístiques.</string>
+
+    <!-- Widget de pantalla d'inici (F-68). -->
+    <string name="widget_label">EatApp · Per provar</string>
+    <string name="widget_description">Mostra un restaurant a l\'atzar de la teva llista "per provar", a la pantalla d\'inici.</string>
+    <string name="widget_empty_body">Marca un restaurant com a "per provar" per veure\'l aquí.</string>
+    <string name="widget_action_shuffle">Un altre</string>
 </resources>

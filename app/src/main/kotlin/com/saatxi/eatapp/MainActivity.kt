@@ -16,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import com.saatxi.eatapp.data.prefs.UserPreferences
 import com.saatxi.eatapp.navigation.EatAppNavHost
 import com.saatxi.eatapp.ui.theme.EatAppTheme
+import com.saatxi.eatapp.widget.EXTRA_RESTAURANT_ID
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
@@ -44,13 +45,18 @@ class MainActivity : AppCompatActivity() {
         // Non-null only when the app was opened by tapping a shared restaurant
         // file from another app ("Open with EatApp") rather than the launcher.
         val importUri = intent?.takeIf { it.action == Intent.ACTION_VIEW }?.data
+        // Non-null only when opened by tapping a restaurant on the home-screen
+        // widget (see widget/WantToTryWidget.kt) — an explicit intent naming
+        // this activity directly, so it never touches the ACTION_VIEW filters
+        // the import flow above uses.
+        val startRestaurantId = intent?.getLongExtra(EXTRA_RESTAURANT_ID, -1L)?.takeIf { it > 0 }
 
         enableEdgeToEdge()
         setContent {
             val currentPreferences = preferences ?: UserPreferences.Defaults
             EatAppTheme(palette = currentPreferences.palette, themeMode = currentPreferences.themeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    EatAppNavHost(startImportUri = importUri)
+                    EatAppNavHost(startImportUri = importUri, startRestaurantId = startRestaurantId)
                 }
             }
         }

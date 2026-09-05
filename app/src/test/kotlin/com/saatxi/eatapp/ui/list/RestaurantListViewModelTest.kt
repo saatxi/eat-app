@@ -407,6 +407,9 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
         throw NotImplementedError("Not used by RestaurantListViewModel")
+
+    override suspend fun getRandomWantToTry(): Restaurant? =
+        throw NotImplementedError("Not used by RestaurantListViewModel")
 }
 
 /** Replays whatever the test pushes into [preferences] and records favourite writes. */

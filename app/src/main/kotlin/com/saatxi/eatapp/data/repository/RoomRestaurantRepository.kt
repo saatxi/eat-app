@@ -85,4 +85,6 @@ class RoomRestaurantRepository(
     override fun observeAverageRating(): Flow<Double?> = dao.observeAverageRating()
     override fun observeCuisineCounts(): Flow<List<CuisineCount>> = dao.observeCuisineCounts()
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> = dao.observePriceRangeCounts()
+
+    override suspend fun getRandomWantToTry(): Restaurant? = dao.getRandomWantToTry()
 }

@@ -78,6 +78,21 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Home-screen widget (F-68). Not exported: the system delivers the
+             APPWIDGET_UPDATE broadcast itself (a protected, system-only
+             action), the launcher never calls this receiver directly. -->
+        <receiver
+            android:name=".widget.WantToTryWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/want_to_try_widget_info" />
+        </receiver>
     </application>
 
 </manifest>

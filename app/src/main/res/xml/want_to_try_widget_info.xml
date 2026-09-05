@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Glance renders this widget's actual content at runtime (WantToTryWidget.kt);
+  this file is just the AppWidget framework boilerplate every provider needs
+  — size, resize behaviour, and how often the system nudges it to refresh on
+  its own (the F-68 "shuffle" button is what covers on-demand refreshes).
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="14400000"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:initialLayout="@layout/widget_loading"
+    android:description="@string/widget_description" />

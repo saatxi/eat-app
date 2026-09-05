@@ -204,4 +204,10 @@
     <string name="stats_price_not_set">Sin definir</string>
     <string name="stats_empty_title">Todavía no hay nada que mostrar</string>
     <string name="stats_empty_body">Añade un restaurante para ver aquí tus estadísticas.</string>
+
+    <!-- Widget de pantalla de inicio (F-68). -->
+    <string name="widget_label">EatApp · Por probar</string>
+    <string name="widget_description">Muestra un restaurante al azar de tu lista "por probar", en tu pantalla de inicio.</string>
+    <string name="widget_empty_body">Marca un restaurante como "por probar" para verlo aquí.</string>
+    <string name="widget_action_shuffle">Otro</string>
 </resources>

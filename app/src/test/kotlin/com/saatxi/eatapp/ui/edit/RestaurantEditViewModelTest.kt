@@ -346,6 +346,9 @@ internal class FakeRestaurantRepository : RestaurantRepository {
 
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
         throw NotImplementedError("Not used by RestaurantEditViewModel")
+
+    override suspend fun getRandomWantToTry(): Restaurant? =
+        throw NotImplementedError("Not used by RestaurantEditViewModel")
 }
 
 internal class FakeRestaurantPhotoStorage : RestaurantPhotoStorage {

@@ -347,6 +347,25 @@ class RestaurantDaoTest {
         assertEquals("Ask for the burrata", repository.observeById(id).first()?.notes)
     }
 
+    // --- widget query (F-68) --------------------------------------------
+
+    @Test
+    fun `getRandomWantToTry returns null when nothing is want-to-try`() = runTest {
+        seed(restaurant(1, "Been There", visited = true))
+
+        assertNull(repository.getRandomWantToTry())
+    }
+
+    @Test
+    fun `getRandomWantToTry only ever returns a want-to-try row`() = runTest {
+        seed(
+            restaurant(1, "Been There", visited = true),
+            restaurant(2, "Want To Go", visited = false)
+        )
+
+        assertEquals("Want To Go", repository.getRandomWantToTry()?.name)
+    }
+
     @Test
     fun `delete removes only the matching row`() = runTest {
         seed(restaurant(1, "Keep"), restaurant(2, "Remove"))

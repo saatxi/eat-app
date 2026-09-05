@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  For the home-screen widget only (F-68): Glance's plain content-color model
+  can't read the in-app Compose theme (palette choice, dynamic light/dark),
+  so these are a fixed light/dark pair lifted from the default Saffron
+  palette's surface/onSurface/outline/primary tones — see
+  ui/theme/palette/SaffronPalette.kt. The widget doesn't follow a
+  Garden/Indigo palette choice; a known, deliberate simplification.
+-->
+<resources>
+    <color name="widget_background">#FFFFFF</color>
+    <color name="widget_on_background">#1F1613</color>
+    <color name="widget_muted">#85736A</color>
+    <color name="widget_accent">#B4471B</color>
+</resources>

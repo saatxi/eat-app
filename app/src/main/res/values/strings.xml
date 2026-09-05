@@ -205,4 +205,10 @@
     <string name="stats_price_not_set">Not set</string>
     <string name="stats_empty_title">Nothing to show yet</string>
     <string name="stats_empty_body">Add a restaurant to see your stats here.</string>
+
+    <!-- Home-screen widget (F-68). -->
+    <string name="widget_label">EatApp · Want to try</string>
+    <string name="widget_description">Shows a random restaurant you want to try, right on your home screen.</string>
+    <string name="widget_empty_body">Mark a restaurant \"want to try\" to see it here.</string>
+    <string name="widget_action_shuffle">Shuffle</string>
 </resources>

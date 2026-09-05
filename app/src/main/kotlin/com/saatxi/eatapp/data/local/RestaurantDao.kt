@@ -98,4 +98,13 @@ interface RestaurantDao {
 
     @Query("SELECT priceRange, COUNT(*) AS count FROM restaurants GROUP BY priceRange")
     fun observePriceRangeCounts(): Flow<List<PriceRangeCount>>
+
+    /**
+     * One random want-to-try restaurant, for the home-screen widget (F-68) —
+     * a one-shot suspend query rather than a `Flow`, since the widget queries
+     * this itself each time it (re)renders instead of observing a live stream.
+     * Null when nothing is marked want-to-try.
+     */
+    @Query("SELECT * FROM restaurants WHERE visited = 0 ORDER BY RANDOM() LIMIT 1")
+    suspend fun getRandomWantToTry(): Restaurant?
 }

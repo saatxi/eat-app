@@ -141,6 +141,9 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
         throw NotImplementedError("Not used by FavoritesViewModel")
+
+    override suspend fun getRandomWantToTry(): Restaurant? =
+        throw NotImplementedError("Not used by FavoritesViewModel")
 }
 
 private class FakeUserPreferencesRepository : UserPreferencesRepository {

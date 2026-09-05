@@ -203,6 +203,9 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
         throw NotImplementedError("Not used by RouletteViewModel")
+
+    override suspend fun getRandomWantToTry(): Restaurant? =
+        throw NotImplementedError("Not used by RouletteViewModel")
 }
 
 private class FakeUserPreferencesRepository : UserPreferencesRepository {

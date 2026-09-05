@@ -75,10 +75,16 @@ fun EatAppNavHost(
     navController: NavHostController = rememberNavController(),
     // Non-null only on the cold start that opened the app via "Open with
     // EatApp" on a shared restaurant file, rather than the launcher icon.
-    startImportUri: Uri? = null
+    startImportUri: Uri? = null,
+    // Non-null only on the cold start that opened the app by tapping a
+    // restaurant on the home-screen widget (F-68).
+    startRestaurantId: Long? = null
 ) {
     LaunchedEffect(startImportUri) {
         startImportUri?.let { navController.navigate(importRoute(it)) }
+    }
+    LaunchedEffect(startRestaurantId) {
+        startRestaurantId?.let { navController.navigate(detailRoute(it)) }
     }
 
     val currentDestination = navController.currentBackStackEntryAsState().value?.destination

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The one unavoidable exception to "no XML layouts" (see CLAUDE.md): the
+  AppWidget framework requires initialLayout to be a real RemoteViews layout
+  resource, shown for a frame before Glance's own composable content
+  (WantToTryWidget.kt) replaces it. Not touched again after that.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ProgressBar
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="center" />
+
+</FrameLayout>
