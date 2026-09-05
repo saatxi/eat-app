@@ -9,10 +9,6 @@ only covers things specific to *how Claude should work in this repo*.
 
 When asked to write a commit message or a tag message:
 
-- Draft it using the **Haiku** model (`claude-haiku-4-5-20251001`), not the
-  model currently active in the conversation.
-- Output **only the raw message text** — nothing else, no surrounding
-  commentary.
 - **Never** run `git commit` or `git tag` yourself, even if a message was
   approved earlier in the conversation. Only the user runs those commands.
 - Do **not** wrap the message's lines — each line/paragraph must be written
@@ -20,8 +16,6 @@ When asked to write a commit message or a tag message:
   overrides the usual "wrap git messages at ~72 columns" convention).
 - **Never** append a `Co-Authored-By:` trailer (or any other attribution
   trailer). This overrides Claude Code's default of co-authoring its commits.
-- Use **hyphens** (`-`) for bullet points in the message body, not asterisks
-  or any other marker.
 
 ## Tech stack & tools
 
