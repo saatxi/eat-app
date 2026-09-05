@@ -22,9 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Casino
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -60,8 +58,8 @@ import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
+import com.saatxi.eatapp.ui.common.RatingAndPriceRow
 import com.saatxi.eatapp.ui.list.EmptyState
-import com.saatxi.eatapp.ui.model.MAX_RATING
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
 
@@ -275,34 +273,14 @@ private fun RouletteResultCard(restaurant: RestaurantUiModel, onClick: () -> Uni
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Row(modifier = Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                repeat(MAX_RATING) { index ->
-                    Icon(
-                        Icons.Default.Star,
-                        contentDescription = null,
-                        tint = if (index < restaurant.rating) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.outlineVariant
-                        },
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                if (restaurant.priceLabel.isNotEmpty()) {
-                    Surface(
-                        shape = RoundedCornerShape(percent = 50),
-                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                        modifier = Modifier.padding(start = 10.dp)
-                    ) {
-                        Text(
-                            text = restaurant.priceLabel,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-            }
+            RatingAndPriceRow(
+                rating = restaurant.rating,
+                priceLabel = restaurant.priceLabel,
+                modifier = Modifier.padding(top = 12.dp),
+                starSize = 20.dp,
+                showRatingLabel = false,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            )
             restaurant.address?.let { address ->
                 Text(
                     text = address,

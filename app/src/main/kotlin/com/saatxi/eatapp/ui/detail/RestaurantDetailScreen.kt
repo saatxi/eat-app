@@ -19,12 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AlternateEmail
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Language
@@ -43,7 +41,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -65,8 +62,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -83,9 +78,9 @@ import com.saatxi.eatapp.ui.common.cuisineBadgeTransition
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
+import com.saatxi.eatapp.ui.common.RatingAndPriceRow
 import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.common.shimmerPlaceholder
-import com.saatxi.eatapp.ui.model.MAX_RATING
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
 
@@ -280,62 +275,20 @@ private fun RestaurantDetailContent(
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
-                            Row(
+                            // The star icons are decorative (contentDescription = null) and the
+                            // "3/5" text next to them isn't natural speech, so each half of the
+                            // row gets its own merged description instead of announcing as
+                            // silent stars followed by "3 slash 5", or "$$" as "dollar dollar".
+                            RatingAndPriceRow(
+                                rating = current.rating,
+                                priceLabel = current.priceLabel,
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                val ratingDescription = stringResource(
-                                    R.string.restaurant_rating_description,
-                                    current.rating
-                                )
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    // The star icons are decorative (contentDescription = null) and the
-                                    // "3/5" text next to them isn't natural speech, so the row would
-                                    // otherwise announce as silent stars followed by "3 slash 5".
-                                    modifier = Modifier.clearAndSetSemantics {
-                                        contentDescription = ratingDescription
-                                    }
-                                ) {
-                                    repeat(MAX_RATING) { index ->
-                                        Icon(
-                                            Icons.Default.Star,
-                                            contentDescription = null,
-                                            tint = if (index < current.rating) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.outlineVariant
-                                            },
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Text(
-                                        text = stringResource(R.string.rating_format, current.rating),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        modifier = Modifier.padding(start = 6.dp)
-                                    )
-                                }
-                                val priceDescription = stringResource(
-                                    R.string.restaurant_price_description,
-                                    current.priceLabel.length
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(percent = 50),
-                                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                                    // Otherwise "$$" is read out as "dollar dollar".
-                                    modifier = Modifier.clearAndSetSemantics {
-                                        contentDescription = priceDescription
-                                    }
-                                ) {
-                                    Text(
-                                        text = current.priceLabel,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
+                                pricePaddingHorizontal = 10.dp,
+                                pricePaddingVertical = 4.dp,
+                                ratingContentDescription = stringResource(R.string.restaurant_rating_description, current.rating),
+                                priceContentDescription = stringResource(R.string.restaurant_price_description, current.priceLabel.length)
+                            )
                         }
                     }
 

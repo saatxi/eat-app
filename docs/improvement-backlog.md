@@ -51,14 +51,6 @@ entity plus a `RestaurantTag` join table, a chip-entry field in the edit form
 list/detail rows, reusing the `FilterChip` pattern already built for cuisine
 filtering.
 
-### F-58 · Rating-and-price markup is copy-pasted three times — Medium / S
-
-The stars-plus-"N/5"-plus-price-pill block is hand-duplicated across
-`RestaurantListScreen.RestaurantRow`, `RestaurantDetailScreen` and
-`RouletteScreen.RouletteResultCard`, with the risk that a future tweak to one
-copy silently drifts from the other two. **Fix:** extract one shared
-`RatingAndPriceRow` composable and have all three call it.
-
 ### F-60 · Favorites has no search or filters — Medium / S
 
 Favorites reuses `RestaurantRow` and `EmptyState` from the list screen but
@@ -89,6 +81,46 @@ frequently-filtered cuisine) instead of nothing.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-58 · Rating-and-price markup is copy-pasted three times — Done.
+
+The stars-plus-"N/5"-plus-price-pill block was hand-duplicated across
+`RestaurantListScreen.RestaurantRow`, `RestaurantDetailScreen` and
+`RouletteScreen.RouletteResultCard` — extracted into one shared
+[`RatingAndPriceRow`](../app/src/main/kotlin/com/saatxi/eatapp/ui/common/RatingAndPriceRow.kt),
+all three now call.
+
+- **The three call sites didn't actually draw the same thing**, so this
+  stayed one flexible composable rather than one fixed look forced onto
+  three different rows: the list row shows a single decorative star next to
+  the number to stay compact (`starCount = 1`), while detail and roulette
+  draw a full five-star gauge (`starCount = MAX_RATING`). A single star
+  always renders filled rather than gauging against the rating — with only
+  one star, `index < rating` isn't a meaningful comparison, and filled is
+  what the list row always looked like. `stacked` switches between the list
+  row's vertical stack (stars above the price pill, end-aligned) and
+  detail/roulette's horizontal row; `showRatingLabel` drops the "N/5" text
+  for roulette, which never had it; `pricePaddingHorizontal`/`Vertical` and
+  `horizontalArrangement` reproduce each site's own spacing exactly (detail's
+  price pill padding was actually larger than the other two's — preserved,
+  not quietly evened out); `ratingContentDescription`/`priceContentDescription`
+  are only non-null on the detail screen, the one call site not already
+  nested inside something else that collapses its semantics.
+- **One incidental, low-risk fix bundled in**: the price pill is now
+  genuinely absent when `priceLabel` is empty, everywhere — previously only
+  Roulette guarded with `isNotEmpty()`; the list row and detail screen drew
+  a small empty pill for a restaurant with no price set. Unifying the three
+  naturally adopted the safer behaviour rather than keeping the bug in two
+  of them.
+- Each of the three files lost several now-unused imports (`Icons.Star`,
+  `RoundedCornerShape`, in detail's case also `Surface` and the semantics
+  imports) as their inline markup was replaced by the one call.
+- Verified with `./gradlew test assembleDebug assembleRelease lint` — 187
+  tests passing (unchanged; pure UI refactor, no ViewModel logic touched),
+  R8 unaffected, lint report unchanged. Added a light/dark `@Preview`
+  showing all three configurations side by side. Not verified: the on-screen
+  result, only that it compiles and each call site's parameters reproduce
+  what the removed inline code did.
 
 ### F-69 · Segmented button text clips against the default checkmark — Done.
 
