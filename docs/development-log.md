@@ -74,24 +74,52 @@ tracked separately, in Appendix A's Phase 8 "Still to write" list.
 **Fix**: no architectural change needed, just tests — pick these off same as
 any other coverage gap.
 
-### F-72 · `RestaurantListScreen.kt` has grown into a single ~1000-line file
-
-**Impact**: Low · **Effort**: M
-
-At 1007 lines it's the largest file in the app by a wide margin (next
-largest is 587) — filter UI, the sort control, row rendering and several
-`@Preview`s all live in one file. Not yet unmanageable, but the clear next
-split candidate before it grows further.
-
-**Fix**: pull `FilterSection`/`SearchAndFilterBar` (already partly separated
-out per F-60) and `RestaurantRow`/`RestaurantRowSkeleton` into their own
-files under `ui/list/`.
-
 ---
 
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-72 · `RestaurantListScreen.kt` has grown into a single ~1000-line file — Done.
+
+Split along exactly the lines the entry named, a pure reorganisation with no
+behaviour change — everything stays in the `com.saatxi.eatapp.ui.list`
+package, so no other file's imports needed to change.
+
+- **`RestaurantListScreen.kt`** (1007 → 277 lines): now just the screen's
+  own composable, `EmptyState` (internal — reused by
+  [FavoritesScreen](../app/src/main/kotlin/com/saatxi/eatapp/ui/favorites/FavoritesScreen.kt),
+  [RestaurantImportScreen](../app/src/main/kotlin/com/saatxi/eatapp/ui/importing/RestaurantImportScreen.kt),
+  [RouletteScreen](../app/src/main/kotlin/com/saatxi/eatapp/ui/roulette/RouletteScreen.kt)
+  and [StatisticsScreen](../app/src/main/kotlin/com/saatxi/eatapp/ui/stats/StatisticsScreen.kt)),
+  and `EmptyState`'s two previews.
+- **New [SearchAndFilterBar.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/SearchAndFilterBar.kt)**
+  (414 lines): `SearchAndFilterBar`, `FilterSection`, the sort-label helpers,
+  and `SearchSuggestionsRow` plus its preview. `SearchSuggestionsRow` moved
+  from `private` to `internal` since its call site (the screen's own
+  `LazyColumn`) is now in a different file; `FilterSection` and the sort
+  helpers stay `private`, used only within this file.
+- **New [RestaurantRow.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/RestaurantRow.kt)**
+  (372 lines): `RestaurantRow`, `SwipeActionBackground`,
+  `RestaurantRowSkeleton` and its preview data. `RestaurantRowSkeleton` and
+  `SKELETON_ROW_COUNT` moved from `private` to `internal` for the same
+  cross-file-call-site reason as `SearchSuggestionsRow`; `SwipeActionBackground`
+  stays `private`.
+- One real bug caught by the split itself: the first compile after moving
+  `RestaurantRow` failed on an unresolved `contentDescription` inside its
+  `clearAndSetSemantics` block — the monolith's single `import
+  androidx.compose.ui.semantics.contentDescription` had silently covered
+  both call sites (this one and `SearchAndFilterBar`'s), so splitting the
+  file surfaced a missing import that isolated compilation wouldn't have
+  hidden going forward.
+- Verified with `./gradlew test assembleDebug lint` — 222 tests passing
+  (unchanged; no logic moved, only which file each composable lives in),
+  lint clean, and no new Kotlin compiler warnings (checked
+  `:app:compileDebugKotlin --rerun` explicitly for unused-import warnings
+  after moving code between files, since this project has no
+  ktlint/detekt to catch that otherwise). Not verified: how any of the
+  three screens actually look or behave on a real device — this entry
+  changed no rendering logic, only file boundaries.
 
 ### F-73 · `material3Adaptive` and the Baseline Profile plugin are pinned off their own stable lines — Done.
 
