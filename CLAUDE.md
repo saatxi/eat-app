@@ -63,8 +63,8 @@ When asked to write a commit message or a tag message:
   `gradle/libs.versions.toml`, and the M3 Expressive `ButtonGroup` and
   `MaterialShapes` APIs don't exist in it — both only ship from
   `1.5.0-alpha01` onward, and 1.5.0 has no stable release yet (see
-  [visual-modernization-plan.md](docs/visual-modernization-plan.md)'s Phase 8
-  for how this was confirmed and worked around). **Whenever you're touching
+  [development-log.md](docs/development-log.md)'s Appendix A, Phase 8, for
+  how this was confirmed and worked around). **Whenever you're touching
   this repo's dependencies or UI and it's a natural moment to check** — don't
   go looking on a schedule — glance at
   `https://dl.google.com/android/maven2/androidx/compose/material3/material3/maven-metadata.xml`
@@ -72,6 +72,16 @@ When asked to write a commit message or a tag message:
   `gradle/libs.versions.toml` would unblock the cuisine-badge shape morphing
   that Phase 8 deferred (`ButtonGroup` itself was already replaced with the
   stable `SingleChoiceSegmentedButtonRow` and doesn't need revisiting).
+  `material3Adaptive` (`1.3.0` in the same catalog, versioned independently)
+  is worth re-checking at the same time — see
+  [development-log.md](docs/development-log.md)'s F-73.
+- **Baseline Profile plugin pinned to a pre-release**: `androidx.baselineprofile`
+  is pinned to `1.5.0-rc02` because the latest *stable* release (1.4.1)
+  doesn't recognize this project's AGP 9.3.2 (see
+  [development-log.md](docs/development-log.md)'s Appendix A, Phase 7, and
+  F-73). Same "revisit once stable ships" shape as the material3 entry
+  above — check for a stable `1.5.x` release of
+  `androidx.baselineprofile` at the same time you check material3.
 
 ## Build & verify
 
