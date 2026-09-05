@@ -91,6 +91,7 @@ import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
 import com.saatxi.eatapp.ui.common.RatingAndPriceRow
+import com.saatxi.eatapp.ui.common.TagPillRow
 import com.saatxi.eatapp.ui.common.shimmerCircle
 import com.saatxi.eatapp.ui.common.shimmerPlaceholder
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
@@ -591,6 +592,13 @@ internal fun RestaurantRow(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
+                    }
+                    if (restaurant.tagsLabel.isNotEmpty()) {
+                        TagPillRow(
+                            tags = restaurant.tagsLabel.split(", "),
+                            maxVisible = 3,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
                 }
 

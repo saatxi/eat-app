@@ -79,6 +79,7 @@ import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
 import com.saatxi.eatapp.ui.common.RatingAndPriceRow
+import com.saatxi.eatapp.ui.common.TagPillRow
 import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.common.shimmerPlaceholder
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
@@ -265,6 +266,12 @@ private fun RestaurantDetailContent(
                                     }
                                 )
                             }
+                            if (current.tagsLabel.isNotEmpty()) {
+                                TagPillRow(
+                                    tags = current.tagsLabel.split(", "),
+                                    modifier = Modifier.padding(top = 10.dp)
+                                )
+                            }
                         }
                     }
 
@@ -429,7 +436,8 @@ private fun RestaurantUiModel.toExport() = RestaurantExport(
     visited = visited,
     website = website,
     instagram = instagram,
-    notes = notes
+    notes = notes,
+    tags = tagsLabel.split(", ").filter { it.isNotBlank() }
 )
 
 private fun Context.openUri(uri: String) {

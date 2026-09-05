@@ -24,6 +24,7 @@ enum class ImportDecision { ADD, SKIP, REPLACE }
 
 data class ImportCandidate(
     val restaurant: Restaurant,
+    val tags: List<String>,
     /** The existing row this looks like a duplicate of (by name + address), or null. */
     val duplicateOf: Restaurant?,
     val decision: ImportDecision
@@ -59,10 +60,11 @@ class RestaurantImportViewModel(
                 is ImportOutcome.Error -> _uiState.update { it.copy(isLoading = false, error = outcome.reason) }
                 is ImportOutcome.Success -> {
                     val existing = repository.observeFiltered(query = null, minRating = null, cuisineType = null).first()
-                    val candidates = outcome.restaurants.map { candidate ->
-                        val duplicate = existing.find { it.isLikelyDuplicateOf(candidate) }
+                    val candidates = outcome.restaurants.map { imported ->
+                        val duplicate = existing.find { it.isLikelyDuplicateOf(imported.restaurant) }
                         ImportCandidate(
-                            restaurant = candidate,
+                            restaurant = imported.restaurant,
+                            tags = imported.tags,
                             duplicateOf = duplicate,
                             decision = if (duplicate != null) ImportDecision.SKIP else ImportDecision.ADD
                         )
@@ -98,9 +100,9 @@ class RestaurantImportViewModel(
             _uiState.update { it.copy(isImporting = true) }
             candidates.forEach { candidate ->
                 when (candidate.decision) {
-                    ImportDecision.ADD -> repository.insert(candidate.restaurant)
+                    ImportDecision.ADD -> repository.insert(candidate.restaurant, candidate.tags)
                     ImportDecision.REPLACE -> candidate.duplicateOf?.let {
-                        repository.update(candidate.restaurant.copy(id = it.id))
+                        repository.update(candidate.restaurant.copy(id = it.id), candidate.tags)
                     }
                     ImportDecision.SKIP -> Unit
                 }

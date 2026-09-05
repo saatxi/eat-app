@@ -42,13 +42,22 @@ data class RestaurantUiModel(
     /** Absolute path to a locally-stored copy; null draws the cuisine badge instead. */
     val photoPath: String? = null,
     /** Free-text, user-written. Null when blank, so the detail screen can just skip the card. */
-    val notes: String? = null
+    val notes: String? = null,
+    /**
+     * Comma-and-space-joined tag names, e.g. `"Terraza, Para grupos"`; empty
+     * when there are none. A `List<String>` property here would make this
+     * whole class Compose-unstable — see the class doc above — so screens
+     * split this back apart (`tagsLabel.split(", ")`) at render time instead
+     * of it ever being stored as a list. Tag names are validated (see
+     * `normalizeTagName`) to never contain a comma, so the split is safe.
+     */
+    val tagsLabel: String = ""
 ) {
     /** True when there is at least one link worth drawing a section for. */
     val hasLinks: Boolean get() = website != null || instagram != null
 }
 
-fun Restaurant.toUiModel(isFavorite: Boolean = false): RestaurantUiModel = RestaurantUiModel(
+fun Restaurant.toUiModel(isFavorite: Boolean = false, tags: List<String> = emptyList()): RestaurantUiModel = RestaurantUiModel(
     id = id,
     name = name,
     cuisineKey = cuisineType,
@@ -64,5 +73,6 @@ fun Restaurant.toUiModel(isFavorite: Boolean = false): RestaurantUiModel = Resta
     instagram = instagram,
     isFavorite = isFavorite,
     photoPath = photoPath,
-    notes = notes?.takeIf { it.isNotBlank() }
+    notes = notes?.takeIf { it.isNotBlank() },
+    tagsLabel = tags.joinToString(", ")
 )

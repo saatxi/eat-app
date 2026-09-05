@@ -5,13 +5,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.normalizeInstagramHandle
+import com.saatxi.eatapp.data.local.normalizeTagName
 import com.saatxi.eatapp.data.local.normalizeWebsite
 import com.saatxi.eatapp.data.photo.RestaurantPhotoStorage
 import com.saatxi.eatapp.data.repository.RestaurantRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -40,7 +43,8 @@ data class RestaurantEditUiState(
     val nameError: Boolean = false,
     val cuisineError: Boolean = false,
     val websiteError: Boolean = false,
-    val instagramError: Boolean = false
+    val instagramError: Boolean = false,
+    val tags: List<String> = emptyList()
 ) {
     /** What the form should preview: a pending pick beats the existing photo, which a removal beats. */
     val previewPhoto: Any?
@@ -63,12 +67,17 @@ class RestaurantEditViewModel(
 
     val isEditingExisting: Boolean get() = restaurantId != null
 
+    /** Existing tag names across all restaurants, offered as suggestions while typing a new one. */
+    val tagSuggestions: StateFlow<List<String>> = repository.observeAllTagNames()
+        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = emptyList())
+
     init {
         val id = restaurantId
         if (id != null) {
             viewModelScope.launch {
                 val restaurant = repository.observeById(id).first()
                 if (restaurant != null) {
+                    val tags = repository.observeTagNames(id).first()
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -81,7 +90,8 @@ class RestaurantEditViewModel(
                             priceRange = restaurant.priceRange,
                             website = restaurant.website.orEmpty(),
                             instagram = restaurant.instagram.orEmpty(),
-                            existingPhotoPath = restaurant.photoPath
+                            existingPhotoPath = restaurant.photoPath,
+                            tags = tags
                         )
                     }
                 } else {
@@ -134,6 +144,19 @@ class RestaurantEditViewModel(
 
     fun onRemovePhoto() {
         _uiState.update { it.copy(pendingPhotoUri = null, photoRemoved = true) }
+    }
+
+    /** Ignored (no-op) when [raw] fails validation or already matches a tag already added, case-insensitively. */
+    fun onAddTag(raw: String) {
+        val normalized = normalizeTagName(raw) ?: return
+        _uiState.update { state ->
+            if (state.tags.any { it.equals(normalized, ignoreCase = true) }) state
+            else state.copy(tags = state.tags + normalized)
+        }
+    }
+
+    fun onRemoveTag(name: String) {
+        _uiState.update { it.copy(tags = it.tags.filterNot { tag -> tag == name }) }
     }
 
     /**
@@ -192,9 +215,9 @@ class RestaurantEditViewModel(
             )
 
             if (restaurantId != null) {
-                repository.update(restaurant)
+                repository.update(restaurant, state.tags)
             } else {
-                repository.insert(restaurant)
+                repository.insert(restaurant, state.tags)
             }
             onSaved()
         }

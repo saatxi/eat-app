@@ -11,14 +11,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -34,8 +37,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
@@ -58,6 +65,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -81,9 +89,11 @@ fun RestaurantEditScreen(
     )
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val tagSuggestions by viewModel.tagSuggestions.collectAsState()
     RestaurantEditContent(
         uiState = uiState,
         isEditingExisting = viewModel.isEditingExisting,
+        tagSuggestions = tagSuggestions,
         onBack = onBack,
         onNameChange = viewModel::onNameChange,
         onCuisineChange = viewModel::onCuisineChange,
@@ -96,6 +106,8 @@ fun RestaurantEditScreen(
         onInstagramChange = viewModel::onInstagramChange,
         onPhotoPicked = viewModel::onPhotoPicked,
         onRemovePhoto = viewModel::onRemovePhoto,
+        onAddTag = viewModel::onAddTag,
+        onRemoveTag = viewModel::onRemoveTag,
         onSave = { viewModel.onSave(onSaved = onBack) }
     )
 }
@@ -105,6 +117,7 @@ fun RestaurantEditScreen(
 private fun RestaurantEditContent(
     uiState: RestaurantEditUiState,
     isEditingExisting: Boolean,
+    tagSuggestions: List<String>,
     onBack: () -> Unit,
     onNameChange: (String) -> Unit,
     onCuisineChange: (String) -> Unit,
@@ -117,6 +130,8 @@ private fun RestaurantEditContent(
     onInstagramChange: (String) -> Unit,
     onPhotoPicked: (Uri) -> Unit,
     onRemovePhoto: () -> Unit,
+    onAddTag: (String) -> Unit,
+    onRemoveTag: (String) -> Unit,
     onSave: () -> Unit
 ) {
     Scaffold(
@@ -269,6 +284,99 @@ private fun RestaurantEditContent(
                     },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            EditSectionCard(title = stringResource(R.string.edit_section_tags)) {
+                TagsField(
+                    tags = uiState.tags,
+                    suggestions = tagSuggestions,
+                    onAddTag = onAddTag,
+                    onRemoveTag = onRemoveTag
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The chip-entry field for free-form tags (F-59): a text field that commits
+ * a tag on IME "Done" or a typed comma, existing-tag suggestions filtered by
+ * what's typed so far (tap to add), and the tags already added as removable
+ * chips. [tags]/[suggestions] are the source of truth — this composable only
+ * holds the in-progress text, never the committed list.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TagsField(
+    tags: List<String>,
+    suggestions: List<String>,
+    onAddTag: (String) -> Unit,
+    onRemoveTag: (String) -> Unit
+) {
+    var input by remember { mutableStateOf("") }
+
+    fun commit(raw: String) {
+        onAddTag(raw)
+        input = ""
+    }
+
+    OutlinedTextField(
+        value = input,
+        onValueChange = { value ->
+            if (value.endsWith(",")) commit(value.dropLast(1)) else input = value
+        },
+        label = { Text(stringResource(R.string.edit_field_tags)) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Sentences,
+            imeAction = ImeAction.Done
+        ),
+        keyboardActions = KeyboardActions(onDone = { commit(input) }),
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    val matchingSuggestions = if (input.isBlank()) {
+        emptyList()
+    } else {
+        suggestions.filter { suggestion ->
+            suggestion.contains(input, ignoreCase = true) && tags.none { it.equals(suggestion, ignoreCase = true) }
+        }
+    }
+    if (matchingSuggestions.isNotEmpty()) {
+        val chipColors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            matchingSuggestions.forEach { suggestion ->
+                FilterChip(
+                    selected = false,
+                    onClick = { commit(suggestion) },
+                    label = { Text(suggestion) },
+                    colors = chipColors
+                )
+            }
+        }
+    }
+
+    if (tags.isNotEmpty()) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            tags.forEach { tag ->
+                InputChip(
+                    selected = false,
+                    onClick = { onRemoveTag(tag) },
+                    label = { Text(tag) },
+                    trailingIcon = {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = stringResource(R.string.edit_action_remove_tag, tag),
+                            modifier = Modifier.size(InputChipDefaults.IconSize)
+                        )
+                    }
                 )
             }
         }
@@ -450,8 +558,15 @@ private fun PriceRangePicker(priceRange: Int, onPriceRangeChange: (Int) -> Unit,
 private fun RestaurantEditScreenPreview() {
     EatAppTheme {
         RestaurantEditContent(
-            uiState = RestaurantEditUiState(name = "Cal Ferran", cuisineType = "mediterranean", rating = 4, priceRange = 2),
+            uiState = RestaurantEditUiState(
+                name = "Cal Ferran",
+                cuisineType = "mediterranean",
+                rating = 4,
+                priceRange = 2,
+                tags = listOf("Terraza", "Para grupos")
+            ),
             isEditingExisting = false,
+            tagSuggestions = listOf("Terraza", "Para grupos", "Brunch"),
             onBack = {},
             onNameChange = {},
             onCuisineChange = {},
@@ -464,6 +579,8 @@ private fun RestaurantEditScreenPreview() {
             onInstagramChange = {},
             onPhotoPicked = {},
             onRemovePhoto = {},
+            onAddTag = {},
+            onRemoveTag = {},
             onSave = {}
         )
     }

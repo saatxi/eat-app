@@ -115,6 +115,7 @@
     <string name="edit_section_basics">Dades bàsiques</string>
     <string name="edit_section_status_rating">Estat i puntuació</string>
     <string name="edit_section_links">Enllaços</string>
+    <string name="edit_section_tags">Etiquetes</string>
     <string name="edit_action_add_photo">Afegeix una foto</string>
     <string name="edit_action_remove_photo">Suprimeix la foto</string>
     <string name="edit_photo_preview_description">Previsualització de la foto del restaurant</string>
@@ -128,6 +129,8 @@
     <string name="edit_field_price_range">Rang de preu</string>
     <string name="edit_field_website">Web (opcional)</string>
     <string name="edit_field_instagram">Instagram (opcional)</string>
+    <string name="edit_field_tags">Afegeix una etiqueta</string>
+    <string name="edit_action_remove_tag">Suprimeix l\'etiqueta %1$s</string>
     <string name="edit_error_name_required">El nom és obligatori</string>
     <string name="edit_error_cuisine_required">Tria una cuina</string>
     <string name="edit_error_website_invalid">Introdueix una adreça web http/https vàlida</string>

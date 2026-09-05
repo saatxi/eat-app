@@ -290,6 +290,18 @@ class RestaurantListViewModelTest {
     }
 
     @Test
+    fun `each restaurant's tags reach the state as a comma-joined label`() = runTest {
+        observeState()
+        repository.tagsByRestaurantId.value = mapOf(1L to listOf("Terraza", "Brunch"))
+
+        repository.restaurants.value = listOf(restaurant(1, "Cal Ferran"), restaurant(2, "Bar Nil"))
+
+        val items = viewModel.uiState.value.restaurants.associateBy { it.id }
+        assertEquals("Terraza, Brunch", items.getValue(1L).tagsLabel)
+        assertEquals("", items.getValue(2L).tagsLabel)
+    }
+
+    @Test
     fun `available cuisines reach the state`() = runTest {
         observeState()
 
@@ -349,6 +361,7 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
     val cuisines = MutableStateFlow<List<String>>(emptyList())
+    val tagsByRestaurantId = MutableStateFlow<Map<Long, List<String>>>(emptyMap())
 
     var lastQuery: String? = null
         private set
@@ -381,10 +394,10 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override fun observeById(id: Long): Flow<Restaurant?> =
         restaurants.map { list -> list.firstOrNull { it.id == id } }
 
-    override suspend fun insert(restaurant: Restaurant): Long =
+    override suspend fun insert(restaurant: Restaurant, tags: List<String>): Long =
         throw NotImplementedError("Not used by RestaurantListViewModel")
 
-    override suspend fun update(restaurant: Restaurant) =
+    override suspend fun update(restaurant: Restaurant, tags: List<String>) =
         throw NotImplementedError("Not used by RestaurantListViewModel")
 
     override suspend fun delete(id: Long) =
@@ -392,6 +405,14 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     override suspend fun deleteAll() =
         throw NotImplementedError("Not used by RestaurantListViewModel")
+
+    override fun observeAllTagNames(): Flow<List<String>> =
+        throw NotImplementedError("Not used by RestaurantListViewModel")
+
+    override fun observeTagNames(restaurantId: Long): Flow<List<String>> =
+        throw NotImplementedError("Not used by RestaurantListViewModel")
+
+    override fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>> = tagsByRestaurantId
 
     override fun observeTotalCount(): Flow<Int> =
         throw NotImplementedError("Not used by RestaurantListViewModel")

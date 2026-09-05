@@ -9,12 +9,15 @@ const val MAX_IMPORT_BYTES = 5L * 1024 * 1024
 
 enum class ImportFailureReason { TOO_LARGE, INVALID_FILE, IO_ERROR }
 
+/** One validated import row: the [Restaurant] itself paired with its own validated tag names. */
+data class ImportedRestaurant(val restaurant: Restaurant, val tags: List<String>)
+
 sealed interface ImportOutcome {
     /**
      * [skippedCount] is how many rows failed per-row validation and were
      * dropped rather than failing the whole file — see [toRestaurantOrNull].
      */
-    data class Success(val restaurants: List<Restaurant>, val skippedCount: Int) : ImportOutcome
+    data class Success(val restaurants: List<ImportedRestaurant>, val skippedCount: Int) : ImportOutcome
     data class Error(val reason: ImportFailureReason) : ImportOutcome
 }
 
@@ -42,7 +45,9 @@ object RestaurantImportReader {
             return ImportOutcome.Error(ImportFailureReason.INVALID_FILE)
         }
 
-        val restaurants = shareFile.restaurants.mapNotNull { it.toRestaurantOrNull() }
+        val restaurants = shareFile.restaurants.mapNotNull { export ->
+            export.toRestaurantOrNull()?.let { restaurant -> ImportedRestaurant(restaurant, export.toValidatedTagNames()) }
+        }
         val skippedCount = shareFile.restaurants.size - restaurants.size
         return ImportOutcome.Success(restaurants, skippedCount)
     }

@@ -38,7 +38,7 @@ class RestaurantDaoTest {
             .allowMainThreadQueries()
             .build()
         dao = database.restaurantDao()
-        repository = RoomRestaurantRepository(dao, context)
+        repository = RoomRestaurantRepository(database, context)
     }
 
     @After
@@ -397,7 +397,7 @@ class RestaurantDaoTest {
         val oldPhoto = fakePhotoFile("old.jpg")
         val id = repository.insert(restaurant(0, "Cal Ferran").copy(photoPath = oldPhoto.absolutePath))
 
-        repository.update(restaurant(id, "Cal Ferran").copy(photoPath = "/photos/new.jpg"))
+        repository.update(restaurant(id, "Cal Ferran").copy(photoPath = "/photos/new.jpg"), emptyList())
 
         assertFalse(oldPhoto.exists())
     }
@@ -407,7 +407,7 @@ class RestaurantDaoTest {
         val photo = fakePhotoFile("unchanged.jpg")
         val id = repository.insert(restaurant(0, "Cal Ferran").copy(photoPath = photo.absolutePath))
 
-        repository.update(restaurant(id, "New Name").copy(photoPath = photo.absolutePath))
+        repository.update(restaurant(id, "New Name").copy(photoPath = photo.absolutePath), emptyList())
 
         assertTrue(photo.exists())
     }
@@ -516,7 +516,7 @@ class RestaurantDaoTest {
     fun `update rewrites the backup file with the change`() = runTest {
         val id = repository.insert(restaurant(0, "Old Name"))
 
-        repository.update(restaurant(id, "New Name"))
+        repository.update(restaurant(id, "New Name"), emptyList())
 
         assertEquals(listOf("New Name"), backupNames())
     }
@@ -539,6 +539,80 @@ class RestaurantDaoTest {
         repository.deleteAll()
 
         assertEquals(emptyList<String>(), backupNames())
+    }
+
+    // --- tags (F-59), through the repository ----------------------------------
+
+    @Test
+    fun `a new tag name is created on first use`() = runTest {
+        val id = repository.insert(restaurant(0, "Cal Ferran"), listOf("Terraza"))
+
+        assertEquals(listOf("Terraza"), repository.observeTagNames(id).first())
+        assertEquals(listOf("Terraza"), repository.observeAllTagNames().first())
+    }
+
+    @Test
+    fun `reusing a tag name is case-insensitive and keeps the original casing`() = runTest {
+        val first = repository.insert(restaurant(0, "Cal Ferran"), listOf("Terraza"))
+        val second = repository.insert(restaurant(0, "Bar Nil"), listOf("terraza"))
+
+        // Only one Tag row should exist — both restaurants link to the same one, cased as first written.
+        assertEquals(listOf("Terraza"), repository.observeAllTagNames().first())
+        assertEquals(listOf("Terraza"), repository.observeTagNames(first).first())
+        assertEquals(listOf("Terraza"), repository.observeTagNames(second).first())
+    }
+
+    @Test
+    fun `updating a restaurant's tags fully replaces the previous set`() = runTest {
+        val id = repository.insert(restaurant(0, "Cal Ferran"), listOf("Terraza", "Brunch"))
+
+        repository.update(restaurant(id, "Cal Ferran"), listOf("Vegano"))
+
+        assertEquals(listOf("Vegano"), repository.observeTagNames(id).first())
+    }
+
+    @Test
+    fun `duplicate tag names in the same write collapse into one link`() = runTest {
+        val id = repository.insert(restaurant(0, "Cal Ferran"), listOf("Terraza", "terraza", "TERRAZA"))
+
+        assertEquals(listOf("Terraza"), repository.observeTagNames(id).first())
+    }
+
+    @Test
+    fun `deleting a restaurant removes its tag links`() = runTest {
+        val id = repository.insert(restaurant(0, "Cal Ferran"), listOf("Terraza"))
+
+        repository.delete(id)
+
+        assertEquals(emptyMap<Long, List<String>>(), repository.observeTagsByRestaurantId().first())
+    }
+
+    @Test
+    fun `deleteAll clears the tags table, not just the links`() = runTest {
+        repository.insert(restaurant(0, "Cal Ferran"), listOf("Terraza"))
+
+        repository.deleteAll()
+
+        assertEquals(emptyList<String>(), repository.observeAllTagNames().first())
+    }
+
+    @Test
+    fun `observeTagsByRestaurantId groups tag names by restaurant`() = runTest {
+        val first = repository.insert(restaurant(0, "Cal Ferran"), listOf("Terraza", "Brunch"))
+        val second = repository.insert(restaurant(0, "Bar Nil"), listOf("Brunch"))
+
+        val byRestaurant = repository.observeTagsByRestaurantId().first()
+
+        assertEquals(setOf("Terraza", "Brunch"), byRestaurant[first]?.toSet())
+        assertEquals(setOf("Brunch"), byRestaurant[second]?.toSet())
+    }
+
+    @Test
+    fun `the backup file includes each restaurant's tags`() = runTest {
+        repository.insert(restaurant(0, "Cal Ferran"), listOf("Terraza"))
+
+        val shareFile = Json.decodeFromString(RestaurantShareFile.serializer(), backupFile().readText())
+        assertEquals(listOf("Terraza"), shareFile.restaurants.single().tags)
     }
 
     // --- LIKE metacharacters, which is F-15 ---------------------------------

@@ -1,10 +1,11 @@
 package com.saatxi.eatapp.data.repository
 
 import android.content.Context
+import androidx.room.withTransaction
 import com.saatxi.eatapp.data.local.CuisineCount
+import com.saatxi.eatapp.data.local.EatAppDatabase
 import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
-import com.saatxi.eatapp.data.local.RestaurantDao
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.local.escapeLikeWildcards
 import com.saatxi.eatapp.data.local.normalizeForSearch
@@ -13,11 +14,16 @@ import com.saatxi.eatapp.data.photo.deleteRestaurantPhotoFile
 import com.saatxi.eatapp.data.share.toExport
 import com.saatxi.eatapp.data.share.writeBackupFile
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 class RoomRestaurantRepository(
-    private val dao: RestaurantDao,
+    private val database: EatAppDatabase,
     private val context: Context
 ) : RestaurantRepository {
+
+    private val dao = database.restaurantDao()
+    private val tagDao = database.tagDao()
 
     override fun observeFiltered(
         query: String?,
@@ -40,20 +46,27 @@ class RoomRestaurantRepository(
 
     override fun observeById(id: Long): Flow<Restaurant?> = dao.observeById(id)
 
-    override suspend fun insert(restaurant: Restaurant): Long {
-        val id = dao.insert(restaurant)
+    override suspend fun insert(restaurant: Restaurant, tags: List<String>): Long {
+        val id = database.withTransaction {
+            val newId = dao.insert(restaurant)
+            tagDao.setTags(newId, tags)
+            newId
+        }
         writeBackup()
         return id
     }
 
     /**
      * The old photo — if this update moves the row away from it — is deleted only
-     * *after* [dao.update] succeeds, so a mid-write failure can never leave a row
-     * pointing at a file that's already gone.
+     * *after* the transaction below succeeds, so a mid-write failure can never
+     * leave a row pointing at a file that's already gone.
      */
-    override suspend fun update(restaurant: Restaurant) {
+    override suspend fun update(restaurant: Restaurant, tags: List<String>) {
         val previousPhotoPath = dao.getPhotoPath(restaurant.id)
-        dao.update(restaurant)
+        database.withTransaction {
+            dao.update(restaurant)
+            tagDao.setTags(restaurant.id, tags)
+        }
         if (previousPhotoPath != null && previousPhotoPath != restaurant.photoPath) {
             deleteRestaurantPhotoFile(previousPhotoPath)
         }
@@ -62,13 +75,19 @@ class RoomRestaurantRepository(
 
     override suspend fun delete(id: Long) {
         val photoPath = dao.getPhotoPath(id)
+        // No explicit tag cleanup needed: restaurant_tags cascades on delete.
         dao.delete(id)
         photoPath?.let(::deleteRestaurantPhotoFile)
         writeBackup()
     }
 
     override suspend fun deleteAll() {
-        dao.deleteAll()
+        database.withTransaction {
+            dao.deleteAll()
+            // Cascade only clears restaurant_tags when restaurants are
+            // deleted — the tags table itself needs its own wipe.
+            tagDao.deleteAllTags()
+        }
         // Every row is gone, so rather than looking up which of them had a photo,
         // the whole directory goes at once.
         deleteAllRestaurantPhotoFiles(context)
@@ -77,8 +96,15 @@ class RoomRestaurantRepository(
 
     /** Keeps `backup.json` a full, current snapshot after every write — see [writeBackupFile]. */
     private suspend fun writeBackup() {
-        writeBackupFile(context, dao.getAll().map { it.toExport() })
+        val tagsByRestaurantId = tagDao.observeAllRestaurantTagLinks().first()
+            .groupBy({ it.restaurantId }, { it.name })
+        writeBackupFile(context, dao.getAll().map { it.toExport(tagsByRestaurantId[it.id].orEmpty()) })
     }
+
+    override fun observeAllTagNames(): Flow<List<String>> = tagDao.observeAllTagNames()
+    override fun observeTagNames(restaurantId: Long): Flow<List<String>> = tagDao.observeTagNames(restaurantId)
+    override fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>> =
+        tagDao.observeAllRestaurantTagLinks().map { links -> links.groupBy({ it.restaurantId }, { it.name }) }
 
     override fun observeTotalCount(): Flow<Int> = dao.observeTotalCount()
     override fun observeVisitedCount(): Flow<Int> = dao.observeVisitedCount()

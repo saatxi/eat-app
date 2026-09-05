@@ -1,5 +1,6 @@
 package com.saatxi.eatapp.data.share
 
+import com.saatxi.eatapp.data.local.MAX_TAGS_PER_RESTAURANT
 import com.saatxi.eatapp.data.local.Restaurant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -173,5 +174,62 @@ class RestaurantShareModelsTest {
 
         assertEquals(false, wantToTry.toRestaurantOrNull()?.visited)
         assertEquals(true, visited.toRestaurantOrNull()?.visited)
+    }
+
+    // --- Tags (F-59) ----------------------------------------------------
+
+    @Test
+    fun `toExport carries the given tags`() {
+        val export = restaurant().toExport(tags = listOf("Terraza", "Brunch"))
+
+        assertEquals(listOf("Terraza", "Brunch"), export.tags)
+    }
+
+    @Test
+    fun `tags default to empty when a share file predates the field`() {
+        // Mirrors decoding an older export whose JSON has no "tags" key at all.
+        val export = RestaurantExport(name = "Cal Ferran", cuisineType = "mediterranean", rating = 4, priceRange = 2)
+
+        assertEquals(emptyList<String>(), export.tags)
+    }
+
+    @Test
+    fun `toValidatedTagNames trims and drops blank tags`() {
+        val export = RestaurantExport(
+            name = "A", cuisineType = "bar", rating = 3, priceRange = 1,
+            tags = listOf("  Terraza  ", "", "   ")
+        )
+
+        assertEquals(listOf("Terraza"), export.toValidatedTagNames())
+    }
+
+    @Test
+    fun `toValidatedTagNames drops a tag containing a comma rather than the whole row`() {
+        val export = RestaurantExport(
+            name = "A", cuisineType = "bar", rating = 3, priceRange = 1,
+            tags = listOf("Terraza", "has,a,comma")
+        )
+
+        assertEquals(listOf("Terraza"), export.toValidatedTagNames())
+    }
+
+    @Test
+    fun `toValidatedTagNames folds case-insensitive duplicates into one`() {
+        val export = RestaurantExport(
+            name = "A", cuisineType = "bar", rating = 3, priceRange = 1,
+            tags = listOf("Terraza", "terraza", "TERRAZA")
+        )
+
+        assertEquals(listOf("Terraza"), export.toValidatedTagNames())
+    }
+
+    @Test
+    fun `toValidatedTagNames caps the number of tags from one row`() {
+        val export = RestaurantExport(
+            name = "A", cuisineType = "bar", rating = 3, priceRange = 1,
+            tags = (1..MAX_TAGS_PER_RESTAURANT + 5).map { "Tag$it" }
+        )
+
+        assertEquals(MAX_TAGS_PER_RESTAURANT, export.toValidatedTagNames().size)
     }
 }

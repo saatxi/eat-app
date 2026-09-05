@@ -67,7 +67,8 @@ class SettingsViewModel(
     fun onExportData(context: Context) {
         viewModelScope.launch {
             val all = repository.observeFiltered(query = null, minRating = null, cuisineType = null).first()
-            context.shareRestaurants(all.map { it.toExport() })
+            val tagsByRestaurantId = repository.observeTagsByRestaurantId().first()
+            context.shareRestaurants(all.map { it.toExport(tagsByRestaurantId[it.id].orEmpty()) })
         }
     }
 

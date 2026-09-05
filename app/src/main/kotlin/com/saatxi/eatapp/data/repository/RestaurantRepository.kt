@@ -18,11 +18,16 @@ interface RestaurantRepository {
     fun observeCuisineTypes(): Flow<List<String>>
     fun observeById(id: Long): Flow<Restaurant?>
 
-    /** Returns the newly assigned id. [restaurant] must have `id == 0`. */
-    suspend fun insert(restaurant: Restaurant): Long
-    suspend fun update(restaurant: Restaurant)
+    /** Returns the newly assigned id. [restaurant] must have `id == 0`. [tags] replaces any prior tags in the same write. */
+    suspend fun insert(restaurant: Restaurant, tags: List<String> = emptyList()): Long
+    suspend fun update(restaurant: Restaurant, tags: List<String>)
     suspend fun delete(id: Long)
     suspend fun deleteAll()
+
+    // --- Tags (F-59) -----------------------------------------------------
+    fun observeAllTagNames(): Flow<List<String>>
+    fun observeTagNames(restaurantId: Long): Flow<List<String>>
+    fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>>
 
     // --- Statistics (F-64) — see RestaurantDao for what each one queries ---
     fun observeTotalCount(): Flow<Int>

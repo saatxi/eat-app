@@ -117,6 +117,7 @@
     <string name="edit_section_basics">Datos básicos</string>
     <string name="edit_section_status_rating">Estado y puntuación</string>
     <string name="edit_section_links">Enlaces</string>
+    <string name="edit_section_tags">Etiquetas</string>
     <string name="edit_action_add_photo">Añadir foto</string>
     <string name="edit_action_remove_photo">Quitar foto</string>
     <string name="edit_photo_preview_description">Vista previa de la foto del restaurante</string>
@@ -130,6 +131,8 @@
     <string name="edit_field_price_range">Rango de precio</string>
     <string name="edit_field_website">Web (opcional)</string>
     <string name="edit_field_instagram">Instagram (opcional)</string>
+    <string name="edit_field_tags">Añadir una etiqueta</string>
+    <string name="edit_action_remove_tag">Quitar etiqueta %1$s</string>
     <string name="edit_error_name_required">El nombre es obligatorio</string>
     <string name="edit_error_cuisine_required">Elige una cocina</string>
     <string name="edit_error_website_invalid">Introduce una dirección web http/https válida</string>

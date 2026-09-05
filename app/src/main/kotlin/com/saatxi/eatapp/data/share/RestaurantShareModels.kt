@@ -1,7 +1,9 @@
 package com.saatxi.eatapp.data.share
 
+import com.saatxi.eatapp.data.local.MAX_TAGS_PER_RESTAURANT
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.normalizeInstagramHandle
+import com.saatxi.eatapp.data.local.normalizeTagName
 import com.saatxi.eatapp.data.local.normalizeWebsite
 import kotlinx.serialization.Serializable
 
@@ -27,7 +29,10 @@ data class RestaurantExport(
     // Defaults null so a file written before this field existed still imports
     // fine, just without a note — the same backward-compatibility treatment
     // `visited` got in F-55.
-    val notes: String? = null
+    val notes: String? = null,
+    // Defaults empty for the same reason `notes` defaults null — a file
+    // written before tags existed (F-59) still imports, just without any.
+    val tags: List<String> = emptyList()
 )
 
 /**
@@ -45,7 +50,10 @@ data class RestaurantShareFile(
     }
 }
 
-fun Restaurant.toExport(): RestaurantExport = RestaurantExport(
+// [tags] isn't a field on [Restaurant] itself — it lives in the RestaurantTag
+// join table — so every caller has to look its restaurant's tags up and pass
+// them in, rather than this being derivable from the entity alone.
+fun Restaurant.toExport(tags: List<String> = emptyList()): RestaurantExport = RestaurantExport(
     name = name,
     cuisineType = cuisineType,
     address = address,
@@ -54,7 +62,8 @@ fun Restaurant.toExport(): RestaurantExport = RestaurantExport(
     visited = visited,
     website = website,
     instagram = instagram,
-    notes = notes
+    notes = notes,
+    tags = tags
 )
 
 /**
@@ -63,6 +72,9 @@ fun Restaurant.toExport(): RestaurantExport = RestaurantExport(
  * old synced `.db` was. Returns null — dropping just this row — rather than
  * failing the whole file, the same per-row leniency the old sync used for a
  * bad link column.
+ *
+ * Deliberately doesn't return the row's tags — see [ImportedRestaurant],
+ * which pairs the [Restaurant] this produces with its own validated tags.
  */
 fun RestaurantExport.toRestaurantOrNull(): Restaurant? {
     val trimmedName = name.trim()
@@ -83,3 +95,13 @@ fun RestaurantExport.toRestaurantOrNull(): Restaurant? {
         notes = notes?.trim()?.takeIf { it.isNotBlank() }
     )
 }
+
+/**
+ * Validates the raw [RestaurantExport.tags] list the same per-item-lenient
+ * way the rest of an import row is validated: a tag that's blank, too long,
+ * or contains a comma is dropped rather than failing the row, duplicates
+ * fold together case-insensitively, and the whole list is capped so one
+ * malicious row can't create unbounded junk.
+ */
+fun RestaurantExport.toValidatedTagNames(): List<String> =
+    tags.mapNotNull(::normalizeTagName).distinctBy { it.lowercase() }.take(MAX_TAGS_PER_RESTAURANT)

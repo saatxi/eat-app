@@ -82,9 +82,10 @@ class RestaurantListViewModel(
         queryFilters.flatMapLatest {
             repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort, it.visited)
         },
-        preferencesRepository.preferences.map { it.favoriteIds }
-    ) { restaurants, favoriteIds ->
-        restaurants.map { it.toUiModel(isFavorite = it.id in favoriteIds) }
+        preferencesRepository.preferences.map { it.favoriteIds },
+        repository.observeTagsByRestaurantId()
+    ) { restaurants, favoriteIds, tagsByRestaurantId ->
+        restaurants.map { it.toUiModel(isFavorite = it.id in favoriteIds, tags = tagsByRestaurantId[it.id].orEmpty()) }
     }
 
     val uiState: StateFlow<RestaurantListUiState> = combine(
@@ -141,7 +142,8 @@ class RestaurantListViewModel(
     fun onShareAll(context: Context) {
         viewModelScope.launch {
             val all = repository.observeFiltered(query = null, minRating = null, cuisineType = null).first()
-            context.shareRestaurants(all.map { it.toExport() })
+            val tagsByRestaurantId = repository.observeTagsByRestaurantId().first()
+            context.shareRestaurants(all.map { it.toExport(tagsByRestaurantId[it.id].orEmpty()) })
         }
     }
 

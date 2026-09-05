@@ -115,16 +115,25 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override fun observeById(id: Long): Flow<Restaurant?> =
         throw NotImplementedError("Not used by FavoritesViewModel")
 
-    override suspend fun insert(restaurant: Restaurant): Long =
+    override suspend fun insert(restaurant: Restaurant, tags: List<String>): Long =
         throw NotImplementedError("Not used by FavoritesViewModel")
 
-    override suspend fun update(restaurant: Restaurant) =
+    override suspend fun update(restaurant: Restaurant, tags: List<String>) =
         throw NotImplementedError("Not used by FavoritesViewModel")
 
     override suspend fun delete(id: Long) =
         throw NotImplementedError("Not used by FavoritesViewModel")
 
     override suspend fun deleteAll() =
+        throw NotImplementedError("Not used by FavoritesViewModel")
+
+    override fun observeAllTagNames(): Flow<List<String>> =
+        throw NotImplementedError("Not used by FavoritesViewModel")
+
+    override fun observeTagNames(restaurantId: Long): Flow<List<String>> =
+        throw NotImplementedError("Not used by FavoritesViewModel")
+
+    override fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>> =
         throw NotImplementedError("Not used by FavoritesViewModel")
 
     override fun observeTotalCount(): Flow<Int> =

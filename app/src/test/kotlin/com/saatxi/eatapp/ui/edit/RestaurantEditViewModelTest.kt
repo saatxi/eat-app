@@ -203,6 +203,64 @@ class RestaurantEditViewModelTest {
         assertEquals(0L, inserted?.id)
     }
 
+    // --- tags (F-59) --------------------------------------------------------
+
+    @Test
+    fun `onAddTag appends a trimmed tag`() = runTest {
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        observeState(viewModel)
+
+        viewModel.onAddTag("  Terraza  ")
+
+        assertEquals(listOf("Terraza"), viewModel.uiState.value.tags)
+    }
+
+    @Test
+    fun `onAddTag ignores a tag that fails validation`() = runTest {
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        observeState(viewModel)
+
+        viewModel.onAddTag("has,a,comma")
+
+        assertEquals(emptyList<String>(), viewModel.uiState.value.tags)
+    }
+
+    @Test
+    fun `onAddTag is a no-op for a tag already added, case-insensitively`() = runTest {
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        observeState(viewModel)
+        viewModel.onAddTag("Terraza")
+
+        viewModel.onAddTag("terraza")
+
+        assertEquals(listOf("Terraza"), viewModel.uiState.value.tags)
+    }
+
+    @Test
+    fun `onRemoveTag removes just the matching tag`() = runTest {
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        observeState(viewModel)
+        viewModel.onAddTag("Terraza")
+        viewModel.onAddTag("Brunch")
+
+        viewModel.onRemoveTag("Terraza")
+
+        assertEquals(listOf("Brunch"), viewModel.uiState.value.tags)
+    }
+
+    @Test
+    fun `saving passes the current tags to insert`() = runTest {
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        observeState(viewModel)
+        viewModel.onNameChange("Cal Ferran")
+        viewModel.onCuisineChange("mediterranean")
+        viewModel.onAddTag("Terraza")
+
+        viewModel.onSave(onSaved = {})
+
+        assertEquals(listOf("Terraza"), repository.lastSavedTags)
+    }
+
     // --- edit mode --------------------------------------------------------
 
     @Test
@@ -226,6 +284,18 @@ class RestaurantEditViewModelTest {
     }
 
     @Test
+    fun `edit mode loads the existing restaurant's tags into the form`() = runTest {
+        repository.restaurants.value = listOf(
+            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = null, rating = 4, priceRange = 2)
+        )
+        repository.tagNamesByRestaurantId.value = mapOf(1L to listOf("Terraza", "Brunch"))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = 1L)
+        observeState(viewModel)
+
+        assertEquals(listOf("Terraza", "Brunch"), viewModel.uiState.value.tags)
+    }
+
+    @Test
     fun `saving in edit mode updates rather than inserts`() = runTest {
         repository.restaurants.value = listOf(
             Restaurant(id = 1, name = "Old Name", cuisineType = "mediterranean", address = null, rating = 3, priceRange = 1)
@@ -241,6 +311,22 @@ class RestaurantEditViewModelTest {
         assertNull(repository.lastInserted)
         assertEquals("New Name", repository.lastUpdated?.name)
         assertEquals(1L, repository.lastUpdated?.id)
+    }
+
+    @Test
+    fun `saving in edit mode passes the current tags to update`() = runTest {
+        repository.restaurants.value = listOf(
+            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = null, rating = 3, priceRange = 1)
+        )
+        repository.tagNamesByRestaurantId.value = mapOf(1L to listOf("Terraza"))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = 1L)
+        observeState(viewModel)
+        viewModel.onRemoveTag("Terraza")
+        viewModel.onAddTag("Brunch")
+
+        viewModel.onSave(onSaved = {})
+
+        assertEquals(listOf("Brunch"), repository.lastSavedTags)
     }
 
     // --- photos (F-63) --------------------------------------------------
@@ -297,10 +383,14 @@ class RestaurantEditViewModelTest {
 internal class FakeRestaurantRepository : RestaurantRepository {
 
     val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
+    val tagNamesByRestaurantId = MutableStateFlow<Map<Long, List<String>>>(emptyMap())
+    val allTagNames = MutableStateFlow<List<String>>(emptyList())
 
     var lastInserted: Restaurant? = null
         private set
     var lastUpdated: Restaurant? = null
+        private set
+    var lastSavedTags: List<String>? = null
         private set
 
     override fun observeFiltered(
@@ -317,19 +407,29 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     override fun observeById(id: Long): Flow<Restaurant?> =
         restaurants.map { list -> list.firstOrNull { it.id == id } }
 
-    override suspend fun insert(restaurant: Restaurant): Long {
+    override suspend fun insert(restaurant: Restaurant, tags: List<String>): Long {
         lastInserted = restaurant
+        lastSavedTags = tags
         return 1L
     }
 
-    override suspend fun update(restaurant: Restaurant) {
+    override suspend fun update(restaurant: Restaurant, tags: List<String>) {
         lastUpdated = restaurant
+        lastSavedTags = tags
     }
 
     override suspend fun delete(id: Long) =
         throw NotImplementedError("Not used by RestaurantEditViewModel")
 
     override suspend fun deleteAll() =
+        throw NotImplementedError("Not used by RestaurantEditViewModel")
+
+    override fun observeAllTagNames(): Flow<List<String>> = allTagNames
+
+    override fun observeTagNames(restaurantId: Long): Flow<List<String>> =
+        tagNamesByRestaurantId.map { it[restaurantId].orEmpty() }
+
+    override fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>> =
         throw NotImplementedError("Not used by RestaurantEditViewModel")
 
     override fun observeTotalCount(): Flow<Int> =

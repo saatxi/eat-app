@@ -1,6 +1,5 @@
 package com.saatxi.eatapp.data.share
 
-import com.saatxi.eatapp.data.local.Restaurant
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -24,7 +23,7 @@ class RestaurantImportReaderTest {
         val outcome = RestaurantImportReader.read(jsonOf(RestaurantShareFile(restaurants = listOf(export("Cal Ferran")))))
 
         val success = outcome as ImportOutcome.Success
-        assertEquals(listOf("Cal Ferran"), success.restaurants.map(Restaurant::name))
+        assertEquals(listOf("Cal Ferran"), success.restaurants.map { it.restaurant.name })
         assertEquals(0, success.skippedCount)
     }
 
@@ -35,7 +34,7 @@ class RestaurantImportReaderTest {
         )
 
         val success = outcome as ImportOutcome.Success
-        assertEquals(listOf("Cal Ferran", "Bar Nil"), success.restaurants.map(Restaurant::name))
+        assertEquals(listOf("Cal Ferran", "Bar Nil"), success.restaurants.map { it.restaurant.name })
     }
 
     @Test
@@ -80,7 +79,7 @@ class RestaurantImportReaderTest {
 
         val outcome = RestaurantImportReader.read(json) as ImportOutcome.Success
 
-        assertEquals(listOf("Cal Ferran"), outcome.restaurants.map(Restaurant::name))
+        assertEquals(listOf("Cal Ferran"), outcome.restaurants.map { it.restaurant.name })
         assertEquals(2, outcome.skippedCount)
     }
 
@@ -90,6 +89,19 @@ class RestaurantImportReaderTest {
 
         val outcome = RestaurantImportReader.read(json) as ImportOutcome.Success
 
-        assertEquals(0L, outcome.restaurants.single().id)
+        assertEquals(0L, outcome.restaurants.single().restaurant.id)
+    }
+
+    // --- Tags (F-59) ------------------------------------------------------
+
+    @Test
+    fun `pairs each restaurant with its own validated tags`() {
+        val json = jsonOf(
+            RestaurantShareFile(restaurants = listOf(export("Cal Ferran").copy(tags = listOf("Terraza", "has,comma"))))
+        )
+
+        val outcome = RestaurantImportReader.read(json) as ImportOutcome.Success
+
+        assertEquals(listOf("Terraza"), outcome.restaurants.single().tags)
     }
 }

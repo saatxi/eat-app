@@ -27,11 +27,12 @@ class RestaurantDetailViewModel(
 
     val uiState: StateFlow<DetailUiState> = combine(
         repository.observeById(restaurantId),
-        preferencesRepository.preferences.map { it.favoriteIds }
-    ) { restaurant, favoriteIds ->
+        preferencesRepository.preferences.map { it.favoriteIds },
+        repository.observeTagNames(restaurantId)
+    ) { restaurant, favoriteIds, tags ->
         when (restaurant) {
             null -> DetailUiState.NotFound
-            else -> DetailUiState.Loaded(restaurant.toUiModel(isFavorite = restaurant.id in favoriteIds))
+            else -> DetailUiState.Loaded(restaurant.toUiModel(isFavorite = restaurant.id in favoriteIds, tags = tags))
         }
     }.stateIn(
         scope = viewModelScope,

@@ -48,6 +48,7 @@ import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.share.ImportFailureReason
 import com.saatxi.eatapp.ui.AppViewModelProvider
+import com.saatxi.eatapp.ui.common.TagPillRow
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
@@ -202,6 +203,9 @@ private fun ImportCandidateRow(
                     }
                 }
             }
+            if (candidate.tags.isNotEmpty()) {
+                TagPillRow(tags = candidate.tags, modifier = Modifier.padding(top = 8.dp))
+            }
             if (candidate.duplicateOf != null) {
                 Text(
                     text = stringResource(R.string.import_duplicate_label),
@@ -251,6 +255,7 @@ private val previewCandidate = ImportCandidate(
         rating = 4,
         priceRange = 2
     ),
+    tags = listOf("Terraza", "Para grupos"),
     duplicateOf = null,
     decision = ImportDecision.ADD
 )

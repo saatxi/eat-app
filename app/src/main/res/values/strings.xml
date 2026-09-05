@@ -119,6 +119,7 @@
     <string name="edit_section_basics">Basics</string>
     <string name="edit_section_status_rating">Status and rating</string>
     <string name="edit_section_links">Links</string>
+    <string name="edit_section_tags">Tags</string>
     <string name="edit_action_add_photo">Add photo</string>
     <string name="edit_action_remove_photo">Remove photo</string>
     <string name="edit_photo_preview_description">Restaurant photo preview</string>
@@ -132,6 +133,8 @@
     <string name="edit_field_price_range">Price range</string>
     <string name="edit_field_website">Website (optional)</string>
     <string name="edit_field_instagram">Instagram (optional)</string>
+    <string name="edit_field_tags">Add a tag</string>
+    <string name="edit_action_remove_tag">Remove tag %1$s</string>
     <string name="edit_error_name_required">Name is required</string>
     <string name="edit_error_cuisine_required">Choose a cuisine</string>
     <string name="edit_error_website_invalid">Enter a valid http/https web address</string>

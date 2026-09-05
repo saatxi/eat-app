@@ -166,10 +166,10 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override fun observeById(id: Long): Flow<Restaurant?> =
         restaurants.map { list -> list.firstOrNull { it.id == id } }
 
-    override suspend fun insert(restaurant: Restaurant): Long =
+    override suspend fun insert(restaurant: Restaurant, tags: List<String>): Long =
         throw NotImplementedError("Not used by SettingsViewModel")
 
-    override suspend fun update(restaurant: Restaurant) =
+    override suspend fun update(restaurant: Restaurant, tags: List<String>) =
         throw NotImplementedError("Not used by SettingsViewModel")
 
     override suspend fun delete(id: Long) =
@@ -178,6 +178,15 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override suspend fun deleteAll() {
         restaurants.value = emptyList()
     }
+
+    override fun observeAllTagNames(): Flow<List<String>> =
+        throw NotImplementedError("Not used by SettingsViewModel")
+
+    override fun observeTagNames(restaurantId: Long): Flow<List<String>> =
+        throw NotImplementedError("Not used by SettingsViewModel")
+
+    override fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>> =
+        throw NotImplementedError("Not used by SettingsViewModel")
 
     override fun observeTotalCount(): Flow<Int> =
         throw NotImplementedError("Not used by SettingsViewModel")
