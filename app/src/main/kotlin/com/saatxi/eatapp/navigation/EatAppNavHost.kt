@@ -48,6 +48,7 @@ import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.list.RestaurantListScreen
 import com.saatxi.eatapp.ui.roulette.RouletteScreen
 import com.saatxi.eatapp.ui.settings.SettingsScreen
+import com.saatxi.eatapp.ui.stats.StatisticsScreen
 import kotlinx.coroutines.launch
 
 private const val ARG_RESTAURANT_ID = "restaurantId"
@@ -58,6 +59,7 @@ private object Routes {
     const val ADD = "add"
     const val EDIT = "edit/{restaurantId}"
     const val IMPORT = "import/{uri}"
+    const val STATS = "stats"
 }
 
 private fun detailRoute(restaurantId: Long) = "detail/$restaurantId"
@@ -83,7 +85,8 @@ fun EatAppNavHost(
     // The bottom bar / rail has nowhere to live on the detail, add, edit or
     // import screens — none of them has a tab of its own, they're reached by
     // tapping into one of the other four (or, for import, from outside the app).
-    val isFullScreenRoute = currentDestination?.route in setOf(Routes.DETAIL, Routes.ADD, Routes.EDIT, Routes.IMPORT)
+    val isFullScreenRoute = currentDestination?.route in
+        setOf(Routes.DETAIL, Routes.ADD, Routes.EDIT, Routes.IMPORT, Routes.STATS)
 
     // Below this width, List/Favorites/Roulette keep pushing the full-screen
     // detail/{id} route exactly as before — shared-element transition, hidden
@@ -191,7 +194,10 @@ fun EatAppNavHost(
                         }
                     }
                     composable(TopLevelDestination.SETTINGS.route) {
-                        SettingsScreen()
+                        SettingsScreen(onOpenStatistics = { navController.navigate(Routes.STATS) })
+                    }
+                    composable(Routes.STATS) {
+                        StatisticsScreen(onBack = { navController.popBackStack() })
                     }
                     composable(
                         route = Routes.DETAIL,

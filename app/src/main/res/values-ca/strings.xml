@@ -95,6 +95,7 @@
     <string name="palette_garden">Hort</string>
     <string name="palette_indigo">Indi</string>
     <string name="settings_section_data">Dades</string>
+    <string name="settings_action_view_statistics">Veure estadístiques</string>
     <string name="settings_data_description">Exporta tots els teus restaurants com a fitxer JSON que pots desar com a còpia de seguretat o compartir amb un amic.</string>
     <string name="settings_action_export_data">Exporta / comparteix les meves dades</string>
     <string name="settings_action_delete_all_data">Elimina tots els restaurants</string>
@@ -184,4 +185,18 @@
     <string name="cuisine_fast_food">Menjar ràpid</string>
     <string name="cuisine_fine_dining">Alta cuina</string>
     <string name="cuisine_vegetarian">Vegetariana</string>
+
+    <!-- Pantalla d'estadístiques. -->
+    <string name="stats_title">Estadístiques</string>
+    <string name="stats_tile_total">Restaurants</string>
+    <string name="stats_tile_visited">Visitats</string>
+    <string name="stats_tile_want_to_try">Per provar</string>
+    <string name="stats_tile_average_rating">Puntuació mitjana</string>
+    <string name="stats_average_rating_value">%1$.1f</string>
+    <string name="stats_average_rating_none">–</string>
+    <string name="stats_section_cuisines">Cuines</string>
+    <string name="stats_section_price">Rang de preu</string>
+    <string name="stats_price_not_set">Sense definir</string>
+    <string name="stats_empty_title">Encara no hi ha res a mostrar</string>
+    <string name="stats_empty_body">Afegeix un restaurant per veure aquí les teves estadístiques.</string>
 </resources>

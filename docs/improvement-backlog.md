@@ -25,8 +25,9 @@ the app's theming/navigation foundations solid (see
 [visual-modernization-plan.md](visual-modernization-plan.md)) but its data
 model and a few screens thin: no photos anywhere (F-63, now done), no notes
 or tags, no visited/want-to-try status (F-55, now done), a flat Settings
-screen and an ungrouped edit form (F-62, now done). F-64 (a stats screen) is
-now the single highest-impact item still open.
+screen and an ungrouped edit form (F-62, now done), and no statistics
+screen (F-64, now done). F-56 (notes) is now the highest-impact item still
+open.
 
 Active work on the *first* pass still lives in
 [visual-modernization-plan.md](visual-modernization-plan.md): the redesign
@@ -40,14 +41,6 @@ For what's deliberately out of scope in both, see
 ---
 
 ## Open
-
-### F-64 · No statistics screen — High / M
-
-Nothing surfaces the aggregate picture: most-picked cuisines, average
-rating, price-tier spread, visited vs. want-to-try split. **Fix:** a new
-screen (reachable from Settings) backed by a couple of `GROUP BY` queries in
-`RestaurantDao`, rendered as simple stat tiles/bars — no charting library
-needed, everything is computed locally from Room with no network call.
 
 ### F-56 · No free-text notes per restaurant — High / S
 
@@ -120,6 +113,54 @@ kept for when the rest of the list is done.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-64 · No statistics screen — Done.
+
+A new screen, reachable from Settings' Data section
+(`settings_action_view_statistics`, a new `Routes.STATS` full-screen route in
+[EatAppNavHost.kt](../app/src/main/kotlin/com/saatxi/eatapp/navigation/EatAppNavHost.kt)
+— hides the bottom bar the same way detail/add/edit/import already do),
+surfacing exactly the aggregate picture the entry asked for: total
+restaurants, visited vs. want-to-try, average rating, most-picked cuisines,
+price-tier spread. Everything is computed locally by Room; no network call,
+no charting library.
+
+- **Five small DAO queries** rather than one hand-assembled aggregate
+  ([RestaurantDao.kt](../app/src/main/kotlin/com/saatxi/eatapp/data/local/RestaurantDao.kt)):
+  `observeTotalCount`, `observeVisitedCount`, `observeAverageRating`
+  (`AVG(rating) WHERE rating > 0` — a want-to-try row's `rating = 0` doesn't
+  count as a real rating, so it can't drag the average down), and two
+  `GROUP BY` queries, `observeCuisineCounts`/`observePriceRangeCounts`,
+  returning new small data classes `CuisineCount`/`PriceRangeCount`
+  ([RestaurantStats.kt](../app/src/main/kotlin/com/saatxi/eatapp/data/local/RestaurantStats.kt)).
+  Exposed through `RestaurantRepository` as plain delegating methods.
+- **`StatisticsViewModel`** combines all five with `combine()` — the typed
+  5-flow overload, not the untyped vararg one (the same overload boundary
+  F-3's history already ran into) — into one `StatisticsUiState`, with the
+  same `isInitialLoad` flag the list/favorites screens use so the empty
+  state can't flash before the real counts arrive. `wantToTryCount` is
+  derived (`totalCount - visitedCount`), not a sixth query.
+- **`StatisticsScreen`**: two rows of stat tiles (restaurants, visited,
+  want-to-try, average rating), then a cuisines card and a price-range card,
+  each row a small hand-drawn horizontal bar (`StatBar`, two nested `Box`es)
+  sized by its share of the largest count in that group — no charting
+  library, per the entry. Cuisine rows reuse the same tinted-circle badge
+  (`cuisineTint`/`cuisineIcon`) as every other cuisine-aware row in the app.
+  An empty state covers the "no restaurants yet" case.
+- **Every `RestaurantRepository` fake in the test suite** (six of them,
+  across the edit/list/detail/favorites/roulette/settings ViewModel tests)
+  gained the five new methods as `NotImplementedError` stubs, since the
+  interface itself grew — none of those ViewModels use the new methods, so
+  nothing about their existing tests changed otherwise.
+- Verified with `./gradlew test assembleDebug assembleRelease lint` — 176
+  unit tests passing (9 new: DAO-level cases for the count/average/group-by
+  queries including the unrated-row exclusion, and `StatisticsViewModelTest`
+  covering the combine/derivation logic), release build with R8 still
+  succeeds, lint report unchanged (`UnusedResources` still the same
+  pre-existing 3). Not verified: what the tiles/bars actually look like on
+  a real device or emulator, only that the screen compiles, its two
+  `@Preview`s (populated and empty) are well-formed, and its logic is
+  covered by the ViewModel/DAO tests above.
 
 ### F-61 · Import candidate rows have no cuisine badge — Done.
 

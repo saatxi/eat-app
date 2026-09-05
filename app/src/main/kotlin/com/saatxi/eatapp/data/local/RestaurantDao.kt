@@ -74,4 +74,28 @@ interface RestaurantDao {
 
     @Query("DELETE FROM restaurants")
     suspend fun deleteAll()
+
+    // --- Statistics (F-64) ---------------------------------------------
+    //
+    // Five small, independent queries rather than one hand-assembled
+    // aggregate object: each maps directly to one GROUP BY/aggregate and
+    // stays trivial to read, and StatisticsViewModel's own combine() (a
+    // typed 5-flow overload, not the untyped vararg one — see F-3's history
+    // of that exact overload boundary) is what turns them into one state.
+
+    @Query("SELECT COUNT(*) FROM restaurants")
+    fun observeTotalCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM restaurants WHERE visited = 1")
+    fun observeVisitedCount(): Flow<Int>
+
+    /** Null when nothing has a real rating yet — a want-to-try row's `rating = 0` doesn't count as one. */
+    @Query("SELECT AVG(rating) FROM restaurants WHERE rating > 0")
+    fun observeAverageRating(): Flow<Double?>
+
+    @Query("SELECT cuisineType, COUNT(*) AS count FROM restaurants GROUP BY cuisineType ORDER BY count DESC")
+    fun observeCuisineCounts(): Flow<List<CuisineCount>>
+
+    @Query("SELECT priceRange, COUNT(*) AS count FROM restaurants GROUP BY priceRange")
+    fun observePriceRangeCounts(): Flow<List<PriceRangeCount>>
 }

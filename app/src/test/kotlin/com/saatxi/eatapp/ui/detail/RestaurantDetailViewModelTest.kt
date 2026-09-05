@@ -1,5 +1,7 @@
 package com.saatxi.eatapp.ui.detail
 
+import com.saatxi.eatapp.data.local.CuisineCount
+import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.prefs.UserPreferences
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
@@ -154,6 +156,21 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override suspend fun deleteAll() {
         restaurants.value = emptyList()
     }
+
+    override fun observeTotalCount(): Flow<Int> =
+        throw NotImplementedError("Not used by RestaurantDetailViewModel")
+
+    override fun observeVisitedCount(): Flow<Int> =
+        throw NotImplementedError("Not used by RestaurantDetailViewModel")
+
+    override fun observeAverageRating(): Flow<Double?> =
+        throw NotImplementedError("Not used by RestaurantDetailViewModel")
+
+    override fun observeCuisineCounts(): Flow<List<CuisineCount>> =
+        throw NotImplementedError("Not used by RestaurantDetailViewModel")
+
+    override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
+        throw NotImplementedError("Not used by RestaurantDetailViewModel")
 }
 
 private class FakeUserPreferencesRepository : UserPreferencesRepository {

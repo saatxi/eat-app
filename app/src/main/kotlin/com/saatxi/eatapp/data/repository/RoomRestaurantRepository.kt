@@ -1,6 +1,8 @@
 package com.saatxi.eatapp.data.repository
 
 import android.content.Context
+import com.saatxi.eatapp.data.local.CuisineCount
+import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantDao
 import com.saatxi.eatapp.data.local.RestaurantSort
@@ -77,4 +79,10 @@ class RoomRestaurantRepository(
     private suspend fun writeBackup() {
         writeBackupFile(context, dao.getAll().map { it.toExport() })
     }
+
+    override fun observeTotalCount(): Flow<Int> = dao.observeTotalCount()
+    override fun observeVisitedCount(): Flow<Int> = dao.observeVisitedCount()
+    override fun observeAverageRating(): Flow<Double?> = dao.observeAverageRating()
+    override fun observeCuisineCounts(): Flow<List<CuisineCount>> = dao.observeCuisineCounts()
+    override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> = dao.observePriceRangeCounts()
 }

@@ -1,6 +1,8 @@
 package com.saatxi.eatapp.ui.edit
 
 import android.net.Uri
+import com.saatxi.eatapp.data.local.CuisineCount
+import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.photo.RestaurantPhotoStorage
@@ -292,6 +294,21 @@ internal class FakeRestaurantRepository : RestaurantRepository {
         throw NotImplementedError("Not used by RestaurantEditViewModel")
 
     override suspend fun deleteAll() =
+        throw NotImplementedError("Not used by RestaurantEditViewModel")
+
+    override fun observeTotalCount(): Flow<Int> =
+        throw NotImplementedError("Not used by RestaurantEditViewModel")
+
+    override fun observeVisitedCount(): Flow<Int> =
+        throw NotImplementedError("Not used by RestaurantEditViewModel")
+
+    override fun observeAverageRating(): Flow<Double?> =
+        throw NotImplementedError("Not used by RestaurantEditViewModel")
+
+    override fun observeCuisineCounts(): Flow<List<CuisineCount>> =
+        throw NotImplementedError("Not used by RestaurantEditViewModel")
+
+    override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
         throw NotImplementedError("Not used by RestaurantEditViewModel")
 }
 

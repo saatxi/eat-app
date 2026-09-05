@@ -99,6 +99,7 @@
     <string name="palette_garden">Garden</string>
     <string name="palette_indigo">Indigo</string>
     <string name="settings_section_data">Data</string>
+    <string name="settings_action_view_statistics">View statistics</string>
     <string name="settings_data_description">Export all your restaurants as a JSON file you can keep as a backup or share with a friend.</string>
     <string name="settings_action_export_data">Export / share my data</string>
     <string name="settings_action_delete_all_data">Delete all restaurants</string>
@@ -188,4 +189,18 @@
     <string name="cuisine_fast_food">Fast food</string>
     <string name="cuisine_fine_dining">Fine dining</string>
     <string name="cuisine_vegetarian">Vegetarian</string>
+
+    <!-- Statistics screen. -->
+    <string name="stats_title">Statistics</string>
+    <string name="stats_tile_total">Restaurants</string>
+    <string name="stats_tile_visited">Visited</string>
+    <string name="stats_tile_want_to_try">Want to try</string>
+    <string name="stats_tile_average_rating">Avg. rating</string>
+    <string name="stats_average_rating_value">%1$.1f</string>
+    <string name="stats_average_rating_none">–</string>
+    <string name="stats_section_cuisines">Cuisines</string>
+    <string name="stats_section_price">Price range</string>
+    <string name="stats_price_not_set">Not set</string>
+    <string name="stats_empty_title">Nothing to show yet</string>
+    <string name="stats_empty_body">Add a restaurant to see your stats here.</string>
 </resources>

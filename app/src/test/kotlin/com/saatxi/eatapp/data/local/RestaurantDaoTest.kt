@@ -409,6 +409,62 @@ class RestaurantDaoTest {
         assertFalse(second.exists())
     }
 
+    // --- statistics (F-64), through the repository ----------------------------
+
+    @Test
+    fun `total and visited counts reflect what was inserted`() = runTest {
+        seed(restaurant(1, "Been There", visited = true), restaurant(2, "Want To Go", visited = false))
+
+        assertEquals(2, repository.observeTotalCount().first())
+        assertEquals(1, repository.observeVisitedCount().first())
+    }
+
+    @Test
+    fun `average rating ignores unrated rows`() = runTest {
+        // A want-to-try row saved with no rating yet (rating = 0) must not drag the
+        // average down as if it were a real, badly-rated visit.
+        seed(
+            restaurant(1, "Four Stars", rating = 4),
+            restaurant(2, "Two Stars", rating = 2),
+            restaurant(3, "Not Rated Yet", rating = 0, visited = false)
+        )
+
+        assertEquals(3.0, repository.observeAverageRating().first())
+    }
+
+    @Test
+    fun `average rating is null when nothing has a real rating`() = runTest {
+        seed(restaurant(1, "Not Rated Yet", rating = 0, visited = false))
+
+        assertNull(repository.observeAverageRating().first())
+    }
+
+    @Test
+    fun `cuisine counts group by cuisine, highest first`() = runTest {
+        seed(
+            restaurant(1, "Sakura", cuisineType = "japanese"),
+            restaurant(2, "Kioto", cuisineType = "japanese"),
+            restaurant(3, "Alga", cuisineType = "seafood")
+        )
+
+        assertEquals(
+            listOf(CuisineCount("japanese", 2), CuisineCount("seafood", 1)),
+            repository.observeCuisineCounts().first()
+        )
+    }
+
+    @Test
+    fun `price range counts group by price range`() = runTest {
+        seed(
+            restaurant(1, "One", priceRange = 1),
+            restaurant(2, "Two", priceRange = 2),
+            restaurant(3, "Also Two", priceRange = 2)
+        )
+
+        val counts = repository.observePriceRangeCounts().first().associate { it.priceRange to it.count }
+        assertEquals(mapOf(1 to 1, 2 to 2), counts)
+    }
+
     // --- Part 3: backup.json, written through the repository -----------------
 
     private fun backupFile() = File(context.filesDir, "backup.json")

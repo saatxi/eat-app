@@ -16,6 +16,7 @@ import com.saatxi.eatapp.ui.importing.RestaurantImportViewModel
 import com.saatxi.eatapp.ui.list.RestaurantListViewModel
 import com.saatxi.eatapp.ui.roulette.RouletteViewModel
 import com.saatxi.eatapp.ui.settings.SettingsViewModel
+import com.saatxi.eatapp.ui.stats.StatisticsViewModel
 
 fun CreationExtras.eatApplication(): EatApplication =
     this[APPLICATION_KEY] as EatApplication
@@ -47,6 +48,9 @@ object AppViewModelProvider {
         }
         initializer {
             RouletteViewModel(eatApplication().repository, eatApplication().userPreferences)
+        }
+        initializer {
+            StatisticsViewModel(eatApplication().repository)
         }
     }
 

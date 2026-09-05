@@ -15,6 +15,9 @@ address, rating, price range and an optional photo.
 - Share one restaurant, or your whole list, with anyone through Android's
   normal share sheet (WhatsApp, Gmail, Drive...) — no account or server
   involved
+- A statistics screen (Settings → View statistics) with the aggregate
+  picture — total restaurants, visited vs. want-to-try, average rating,
+  most-picked cuisines and price-tier spread — computed locally from Room
 - View the current app version from the overflow menu ("About")
 
 ## Managing your restaurants
@@ -144,6 +147,7 @@ app/src/main/kotlin/com/saatxi/eatapp/
     ├── detail/         # Restaurant detail screen + ViewModel
     ├── edit/           # Add/edit restaurant form + ViewModel
     ├── importing/      # Received-file review/confirm screen + ViewModel
+    ├── stats/          # Statistics screen + ViewModel
     └── theme/          # Compose theming (color, type, shape)
 ```
 

@@ -97,6 +97,7 @@
     <string name="palette_garden">Huerto</string>
     <string name="palette_indigo">Índigo</string>
     <string name="settings_section_data">Datos</string>
+    <string name="settings_action_view_statistics">Ver estadísticas</string>
     <string name="settings_data_description">Exporta todos tus restaurantes como un archivo JSON que puedes guardar como copia de seguridad o compartir con un amigo.</string>
     <string name="settings_action_export_data">Exportar / compartir mis datos</string>
     <string name="settings_action_delete_all_data">Eliminar todos los restaurantes</string>
@@ -187,4 +188,18 @@
     <string name="cuisine_fast_food">Comida rápida</string>
     <string name="cuisine_fine_dining">Alta cocina</string>
     <string name="cuisine_vegetarian">Vegetariana</string>
+
+    <!-- Pantalla de estadísticas. -->
+    <string name="stats_title">Estadísticas</string>
+    <string name="stats_tile_total">Restaurantes</string>
+    <string name="stats_tile_visited">Visitados</string>
+    <string name="stats_tile_want_to_try">Por probar</string>
+    <string name="stats_tile_average_rating">Puntuación media</string>
+    <string name="stats_average_rating_value">%1$.1f</string>
+    <string name="stats_average_rating_none">–</string>
+    <string name="stats_section_cuisines">Cocinas</string>
+    <string name="stats_section_price">Rango de precio</string>
+    <string name="stats_price_not_set">Sin definir</string>
+    <string name="stats_empty_title">Todavía no hay nada que mostrar</string>
+    <string name="stats_empty_body">Añade un restaurante para ver aquí tus estadísticas.</string>
 </resources>

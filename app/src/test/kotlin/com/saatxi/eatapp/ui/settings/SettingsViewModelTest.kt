@@ -1,5 +1,7 @@
 package com.saatxi.eatapp.ui.settings
 
+import com.saatxi.eatapp.data.local.CuisineCount
+import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.prefs.AppLocaleManager
@@ -176,4 +178,19 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override suspend fun deleteAll() {
         restaurants.value = emptyList()
     }
+
+    override fun observeTotalCount(): Flow<Int> =
+        throw NotImplementedError("Not used by SettingsViewModel")
+
+    override fun observeVisitedCount(): Flow<Int> =
+        throw NotImplementedError("Not used by SettingsViewModel")
+
+    override fun observeAverageRating(): Flow<Double?> =
+        throw NotImplementedError("Not used by SettingsViewModel")
+
+    override fun observeCuisineCounts(): Flow<List<CuisineCount>> =
+        throw NotImplementedError("Not used by SettingsViewModel")
+
+    override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
+        throw NotImplementedError("Not used by SettingsViewModel")
 }

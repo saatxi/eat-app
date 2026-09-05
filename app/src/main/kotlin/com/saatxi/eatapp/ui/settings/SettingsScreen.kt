@@ -63,6 +63,7 @@ import com.saatxi.eatapp.ui.theme.lightScheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onOpenStatistics: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -180,10 +181,14 @@ fun SettingsScreen(
             }
 
             SettingsSection(title = stringResource(R.string.settings_section_data)) {
+                OutlinedButton(onClick = onOpenStatistics) {
+                    Text(stringResource(R.string.settings_action_view_statistics))
+                }
+
                 Text(
                     text = stringResource(R.string.settings_data_description),
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                 )
                 OutlinedButton(onClick = { viewModel.onExportData(context) }) {
                     Text(stringResource(R.string.settings_action_export_data))
