@@ -221,7 +221,11 @@ private fun ImportCandidateRow(
                     SegmentedButton(
                         selected = candidate.decision == option,
                         onClick = { onDecisionChange(option) },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size)
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                        // The default checkmark eats into this row's (up to three-way)
+                        // split and clips a longer translation — the fill colour already
+                        // marks the selection.
+                        icon = {}
                     ) {
                         Text(importDecisionLabel(option))
                     }

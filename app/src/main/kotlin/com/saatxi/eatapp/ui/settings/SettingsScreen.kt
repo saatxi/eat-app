@@ -134,7 +134,11 @@ fun SettingsScreen(
                         SegmentedButton(
                             selected = mode == uiState.themeMode,
                             onClick = { viewModel.onThemeModeChange(mode) },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = ThemeMode.entries.size)
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = ThemeMode.entries.size),
+                            // The default checkmark eats into this row's three-way split
+                            // and clips a longer translation — the fill colour already
+                            // marks the selection.
+                            icon = {}
                         ) {
                             Text(stringResource(mode.labelRes))
                         }

@@ -4,7 +4,7 @@ A single place to look up everything worth improving in this app, so ideas
 don't get lost between sessions. It's a menu, not a plan — nothing here is
 committed to, and items can be picked off in any order.
 
-Every entry has a stable ID (`F-01`…`F-54`). Use those in commit messages and
+Every entry has a stable ID (`F-01`…`F-69`). Use those in commit messages and
 when asking for something to be worked on; they never get renumbered, and
 items that get done stay in the list marked **Done** rather than being
 deleted, so the file keeps a record of what changed and why.
@@ -89,6 +89,36 @@ frequently-filtered cuisine) instead of nothing.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-69 · Segmented button text clips against the default checkmark — Done.
+
+Found on a real device, not in the redesign audit: in a non-English locale
+(reported in Catalan — "Per provar" — but the same risk exists everywhere a
+`SegmentedButton` splits its row two or three ways), the label text got
+clipped inside the selected segment. `SegmentedButton`'s own default `icon`
+parameter draws a checkmark whenever `selected` is true, and that icon eats
+into a segment's width — already tight, since `SingleChoiceSegmentedButtonRow`
+divides the row evenly — on top of whatever text has to fit next to it.
+Shorter English strings mostly got away with it; a longer translation didn't.
+
+**Fix:** `icon = {}` on every `SegmentedButton` call in the app, all four of
+them — the visit-status toggle
+([RestaurantEditScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/edit/RestaurantEditScreen.kt)),
+the list screen's sort control
+([RestaurantListScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/RestaurantListScreen.kt)),
+Settings' theme-mode picker
+([SettingsScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/settings/SettingsScreen.kt)),
+and the import screen's skip/add/replace row
+([RestaurantImportScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/importing/RestaurantImportScreen.kt))
+— rather than patching only the one the screenshot showed. The fill colour
+difference between selected/unselected segments is already the primary
+signal; losing the checkmark doesn't cost any clarity, and every one of
+these rows already had at least one string long enough in Spanish or
+Catalan to be at real risk of the same clipping.
+- Verified with `./gradlew test assembleDebug lint` — 187 tests passing
+  (unchanged; purely a UI change with no ViewModel logic), no new lint
+  findings. Not verified: the actual fix on a real device in Catalan, only
+  that it compiles and the previous, broken layout is gone from the code.
 
 ### F-68 · No home-screen widget — Done.
 

@@ -176,7 +176,12 @@ fun RestaurantListScreen(
                             selected = uiState.sort == option,
                             onClick = { viewModel.onSortChange(option) },
                             shape = SegmentedButtonDefaults.itemShape(index = index, count = RestaurantSort.entries.size),
-                            modifier = Modifier.semantics { contentDescription = fullLabel }
+                            modifier = Modifier.semantics { contentDescription = fullLabel },
+                            // The default checkmark eats into the half-width share this
+                            // row is already tight on (see the comment above) and clips a
+                            // longer translation (e.g. Spanish "Puntuación") — the fill
+                            // colour already marks the selection.
+                            icon = {}
                         ) {
                             Text(sortLabelShort(option))
                         }

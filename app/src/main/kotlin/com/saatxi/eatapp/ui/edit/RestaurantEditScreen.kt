@@ -208,14 +208,19 @@ private fun RestaurantEditContent(
                         SegmentedButton(
                             selected = !uiState.visited,
                             onClick = { onVisitedChange(false) },
-                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                            // The default checkmark eats into the segment's already-tight
+                            // half-width share and clips a longer translation (e.g. Catalan
+                            // "Per provar") — the fill colour already marks the selection.
+                            icon = {}
                         ) {
                             Text(stringResource(R.string.visit_status_want_to_try))
                         }
                         SegmentedButton(
                             selected = uiState.visited,
                             onClick = { onVisitedChange(true) },
-                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                            icon = {}
                         ) {
                             Text(stringResource(R.string.visit_status_visited))
                         }
