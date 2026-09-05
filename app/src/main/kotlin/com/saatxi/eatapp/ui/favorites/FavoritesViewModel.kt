@@ -119,6 +119,11 @@ class FavoritesViewModel(
         viewModelScope.launch { preferencesRepository.toggleFavorite(restaurantId) }
     }
 
+    /** F-65's swipe-to-delete — the caller has already shown a confirmation before calling this. */
+    fun onDeleteRestaurant(restaurantId: Long) {
+        viewModelScope.launch { repository.delete(restaurantId) }
+    }
+
     // Deliberately leaves the sort order alone — see RestaurantListViewModel's
     // own clearFilters for why.
     fun clearFilters() {

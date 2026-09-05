@@ -110,6 +110,11 @@ class RestaurantListViewModel(
         viewModelScope.launch { preferencesRepository.toggleFavorite(restaurantId) }
     }
 
+    /** F-65's swipe-to-delete — the caller has already shown a confirmation before calling this. */
+    fun onDeleteRestaurant(restaurantId: Long) {
+        viewModelScope.launch { repository.delete(restaurantId) }
+    }
+
     /**
      * Shares every restaurant, ignoring the active filters — "share all"
      * means all, not just what's currently visible.

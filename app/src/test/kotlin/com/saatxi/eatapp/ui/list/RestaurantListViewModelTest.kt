@@ -351,6 +351,17 @@ class RestaurantListViewModelTest {
 
         assertEquals(setOf(1L), preferencesRepository.preferences.value.favoriteIds)
     }
+
+    // --- F-65: swipe-to-delete ------------------------------------------
+
+    @Test
+    fun `onDeleteRestaurant deletes the given restaurant through the repository`() = runTest {
+        observeState()
+
+        viewModel.onDeleteRestaurant(1L)
+
+        assertEquals(1L, repository.lastDeletedId)
+    }
 }
 
 /**
@@ -372,6 +383,8 @@ private class FakeRestaurantRepository : RestaurantRepository {
     var lastSort: RestaurantSort? = null
         private set
     var lastVisited: Boolean? = null
+        private set
+    var lastDeletedId: Long? = null
         private set
 
     override fun observeFiltered(
@@ -400,8 +413,9 @@ private class FakeRestaurantRepository : RestaurantRepository {
     override suspend fun update(restaurant: Restaurant, tags: List<String>) =
         throw NotImplementedError("Not used by RestaurantListViewModel")
 
-    override suspend fun delete(id: Long) =
-        throw NotImplementedError("Not used by RestaurantListViewModel")
+    override suspend fun delete(id: Long) {
+        lastDeletedId = id
+    }
 
     override suspend fun deleteAll() =
         throw NotImplementedError("Not used by RestaurantListViewModel")

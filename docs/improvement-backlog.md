@@ -18,17 +18,17 @@ Large-screen and tablet support is deliberately not covered here; see
 
 ## Where to start
 
-The **Open** section below (F-56 onward) is the backlog side of a second
-redesign pass, started 2026-09-04 with a UI/UX audit —
-[visual-redesign-proposal.html](visual-redesign-proposal.html) — that found
+The second redesign pass — started 2026-09-04 with a UI/UX audit,
+[visual-redesign-proposal.html](visual-redesign-proposal.html), that found
 the app's theming/navigation foundations solid (see
 [visual-modernization-plan.md](visual-modernization-plan.md)) but its data
-model and a few screens thin: no photos anywhere (F-63, now done), no notes
-(F-56, now done) or tags (F-59, now done), no visited/want-to-try status
-(F-55, now done), a flat Settings screen and an ungrouped edit form (F-62,
-now done), and no statistics screen (F-64, now done). Favorites also lacked
-the list screen's own search/sort/filter tools (F-60, now done). F-65 (swipe
-actions) is the only item left open in this pass.
+model and a few screens thin — is now complete: no photos anywhere (F-63),
+no notes (F-56) or tags (F-59), no visited/want-to-try status (F-55), a flat
+Settings screen and an ungrouped edit form (F-62), no statistics screen
+(F-64), Favorites lacking the list screen's own search/sort/filter tools
+(F-60), and no swipe actions on list rows (F-65) are all done. The **Open**
+section below is empty as a result — see **Done** for the full record, and
+check back here when something new gets added.
 
 Active work on the *first* pass still lives in
 [visual-modernization-plan.md](visual-modernization-plan.md): the redesign
@@ -43,20 +43,71 @@ For what's deliberately out of scope in both, see
 
 ## Open
 
-### F-65 · No swipe actions on list rows — Medium / M
-
-Every mutation (favorite, delete) requires either the row's heart icon or a
-trip into the detail screen. **Fix:** wrap `RestaurantRow` in a
-`SwipeToDismissBox` for a quick favorite-toggle or delete gesture — needs
-care around the existing `clearAndSetSemantics` collapse and the heart
-`IconToggleButton` overlaid outside the card (see F-44's accessibility
-notes).
+Nothing open right now — see **Done** below, or
+[visual-modernization-plan.md](visual-modernization-plan.md) for the first
+pass's remaining phases.
 
 ---
 
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-65 · No swipe actions on list rows — Done.
+
+Every mutation (favorite, delete) used to require either the row's heart
+icon or a trip into the detail screen. Swipe right toggles favourite; swipe
+left requests a delete — both directions spring the row back to settled
+immediately rather than letting the gesture itself carry it away, since a
+favourite-toggle removes nothing and a delete only actually happens once the
+confirmation dialog it triggers is accepted.
+
+- **`RestaurantRow`** is now wrapped in a `SwipeToDismissBox`
+  ([RestaurantListScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/RestaurantListScreen.kt)),
+  its `confirmValueChange` firing the matching action (with the same
+  `HapticFeedbackType.LongPress` the heart button already gives) and always
+  returning `false` — so `SwipeToDismissBoxValue` is only ever used as a
+  gesture signal here, never to actually remove the composable the way a
+  literal "dismiss" would. A new `SwipeActionBackground` draws the revealed
+  hint behind the row: a heart (filled or outlined, matching what the swipe
+  would actually do) on a `primaryContainer` tint for favourite, a trash
+  icon on an `errorContainer` tint for delete, aligned to whichever side is
+  being revealed, drawing nothing once the row has sprung back to `Settled`.
+- **New `DeleteConfirmDialog`**
+  ([ui/common](../app/src/main/kotlin/com/saatxi/eatapp/ui/common/DeleteConfirmDialog.kt))
+  is the detail screen's own delete confirmation (same title/body/button
+  strings) pulled out into a shared composable, now shown from
+  `RestaurantListScreen`/`FavoritesScreen` too instead of a copy of the same
+  dialog markup appearing a second and third time. `RestaurantRow` itself
+  never deletes anything directly — a swipe past the delete threshold only
+  calls `onDeleteRequest()`, which each screen wires to show this dialog;
+  only accepting it calls the new `onDeleteRestaurant(id)` on
+  `RestaurantListViewModel`/`FavoritesViewModel` (a thin
+  `repository.delete(id)` wrapper, mirroring the detail screen's own
+  `onDelete`).
+- **Accessibility**: a drag gesture has no equivalent in TalkBack's default
+  navigation, and delete had no non-gesture path on this row at all before
+  this entry (only reachable via the detail screen's trash icon) — so the
+  Card's existing `clearAndSetSemantics` block (already collapsing the row
+  into one description per F-44) now also carries a `CustomAccessibilityAction`
+  exposing "Delete" through the accessibility actions menu. Favourite
+  doesn't need the same treatment: its `IconToggleButton` already sits
+  outside that collapse and was already independently reachable.
+- **Checked `material3`'s maven metadata** (per `CLAUDE.md`'s standing note,
+  since `rememberSwipeToDismissBoxState`'s `confirmValueChange` parameter
+  logs a deprecation warning in this BOM with no direct replacement yet) —
+  still no stable 1.5.x as of this entry, only alpha releases, so there's
+  nothing to migrate to regardless; left as the one (harmless, functioning)
+  deprecation warning in the build.
+- Verified with `./gradlew test assembleDebug lint` — 222 tests passing (2
+  new: `onDeleteRestaurant` reaching the repository for both
+  `RestaurantListViewModel` and `FavoritesViewModel`), lint report unchanged
+  (`UnusedResources` still the same pre-existing 3) — no new strings needed,
+  every string this touches already existed. Not verified: the swipe gesture
+  itself, the revealed background's look, or the accessibility action
+  through actual TalkBack — none of which run outside a real device, only
+  that it compiles and the confirm/delete/favourite logic is covered by
+  tests.
 
 ### F-60 · Favorites has no search or filters — Done.
 

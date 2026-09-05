@@ -23,6 +23,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -31,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.ui.AppViewModelProvider
+import com.saatxi.eatapp.ui.common.DeleteConfirmDialog
 import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.list.RestaurantRow
 import com.saatxi.eatapp.ui.list.SearchAndFilterBar
@@ -44,6 +48,19 @@ fun FavoritesScreen(
     viewModel: FavoritesViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    // Set by a row's swipe-to-delete gesture — see RestaurantRow's own
+    // onDeleteRequest doc for why the row itself never deletes directly.
+    var pendingDelete by remember { mutableStateOf<RestaurantUiModel?>(null) }
+
+    pendingDelete?.let { restaurant ->
+        DeleteConfirmDialog(
+            onConfirm = {
+                viewModel.onDeleteRestaurant(restaurant.id)
+                pendingDelete = null
+            },
+            onDismiss = { pendingDelete = null }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -123,6 +140,7 @@ fun FavoritesScreen(
                                     restaurant = restaurant,
                                     onClick = { onOpenRestaurant(restaurant.id) },
                                     onFavoriteToggle = viewModel::onFavoriteToggle,
+                                    onDeleteRequest = { pendingDelete = restaurant },
                                     modifier = Modifier.animateItem()
                                 )
                             }
@@ -169,7 +187,7 @@ private fun FavoritesEmptyPreview() {
 private fun FavoritesRowPreview() {
     EatAppTheme {
         Surface {
-            RestaurantRow(restaurant = previewFavorite, onClick = {}, onFavoriteToggle = {})
+            RestaurantRow(restaurant = previewFavorite, onClick = {}, onFavoriteToggle = {}, onDeleteRequest = {})
         }
     }
 }
