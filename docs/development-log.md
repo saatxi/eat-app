@@ -59,26 +59,58 @@ likewise untested.
 **Fix**: add a `RestaurantImportViewModelTest`, plus unit tests for
 `ContentFiles.kt`'s size cap and the two writers.
 
-### F-71 · Other data-layer classes still have no tests
-
-**Impact**: Medium · **Effort**: M
-
-`data/photo/RestaurantPhotoStorage.kt` (file I/O plus EXIF-based rotation),
-`data/local/TagValidation.kt` (unlike its sibling `LinkValidationTest.kt`),
-`data/prefs/AppLocaleManager.kt`, and
-`data/repository/RoomRestaurantRepository.kt` (only exercised indirectly
-through `RestaurantDaoTest`) have no dedicated test file.
-`DataStoreUserPreferencesRepository.kt`'s own missing test is already
-tracked separately, in Appendix A's Phase 8 "Still to write" list.
-
-**Fix**: no architectural change needed, just tests — pick these off same as
-any other coverage gap.
-
 ---
 
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-71 · Other data-layer classes still have no tests — Done.
+
+Checked `RoomRestaurantRepository.kt` first, since its own listing here
+turned out to be stale: `RestaurantDaoTest` already constructs a real
+instance under Robolectric and exercises every one of its methods —
+filtering, sorting, tags, photo-file cleanup, backup writing, statistics —
+directly, not just "indirectly" through the DAO as originally described.
+Nothing to add there; the other three genuinely had zero coverage.
+
+- **New `TagValidationTest`** — plain Kotlin, no Robolectric, mirroring
+  `LinkValidationTest`'s own shape: the happy path, trimming, the
+  comma-rejection rule `tagsLabel`'s comma-joined encoding depends on, and
+  both sides of the length limit.
+- **New `AppLocaleManagerTest`** — Robolectric, testing `AppCompatLocaleManager`
+  against the real `AppCompatDelegate` rather than a fake, since the whole
+  point of that class (see its own kdoc) is deferring to AppCompat's static
+  locale state instead of keeping a second copy. Two real environment quirks
+  surfaced getting this to actually exercise anything, both fixed rather than
+  worked around by weakening the test: `AppCompatDelegate.setApplicationLocales()`
+  on the API level this project targets (33+) delegates to the platform's
+  per-app `LocaleManager`, which under Robolectric needs a live Activity to
+  actually apply — `@Config(sdk = [30])` on the round-trip test forces
+  AppCompat's own pre-33 compat-storage path instead, which works headless;
+  and that path applies the change via a posted task, so the test idles
+  Robolectric's main looper (`shadowOf(Looper.getMainLooper()).idle()`)
+  before reading it back.
+- **New `RestaurantPhotoStorageTest`** — Robolectric, real JPEG bytes written
+  to real files and read back through `file://` Uris, the same approach
+  `RestaurantDaoTest` already uses for the photo files a restaurant row
+  references. Needs `@GraphicsMode(GraphicsMode.Mode.NATIVE)`: Robolectric's
+  default legacy `BitmapFactory` shadow fakes a successful decode for any
+  byte stream regardless of actual content, which would have made both the
+  invalid-image rejection and the real downsampling/orientation math
+  untestable. One assumption in the first draft of the downsampling test
+  turned out to be wrong and was corrected rather than forced to pass:
+  `calculateInSampleSize` only halves by powers of two, so a 4000×3000
+  source lands at 2000×1500 — smaller than the original and correctly
+  proportioned, but not clamped at-or-under the 1600px figure the F-63 entry
+  above describes loosely as "downsampled to a 1600px longest side". Also
+  covers: copy failure for an unreadable/undecodable source, copy failure
+  for a Uri nothing can be read from, two copies of the same source getting
+  independent files, and both file-cleanup functions.
+- Verified with `./gradlew test assembleDebug lint` — 240 tests passing (18
+  new), lint clean. Not verified: nothing else: these are all pure
+  data-layer classes with no UI, so there's no on-device behaviour beyond
+  what the tests already exercise.
 
 ### F-72 · `RestaurantListScreen.kt` has grown into a single ~1000-line file — Done.
 
