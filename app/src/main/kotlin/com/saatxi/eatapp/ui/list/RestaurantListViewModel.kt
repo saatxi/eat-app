@@ -11,14 +11,11 @@ import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.model.toUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -44,36 +41,14 @@ data class RestaurantListUiState(
         get() = searchQuery.isNotBlank() || minRating != null || cuisineType != null || visited != null
 }
 
-private data class Filters(
-    val query: String = "",
-    val minRating: Int? = null,
-    val cuisineType: String? = null,
-    val visited: Boolean? = null,
-    // Not a filter in the "narrows the list down" sense — it rides along here
-    // because it is the fourth input the repository query is built from.
-    val sort: RestaurantSort = RestaurantSort.NAME
-)
-
-@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class RestaurantListViewModel(
     private val repository: RestaurantRepository,
     private val preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    private val filters = MutableStateFlow(Filters())
-
-    // The search box updates the visible text on every keystroke (via
-    // `filters` below), but only debounces the query actually sent to the
-    // repository — an empty query (e.g. clearing the field) skips the
-    // debounce so results reappear immediately.
-    private val queryFilters: Flow<Filters> = combine(
-        filters.map { it.query }.debounce { query -> if (query.isBlank()) 0L else SEARCH_DEBOUNCE_MS },
-        filters.map { it.minRating }.distinctUntilChanged(),
-        filters.map { it.cuisineType }.distinctUntilChanged(),
-        filters.map { it.visited }.distinctUntilChanged(),
-        filters.map { it.sort }.distinctUntilChanged(),
-        ::Filters
-    )
+    private val filters = MutableStateFlow(RestaurantFilters())
+    private val queryFilters: Flow<RestaurantFilters> = filters.debounced()
 
     // Combined separately from the outer state so the outer combine() stays within
     // kotlinx.coroutines' 5-flow overload instead of dropping to the untyped
@@ -151,10 +126,6 @@ class RestaurantListViewModel(
     // matches" state, where the user wants their restaurants back, not their
     // chosen order undone.
     fun clearFilters() {
-        filters.value = Filters(sort = filters.value.sort)
-    }
-
-    private companion object {
-        const val SEARCH_DEBOUNCE_MS = 250L
+        filters.value = RestaurantFilters(sort = filters.value.sort)
     }
 }

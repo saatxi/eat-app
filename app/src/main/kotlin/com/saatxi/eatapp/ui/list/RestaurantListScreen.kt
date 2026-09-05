@@ -108,11 +108,6 @@ fun RestaurantListScreen(
     viewModel: RestaurantListViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    // Survives rotation but not process death on purpose: which filters are
-    // active is what matters across a config change, not whether the row
-    // happened to be open.
-    var filtersExpanded by rememberSaveable { mutableStateOf(false) }
-    val focusManager = LocalFocusManager.current
     val context = LocalContext.current
 
     Scaffold(
@@ -136,122 +131,23 @@ fun RestaurantListScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = viewModel::onSearchQueryChange,
-                // A placeholder rather than a label: the label would float above the
-                // text for good once the field has content, costing that height on
-                // every screen for a field whose purpose the icon already states.
-                placeholder = { Text(stringResource(R.string.list_search_placeholder)) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (uiState.searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = stringResource(R.string.list_search_clear)
-                            )
-                        }
-                    }
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                // Results already follow every keystroke, so the Search key has
-                // nothing left to submit — it just gets the keyboard out of the way.
-                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth().padding(16.dp)
+            SearchAndFilterBar(
+                searchQuery = uiState.searchQuery,
+                onSearchQueryChange = viewModel::onSearchQueryChange,
+                // Same condition the list content below switches its empty state
+                // on: nothing to sort or filter yet during the first load, or
+                // before any restaurant has ever been added.
+                showSortAndFilters = !uiState.isInitialLoad && (uiState.restaurants.isNotEmpty() || uiState.hasActiveFilter),
+                sort = uiState.sort,
+                onSortChange = viewModel::onSortChange,
+                minRating = uiState.minRating,
+                onMinRatingChange = viewModel::onMinRatingChange,
+                cuisineType = uiState.cuisineType,
+                availableCuisines = uiState.availableCuisines,
+                onCuisineChange = viewModel::onCuisineChange,
+                visited = uiState.visited,
+                onVisitedChange = viewModel::onVisitedChange
             )
-
-            // Same condition the list content below switches its empty state on:
-            // nothing to sort or filter yet during the first load, or before any
-            // restaurant has ever been added.
-            if (!uiState.isInitialLoad && (uiState.restaurants.isNotEmpty() || uiState.hasActiveFilter)) {
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                    RestaurantSort.entries.forEachIndexed { index, option ->
-                        // The full "Rating (highest first)"-style wording is what
-                        // sortLabel() returns, meant for a dropdown with room to
-                        // spare; a two-way segmented row splits a fixed width in
-                        // half, so the visible text is the short form and the full
-                        // one only reaches screen readers, via the button's own
-                        // content description.
-                        val fullLabel = sortLabel(option)
-                        SegmentedButton(
-                            selected = uiState.sort == option,
-                            onClick = { viewModel.onSortChange(option) },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = RestaurantSort.entries.size),
-                            modifier = Modifier.semantics { contentDescription = fullLabel },
-                            // The default checkmark eats into the half-width share this
-                            // row is already tight on (see the comment above) and clips a
-                            // longer translation (e.g. Spanish "Puntuación") — the fill
-                            // colour already marks the selection.
-                            icon = {}
-                        ) {
-                            Text(sortLabelShort(option))
-                        }
-                    }
-                }
-
-                val activeFilterCount = (if (uiState.minRating != null) 1 else 0) +
-                    (if (uiState.cuisineType != null) 1 else 0) +
-                    (if (uiState.visited != null) 1 else 0)
-                val chevronRotation by animateFloatAsState(
-                    targetValue = if (filtersExpanded) 180f else 0f,
-                    label = "filters-chevron"
-                )
-                val badgeCountDescription = pluralStringResource(
-                    R.plurals.list_filters_active_count,
-                    activeFilterCount,
-                    activeFilterCount
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(
-                            onClickLabel = stringResource(
-                                if (filtersExpanded) R.string.list_filters_collapse else R.string.list_filters_expand
-                            )
-                        ) { filtersExpanded = !filtersExpanded }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.FilterList, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        text = stringResource(R.string.list_filters_title),
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                    if (activeFilterCount > 0) {
-                        Badge(
-                            modifier = Modifier
-                                .padding(start = 8.dp)
-                                .semantics { contentDescription = badgeCountDescription }
-                        ) {
-                            Text(activeFilterCount.toString())
-                        }
-                    }
-                    Box(modifier = Modifier.weight(1f))
-                    Icon(
-                        Icons.Default.ExpandMore,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.graphicsLayer { rotationZ = chevronRotation }
-                    )
-                }
-                AnimatedVisibility(visible = filtersExpanded) {
-                    FilterSection(
-                        minRating = uiState.minRating,
-                        onMinRatingChange = viewModel::onMinRatingChange,
-                        cuisineType = uiState.cuisineType,
-                        availableCuisines = uiState.availableCuisines,
-                        onCuisineChange = viewModel::onCuisineChange,
-                        visited = uiState.visited,
-                        onVisitedChange = viewModel::onVisitedChange,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            }
 
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 if (uiState.isInitialLoad) {
@@ -336,6 +232,159 @@ fun RestaurantListScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * The search field, sort control and filter-chip panel — everything above
+ * the list itself. Internal rather than private: [com.saatxi.eatapp.ui.favorites.FavoritesScreen]
+ * shows the same kind of list and reuses this exact block rather than a
+ * second copy of it (F-60), the same way it already reuses [RestaurantRow]
+ * and [EmptyState].
+ *
+ * [showSortAndFilters] hides the sort/filter section — but never the search
+ * field itself — while there's nothing to sort or filter yet (the initial
+ * load, or before any restaurant exists at all); each screen computes that
+ * condition itself, since "nothing to filter yet" means something slightly
+ * different for an unfiltered list versus one already narrowed to favourites.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun SearchAndFilterBar(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    showSortAndFilters: Boolean,
+    sort: RestaurantSort,
+    onSortChange: (RestaurantSort) -> Unit,
+    minRating: Int?,
+    onMinRatingChange: (Int?) -> Unit,
+    cuisineType: String?,
+    availableCuisines: List<String>,
+    onCuisineChange: (String?) -> Unit,
+    visited: Boolean?,
+    onVisitedChange: (Boolean?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Survives rotation but not process death on purpose: which filters are
+    // active is what matters across a config change, not whether the row
+    // happened to be open.
+    var filtersExpanded by rememberSaveable { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+
+    Column(modifier = modifier) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
+            // A placeholder rather than a label: the label would float above the
+            // text for good once the field has content, costing that height on
+            // every screen for a field whose purpose the icon already states.
+            placeholder = { Text(stringResource(R.string.list_search_placeholder)) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { onSearchQueryChange("") }) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = stringResource(R.string.list_search_clear)
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            // Results already follow every keystroke, so the Search key has
+            // nothing left to submit — it just gets the keyboard out of the way.
+            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        )
+
+        if (showSortAndFilters) {
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                RestaurantSort.entries.forEachIndexed { index, option ->
+                    // The full "Rating (highest first)"-style wording is what
+                    // sortLabel() returns, meant for a dropdown with room to
+                    // spare; a two-way segmented row splits a fixed width in
+                    // half, so the visible text is the short form and the full
+                    // one only reaches screen readers, via the button's own
+                    // content description.
+                    val fullLabel = sortLabel(option)
+                    SegmentedButton(
+                        selected = sort == option,
+                        onClick = { onSortChange(option) },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = RestaurantSort.entries.size),
+                        modifier = Modifier.semantics { contentDescription = fullLabel },
+                        // The default checkmark eats into the half-width share this
+                        // row is already tight on (see the comment above) and clips a
+                        // longer translation (e.g. Spanish "Puntuación") — the fill
+                        // colour already marks the selection.
+                        icon = {}
+                    ) {
+                        Text(sortLabelShort(option))
+                    }
+                }
+            }
+
+            val activeFilterCount = (if (minRating != null) 1 else 0) +
+                (if (cuisineType != null) 1 else 0) +
+                (if (visited != null) 1 else 0)
+            val chevronRotation by animateFloatAsState(
+                targetValue = if (filtersExpanded) 180f else 0f,
+                label = "filters-chevron"
+            )
+            val badgeCountDescription = pluralStringResource(
+                R.plurals.list_filters_active_count,
+                activeFilterCount,
+                activeFilterCount
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        onClickLabel = stringResource(
+                            if (filtersExpanded) R.string.list_filters_collapse else R.string.list_filters_expand
+                        )
+                    ) { filtersExpanded = !filtersExpanded }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.FilterList, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = stringResource(R.string.list_filters_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+                if (activeFilterCount > 0) {
+                    Badge(
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .semantics { contentDescription = badgeCountDescription }
+                    ) {
+                        Text(activeFilterCount.toString())
+                    }
+                }
+                Box(modifier = Modifier.weight(1f))
+                Icon(
+                    Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.graphicsLayer { rotationZ = chevronRotation }
+                )
+            }
+            AnimatedVisibility(visible = filtersExpanded) {
+                FilterSection(
+                    minRating = minRating,
+                    onMinRatingChange = onMinRatingChange,
+                    cuisineType = cuisineType,
+                    availableCuisines = availableCuisines,
+                    onCuisineChange = onCuisineChange,
+                    visited = visited,
+                    onVisitedChange = onVisitedChange,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
     }
 }

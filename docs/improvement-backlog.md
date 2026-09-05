@@ -26,9 +26,9 @@ the app's theming/navigation foundations solid (see
 model and a few screens thin: no photos anywhere (F-63, now done), no notes
 (F-56, now done) or tags (F-59, now done), no visited/want-to-try status
 (F-55, now done), a flat Settings screen and an ungrouped edit form (F-62,
-now done), and no statistics screen (F-64, now done). F-65 (swipe actions)
-is the largest item still open in this pass; everything else left is Medium
-impact or smaller.
+now done), and no statistics screen (F-64, now done). Favorites also lacked
+the list screen's own search/sort/filter tools (F-60, now done). F-65 (swipe
+actions) is the only item left open in this pass.
 
 Active work on the *first* pass still lives in
 [visual-modernization-plan.md](visual-modernization-plan.md): the redesign
@@ -42,16 +42,6 @@ For what's deliberately out of scope in both, see
 ---
 
 ## Open
-
-### F-60 · Favorites has no search or filters — Medium / S
-
-Favorites reuses `RestaurantRow` and `EmptyState` from the list screen but
-has none of its search bar, sort control or filter chips, even though it
-shows the same kind of list — an inconsistency between two screens with
-near-identical content. **Fix:** lift the list screen's search/sort/filter
-UI (and the matching `RestaurantListViewModel` filtering logic) into
-`FavoritesViewModel`/`FavoritesScreen`, or extract a shared composable both
-screens call.
 
 ### F-65 · No swipe actions on list rows — Medium / M
 
@@ -67,6 +57,68 @@ notes).
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-60 · Favorites has no search or filters — Done.
+
+Favorites reused `RestaurantRow` and `EmptyState` from the list screen but
+had none of its search bar, sort control or filter chips, even though it
+shows the same kind of list — an inconsistency between two screens with
+near-identical content. Took the entry's second suggested option (a shared
+composable) for the UI half and its first (lift the filtering logic in) for
+the ViewModel half, rather than picking one for both: the ~150 lines of
+search-field/sort-row/filter-panel Compose code were worth sharing outright,
+but each ViewModel's `combine` chain differs enough (Favorites narrows the
+same query down to favourited ids afterward) that forcing one generic
+ViewModel abstraction over both would have been a bigger, riskier
+abstraction than either screen's actual filtering logic.
+
+- **New `SearchAndFilterBar`**
+  ([RestaurantListScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/RestaurantListScreen.kt))
+  is the search field, sort control and filter-chip panel pulled out of
+  `RestaurantListScreen` into its own `internal` composable, taking plain
+  primitives and callbacks rather than a `RestaurantListUiState` — so it
+  doesn't care which screen's state shape is feeding it. `FavoritesScreen`
+  now calls it exactly the way it already called `RestaurantRow`/`EmptyState`.
+  `showSortAndFilters` (hide the sort/filter section, but never the search
+  field itself, while there's nothing to sort or filter yet) is computed by
+  each screen from its own condition rather than baked into the composable,
+  since "nothing to filter yet" means something slightly different for an
+  unfiltered list versus one already narrowed to favourites.
+- **New `RestaurantFilters`/`Flow<RestaurantFilters>.debounced()`**
+  ([RestaurantFilters.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/RestaurantFilters.kt))
+  is the query/minRating/cuisineType/visited/sort shape and the
+  debounce-just-the-query-field logic `RestaurantListViewModel` already had,
+  pulled out so `FavoritesViewModel` builds its repository query the exact
+  same way instead of a second, hand-rolled copy that could quietly drift
+  out of sync with it.
+- **`FavoritesViewModel`** now calls the same `repository.observeFiltered(query, minRating, cuisineType, sort, visited)`
+  the list screen does — no new DAO query — and narrows the result down to
+  favourited ids afterward, same as before this entry. `FavoritesUiState`
+  gained the same shape `RestaurantListUiState` already has
+  (`searchQuery`/`minRating`/`cuisineType`/`visited`/`sort`/`availableCuisines`/`hasActiveFilter`).
+  Tag pills also reach Favorites' rows for the first time as a side effect
+  of this rewrite — the old version never threaded `observeTagsByRestaurantId()`
+  into its `toUiModel()` calls (a gap the F-59 entry above already flagged
+  as deferred to whoever picked this entry up).
+- **`FavoritesScreen`** gained the matching "no matches, try clearing
+  filters" empty state and result-count line the list screen has, reusing
+  its exact strings (`list_empty_no_results_*`, `list_action_clear_filters`,
+  `list_result_count`) rather than favourites-specific duplicates, since the
+  UI element itself is now the literal same one. The F-66 quick-suggestion
+  chips were deliberately not extended here — that entry's fix was scoped to
+  the list screen specifically, and Favorites' own empty-vs-no-favourites
+  states already cover its blank-slate case.
+- No new strings needed at all: every string this touches already existed
+  for the list screen and is generic enough (not `list_screen_*`-prefixed)
+  to mean the same thing here.
+- Verified with `./gradlew test assembleDebug lint` — 220 tests passing (8
+  new: `FavoritesViewModelTest` gained cases for the search/min-rating/
+  cuisine/visited/sort filters reaching both the state and the repository
+  query, `clearFilters`, available cuisines, and the tags-reaching-the-row
+  fix), lint report unchanged (`UnusedResources` still the same pre-existing
+  3). Not verified: how the shared search/filter bar actually looks or
+  behaves inside Favorites on a real device or emulator, only that it
+  compiles and the existing/new tests pass.
 
 ### F-66 · Empty search shows a blank box — Done.
 
