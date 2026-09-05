@@ -45,25 +45,67 @@ still in progress (see CLAUDE.md's "Known blockers to revisit").
 
 ## Open
 
-### F-70 · No test coverage for the import confirmation path
-
-**Impact**: High · **Effort**: M
-
-`ui/importing/RestaurantImportViewModel.kt` has no test file at all, even
-though CLAUDE.md calls this screen "the last line of defence" against
-untrusted shared files — nothing exercises its accept/reject/replace
-decisions. `data/share/ContentFiles.kt` (enforces `MAX_IMPORT_BYTES` against
-untrusted input), `BackupWriter.kt` and `RestaurantShareWriter.kt` are
-likewise untested.
-
-**Fix**: add a `RestaurantImportViewModelTest`, plus unit tests for
-`ContentFiles.kt`'s size cap and the two writers.
+Nothing open right now — see **Done** below.
 
 ---
 
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-70 · No test coverage for the import confirmation path — Done.
+
+`ui/importing/RestaurantImportViewModel.kt` reads a real `Uri` through a real
+`Context`'s `ContentResolver` (`readContentUriCapped`) rather than through an
+injectable abstraction, so its own test needs Robolectric — real files on
+disk, `file://` Uris, the same approach `RestaurantDaoTest` and
+`RestaurantPhotoStorageTest` already use. `loadAndValidate()` runs on a real
+`Dispatchers.IO`, not the test scheduler, so every test awaits the result via
+`uiState.first { !it.isLoading }` rather than reading `.value` right after
+construction.
+
+- **New `RestaurantImportViewModelTest`** (12 cases): loading a valid file
+  defaults every candidate to add; the file's own dropped-row count surfaces
+  in `skippedInvalidCount`; a candidate matching an existing restaurant by
+  name+address (case/whitespace-insensitively) defaults to skip with
+  `duplicateOf` set, one that doesn't defaults to add; the three
+  `ImportFailureReason`s (`TOO_LARGE`, `IO_ERROR`, `INVALID_FILE`) each
+  surface correctly from a real oversized file, a real missing Uri, and real
+  malformed content; `onDecisionChange` touches only the targeted candidate;
+  and `onConfirm` inserts every add, updates every replace (onto the
+  duplicate's own id), and does neither for a skip.
+- **New `ContentFilesTest`** (6 cases): the happy path, a file exactly at the
+  byte cap, one over it, one so far over that catching the cap early (rather
+  than buffering the whole file first, per the class's own kdoc) actually
+  matters, a missing Uri, and an empty file reading back as empty text rather
+  than an error.
+- **New `BackupWriterTest`** (5 cases) and **`RestaurantShareWriterTest`** (5
+  cases): file location (`filesDir` vs `cacheDir` — see F-63's precedent for
+  why that distinction matters), content, full-replace-not-append semantics,
+  and an empty list still producing a valid file. One assumption in the first
+  draft was wrong and got corrected rather than forced to pass: `format`
+  isn't necessarily present in the raw written JSON at all — it has a default
+  and kotlinx.serialization omits fields equal to their default — so the test
+  checks the *decoded* value instead of grepping the raw text.
+- **A genuine, unfixable-here platform limitation found while writing
+  `RestaurantShareWriterTest`**: `androidx.core.content.FileProvider`'s
+  `SimplePathStrategy.belongsToRoot` hardcodes a `/` separator when checking
+  whether a file sits under a configured root. That's correct on a real
+  device (always `/`-separated), but Robolectric runs this as plain JVM code
+  against the *host* filesystem, and `File.getCanonicalPath()` on Windows
+  returns `\`-separated paths — confirmed directly with reflection: the root
+  and the file both canonicalize to the identical `cacheDir\shared` prefix,
+  and `FileProvider.getUriForFile` still throws, because
+  `path.startsWith(rootPath + '/')` can never match a backslash-joined path.
+  Every test in `RestaurantShareWriterTest` therefore calls
+  `org.junit.Assume.assumeTrue(File.separatorChar == '/')` in `setUp()` and
+  skips cleanly on Windows rather than failing — `ci.yml` runs on
+  `ubuntu-latest` (see F-50), so the file still gets exercised for real there.
+- Verified with `./gradlew test assembleDebug lint` — 267 tests passing (27
+  new, 5 of them skipped on Windows for the reason above — all 5 run on CI),
+  lint clean. Not verified: nothing else — these are all pure ViewModel/
+  data-layer classes with no rendering, so there's no on-device behaviour
+  beyond what the tests already exercise.
 
 ### F-71 · Other data-layer classes still have no tests — Done.
 
