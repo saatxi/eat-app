@@ -121,6 +121,48 @@ that fails is dropped rather than failing the whole file. See
 [`data/share/`](app/src/main/kotlin/com/saatxi/eatapp/data/share) for the
 implementation.
 
+## Backups and switching phones
+
+Sharing (above) is the manual, explicit way to move data around, and
+deliberately leaves photos out. Uninstalling the app, or moving to a new
+phone, is different — and doesn't need the app to do anything, because it
+goes through Android's own **Auto Backup**, not the share file.
+
+`AndroidManifest.xml` has `android:allowBackup="true"` and neither
+[`backup_rules.xml`](app/src/main/res/xml/backup_rules.xml) (the legacy,
+pre-Android-12 rules) nor
+[`data_extraction_rules.xml`](app/src/main/res/xml/data_extraction_rules.xml)
+(Android 12+, covering both cloud backup and direct device-to-device
+transfer) excludes anything, so the default full-data set applies: the Room
+database, the `backup.json` snapshot the repository keeps up to date after
+every write, DataStore preferences (palette, theme, favourites) — **and
+restaurant photos**, since they live under the app's private `filesDir`, not
+`cacheDir`. The only thing excluded is `cacheDir/shared/`, the temporary
+folder the share feature above writes to, which isn't meant to survive
+anyway.
+
+In practice:
+
+- **Uninstall and reinstall on the same phone**, or **set up a new phone
+  signed into the same Google account**: everything above is restored
+  automatically during install, no export/import needed.
+- **Direct phone-to-phone transfer** (a cable, or a "Switch to Android"-style
+  tool): since `data_extraction_rules.xml` defines no separate
+  `device-transfer` rules, Android falls back to the same `cloud-backup` set
+  described above — same result.
+
+Two things worth knowing:
+
+- This needs a Google account with device backup turned on (and Google Play
+  Services — it won't happen on a device without it). Auto Backup also runs
+  roughly once a day, while idle, charging and on Wi-Fi, not immediately
+  after every change — a restaurant added seconds before uninstalling might
+  not have been backed up yet.
+- Auto Backup has a long-standing ~25 MB per-app cap. A personal restaurant
+  list is unlikely to get there, but it's the reason photos are downsampled
+  on import (see [`RestaurantPhotoStorage.kt`](app/src/main/kotlin/com/saatxi/eatapp/data/photo/RestaurantPhotoStorage.kt))
+  rather than stored at full camera resolution.
+
 ## Tech stack
 
 - Kotlin, Jetpack Compose, Material 3
