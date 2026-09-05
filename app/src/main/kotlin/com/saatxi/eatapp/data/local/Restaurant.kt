@@ -33,6 +33,15 @@ data class Restaurant(
     /** Bare handle, no leading `@` and never a URL. */
     val instagram: String? = null,
     /**
+     * Absolute path to a copy this app made of a user-picked photo, under its own
+     * `filesDir/photos/` (see `RestaurantPhotoStorage.kt`) — never a `content://`
+     * Uri handed back by the system Photo Picker, whose read grant is not
+     * guaranteed to outlive this process. Null means no photo, which is also
+     * what a restaurant received via import/share starts with: photos are
+     * deliberately not part of that file format (see `RestaurantExport`).
+     */
+    val photoPath: String? = null,
+    /**
      * Accent-stripped, lowercased concatenation of every searchable field.
      * Derived by default so it can never drift from the fields it mirrors; see
      * [buildSearchText].

@@ -1,10 +1,12 @@
 package com.saatxi.eatapp.ui.edit
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.normalizeInstagramHandle
 import com.saatxi.eatapp.data.local.normalizeWebsite
+import com.saatxi.eatapp.data.photo.RestaurantPhotoStorage
 import com.saatxi.eatapp.data.repository.RestaurantRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,11 +30,21 @@ data class RestaurantEditUiState(
     val priceRange: Int = 0,
     val website: String = "",
     val instagram: String = "",
+    /** Already-persisted photo of the restaurant being edited; null when adding a new one. */
+    val existingPhotoPath: String? = null,
+    /** A freshly picked photo, not yet copied into storage — that only happens on [RestaurantEditViewModel.onSave]. */
+    val pendingPhotoUri: Uri? = null,
+    /** True once the user has cleared [existingPhotoPath] without picking a replacement. */
+    val photoRemoved: Boolean = false,
     val nameError: Boolean = false,
     val cuisineError: Boolean = false,
     val websiteError: Boolean = false,
     val instagramError: Boolean = false
-)
+) {
+    /** What the form should preview: a pending pick beats the existing photo, which a removal beats. */
+    val previewPhoto: Any?
+        get() = pendingPhotoUri ?: existingPhotoPath?.takeUnless { photoRemoved }
+}
 
 /**
  * Backs both "add" (`restaurantId == null`) and "edit" (`restaurantId` set) —
@@ -41,6 +53,7 @@ data class RestaurantEditUiState(
  */
 class RestaurantEditViewModel(
     private val repository: RestaurantRepository,
+    private val photoStorage: RestaurantPhotoStorage,
     private val restaurantId: Long?
 ) : ViewModel() {
 
@@ -65,7 +78,8 @@ class RestaurantEditViewModel(
                             rating = restaurant.rating,
                             priceRange = restaurant.priceRange,
                             website = restaurant.website.orEmpty(),
-                            instagram = restaurant.instagram.orEmpty()
+                            instagram = restaurant.instagram.orEmpty(),
+                            existingPhotoPath = restaurant.photoPath
                         )
                     }
                 } else {
@@ -107,6 +121,15 @@ class RestaurantEditViewModel(
         _uiState.update { it.copy(instagram = instagram, instagramError = false) }
     }
 
+    /** [uri] is only ever held in memory until [onSave] copies it — see [RestaurantEditUiState.pendingPhotoUri]. */
+    fun onPhotoPicked(uri: Uri) {
+        _uiState.update { it.copy(pendingPhotoUri = uri, photoRemoved = false) }
+    }
+
+    fun onRemovePhoto() {
+        _uiState.update { it.copy(pendingPhotoUri = null, photoRemoved = true) }
+    }
+
     /**
      * Validates the form and, if valid, inserts or updates the restaurant and
      * calls [onSaved]. Otherwise flags the offending fields in [uiState] and
@@ -136,19 +159,31 @@ class RestaurantEditViewModel(
             return
         }
 
-        val restaurant = Restaurant(
-            id = restaurantId ?: 0,
-            name = trimmedName,
-            cuisineType = state.cuisineType,
-            address = state.address.trim().takeIf { it.isNotBlank() },
-            visited = state.visited,
-            rating = state.rating,
-            priceRange = state.priceRange,
-            website = website,
-            instagram = instagram
-        )
-
         viewModelScope.launch {
+            // A pending pick is only copied into permanent storage now, at the moment the
+            // restaurant is actually saved — not when it was picked — so cancelling the
+            // form (back, without saving) never leaves an orphaned file behind. A copy
+            // that fails (an unreadable or corrupt source) falls back to whatever photo
+            // was already there rather than losing it over one bad pick.
+            val photoPath = when {
+                state.pendingPhotoUri != null -> photoStorage.copy(state.pendingPhotoUri) ?: state.existingPhotoPath
+                state.photoRemoved -> null
+                else -> state.existingPhotoPath
+            }
+
+            val restaurant = Restaurant(
+                id = restaurantId ?: 0,
+                name = trimmedName,
+                cuisineType = state.cuisineType,
+                address = state.address.trim().takeIf { it.isNotBlank() },
+                visited = state.visited,
+                rating = state.rating,
+                priceRange = state.priceRange,
+                website = website,
+                instagram = instagram,
+                photoPath = photoPath
+            )
+
             if (restaurantId != null) {
                 repository.update(restaurant)
             } else {

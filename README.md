@@ -1,7 +1,7 @@
 # EatApp
 
 An Android app to browse restaurants you've visited — name, cuisine type,
-address, rating and price range.
+address, rating, price range and an optional photo.
 
 ## Features
 
@@ -9,8 +9,9 @@ address, rating and price range.
   (accent- and case-insensitive), and filterable by minimum rating and
   cuisine type
 - Sort the list by name or by rating (highest first), from the app bar
-- Add, edit and delete your own restaurants from the phone, including links
-  to the restaurant's website and Instagram when you provide them
+- Add, edit and delete your own restaurants from the phone, including a
+  photo and links to the restaurant's website and Instagram when you
+  provide them
 - Share one restaurant, or your whole list, with anyone through Android's
   normal share sheet (WhatsApp, Gmail, Drive...) — no account or server
   involved
@@ -22,7 +23,16 @@ The app installs with an empty list — there is no bundled or downloaded
 dataset. Every restaurant is entered by hand, from the phone:
 
 - Tap the **+** button on the list screen to add a restaurant: name, cuisine,
-  address, rating, price range, and the two optional links below.
+  address, rating, price range, an optional photo, and the two optional
+  links below.
+- The photo comes from the system Photo Picker — no storage permission
+  needed. The app copies it into its own private storage and shows it in
+  place of the cuisine badge on the list row, the roulette result, and a
+  cover image on the detail screen; removing it (or replacing it with
+  another pick) deletes the old copy. It never leaves the device: photos are
+  deliberately not part of the share/import file (see below), so a restaurant
+  you receive from someone else starts with no photo, the same as a brand new
+  one.
 - Tap a restaurant's **Edit** action on its detail screen to change any of
   those fields, or **Delete** to remove it (with a confirmation prompt first).
 - `cuisineType` is chosen from a closed, **stable, language-independent**
@@ -81,7 +91,11 @@ Keep this table in sync with `Cuisine.kt` when adding a key.
 Tap the share icon on the list screen to send your whole list, or on a
 restaurant's detail screen to send just that one. Either opens Android's
 normal share sheet — WhatsApp, Gmail, Drive, or anywhere else that accepts a
-file — with a small JSON attachment (no photos, no account, no server).
+file — with a small JSON attachment (no account, no server). Photos are
+deliberately left out of it, on purpose: embedding one would blow well past
+the file's own size cap for what's supposed to stay a small attachment, so a
+restaurant received this way arrives with no photo and the receiving device's
+own owner can add their own.
 
 Receiving one works the same way in reverse: opening a restaurant file
 someone sent you (from WhatsApp, Files, or wherever it landed) offers "Open
@@ -111,6 +125,9 @@ implementation.
 - Room for local persistence
 - Kotlin Coroutines
 - kotlinx.serialization for the share/import JSON format
+- Coil for decoding/displaying restaurant photos, and AndroidX ExifInterface
+  to orient a freshly picked one correctly — both local-only, no networking
+  capability
 
 ## Project structure
 
@@ -119,6 +136,7 @@ app/src/main/kotlin/com/saatxi/eatapp/
 ├── data/
 │   ├── local/          # Room entity, DAO, database, link validation
 │   ├── repository/     # Repository abstraction over the data source
+│   ├── photo/          # Restaurant photo copy-in/decode/cleanup
 │   └── share/          # Export/import models, JSON parsing, FileProvider writer
 ├── navigation/         # NavHost and route definitions
 └── ui/

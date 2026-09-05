@@ -48,11 +48,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.cuisineIcon
@@ -247,12 +249,21 @@ private fun RouletteResultCard(restaurant: RestaurantUiModel, onClick: () -> Uni
                     .background(tint.container),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    cuisineIcon(restaurant.cuisineKey),
-                    contentDescription = null,
-                    tint = tint.onContainer,
-                    modifier = Modifier.size(44.dp)
-                )
+                if (restaurant.photoPath != null) {
+                    AsyncImage(
+                        model = restaurant.photoPath,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        cuisineIcon(restaurant.cuisineKey),
+                        contentDescription = null,
+                        tint = tint.onContainer,
+                        modifier = Modifier.size(44.dp)
+                    )
+                }
             }
             Text(
                 text = restaurant.name,

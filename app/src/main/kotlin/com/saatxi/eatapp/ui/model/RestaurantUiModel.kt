@@ -38,7 +38,9 @@ data class RestaurantUiModel(
     val website: String?,
     /** Bare handle, no leading `@`. */
     val instagram: String?,
-    val isFavorite: Boolean
+    val isFavorite: Boolean,
+    /** Absolute path to a locally-stored copy; null draws the cuisine badge instead. */
+    val photoPath: String? = null
 ) {
     /** True when there is at least one link worth drawing a section for. */
     val hasLinks: Boolean get() = website != null || instagram != null
@@ -58,5 +60,6 @@ fun Restaurant.toUiModel(isFavorite: Boolean = false): RestaurantUiModel = Resta
     visited = visited,
     website = website,
     instagram = instagram,
-    isFavorite = isFavorite
+    isFavorite = isFavorite,
+    photoPath = photoPath
 )

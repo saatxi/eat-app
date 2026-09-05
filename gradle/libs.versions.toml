@@ -15,6 +15,8 @@ datastore = "1.2.1"
 splashscreen = "1.2.0"
 graphicsShapes = "1.1.0"
 material3Adaptive = "1.3.0"
+coil = "3.6.2"
+exifinterface = "1.4.2"
 junit = "4.13.2"
 robolectric = "4.16.1"
 androidxTest = "1.7.0"
@@ -51,6 +53,16 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+# Local-only image loading: decodes the file:// / content:// models this app ever
+# hands it (the copied-in restaurant photo, or the Photo Picker's own Uri while a
+# pick is pending). The separate coil-network-* artifact — the only thing that
+# would let it fetch http(s) — is deliberately not added, so it has no networking
+# capability at all, consistent with this app making no network calls.
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+# Reads the EXIF orientation tag off a freshly picked photo so the copy this app
+# writes to internal storage is baked in right-side-up, regardless of how the
+# source camera/gallery app rotated it.
+androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
 
 # Test-only
 junit = { group = "junit", name = "junit", version.ref = "junit" }

@@ -6,6 +6,8 @@ import com.saatxi.eatapp.data.local.RestaurantDao
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.local.escapeLikeWildcards
 import com.saatxi.eatapp.data.local.normalizeForSearch
+import com.saatxi.eatapp.data.photo.deleteAllRestaurantPhotoFiles
+import com.saatxi.eatapp.data.photo.deleteRestaurantPhotoFile
 import com.saatxi.eatapp.data.share.toExport
 import com.saatxi.eatapp.data.share.writeBackupFile
 import kotlinx.coroutines.flow.Flow
@@ -42,18 +44,32 @@ class RoomRestaurantRepository(
         return id
     }
 
+    /**
+     * The old photo — if this update moves the row away from it — is deleted only
+     * *after* [dao.update] succeeds, so a mid-write failure can never leave a row
+     * pointing at a file that's already gone.
+     */
     override suspend fun update(restaurant: Restaurant) {
+        val previousPhotoPath = dao.getPhotoPath(restaurant.id)
         dao.update(restaurant)
+        if (previousPhotoPath != null && previousPhotoPath != restaurant.photoPath) {
+            deleteRestaurantPhotoFile(previousPhotoPath)
+        }
         writeBackup()
     }
 
     override suspend fun delete(id: Long) {
+        val photoPath = dao.getPhotoPath(id)
         dao.delete(id)
+        photoPath?.let(::deleteRestaurantPhotoFile)
         writeBackup()
     }
 
     override suspend fun deleteAll() {
         dao.deleteAll()
+        // Every row is gone, so rather than looking up which of them had a photo,
+        // the whole directory goes at once.
+        deleteAllRestaurantPhotoFiles(context)
         writeBackup()
     }
 

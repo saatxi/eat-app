@@ -1,6 +1,12 @@
 package com.saatxi.eatapp.ui.edit
 
 import android.content.res.Configuration
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,14 +14,19 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.AddAPhoto
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,11 +54,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.Cuisine
 import com.saatxi.eatapp.ui.AppViewModelProvider
@@ -77,6 +92,8 @@ fun RestaurantEditScreen(
         onPriceRangeChange = viewModel::onPriceRangeChange,
         onWebsiteChange = viewModel::onWebsiteChange,
         onInstagramChange = viewModel::onInstagramChange,
+        onPhotoPicked = viewModel::onPhotoPicked,
+        onRemovePhoto = viewModel::onRemovePhoto,
         onSave = { viewModel.onSave(onSaved = onBack) }
     )
 }
@@ -95,6 +112,8 @@ private fun RestaurantEditContent(
     onPriceRangeChange: (Int) -> Unit,
     onWebsiteChange: (String) -> Unit,
     onInstagramChange: (String) -> Unit,
+    onPhotoPicked: (Uri) -> Unit,
+    onRemovePhoto: () -> Unit,
     onSave: () -> Unit
 ) {
     Scaffold(
@@ -135,6 +154,12 @@ private fun RestaurantEditContent(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            PhotoPicker(
+                previewPhoto = uiState.previewPhoto,
+                onPhotoPicked = onPhotoPicked,
+                onRemovePhoto = onRemovePhoto
+            )
+
             EditSectionCard(title = stringResource(R.string.edit_section_basics)) {
                 OutlinedTextField(
                     value = uiState.name,
@@ -253,6 +278,75 @@ private fun EditSectionCard(title: String, content: @Composable ColumnScope.() -
     }
 }
 
+/**
+ * A tappable preview box that opens the system Photo Picker — no storage
+ * permission needed, on API 26+ through the picker's own backport — and shows
+ * either the resulting pick (or, in edit mode, the already-stored photo) or a
+ * plain placeholder when there is none. [previewPhoto] is whatever
+ * [RestaurantEditUiState.previewPhoto] resolves to: a picked [Uri], an
+ * absolute path [String] to an existing photo, or null.
+ */
+@Composable
+private fun PhotoPicker(
+    previewPhoto: Any?,
+    onPhotoPicked: (Uri) -> Unit,
+    onRemovePhoto: () -> Unit
+) {
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) onPhotoPicked(uri)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(160.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable {
+                launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        if (previewPhoto != null) {
+            AsyncImage(
+                model = previewPhoto,
+                contentDescription = stringResource(R.string.edit_photo_preview_description),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            IconButton(
+                onClick = onRemovePhoto,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.45f))
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = stringResource(R.string.edit_action_remove_photo),
+                    tint = Color.White
+                )
+            }
+        } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    Icons.Outlined.AddAPhoto,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = stringResource(R.string.edit_action_add_photo),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CuisineDropdown(
@@ -348,6 +442,8 @@ private fun RestaurantEditScreenPreview() {
             onPriceRangeChange = {},
             onWebsiteChange = {},
             onInstagramChange = {},
+            onPhotoPicked = {},
+            onRemovePhoto = {},
             onSave = {}
         )
     }

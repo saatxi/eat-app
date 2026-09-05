@@ -50,6 +50,14 @@ interface RestaurantDao {
     @Query("SELECT * FROM restaurants WHERE id = :id")
     fun observeById(id: Long): Flow<Restaurant?>
 
+    /**
+     * A one-shot read of just the photo path, used by the repository to know
+     * what file (if any) to delete once [update] or [delete] has moved a row
+     * past its old photo — see `RoomRestaurantRepository`.
+     */
+    @Query("SELECT photoPath FROM restaurants WHERE id = :id")
+    suspend fun getPhotoPath(id: Long): String?
+
     /** A one-shot snapshot of every row, used to write the full `backup.json` after each write. */
     @Query("SELECT * FROM restaurants ORDER BY name COLLATE NOCASE ASC")
     suspend fun getAll(): List<Restaurant>

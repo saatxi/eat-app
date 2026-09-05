@@ -23,10 +23,10 @@ redesign pass, started 2026-09-04 with a UI/UX audit —
 [visual-redesign-proposal.html](visual-redesign-proposal.html) — that found
 the app's theming/navigation foundations solid (see
 [visual-modernization-plan.md](visual-modernization-plan.md)) but its data
-model and a few screens thin: no photos anywhere, no notes or tags, no
-visited/want-to-try status (F-55, now done), a flat Settings screen and an
-ungrouped edit form (F-62, now done). F-63 (photos) and F-64 (a stats screen)
-are the two highest-impact items still open.
+model and a few screens thin: no photos anywhere (F-63, now done), no notes
+or tags, no visited/want-to-try status (F-55, now done), a flat Settings
+screen and an ungrouped edit form (F-62, now done). F-64 (a stats screen) is
+now the single highest-impact item still open.
 
 Active work on the *first* pass still lives in
 [visual-modernization-plan.md](visual-modernization-plan.md): the redesign
@@ -40,21 +40,6 @@ For what's deliberately out of scope in both, see
 ---
 
 ## Open
-
-### F-63 · No restaurant photos — High / M
-
-Every restaurant is represented purely by a cuisine icon in a coloured
-circle — list rows, the detail header and the roulette result card all look
-generic without a photo, which the audit flagged as the single biggest gap.
-**Fix:** add a nullable `photoUri` column to `Restaurant`, let the user pick
-one via the system Android Photo Picker (no storage permission needed on
-API 26+ through the backport library), copy it into the app's internal cache
-and store that path. Show it as the row's leading image (replacing or
-layering over the cuisine badge), as a hero image behind the detail screen's
-`LargeTopAppBar`, and in the roulette result card. Decide what export/import
-does with photos — most likely skip them in the JSON and let a re-shared
-restaurant re-prompt for a photo on the receiving device, since embedding
-images would blow past `MAX_IMPORT_BYTES`.
 
 ### F-64 · No statistics screen — High / M
 
@@ -149,6 +134,97 @@ kept for when the rest of the list is done.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-63 · No restaurant photos — Done.
+
+The single biggest gap the visual redesign audit found — every restaurant
+was a cuisine icon in a coloured circle everywhere it appeared. Built
+mostly as the entry's own `Fix` described, with two deliberate deviations
+(storage location, and where the detail screen's photo sits) explained below.
+
+- **Picking**: the add/edit form gained a photo box at the top
+  ([RestaurantEditScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/edit/RestaurantEditScreen.kt)'s
+  new `PhotoPicker`), backed by `ActivityResultContracts.PickVisualMedia()` —
+  the system Photo Picker, no storage permission needed on API 26+ through
+  its own backport. Tapping it (with or without an existing photo) reopens
+  the picker; a photo already showing gets a small remove button overlaid.
+- **Storage, deliberately not "cache" as the entry said**: a picked photo is
+  decoded, downsampled to a 1600px longest side, oriented upright from its
+  EXIF tag (`androidx.exifinterface`, since `BitmapFactory` ignores
+  orientation), re-encoded as an 85%-quality JPEG and written under this
+  app's `filesDir/photos/`, never `cacheDir` — new
+  [RestaurantPhotoStorage.kt](../app/src/main/kotlin/com/saatxi/eatapp/data/photo/RestaurantPhotoStorage.kt).
+  `cacheDir` is what the OS clears under storage pressure and what
+  `res/xml/backup_rules.xml`'s default full-backup set does *not* cover
+  ([BackupWriter.kt](../app/src/main/kotlin/com/saatxi/eatapp/data/share/BackupWriter.kt)
+  already draws exactly this distinction for `backup.json`); a restaurant's
+  own photo is exactly the kind of durable user data that distinction says
+  belongs in `filesDir`, which Auto Backup already covers for free. The copy
+  is made lazily, only when the form is actually saved
+  (`RestaurantEditViewModel.onSave`) rather than the moment it's picked, so
+  backing out of an add/edit screen after picking a photo never leaves an
+  orphaned file with nothing referencing it.
+- **`RestaurantPhotoStorage` is an interface** (`AndroidRestaurantPhotoStorage`
+  the real implementation), purely so `RestaurantEditViewModel` — which now
+  takes it as a constructor parameter alongside the repository — stays unit
+  testable against a fake instead of needing a real `ContentResolver`, the
+  same reasoning the old `DatabaseSyncManager` interface existed for (see
+  F-08). `RestaurantEditViewModelTest`'s existing fakes cover everything that
+  doesn't need a real `Uri`; a new `RestaurantEditViewModelPhotoTest` (
+  `@RunWith(RobolectricTestRunner::class)`) covers the three cases that do —
+  `android.net.Uri` isn't usable from a plain JVM test (every method throws),
+  the same reason `RestaurantDaoTest` already reaches for Robolectric.
+- **A failed copy falls back to whatever photo was already there** rather
+  than losing it — an unreadable or corrupt pick shouldn't cost the user
+  their existing photo, the same graceful-degradation instinct the app
+  already applies to a bad link column or an unrecognised cuisine key.
+- **Cleanup**: `RoomRestaurantRepository.update`/`delete` now look up the
+  row's previous `photoPath` (`RestaurantDao.getPhotoPath`, new) before
+  writing, and delete the old file once it's no longer referenced;
+  `deleteAll` wipes the whole `photos/` directory at once rather than
+  looking up each row. Covered by four new `RestaurantDaoTest` cases against
+  real files under Robolectric's `filesDir`.
+- **Display**: `RestaurantUiModel` gained `photoPath`, carried through
+  unchanged by the mapper. Shown via `coil3.compose.AsyncImage` (a new
+  dependency, `io.coil-kt.coil3:coil-compose` — its own network-fetching
+  support lives in a separate `coil-network-*` artifact that was *not*
+  added, so it has no networking capability at all, consistent with this
+  app making no network calls) in place of the cuisine icon in the list
+  row's badge and the roulette result card's circle, and as a full-width
+  cover image above the Overview card on the detail screen.
+- **Detail screen deviation from the entry's wording**: the entry asked for
+  the photo "behind the `LargeTopAppBar`". That bar's collapse behaviour and
+  the list→detail shared-element transition it carries
+  (`cuisineBadgeTransition`, see F-38) were both built and tuned carefully;
+  layering an image behind a bar whose height animates every frame during
+  scroll risked breaking either one in a way that could only really be
+  caught on a real device, which wasn't available to verify against. Used a
+  plain cover-image card above the existing Overview card instead — same
+  visual payoff (the photo is the first thing seen), none of that risk. The
+  app bar itself, its cuisine-tint colouring, and the shared transition are
+  completely unchanged.
+- **Export/import**: exactly what the entry suggested — photos are not part
+  of `RestaurantExport`/`RestaurantShareFile` at all, so a shared or
+  imported restaurant simply starts with no photo (`Restaurant.photoPath`
+  already defaults to null). README's "Sharing restaurants" section now
+  says so explicitly, along with the new photo capability in "Features" and
+  "Managing your restaurants".
+- New dependencies, both local-only (see above for Coil):
+  `io.coil-kt.coil3:coil-compose:3.6.2` and
+  `androidx.exifinterface:exifinterface:1.4.2`, both stable releases
+  confirmed against their maven-metadata.xml before adding.
+- `EatAppDatabase` went to version 7 with a real `MIGRATION_6_7` (adds the
+  nullable `photoPath` column) — not a destructive fallback, matching the
+  precedent F-55's `MIGRATION_5_6` set now that restaurants are user data
+  the app is the source of truth for.
+- Verified with `./gradlew test assembleDebug assembleRelease lint` — 167
+  unit tests passing, R8 still minifies the release build cleanly with the
+  two new dependencies (`app-release.apk` ~2.6 MB, up from ~1.46 MB — Coil
+  and ExifInterface are the entire difference), lint report unchanged
+  (`UnusedResources` still the same pre-existing 3). Not verified: the
+  Photo Picker itself, the decoded photo's actual on-screen appearance, and
+  the detail screen's cover image alongside the collapsing app bar, none of
+  which run outside a real device or emulator.
 
 ### F-62 · Edit/add form is one long ungrouped column — Done.
 

@@ -13,6 +13,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -44,6 +45,7 @@ class RestaurantDaoTest {
     fun tearDown() {
         database.close()
         File(context.filesDir, "backup.json").delete()
+        File(context.filesDir, "photos").deleteRecursively()
     }
 
     private fun restaurant(
@@ -354,6 +356,57 @@ class RestaurantDaoTest {
         dao.deleteAll()
 
         assertEquals(emptyList<String>(), search(null))
+    }
+
+    // --- photo file cleanup (F-63), through the repository -------------------
+
+    /** A real file under `filesDir/photos/`, the same place `RestaurantPhotoStorage` writes to. */
+    private fun fakePhotoFile(name: String): File {
+        val dir = File(context.filesDir, "photos").apply { mkdirs() }
+        return File(dir, name).apply { writeText("fake image bytes") }
+    }
+
+    @Test
+    fun `update deletes the old photo file once it is replaced by a new one`() = runTest {
+        val oldPhoto = fakePhotoFile("old.jpg")
+        val id = repository.insert(restaurant(0, "Cal Ferran").copy(photoPath = oldPhoto.absolutePath))
+
+        repository.update(restaurant(id, "Cal Ferran").copy(photoPath = "/photos/new.jpg"))
+
+        assertFalse(oldPhoto.exists())
+    }
+
+    @Test
+    fun `update leaves the photo file alone when the path does not change`() = runTest {
+        val photo = fakePhotoFile("unchanged.jpg")
+        val id = repository.insert(restaurant(0, "Cal Ferran").copy(photoPath = photo.absolutePath))
+
+        repository.update(restaurant(id, "New Name").copy(photoPath = photo.absolutePath))
+
+        assertTrue(photo.exists())
+    }
+
+    @Test
+    fun `delete removes the row's photo file`() = runTest {
+        val photo = fakePhotoFile("to-delete.jpg")
+        val id = repository.insert(restaurant(0, "Cal Ferran").copy(photoPath = photo.absolutePath))
+
+        repository.delete(id)
+
+        assertFalse(photo.exists())
+    }
+
+    @Test
+    fun `deleteAll wipes every photo file at once`() = runTest {
+        val first = fakePhotoFile("one.jpg")
+        val second = fakePhotoFile("two.jpg")
+        repository.insert(restaurant(0, "One").copy(photoPath = first.absolutePath))
+        repository.insert(restaurant(0, "Two").copy(photoPath = second.absolutePath))
+
+        repository.deleteAll()
+
+        assertFalse(first.exists())
+        assertFalse(second.exists())
     }
 
     // --- Part 3: backup.json, written through the repository -----------------

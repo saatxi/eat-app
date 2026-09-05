@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.saatxi.eatapp.EatApplication
+import com.saatxi.eatapp.data.photo.AndroidRestaurantPhotoStorage
 import com.saatxi.eatapp.ui.detail.RestaurantDetailViewModel
 import com.saatxi.eatapp.ui.edit.RestaurantEditViewModel
 import com.saatxi.eatapp.ui.favorites.FavoritesViewModel
@@ -68,7 +69,11 @@ object AppViewModelProvider {
     /** `restaurantId == null` means "add a new restaurant" rather than edit an existing one. */
     fun editViewModelFactory(restaurantId: Long?): ViewModelProvider.Factory = viewModelFactory {
         initializer {
-            RestaurantEditViewModel(eatApplication().repository, restaurantId = restaurantId)
+            RestaurantEditViewModel(
+                eatApplication().repository,
+                photoStorage = AndroidRestaurantPhotoStorage(eatApplication().applicationContext),
+                restaurantId = restaurantId
+            )
         }
     }
 

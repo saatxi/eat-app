@@ -22,7 +22,8 @@ class RestaurantUiModelTest {
         priceRange: Int = 2,
         visited: Boolean = true,
         website: String? = null,
-        instagram: String? = null
+        instagram: String? = null,
+        photoPath: String? = null
     ) = Restaurant(
         id = id,
         name = name,
@@ -32,7 +33,8 @@ class RestaurantUiModelTest {
         priceRange = priceRange,
         visited = visited,
         website = website,
-        instagram = instagram
+        instagram = instagram,
+        photoPath = photoPath
     )
 
     @Test
@@ -96,5 +98,12 @@ class RestaurantUiModelTest {
     fun `visited is carried through unchanged, both ways`() {
         assertTrue(entity(visited = true).toUiModel().visited)
         assertFalse(entity(visited = false).toUiModel().visited)
+    }
+
+    /** Drives whether a row/card draws the stored photo instead of the cuisine badge. */
+    @Test
+    fun `photoPath is carried through unchanged, defaulting to null`() {
+        assertNull(entity().toUiModel().photoPath)
+        assertEquals("/data/user/0/com.saatxi.eatapp/files/photos/a.jpg", entity(photoPath = "/data/user/0/com.saatxi.eatapp/files/photos/a.jpg").toUiModel().photoPath)
     }
 }

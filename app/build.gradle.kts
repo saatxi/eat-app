@@ -241,6 +241,11 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
 
+    // Restaurant photos (F-63): local-only decode/cache/display, and correct
+    // orientation for a freshly picked one. See the version catalog comments.
+    implementation(libs.coil.compose)
+    implementation(libs.androidx.exifinterface)
+
     // Reads app/src/main/baseline-prof.txt (once generated) at install time and
     // hands it to ART, so a release install gets AOT-compiled hot paths without
     // waiting for on-device profiling to warm up first.

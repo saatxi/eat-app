@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Restaurant::class], version = 6, exportSchema = false)
+@Database(entities = [Restaurant::class], version = 7, exportSchema = false)
 abstract class EatAppDatabase : RoomDatabase() {
 
     abstract fun restaurantDao(): RestaurantDao
@@ -25,13 +25,20 @@ private val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
+/** Adds [Restaurant.photoPath] (F-63). Nullable with no default, so every existing row reads back with no photo. */
+private val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE restaurants ADD COLUMN photoPath TEXT")
+    }
+}
+
 fun buildEatAppDatabase(context: Context): EatAppDatabase =
     Room.databaseBuilder(
         context.applicationContext,
         EatAppDatabase::class.java,
         "eatapp.db"
     )
-        .addMigrations(MIGRATION_5_6)
+        .addMigrations(MIGRATION_5_6, MIGRATION_6_7)
         // The restaurants here are entered by hand and not recoverable from
         // anywhere else, unlike the old re-downloadable .db cache this used to
         // hold. The next time `version` changes, this MUST be replaced with a

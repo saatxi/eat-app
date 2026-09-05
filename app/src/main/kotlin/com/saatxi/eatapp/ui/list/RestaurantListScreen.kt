@@ -67,6 +67,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.pluralStringResource
@@ -81,6 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalContext
+import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.ui.AppViewModelProvider
@@ -522,12 +524,21 @@ internal fun RestaurantRow(
                         .background(tint.container),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        cuisineIcon(restaurant.cuisineKey),
-                        contentDescription = null,
-                        tint = tint.onContainer,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    if (restaurant.photoPath != null) {
+                        AsyncImage(
+                            model = restaurant.photoPath,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Icon(
+                            cuisineIcon(restaurant.cuisineKey),
+                            contentDescription = null,
+                            tint = tint.onContainer,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
 
                 Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
