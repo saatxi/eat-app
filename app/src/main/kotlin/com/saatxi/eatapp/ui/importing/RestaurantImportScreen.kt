@@ -2,15 +2,19 @@ package com.saatxi.eatapp.ui.importing
 
 import android.content.res.Configuration
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ErrorOutline
@@ -34,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,7 +48,9 @@ import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.share.ImportFailureReason
 import com.saatxi.eatapp.ui.AppViewModelProvider
+import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
+import com.saatxi.eatapp.ui.common.cuisineTint
 import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.theme.EatAppTheme
 
@@ -163,18 +170,37 @@ private fun ImportCandidateRow(
 ) {
     Card(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = candidate.restaurant.name, style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = cuisineLabel(candidate.restaurant.cuisineType),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            candidate.restaurant.address?.let { address ->
-                Text(
-                    text = address,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val tint = cuisineTint(candidate.restaurant.cuisineType)
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(tint.container),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        cuisineIcon(candidate.restaurant.cuisineType),
+                        contentDescription = null,
+                        tint = tint.onContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Column(modifier = Modifier.padding(start = 12.dp)) {
+                    Text(text = candidate.restaurant.name, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = cuisineLabel(candidate.restaurant.cuisineType),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    candidate.restaurant.address?.let { address ->
+                        Text(
+                            text = address,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
             if (candidate.duplicateOf != null) {
                 Text(

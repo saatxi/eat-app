@@ -85,13 +85,6 @@ UI (and the matching `RestaurantListViewModel` filtering logic) into
 `FavoritesViewModel`/`FavoritesScreen`, or extract a shared composable both
 screens call.
 
-### F-61 · Import candidate rows have no cuisine badge — Low / S
-
-`RestaurantImportScreen`'s candidate rows are plain text — name, cuisine
-label, address — while every other list-shaped screen (list, favorites,
-roulette) leads with the circular cuisine-icon badge. **Fix:** add the same
-48dp badge to `ImportCandidateRow`.
-
 ### F-65 · No swipe actions on list rows — Medium / M
 
 Every mutation (favorite, delete) requires either the row's heart icon or a
@@ -127,6 +120,19 @@ kept for when the rest of the list is done.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-61 · Import candidate rows have no cuisine badge — Done.
+
+`ImportCandidateRow`
+([RestaurantImportScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/importing/RestaurantImportScreen.kt))
+was plain text — name, cuisine label, address — the one list-shaped screen
+without the circular cuisine-icon badge every other one (list, favorites,
+roulette) leads with. The row's name/cuisine/address block now sits in a
+`Row` next to the same 48dp tinted-circle badge (`cuisineTint` +
+`cuisineIcon`, sized and coloured exactly like `RestaurantRow`'s), with the
+duplicate label and the skip/add/replace segmented row unchanged below it.
+- Verified with `./gradlew test assembleDebug lint` — all green, no new
+  lint findings.
 
 ### F-57 · The cuisine dropdown in the edit form has no icons — Done.
 
