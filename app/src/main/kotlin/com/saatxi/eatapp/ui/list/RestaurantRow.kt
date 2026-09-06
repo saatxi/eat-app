@@ -46,6 +46,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
+import com.saatxi.eatapp.ui.common.IconLabelRow
 import com.saatxi.eatapp.ui.common.RatingAndPriceRow
 import com.saatxi.eatapp.ui.common.TagPillRow
 import com.saatxi.eatapp.ui.common.cuisineBadgeTransition
@@ -142,101 +143,100 @@ internal fun RestaurantRow(
                         customActions = listOf(CustomAccessibilityAction(deleteActionLabel) { onDeleteRequest(); true })
                     }
             ) {
-                Row(
+                val tint = cuisineTint(restaurant.cuisineKey)
+                IconLabelRow(
                     // Extra end padding reserves room for the heart overlaid in the Box
                     // below, so it doesn't sit on top of the rating/price column.
                     modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 12.dp, end = 44.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val tint = cuisineTint(restaurant.cuisineKey)
-                    Box(
-                        modifier = Modifier
-                            .size(BADGE_SIZE)
-                            // The element the container transform into the detail screen runs on.
-                            .cuisineBadgeTransition(restaurant.id)
-                            .clip(CircleShape)
-                            .background(tint.container)
-                            // A ring in the cuisine's own accent (F-76) — onContainer stands in
-                            // for that, since CuisineTint only carries the container/on-container pair.
-                            .border(1.5.dp, tint.onContainer, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (restaurant.photoPath != null) {
-                            AsyncImage(
-                                model = restaurant.photoPath,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        } else {
-                            Icon(
-                                cuisineIcon(restaurant.cuisineKey),
-                                contentDescription = null,
-                                tint = tint.onContainer,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-
-                    Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                        Text(text = restaurant.name, style = MaterialTheme.typography.titleLarge)
-                        if (!restaurant.visited) {
-                            Surface(
-                                shape = RoundedCornerShape(percent = 50),
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                modifier = Modifier.padding(top = 2.dp, bottom = 2.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.visit_status_want_to_try),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                        Text(
-                            text = cuisineLabelText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        restaurant.address?.let { address ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Outlined.LocationOn,
+                    leading = {
+                        Box(
+                            modifier = Modifier
+                                .size(BADGE_SIZE)
+                                // The element the container transform into the detail screen runs on.
+                                .cuisineBadgeTransition(restaurant.id)
+                                .clip(CircleShape)
+                                .background(tint.container)
+                                // A ring in the cuisine's own accent (F-76) — onContainer stands in
+                                // for that, since CuisineTint only carries the container/on-container pair.
+                                .border(1.5.dp, tint.onContainer, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (restaurant.photoPath != null) {
+                                AsyncImage(
+                                    model = restaurant.photoPath,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(16.dp).padding(end = 4.dp)
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
                                 )
-                                Text(
-                                    text = address,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                            } else {
+                                Icon(
+                                    cuisineIcon(restaurant.cuisineKey),
+                                    contentDescription = null,
+                                    tint = tint.onContainer,
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         }
-                        if (restaurant.tagsLabel.isNotEmpty()) {
-                            TagPillRow(
-                                tags = restaurant.tagsLabel.split(", "),
-                                maxVisible = 3,
-                                modifier = Modifier.padding(top = 4.dp)
+                    },
+                    trailing = {
+                        RatingAndPriceRow(
+                            rating = restaurant.rating,
+                            priceLabel = restaurant.priceLabel,
+                            starCount = 1,
+                            starSize = 16.dp,
+                            stacked = true,
+                            // A consistent accent chip (F-76) rather than tertiary, so it reads
+                            // apart from the "want to try" pill above without fighting the badge's
+                            // own per-cuisine tint.
+                            priceContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            priceContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                ) {
+                    Text(text = restaurant.name, style = MaterialTheme.typography.titleLarge)
+                    if (!restaurant.visited) {
+                        Surface(
+                            shape = RoundedCornerShape(percent = 50),
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.padding(top = 2.dp, bottom = 2.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.visit_status_want_to_try),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }
                     }
-
-                    RatingAndPriceRow(
-                        rating = restaurant.rating,
-                        priceLabel = restaurant.priceLabel,
-                        starCount = 1,
-                        starSize = 16.dp,
-                        stacked = true,
-                        // A consistent accent chip (F-76) rather than tertiary, so it reads
-                        // apart from the "want to try" pill above without fighting the badge's
-                        // own per-cuisine tint.
-                        priceContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        priceContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    Text(
+                        text = cuisineLabelText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    restaurant.address?.let { address ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Outlined.LocationOn,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp).padding(end = 4.dp)
+                            )
+                            Text(
+                                text = address,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    if (restaurant.tagsLabel.isNotEmpty()) {
+                        TagPillRow(
+                            tags = restaurant.tagsLabel.split(", "),
+                            maxVisible = 3,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
                 }
             }
 

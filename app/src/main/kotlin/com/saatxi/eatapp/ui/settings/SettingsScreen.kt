@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -61,6 +62,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.saatxi.eatapp.BuildConfig
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.ui.AppViewModelProvider
+import com.saatxi.eatapp.ui.common.IconLabelRow
 import com.saatxi.eatapp.ui.common.findActivity
 import com.saatxi.eatapp.ui.theme.AppPalette
 import com.saatxi.eatapp.ui.theme.EatAppTheme
@@ -168,6 +170,7 @@ fun SettingsScreen(
                         SettingsRow(
                             icon = Icons.Outlined.Language,
                             label = stringResource(uiState.language.labelRes),
+                            showChevron = false,
                             onClick = { languageMenuExpanded = true }
                         )
                         DropdownMenu(
@@ -211,6 +214,7 @@ fun SettingsScreen(
                             icon = Icons.Filled.Share,
                             label = stringResource(R.string.settings_action_export_data),
                             supportingText = stringResource(R.string.settings_data_description),
+                            showChevron = false,
                             onClick = { viewModel.onExportData(context) }
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -273,31 +277,33 @@ private fun SettingsRow(
     tint: Color = MaterialTheme.colorScheme.onSurface,
     onClick: (() -> Unit)?
 ) {
-    Row(
+    IconLabelRow(
         modifier = modifier
             .fillMaxWidth()
             .let { if (onClick != null) it.clickable(onClick = onClick) else it }
             .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
-        Column(modifier = Modifier.padding(start = 16.dp).weight(1f)) {
-            Text(text = label, style = MaterialTheme.typography.bodyLarge, color = tint)
-            supportingText?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp)
+        contentPadding = PaddingValues(start = 16.dp),
+        leading = { Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp)) },
+        trailing = if (showChevron) {
+            {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
                 )
             }
+        } else {
+            null
         }
-        if (showChevron) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyLarge, color = tint)
+        supportingText?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp)
             )
         }
     }
@@ -329,7 +335,11 @@ private fun PaletteSwatch(
                 .size(PALETTE_SWATCH_SIZE)
                 // A soft halo in the palette's own primary colour (F-78) rather than a
                 // hard-edged border, on top of the three-colour sweep that stands in for
-                // the whole scheme in one small circle.
+                // the whole scheme in one small circle. Colored ambient/spot shadows only
+                // render from API 28 onward (minSdk is 26); below that the platform falls
+                // back to a plain gray shadow, and the border below is what still marks
+                // selection unambiguously there (F-83, accepted as-is: not worth an
+                // SDK-gated fallback path for a purely cosmetic difference).
                 .let {
                     if (selected) {
                         it.shadow(elevation = 6.dp, shape = CircleShape, ambientColor = scheme.primary, spotColor = scheme.primary)

@@ -59,83 +59,6 @@ Found by a `/code-review high` pass over `2c8eeab^..7d1bcaa` (the F-76–F-79
 visual refresh plus the System theme removal) — see that commit range for
 context on each.
 
-### F-83 · Palette swatch's colored selection halo silently degrades below API 28
-
-**Impact**: Low · **Effort**: XS
-
-`PaletteSwatch`'s selection state (`ui/settings/SettingsScreen.kt`) uses
-`Modifier.shadow(elevation = 6.dp, shape = CircleShape, ambientColor =
-scheme.primary, spotColor = scheme.primary)` for a halo in the palette's own
-color, but colored ambient/spot shadows only render from Android 9 (API 28)
-onward — below that the platform silently falls back to a plain gray/black
-shadow. `minSdk` is 26, so on Android 8.0/8.1 the selected swatch shows a
-generic gray glow instead of the palette-colored halo the surrounding
-comment describes. Cosmetic only — the separate `border` still marks
-selection unambiguously.
-
-**Fix**: either accept the graceful platform degradation as-is (document it
-next to the `shadow(...)` call), or add a plain elevation-only fallback path
-for API < 28 if the color halo matters enough to bother.
-
-### F-84 · `SettingsRow`'s chevron implies navigation on rows that don't navigate
-
-**Impact**: Low · **Effort**: XS
-
-`SettingsRow`'s own doc comment says `showChevron` should be false "for a
-row that isn't navigation," but the Language row (opens an in-place
-`DropdownMenu`) and the Export-data row (immediately fires a share `Intent`)
-both leave `showChevron` at its default `true` — contradicting the rule the
-component itself documents. A user relying on the chevron as a "this pushes
-a new screen" affordance taps "Export data" expecting navigation and
-instead gets an immediate share sheet with no screen change.
-
-**Fix**: set `showChevron = false` on the Language and Export-data rows, or
-update the doc comment if the chevron is meant to mean something broader
-than "navigates."
-
-### F-85 · `HeadlineStatTile`/`SupportingStatTile` are near-duplicate composables
-
-**Impact**: Low · **Effort**: S
-
-Both (`ui/stats/StatisticsScreen.kt`) are `Card > Column(center) >
-Text(value) + Text(label)` with identical structure; every difference
-(container color, padding, text styles, label top-padding) is a plain
-parameter rather than a structural divergence, and the
-`fontFeatureSettings = "tnum"` value-text setting is copy-pasted into both
-instead of living in one place.
-
-**Fix**: merge into one `StatTile(value, label, ...)` composable parameterized
-by the handful of style/color/padding values that currently differ.
-
-### F-86 · `DetailTopBar`'s three overflow menu items are copy-pasted boilerplate
-
-**Impact**: Low · **Effort**: XS
-
-The three `DropdownMenuItem` blocks in `DetailTopBar`'s overflow menu
-(Edit/Share/Delete) are structurally identical — `text`/`leadingIcon`/
-`onClick`-that-resets-`menuExpanded` — differing only in their three literal
-values, instead of being driven by a small list of (label, icon, action)
-triples through one `DropdownMenuItem` call site.
-
-**Fix**: replace the three blocks with one `forEach` over a local list of
-(string resource, icon, action) triples.
-
-### F-87 · `SettingsRow` reinvents `RestaurantRow`'s row layout
-
-**Impact**: Low · **Effort**: M
-
-`SettingsRow` (icon, label, optional supporting text, optional trailing
-element) duplicates the same icon+label(+supporting text)+trailing skeleton
-`RestaurantRow.kt` already built for list rows, with no shared composable in
-`ui/common/` despite that package existing precisely for cross-screen
-helpers like `TagPills`/`RatingAndPriceRow`. A future change to the app's
-row spacing/icon-size/label-typography convention has to be remembered and
-re-applied in both files separately, with no compiler check that they stay
-in sync.
-
-**Fix**: extract the shared row skeleton into `ui/common/` (e.g. a generic
-`IconLabelRow`) and have both `SettingsRow` and `RestaurantRow` build on it.
-
 ### F-88 · `DataStoreUserPreferencesRepository.kt` has no dedicated test
 
 **Impact**: Medium · **Effort**: S
@@ -183,6 +106,82 @@ piece to cover once a runner is chosen.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-87 · `SettingsRow` reinvents `RestaurantRow`'s row layout — Done.
+
+Found by the same `/code-review high` pass as F-80–F-86.
+
+- **New shared `IconLabelRow`** in `ui/common/IconLabelRow.kt`: the
+  icon/badge, then a weighted label column, then optional trailing content
+  skeleton both rows already shared structurally. `contentPadding` is a
+  parameter rather than a fixed value since the two call sites don't want
+  quite the same gap (Settings only pads the label column's start; List
+  pads both sides around its trailing rating/price column) — everything
+  else (alignment, the weighted column, the optional trailing slot) is now
+  one implementation instead of two.
+  `SettingsRow` (`ui/settings/SettingsScreen.kt`) and `RestaurantRow`
+  (`ui/list/RestaurantRow.kt`) both build on it now; neither's own visual
+  behavior (chevron, supporting text, the badge/swipe/heart-overlay
+  machinery around `RestaurantRow`) changed, only where the shared row
+  skeleton itself lives.
+- Verified with `./gradlew test assembleDebug lint` — all succeed; lint's
+  `UnusedResources` count is unchanged at 3. Not verified: how either row
+  actually looks on a device/emulator, only that it compiles, lints clean,
+  and the existing test suite (which doesn't cover either screen's
+  Composable directly — see F-89) still passes.
+
+### F-86 · `DetailTopBar`'s three overflow menu items are copy-pasted boilerplate — Done.
+
+Found by the same `/code-review high` pass as F-80–F-85, F-87.
+
+- **Fix applied as proposed**: the three `DropdownMenuItem` blocks in
+  `DetailTopBar` (`ui/detail/RestaurantDetailScreen.kt`) are now one
+  `forEach` over a local list of (string resource, icon, action) triples,
+  with the shared `text`/`leadingIcon`/`onClick`-that-resets-`menuExpanded`
+  shape living in one place instead of three copies.
+- Verified with `./gradlew test assembleDebug` — both succeed.
+
+### F-85 · `HeadlineStatTile`/`SupportingStatTile` are near-duplicate composables — Done.
+
+Found by the same `/code-review high` pass as F-80–F-84, F-86, F-87.
+
+- **Fix applied as proposed**: merged into one `StatTile(value, label, ...)`
+  composable (`ui/stats/StatisticsScreen.kt`) parameterized by the
+  container `colors`, `contentPadding`, and the value/label text
+  styles/colors/top-padding that used to differ between the two — including
+  the `fontFeatureSettings = "tnum"` value-text setting, which now lives in
+  one place instead of being copy-pasted into both. The headline total and
+  the three supporting tiles call it with different parameter values rather
+  than through two separate composables.
+- Verified with `./gradlew test assembleDebug lint` — all succeed; lint's
+  `UnusedResources` count is unchanged at 3.
+
+### F-84 · `SettingsRow`'s chevron implies navigation on rows that don't navigate — Done.
+
+Found by the same `/code-review high` pass as F-80–F-83, F-85–F-87.
+
+- **Fix applied as proposed**: `showChevron = false` on both the Language
+  row (opens an in-place `DropdownMenu`) and the Export-data row
+  (immediately fires a share `Intent`) in
+  `ui/settings/SettingsScreen.kt` — neither pushes a new screen, so neither
+  shows the "this navigates" chevron `SettingsRow`'s own doc comment
+  describes, matching the Delete-all and About rows which already left it
+  off.
+- Verified with `./gradlew test assembleDebug` — both succeed.
+
+### F-83 · Palette swatch's colored selection halo silently degrades below API 28 — Done.
+
+Found by the same `/code-review high` pass as F-80–F-82.
+
+- **Accepted the graceful degradation as-is** rather than adding an
+  SDK-gated fallback path: the halo is cosmetic, the separate `border`
+  already marks selection unambiguously, and a version-check branch just to
+  swap a shadow color felt like more code than a gray-vs-tinted glow on
+  Android 8.0/8.1 (`minSdk` 26) is worth. `PaletteSwatch`'s comment in
+  `ui/settings/SettingsScreen.kt` now says so explicitly, next to the
+  `shadow(...)` call.
+- Verified with `./gradlew test assembleDebug` — both succeed (comment-only
+  change, no behavior difference to test).
 
 ### F-82 · Detail screen's "Overview"/"Rating" section headings were removed with no accessibility replacement — Done.
 

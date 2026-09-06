@@ -525,30 +525,23 @@ private fun DetailTopBar(
                     Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.detail_action_more))
                 }
                 DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.detail_action_edit)) },
-                        leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-                        onClick = {
-                            menuExpanded = false
-                            onEdit(restaurant.id)
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.detail_action_share)) },
-                        leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
-                        onClick = {
-                            menuExpanded = false
-                            onShare()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.detail_action_delete)) },
-                        leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
-                        onClick = {
-                            menuExpanded = false
-                            onDeleteRequest()
-                        }
-                    )
+                    // Same text/leadingIcon/onClick-that-resets-menuExpanded shape for all
+                    // three (F-86) — driven by this list instead of one copy-pasted
+                    // DropdownMenuItem block per action.
+                    listOf(
+                        Triple(R.string.detail_action_edit, Icons.Filled.Edit) { onEdit(restaurant.id) },
+                        Triple(R.string.detail_action_share, Icons.Filled.Share) { onShare() },
+                        Triple(R.string.detail_action_delete, Icons.Filled.Delete) { onDeleteRequest() }
+                    ).forEach { (labelRes, icon, action) ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(labelRes)) },
+                            leadingIcon = { Icon(icon, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                action()
+                            }
+                        )
+                    }
                 }
             }
             Icon(

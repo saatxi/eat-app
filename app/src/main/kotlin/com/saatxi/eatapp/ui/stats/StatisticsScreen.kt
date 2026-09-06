@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,7 +40,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.saatxi.eatapp.R
@@ -104,22 +107,29 @@ private fun StatisticsContent(uiState: StatisticsUiState, onBack: () -> Unit) {
                     // The total is promoted to its own headline tile (F-79) rather than one
                     // of four equal-weight tiles — it's the number that actually answers
                     // "how much have I collected", the other three just qualify it.
-                    HeadlineStatTile(
+                    StatTile(
                         value = uiState.totalCount.toString(),
-                        label = stringResource(R.string.stats_tile_total)
+                        label = stringResource(R.string.stats_tile_total),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                        contentPadding = 20.dp,
+                        valueStyle = MaterialTheme.typography.displaySmall,
+                        valueColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        labelStyle = MaterialTheme.typography.labelLarge,
+                        labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        labelTopPadding = 4.dp
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        SupportingStatTile(
+                        StatTile(
                             value = uiState.visitedCount.toString(),
                             label = stringResource(R.string.stats_tile_visited),
                             modifier = Modifier.weight(1f)
                         )
-                        SupportingStatTile(
+                        StatTile(
                             value = uiState.wantToTryCount.toString(),
                             label = stringResource(R.string.stats_tile_want_to_try),
                             modifier = Modifier.weight(1f)
                         )
-                        SupportingStatTile(
+                        StatTile(
                             value = uiState.averageRating?.let { stringResource(R.string.stats_average_rating_value, it) }
                                 ?: stringResource(R.string.stats_average_rating_none),
                             label = stringResource(R.string.stats_tile_average_rating),
@@ -151,49 +161,38 @@ private fun StatisticsContent(uiState: StatisticsUiState, onBack: () -> Unit) {
 }
 
 /**
- * The total promoted to its own large tile (F-79) — tabular numerals so the
- * digits don't shift width as the count changes, matching [SupportingStatTile]'s
- * own figures below it.
+ * The headline total and the three smaller supporting stats (F-79) used to be
+ * separate `HeadlineStatTile`/`SupportingStatTile` composables with identical
+ * `Card > Column(center) > Text(value) + Text(label)` structure — every
+ * difference between them (container color, padding, text styles) was already
+ * a plain value, not a structural one, so they're one tile parameterized by
+ * those values instead (F-85). Tabular numerals on the value keep its digits
+ * from shifting width as the count changes.
  */
 @Composable
-private fun HeadlineStatTile(value: String, label: String, modifier: Modifier = Modifier) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-        modifier = modifier.fillMaxWidth()
-    ) {
+private fun StatTile(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    colors: CardColors = CardDefaults.cardColors(),
+    contentPadding: Dp = 12.dp,
+    valueStyle: TextStyle = MaterialTheme.typography.titleLarge,
+    valueColor: Color = Color.Unspecified,
+    labelStyle: TextStyle = MaterialTheme.typography.labelSmall,
+    labelColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    labelTopPadding: Dp = 2.dp
+) {
+    Card(colors = colors, modifier = modifier.fillMaxWidth()) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth().padding(20.dp)
+            modifier = Modifier.fillMaxWidth().padding(contentPadding)
         ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.displaySmall.copy(fontFeatureSettings = "tnum"),
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            Text(text = value, style = valueStyle.copy(fontFeatureSettings = "tnum"), color = valueColor)
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-    }
-}
-
-/** The three stats that used to share equal billing with the total (F-79), now a smaller supporting row under it. */
-@Composable
-private fun SupportingStatTile(value: String, label: String, modifier: Modifier = Modifier) {
-    Card(modifier = modifier) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth().padding(12.dp)
-        ) {
-            Text(text = value, style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp)
+                style = labelStyle,
+                color = labelColor,
+                modifier = Modifier.padding(top = labelTopPadding)
             )
         }
     }
