@@ -47,7 +47,7 @@ dataset. Every restaurant is entered by hand, from the phone:
   which is what makes adding a second language later a matter of adding
   `values-xx/strings.xml` and nothing else.
 
-#### The optional links
+### The optional links
 
 Website and Instagram add a "Links" section to the restaurant detail screen.
 Both are validated as you type, the same whitelist either way:
@@ -70,7 +70,7 @@ The valid values for `cuisineType`. Each one has its own icon in the app, and
 the list screen offers a filter chip for every key present in your data.
 
 | Key | Shown as | | Key | Shown as |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `mediterranean` | Mediterranean | | `bar` | Bar |
 | `spanish` | Spanish | | `beer_bar` | Beer bar |
 | `catalan` | Catalan | | `wine_bar` | Wine bar |
@@ -181,7 +181,7 @@ Two things worth knowing:
 
 ## Project structure
 
-```
+```text
 app/src/main/kotlin/com/saatxi/eatapp/
 ├── data/
 │   ├── local/          # Room entity, DAO, database, link validation
@@ -207,7 +207,7 @@ app/src/main/kotlin/com/saatxi/eatapp/
 
 ## Building
 
-```
+```powershell
 ./gradlew assembleDebug
 ```
 
@@ -290,7 +290,7 @@ re-upload; Gradle does not auto-download it for this step.
 
 ## Tests
 
-```
+```powershell
 ./gradlew test
 ```
 
@@ -340,7 +340,7 @@ module, not a unit test — it needs a connected device or emulator running
 **API 28+** (a hard requirement of `BaselineProfileRule`, independent of the
 app's own `minSdk` 26) and is never part of `./gradlew test`:
 
-```
+```powershell
 ./gradlew :app:generateBaselineProfile
 ```
 
@@ -374,7 +374,7 @@ the restaurant list screen → **About**.
 
 To check what the current build will resolve to without building an APK:
 
-```
+```powershell
 ./gradlew :app:printVersionInfo
 ```
 
@@ -389,7 +389,7 @@ cannot be committed by accident.
 **Create a keystore once** (keep it somewhere safe and backed up — losing it
 means you can never update the app on the Play Store again):
 
-```
+```powershell
 keytool -genkeypair -v -keystore eatapp-release.jks -alias eatapp \
   -keyalg RSA -keysize 2048 -validity 10000
 ```
@@ -397,7 +397,7 @@ keytool -genkeypair -v -keystore eatapp-release.jks -alias eatapp \
 **Point the build at it** by adding these to `local.properties`. A relative
 path resolves against the repository root; an absolute path is used as is:
 
-```
+```ini
 eatapp.keystore.file=../eatapp-release.jks
 eatapp.keystore.password=<store password>
 eatapp.key.alias=eatapp
@@ -421,7 +421,7 @@ uploaded. The build prints a warning saying so, and the APK is named
 
 To confirm a built APK really is signed:
 
-```
+```powershell
 apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 ```
 
@@ -430,50 +430,66 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 1. Make sure all changes for the release are committed (an uncommitted
    working tree produces a `-dirty` suffix in `versionName`).
 2. Tag the release commit with an **annotated** tag following `vMAJOR.MINOR.PATCH`:
-   ```
+
+   ```powershell
    git tag -a v1.1.0 -m "Describe what changed"
    git push origin v1.1.0
    ```
+
    [`scripts/release.ps1`](scripts/release.ps1) does exactly that, with a few
    guard rails: it asks for the version as `X.Y.Z`, refuses a tag that already
    exists locally or on the remote, warns about an uncommitted working tree,
    opens your editor for the tag message and then pushes the tag.
-   ```
+
+   ```powershell
    ./scripts/release.ps1                  # asks for the version
    ./scripts/release.ps1 -Version 1.1.0   # or pass it directly
    ```
+
    Add `-NoPush` to create the tag without pushing it.
 3. Make sure signing is configured (see **Signing releases** above) — without it
    the build succeeds but the artifact is unusable. Then build the release
    APK/AAB:
-   ```
+
+   ```powershell
    ./gradlew assembleRelease
    ```
+
    or, for a Play Store upload:
-   ```
+
+   ```powershell
    ./gradlew bundleRelease
    ```
+
    [`scripts/bundle.ps1`](scripts/bundle.ps1) wraps the `bundleRelease`
    path above: it fails fast if signing isn't configured, warns if the
    working tree is dirty or HEAD isn't on a release tag, prints the
    resolved version, and archives `mapping.txt` and
    `native-debug-symbols.zip` next to the built `.aab` so a later build
    doesn't overwrite them before you've saved a copy.
-   ```
+
+   ```powershell
    ./scripts/bundle.ps1
    ```
+
 4. Verify the packaged version before distributing:
-   ```
+
+   ```powershell
    ./gradlew :app:printVersionInfo
    ```
+
    or inspect the built artifact directly:
-   ```
+
+   ```powershell
    aapt dump badging app/build/outputs/apk/release/app-release.apk
    ```
+
    Confirm it is signed too:
-   ```
+
+   ```powershell
    apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
    ```
+
 5. Because release builds are optimized by R8 while debug builds are not, install
    the release artifact on a device and smoke-test it — open the list, search,
    filter, add/edit/delete a restaurant, open its detail screen, and share a
