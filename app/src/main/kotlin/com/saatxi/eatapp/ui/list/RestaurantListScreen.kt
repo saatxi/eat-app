@@ -183,14 +183,9 @@ fun RestaurantListScreen(
                                 }
                             } else {
                                 item(key = "suggestions", contentType = "header") {
-                                    val topCuisine = remember(uiState.restaurants) {
-                                        uiState.restaurants.groupingBy { it.cuisineKey }.eachCount().maxByOrNull { it.value }?.key
-                                    }
                                     SearchSuggestionsRow(
-                                        topCuisine = topCuisine,
                                         onMinRatingChange = viewModel::onMinRatingChange,
                                         onVisitedChange = viewModel::onVisitedChange,
-                                        onCuisineChange = viewModel::onCuisineChange,
                                         modifier = Modifier.animateItem()
                                     )
                                 }

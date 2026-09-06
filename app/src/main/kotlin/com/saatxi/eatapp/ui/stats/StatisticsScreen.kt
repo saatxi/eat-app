@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -118,22 +119,30 @@ private fun StatisticsContent(uiState: StatisticsUiState, onBack: () -> Unit) {
                         labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         labelTopPadding = 4.dp
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    // height(IntrinsicSize.Max) plus fillMaxHeight on each tile keeps the row
+                    // level when one label wraps onto two lines and the others don't — on a
+                    // narrow phone "Puntuació mitjana"/"Average rating" wraps while "Visitats"/
+                    // "Visited" stays on one line, and without this the wrapped tile's card
+                    // would grow taller than its neighbours instead of them all matching it.
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)
+                    ) {
                         StatTile(
                             value = uiState.visitedCount.toString(),
                             label = stringResource(R.string.stats_tile_visited),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f).fillMaxHeight()
                         )
                         StatTile(
                             value = uiState.wantToTryCount.toString(),
                             label = stringResource(R.string.stats_tile_want_to_try),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f).fillMaxHeight()
                         )
                         StatTile(
                             value = uiState.averageRating?.let { stringResource(R.string.stats_average_rating_value, it) }
                                 ?: stringResource(R.string.stats_average_rating_none),
                             label = stringResource(R.string.stats_tile_average_rating),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f).fillMaxHeight()
                         )
                     }
 
@@ -185,7 +194,12 @@ private fun StatTile(
     Card(colors = colors, modifier = modifier.fillMaxWidth()) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth().padding(contentPadding)
+            // Centered rather than top-aligned so a tile whose neighbour's longer
+            // label wraps to a second line — stretching every tile in the row to
+            // match it (see the supporting-stats Row's own comment) — doesn't leave
+            // this one's shorter content pinned to the top with empty space below.
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth().fillMaxHeight().padding(contentPadding)
         ) {
             Text(text = value, style = valueStyle.copy(fontFeatureSettings = "tnum"), color = valueColor)
             Text(

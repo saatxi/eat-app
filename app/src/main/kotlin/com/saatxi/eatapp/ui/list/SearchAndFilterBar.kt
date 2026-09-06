@@ -333,16 +333,16 @@ private const val TOP_RATED_MIN_RATING = 4
  * A starting point for browsing shown in place of the (otherwise blank)
  * space above the list once there's nothing to search or filter by yet
  * (F-66) — each chip is a shortcut into one of [FilterSection]'s own
- * filters, not a separate feature of its own. [topCuisine] is whichever key
- * appears most often in the restaurants currently on screen (null only when
- * there are none, in which case this composable isn't reached at all).
+ * filters, not a separate feature of its own. Two chips rather than three
+ * (F-91): a third "top cuisine" chip used to sit here, but on a narrow phone
+ * it got cut off at the screen edge with no scroll affordance, so it was
+ * dropped rather than fixing the scrolling — the two that always fit are the
+ * ones worth keeping visible.
  */
 @Composable
 internal fun SearchSuggestionsRow(
-    topCuisine: String?,
     onMinRatingChange: (Int?) -> Unit,
     onVisitedChange: (Boolean?) -> Unit,
-    onCuisineChange: (String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val chipColors = FilterChipDefaults.filterChipColors(
@@ -357,10 +357,7 @@ internal fun SearchSuggestionsRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(top = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FilterChip(
@@ -381,17 +378,6 @@ internal fun SearchSuggestionsRow(
                 },
                 colors = chipColors
             )
-            topCuisine?.let { cuisine ->
-                FilterChip(
-                    selected = false,
-                    onClick = { onCuisineChange(cuisine) },
-                    label = { Text(cuisineLabel(cuisine)) },
-                    leadingIcon = {
-                        Icon(cuisineIcon(cuisine), contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
-                    },
-                    colors = chipColors
-                )
-            }
         }
     }
 }
@@ -403,10 +389,8 @@ private fun SearchSuggestionsRowPreview() {
     EatAppTheme {
         Surface {
             SearchSuggestionsRow(
-                topCuisine = "japanese",
                 onMinRatingChange = {},
                 onVisitedChange = {},
-                onCuisineChange = {},
                 modifier = Modifier.padding(16.dp)
             )
         }

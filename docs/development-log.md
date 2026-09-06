@@ -5,7 +5,7 @@ design-history record of the two redesign passes that shaped it, so none of
 it gets lost between sessions. The backlog below is a menu, not a plan —
 nothing in it is committed to, and items can be picked off in any order.
 
-Every backlog entry has a stable ID (`F-01`…`F-89`). Use those in commit
+Every backlog entry has a stable ID (`F-01`…`F-91`). Use those in commit
 messages and when asking for something to be worked on; they never get
 renumbered, and items that get done stay in the list marked **Done** rather
 than being deleted, so the file keeps a record of what changed and why.
@@ -87,6 +87,61 @@ piece to cover once a runner is chosen.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-91 · List's third search-suggestion chip got cut off at the screen edge on narrow phones — Done
+
+Reported by the user from a real device screenshot (Catalan locale, narrow
+phone): `SearchSuggestionsRow`'s chip row (`ui/list/SearchAndFilterBar.kt`)
+was `horizontalScroll`-able, and the third chip — a shortcut into whichever
+cuisine appears most often among the restaurants currently on screen — sat
+right at the scrollable row's start, clipped by the screen edge with no
+fade or other hint that swiping right would reveal it, so it read as broken
+rather than scrollable. Asked the user whether to add a scroll-affordance
+fade, drop the third chip, or leave it; they chose dropping it.
+
+- **Fix**: `SearchSuggestionsRow` now only offers the "Top rated" and
+  "Want to try" chips — the two that always fit without scrolling — and
+  lost its `topCuisine`/`onCuisineChange` parameters along with the
+  `horizontalScroll` modifier it no longer needs (the two remaining chips
+  always fit on screen). `RestaurantListScreen.kt` no longer computes the
+  most-common cuisine among the visible restaurants (the `remember(uiState.
+  restaurants) { ... groupingBy { it.cuisineKey }.eachCount() ... }` block),
+  since nothing reads it anymore. The cuisine filter itself is unaffected —
+  `FilterSection`'s own cuisine chips (`onCuisineChange` there) still work
+  exactly as before; only this shortcut row's third chip is gone.
+- Verified with `./gradlew test assembleDebug lint` — all succeed; lint's
+  `UnusedResources` count is unchanged at 3. Not verified: the actual
+  on-device appearance at the narrow width from the screenshot, only that
+  it compiles, lints clean, and the existing test suite (which doesn't
+  cover this screen's Composable — see F-89) still passes.
+
+### F-90 · Statistics' three supporting tiles go uneven height when one label wraps — Done
+
+Reported by the user from a real device screenshot (Catalan locale, narrow
+phone): "Puntuació mitjana" wraps onto two lines while "Visitats" and "Per
+provar" stay on one, and since nothing equalized the three `StatTile`s'
+heights, the wrapped tile's card grew taller than its neighbours instead of
+the row staying level — not part of the F-80–F-89 `/code-review` pass, an
+independently found layout bug in the F-79 supporting-stats row.
+
+- **Fix**: the supporting-stats `Row` (`ui/stats/StatisticsScreen.kt`) now
+  carries `Modifier.height(IntrinsicSize.Max)`, and each of the three
+  `StatTile` call sites adds `.fillMaxHeight()` to its `Modifier.weight(1f)`
+  — the standard Compose pattern for a `Row` whose children should all match
+  the tallest one regardless of how much each one wraps. `StatTile` itself
+  (shared with the headline tile via F-85) now centers its `Column`
+  vertically (`Arrangement.Center`) rather than leaving it top-aligned, so a
+  tile with a shorter one-line label doesn't end up with its value/label
+  pinned to the top and empty space below once the row stretches it to
+  match its wrapped neighbour. The headline tile is unaffected — it isn't
+  inside this `Row` and gets no bounded height from its own parent, so
+  `fillMaxHeight()` there is the documented Compose no-op under an
+  unbounded height constraint.
+- Verified with `./gradlew test assembleDebug lint` — all succeed. Not
+  verified: the actual on-device appearance at the narrow width from the
+  screenshot, only that it compiles, lints clean, and the existing test
+  suite (which doesn't cover this screen's Composable — see F-89) still
+  passes.
 
 ### F-88 · `DataStoreUserPreferencesRepository.kt` has no dedicated test — Done
 
