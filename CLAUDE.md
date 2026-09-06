@@ -68,12 +68,13 @@ When asked to write a commit message or a tag message:
   this repo's dependencies or UI and it's a natural moment to check** — don't
   go looking on a schedule — glance at
   `https://dl.google.com/android/maven2/androidx/compose/material3/material3/maven-metadata.xml`
-  for a stable 1.5.x. If one exists, tell the user: bumping `composeBom` in
+  for a stable 1.5.x — last checked 2026-09-06, still only alphas
+  (`1.5.0-alpha27`). If one exists, tell the user: bumping `composeBom` in
   `gradle/libs.versions.toml` would unblock the cuisine-badge shape morphing
   that Phase 8 deferred (`ButtonGroup` itself was already replaced with the
   stable `SingleChoiceSegmentedButtonRow` and doesn't need revisiting).
   `material3Adaptive` (`1.3.0` in the same catalog, versioned independently)
-  is worth re-checking at the same time — last checked 2026-09-05, still no
+  is worth re-checking at the same time — last checked 2026-09-06, still no
   stable release past `1.3.0` (latest overall is `1.4.0-alpha01`) — see
   [development-log.md](docs/development-log.md)'s F-73.
 - **Baseline Profile plugin pinned to a pre-release**: `androidx.baselineprofile`
@@ -83,13 +84,13 @@ When asked to write a commit message or a tag message:
   F-73). Same "revisit once stable ships" shape as the material3 entry
   above — check for a stable `1.5.x` release of `androidx.baselineprofile`
   (via `androidx.benchmark:benchmark-macro-junit4`'s `maven-metadata.xml`)
-  at the same time you check material3. Last checked 2026-09-05: `1.5.0-rc02`
+  at the same time you check material3. Last checked 2026-09-06: `1.5.0-rc02`
   is still the newest version on that line, and `1.4.1` is still the newest
   stable one.
 
 ## Build & verify
 
-```
+```powershell
 ./gradlew assembleDebug            # debug APK
 ./gradlew assembleRelease          # release APK
 ./gradlew bundleRelease            # release AAB (Play Store)
@@ -103,7 +104,7 @@ code change before reporting it as done.
 
 ## Project structure
 
-```
+```text
 app/src/main/kotlin/com/saatxi/eatapp/
 ├── data/
 │   ├── local/         # Room entity, DAO, database, link validation

@@ -21,6 +21,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -284,11 +285,13 @@ private fun ListDetailPaneHost(
             AnimatedPane {
                 val selectedId = navigator.currentDestination?.contentKey
                 if (selectedId != null) {
-                    RestaurantDetailScreen(
-                        restaurantId = selectedId,
-                        onBack = { scope.launch { navigator.navigateBack() } },
-                        onEditRestaurant = onEditRestaurant
-                    )
+                    key(selectedId) {
+                        RestaurantDetailScreen(
+                            restaurantId = selectedId,
+                            onBack = { scope.launch { navigator.navigateBack() } },
+                            onEditRestaurant = onEditRestaurant
+                        )
+                    }
                 } else {
                     EmptyState(
                         icon = Icons.Outlined.RestaurantMenu,

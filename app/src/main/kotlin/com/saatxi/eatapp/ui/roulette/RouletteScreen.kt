@@ -295,7 +295,9 @@ private fun RouletteResultCard(restaurant: RestaurantUiModel, onClick: () -> Uni
                 modifier = Modifier.padding(top = 12.dp),
                 starSize = 20.dp,
                 showRatingLabel = false,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                priceContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                priceContentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
             restaurant.address?.let { address ->
                 Text(

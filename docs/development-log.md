@@ -5,7 +5,7 @@ design-history record of the two redesign passes that shaped it, so none of
 it gets lost between sessions. The backlog below is a menu, not a plan —
 nothing in it is committed to, and items can be picked off in any order.
 
-Every backlog entry has a stable ID (`F-01`…`F-79`). Use those in commit
+Every backlog entry has a stable ID (`F-01`…`F-89`). Use those in commit
 messages and when asking for something to be worked on; they never get
 renumbered, and items that get done stay in the list marked **Done** rather
 than being deleted, so the file keeps a record of what changed and why.
@@ -55,13 +55,184 @@ and all four are now done — see **Done** for the full record.
 
 ## Open
 
-Nothing open right now — see **Done** below.
+Found by a `/code-review high` pass over `2c8eeab^..7d1bcaa` (the F-76–F-79
+visual refresh plus the System theme removal) — see that commit range for
+context on each.
+
+### F-82 · Detail screen's "Overview"/"Rating" section headings were removed with no accessibility replacement
+
+**Impact**: Medium · **Effort**: XS
+
+The plain-text section headings that used to open the Overview and
+Rating-and-price cards were deleted along with their strings
+(`detail_section_overview`, `detail_section_rating` — confirmed gone from
+all three `strings.xml` files with zero remaining references anywhere in
+`app/src/main`), and nothing replaces them: the codebase has no
+`Modifier.semantics { heading() }` usage anywhere, so this was the only
+section landmark TalkBack users had. A screen-reader user now swipes
+straight from the photo into cuisine/rating/price content with no verbal
+section context.
+
+**Fix**: either restore a (possibly visually-quieter) section label, or mark
+the visual replacement — the cuisine `InfoRow`, the price/rating row — with
+`Modifier.semantics { heading() }` so assistive tech still gets a landmark.
+
+### F-83 · Palette swatch's colored selection halo silently degrades below API 28
+
+**Impact**: Low · **Effort**: XS
+
+`PaletteSwatch`'s selection state (`ui/settings/SettingsScreen.kt`) uses
+`Modifier.shadow(elevation = 6.dp, shape = CircleShape, ambientColor =
+scheme.primary, spotColor = scheme.primary)` for a halo in the palette's own
+color, but colored ambient/spot shadows only render from Android 9 (API 28)
+onward — below that the platform silently falls back to a plain gray/black
+shadow. `minSdk` is 26, so on Android 8.0/8.1 the selected swatch shows a
+generic gray glow instead of the palette-colored halo the surrounding
+comment describes. Cosmetic only — the separate `border` still marks
+selection unambiguously.
+
+**Fix**: either accept the graceful platform degradation as-is (document it
+next to the `shadow(...)` call), or add a plain elevation-only fallback path
+for API < 28 if the color halo matters enough to bother.
+
+### F-84 · `SettingsRow`'s chevron implies navigation on rows that don't navigate
+
+**Impact**: Low · **Effort**: XS
+
+`SettingsRow`'s own doc comment says `showChevron` should be false "for a
+row that isn't navigation," but the Language row (opens an in-place
+`DropdownMenu`) and the Export-data row (immediately fires a share `Intent`)
+both leave `showChevron` at its default `true` — contradicting the rule the
+component itself documents. A user relying on the chevron as a "this pushes
+a new screen" affordance taps "Export data" expecting navigation and
+instead gets an immediate share sheet with no screen change.
+
+**Fix**: set `showChevron = false` on the Language and Export-data rows, or
+update the doc comment if the chevron is meant to mean something broader
+than "navigates."
+
+### F-85 · `HeadlineStatTile`/`SupportingStatTile` are near-duplicate composables
+
+**Impact**: Low · **Effort**: S
+
+Both (`ui/stats/StatisticsScreen.kt`) are `Card > Column(center) >
+Text(value) + Text(label)` with identical structure; every difference
+(container color, padding, text styles, label top-padding) is a plain
+parameter rather than a structural divergence, and the
+`fontFeatureSettings = "tnum"` value-text setting is copy-pasted into both
+instead of living in one place.
+
+**Fix**: merge into one `StatTile(value, label, ...)` composable parameterized
+by the handful of style/color/padding values that currently differ.
+
+### F-86 · `DetailTopBar`'s three overflow menu items are copy-pasted boilerplate
+
+**Impact**: Low · **Effort**: XS
+
+The three `DropdownMenuItem` blocks in `DetailTopBar`'s overflow menu
+(Edit/Share/Delete) are structurally identical — `text`/`leadingIcon`/
+`onClick`-that-resets-`menuExpanded` — differing only in their three literal
+values, instead of being driven by a small list of (label, icon, action)
+triples through one `DropdownMenuItem` call site.
+
+**Fix**: replace the three blocks with one `forEach` over a local list of
+(string resource, icon, action) triples.
+
+### F-87 · `SettingsRow` reinvents `RestaurantRow`'s row layout
+
+**Impact**: Low · **Effort**: M
+
+`SettingsRow` (icon, label, optional supporting text, optional trailing
+element) duplicates the same icon+label(+supporting text)+trailing skeleton
+`RestaurantRow.kt` already built for list rows, with no shared composable in
+`ui/common/` despite that package existing precisely for cross-screen
+helpers like `TagPills`/`RatingAndPriceRow`. A future change to the app's
+row spacing/icon-size/label-typography convention has to be remembered and
+re-applied in both files separately, with no compiler check that they stay
+in sync.
+
+**Fix**: extract the shared row skeleton into `ui/common/` (e.g. a generic
+`IconLabelRow`) and have both `SettingsRow` and `RestaurantRow` build on it.
+
+### F-88 · `DataStoreUserPreferencesRepository.kt` has no dedicated test
+
+**Impact**: Medium · **Effort**: S
+
+Already called out once, as a stray note inside Appendix A's Phase 8 "Still
+to write" list rather than as its own tracked item — moving it here so it
+doesn't stay buried. Every other preferences-adjacent class picked up a test
+in F-70/F-71 (`AppLocaleManagerTest`, etc.), but the DataStore-backed
+repository behind theme/palette/language persistence still has none. Note
+`RoomRestaurantRepository.kt`, which an earlier pass of this list also
+flagged as untested, turned out to already be fully exercised via
+`RestaurantDaoTest` (see F-71) — no work needed there.
+
+**Fix**: add a `DataStoreUserPreferencesRepositoryTest` using a real
+in-memory/temp-file `DataStore<Preferences>` (the same real-thing-over-fake
+approach `AppLocaleManagerTest` already took), covering read/write/default
+for theme mode, palette, and language, plus the `ThemeMode.entries.firstOrNull`
+fallback F-76–F-79's review already traced through by hand.
+
+### F-89 · No test coverage at all for navigation, the widget, or any Composable screen
+
+**Impact**: Low · **Effort**: L
+
+`navigation/EatAppNavHost.kt` (including the `ListDetailPaneHost`/
+`isFullScreenRoute` logic F-80 lives in), both `widget/` files, every
+`ui/common/*` helper (`ShareRestaurants`, `SharedTransition`, `TagPills`,
+`RatingAndPriceRow`, `CuisineVisuals`, `DeleteConfirmDialog`, `Shimmer`,
+`RelativeTime`, ...), every screen's Composable itself (as opposed to its
+ViewModel, which is well covered), and `MainActivity.kt`/`EatApplication.kt`
+have no test file. This is a real gap but a different shape from F-70/F-71's
+plain-Kotlin/ViewModel gaps: this project has no Compose UI testing
+dependency at all yet (`androidx.compose.ui:ui-test-junit4` isn't in
+`gradle/libs.versions.toml`), and CLAUDE.md's testing conventions haven't
+weighed in on adding one — worth raising with the user before picking this
+one up, rather than assuming it's wanted.
+
+**Fix**: discuss whether to add Compose UI testing (and on what runner —
+Robolectric-hosted Compose tests vs. the existing `:baselineprofile`-style
+instrumented path) before attempting screen/navigation/widget coverage;
+`navigation/EatAppNavHost.kt`'s pane-selection logic (F-80) is the highest-value
+piece to cover once a runner is chosen.
 
 ---
 
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-81 · Roulette's price chip missed the List/Detail color migration — Done.
+
+Found by the same `/code-review high` pass as F-80.
+
+- **Fix applied as proposed**: Roulette's `RatingAndPriceRow` call site
+  (`ui/roulette/RouletteScreen.kt`) now passes
+  `priceContainerColor = MaterialTheme.colorScheme.primaryContainer` and
+  `priceContentColor = MaterialTheme.colorScheme.onPrimaryContainer`,
+  matching List (`RestaurantRow.kt`) and Detail
+  (`RestaurantDetailScreen.kt`) instead of silently falling back to the old
+  `tertiaryContainer`/`onTertiaryContainer` default.
+- Verified with `./gradlew test assembleDebug` — both succeed. Not verified:
+  the actual on-screen chip color on a device or emulator, only that it
+  compiles and now passes the same arguments as the other two call sites.
+
+### F-80 · Delete/overflow-menu state goes stale when switching restaurants in the tablet split view — Done.
+
+Found by a `/code-review high` pass over `2c8eeab^..7d1bcaa` — see the entry
+this replaced for the full failure scenario (restaurant A's delete dialog
+surviving a tap on restaurant B in the list pane and then deleting B).
+
+- **Fix applied as proposed**: `ListDetailPaneHost`'s `detailPane`
+  (`navigation/EatAppNavHost.kt`) now wraps `RestaurantDetailScreen` in
+  `key(selectedId) { ... }`, so switching the selected restaurant tears down
+  and rebuilds the composable — including `RestaurantDetailContent`'s
+  `showDeleteConfirm` and `DetailTopBar`'s `menuExpanded` `remember` state —
+  instead of recomposing it in place with stale state.
+- Verified with `./gradlew test assembleDebug` — both succeed. Not verified:
+  the actual tablet split-view repro (open A, tap Delete, tap B, confirm) on
+  a real device or emulator, only that the fix compiles and the existing
+  test suite still passes.
 
 ### F-79 · Statistics screen visual refresh — Done.
 
