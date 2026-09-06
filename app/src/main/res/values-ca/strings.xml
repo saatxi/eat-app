@@ -89,7 +89,6 @@
     <string name="settings_section_appearance">Aparença</string>
     <string name="settings_palette">Esquema de color</string>
     <string name="settings_theme_mode">Tema</string>
-    <string name="theme_mode_system">Sistema</string>
     <string name="theme_mode_light">Clar</string>
     <string name="theme_mode_dark">Fosc</string>
     <string name="palette_saffron">Safrà</string>

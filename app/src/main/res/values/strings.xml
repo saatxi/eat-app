@@ -93,7 +93,6 @@
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_palette">Color scheme</string>
     <string name="settings_theme_mode">Theme</string>
-    <string name="theme_mode_system">System</string>
     <string name="theme_mode_light">Light</string>
     <string name="theme_mode_dark">Dark</string>
     <string name="palette_saffron">Saffron</string>

@@ -1,7 +1,6 @@
 package com.saatxi.eatapp.ui.theme
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -30,26 +29,24 @@ enum class AppPalette(
     }
 }
 
-/** Light/dark override, or defer to the system. */
+/** Light/dark override. */
 enum class ThemeMode(@StringRes val labelRes: Int) {
-    SYSTEM(R.string.theme_mode_system),
     LIGHT(R.string.theme_mode_light),
     DARK(R.string.theme_mode_dark);
 
     companion object {
-        val Default = SYSTEM
+        val Default = LIGHT
     }
 }
 
 /**
- * Resolves [mode] against the system setting. Shared rather than inlined into
- * [EatAppTheme] so a screen that needs to preview a palette (the Settings
- * picker) resolves "what will dark mode actually be" the same way the theme
- * itself does, instead of re-deriving it and risking drift.
+ * Resolves [mode] to whether dark colors should be used. Shared rather than
+ * inlined into [EatAppTheme] so a screen that needs to preview a palette (the
+ * Settings picker) resolves this the same way the theme itself does, instead
+ * of re-deriving it and risking drift.
  */
 @Composable
 fun isDarkTheme(mode: ThemeMode): Boolean = when (mode) {
-    ThemeMode.SYSTEM -> isSystemInDarkTheme()
     ThemeMode.LIGHT -> false
     ThemeMode.DARK -> true
 }
