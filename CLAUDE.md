@@ -150,6 +150,19 @@ app/src/main/kotlin/com/saatxi/eatapp/
   importing a restaurant file shared by another EatApp user
   (`ui/importing/`), and even then nothing is written until the user reviews
   and confirms it on that screen.
+- Markdown files (`README.md`, `CLAUDE.md`, `docs/*.md`) must satisfy
+  markdownlint (`markdownlint-cli2`, already installed) — run it with no
+  arguments; `.markdownlint-cli2.jsonc`'s `globs` already point it at just
+  those files. It also `ignores` `.claude/` (third-party skill repos tracked
+  as gitlinks, not this project's own docs). Neither setting changes a
+  rule, so the default rule set still applies to everything in scope. Check
+  the editor's lint warnings on any Markdown file you touch and fix them
+  before moving on, rather than leaving them for the next edit to trip
+  over. A warning that's actually an established, repo-wide
+  convention (e.g. `docs/development-log.md`'s "— Done" section headings
+  dropping their trailing period so MD026 doesn't fire) is fine to keep as
+  long as it's applied consistently — don't silently break that consistency
+  in just the section you're touching.
 
 ## Security guidelines
 

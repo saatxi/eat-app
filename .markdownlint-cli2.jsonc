@@ -1,0 +1,26 @@
+{
+  // MD013 (line-length) shouldn't reflow fenced code blocks: reformatting
+  // code or fixed-width data to fit 80 columns breaks it (development-log.md
+  // has literal column-aligned data dumps that can't be rewrapped at all).
+  "config": {
+    "MD013": {
+      "code_blocks": false
+    }
+  },
+  // The exact scope CLAUDE.md documents — README.md, CLAUDE.md and
+  // docs/*.md — so a plain `markdownlint-cli2` with no arguments lints the
+  // right files. CHANGELOG.md is deliberately not included: it's generated
+  // from git tag messages, which CLAUDE.md's own tag-message convention
+  // keeps unwrapped (one continuous line per paragraph), so it isn't held
+  // to this line-length rule set.
+  "globs": [
+    "README.md",
+    "CLAUDE.md",
+    "docs/*.md"
+  ],
+  // .claude/skills/* are third-party skill repos (tracked as gitlinks), not
+  // this project's own docs — their Markdown isn't ours to keep compliant.
+  "ignores": [
+    ".claude/**"
+  ]
+}

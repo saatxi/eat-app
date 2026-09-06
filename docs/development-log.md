@@ -133,9 +133,10 @@ fade, drop the third chip, or leave it; they chose dropping it.
   lost its `topCuisine`/`onCuisineChange` parameters along with the
   `horizontalScroll` modifier it no longer needs (the two remaining chips
   always fit on screen). `RestaurantListScreen.kt` no longer computes the
-  most-common cuisine among the visible restaurants (the `remember(uiState.
-  restaurants) { ... groupingBy { it.cuisineKey }.eachCount() ... }` block),
-  since nothing reads it anymore. The cuisine filter itself is unaffected —
+  most-common cuisine among the visible restaurants (the
+  `remember(uiState.restaurants) { ... groupingBy { it.cuisineKey }.eachCount()
+  ... }` block), since nothing reads it anymore. The cuisine filter itself is
+  unaffected —
   `FilterSection`'s own cuisine chips (`onCuisineChange` there) still work
   exactly as before; only this shortcut row's third chip is gone.
 - Verified with `./gradlew test assembleDebug lint` — all succeed; lint's
@@ -198,9 +199,8 @@ note inside Appendix A's Phase 8 "Still to write" list).
   `AppLocaleManager`'s own state via `AppCompatDelegate`, already covered by
   `AppLocaleManagerTest` — so it's out of scope here rather than a gap.
 - Verified with `./gradlew test assembleDebug lint` — all succeed; the new
-  test class's own 8 cases all pass individually
-  (`:app:testDebugUnitTest --tests
-  com.saatxi.eatapp.data.prefs.DataStoreUserPreferencesRepositoryTest`).
+  test class's own 8 cases all pass individually via
+  `:app:testDebugUnitTest --tests com.saatxi.eatapp.data.prefs.DataStoreUserPreferencesRepositoryTest`.
 
 ### F-87 · `SettingsRow` reinvents `RestaurantRow`'s row layout — Done
 
@@ -660,9 +660,9 @@ package, so no other file's imports needed to change.
   stays `private`.
 - One real bug caught by the split itself: the first compile after moving
   `RestaurantRow` failed on an unresolved `contentDescription` inside its
-  `clearAndSetSemantics` block — the monolith's single `import
-  androidx.compose.ui.semantics.contentDescription` had silently covered
-  both call sites (this one and `SearchAndFilterBar`'s), so splitting the
+  `clearAndSetSemantics` block — the monolith's single
+  `import androidx.compose.ui.semantics.contentDescription` had silently
+  covered both call sites (this one and `SearchAndFilterBar`'s), so splitting the
   file surfaced a missing import that isolated compilation wouldn't have
   hidden going forward.
 - Verified with `./gradlew test assembleDebug lint` — 222 tests passing
@@ -832,8 +832,8 @@ new feature of its own.
 - **New `SearchSuggestionsRow`**
   ([RestaurantListScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/RestaurantListScreen.kt))
   takes over the exact spot the "N restaurants" result count already occupies
-  when a filter is active — `else` branch of the same `if
-  (uiState.hasActiveFilter)` check, so the two are mutually exclusive by
+  when a filter is active — `else` branch of the same
+  `if (uiState.hasActiveFilter)` check, so the two are mutually exclusive by
   construction rather than by a second condition that could drift out of
   sync. Three chips, reusing `FilterSection`'s own `FilterChip` look: "Top
   rated" (`onMinRatingChange(4)`, the same threshold `FilterSection`'s own
@@ -915,8 +915,8 @@ near-duplicate.
   IME Done or a typed comma, existing-tag suggestions filtered by what's
   typed so far (reusing the `FilterChip` and colours already built for
   cuisine filtering), and the tags already added as removable `InputChip`s.
-- **Sharing/import**: `RestaurantExport` gained `tags: List<String> =
-  emptyList()` (the same backward-compatibility treatment `notes`/`visited`
+- **Sharing/import**: `RestaurantExport` gained `tags: List<String> = emptyList()`
+  (the same backward-compatibility treatment `notes`/`visited`
   got); import validates each tag the same per-row-lenient way the rest of a
   row already is (`normalizeTagName` — trimmed, rejected outright rather
   than silently stripped if it contains a comma or is over 40 characters),
@@ -1026,8 +1026,9 @@ Resolved with the user before writing any code:
   lives in `RouletteViewModel`'s in-memory state; persisting it just so a
   separate widget process could read it would mean a second source of
   truth for what both screens agree is disposable UI state. A new one-shot
-  `RestaurantDao.getRandomWantToTry()` (`SELECT ... WHERE visited = 0 ORDER
-  BY RANDOM() LIMIT 1`) backs it, exposed through `RestaurantRepository`.
+  `RestaurantDao.getRandomWantToTry()`
+  (`SELECT ... WHERE visited = 0 ORDER BY RANDOM() LIMIT 1`) backs it,
+  exposed through `RestaurantRepository`.
 - **Tap target: opens that restaurant's detail screen directly**, via an
   explicit intent naming `MainActivity` with a `EXTRA_RESTAURANT_ID` extra —
   `EatAppNavHost` gained a `startRestaurantId` parameter and a
@@ -1362,9 +1363,10 @@ already happened.
   hand-built entity keeps today's implicit behaviour). A real
   `MIGRATION_5_6` in
   [EatAppDatabase.kt](../app/src/main/kotlin/com/saatxi/eatapp/data/local/EatAppDatabase.kt)
-  adds the column and backfills it — `UPDATE restaurants SET visited = 0
-  WHERE rating = 0` — treating an unrated row as more likely a wishlist entry
-  than a forgotten review, rather than falling back to the destructive
+  adds the column and backfills it —
+  `UPDATE restaurants SET visited = 0 WHERE rating = 0` — treating an
+  unrated row as more likely a wishlist entry than a forgotten review,
+  rather than falling back to the destructive
   migration the file's own comment warns against.
 - `RestaurantDao.observeFiltered` gained a fifth, nullable `visited`
   parameter, following the same `:param IS NULL OR column = :param` pattern
@@ -1685,9 +1687,10 @@ Section E in full, which retires the section along with F-33 before it.
   no vertical space taken from the list — through `RestaurantListUiState.sort`
   and the ViewModel's `Filters` into the repository. The DAO takes a
   `sortByRating: Boolean` rather than the enum, so the ordering stays a bound
-  parameter (`ORDER BY CASE WHEN :sortByRating THEN rating ELSE 0 END DESC,
-  name COLLATE NOCASE ASC`) instead of SQL assembled from a value, and the
-  name order remains the tiebreak within a rating so both orders are stable.
+  parameter
+  (`ORDER BY CASE WHEN :sortByRating THEN rating ELSE 0 END DESC, name COLLATE NOCASE ASC`)
+  instead of SQL assembled from a value, and the name order remains the
+  tiebreak within a rating so both orders are stable.
   Sorting is not a filter: it is excluded from `hasActiveFilter`, and
   `clearFilters()` deliberately preserves it, since that button is reached
   from the "No matches" state where the user wants their restaurants back,
@@ -1853,9 +1856,9 @@ Four columns removed from the entity, the reader, the UI and `data/eatapp.db`.
   `Converters` and the `@TypeConverters` annotation went with it. This closes
   F-32 and F-37, which existed only to improve how that one row looked.
 - **`createdAt` — Dropped.** Never read by anything: no composable, no query,
-  no ordering. It briefly gained a `DEFAULT (CAST(strftime('%s','now') AS
-  INTEGER) * 1000)` so it would not have to be typed by hand, before being
-  removed outright in the same pass.
+  no ordering. It briefly gained a
+  `DEFAULT (CAST(strftime('%s','now') AS INTEGER) * 1000)` so it would not
+  have to be typed by hand, before being removed outright in the same pass.
 - **`notes` — Dropped, and this one cost something.** Unlike the others it was
   live: a card on the detail screen, one of the four fields folded into
   `searchText`, and part of the non-blank check in the reader. Search now
@@ -2132,7 +2135,7 @@ declaring tones through the types in
 
 **Saffron** (default — saffron orange + teal + plum)
 
-```
+```text
 Primary    10 #3A0B00  20 #5D1900  30 #862E0C  40 #B4471B  80 #FFB59B  90 #FFDBCF  95 #FFEDE7
 Secondary  10 #002022  20 #003739  30 #004F52  40 #00696D  80 #4DDADF  90 #A8F0F3  95 #D2F8FA
 Tertiary   10 #2E0B33  20 #46204A  30 #603663  40 #7A4E7E  80 #EBB5EE  90 #FFD7FB  95 #FFEBFB
@@ -2144,7 +2147,7 @@ NeutralVar 30 #53433C  50 #85736A  60 #A08D83  80 #D8C7BE  90 #F5E3DA
 
 **Garden** (deep green + amber + blue-green)
 
-```
+```text
 Primary    10 #00210E  20 #00391C  30 #00522A  40 #226B3E  80 #8FD9A6  90 #ABF3C1  95 #C7FFD8
 Secondary  10 #261A00  20 #402D00  30 #5C4200  40 #7A5900  80 #F3C03F  90 #FFDF95  95 #FFEFCE
 Tertiary   10 #001F26  20 #00363F  30 #1E4D56  40 #38656E  80 #A0CFDA  90 #BCEBF6  95 #DDF6FB
@@ -2156,7 +2159,7 @@ NeutralVar 30 #3F4A40  50 #6F7B70  60 #899589  80 #C0CCC0  90 #DCE8DB
 
 **Indigo** (indigo + coral + sage)
 
-```
+```text
 Primary    10 #00105C  20 #182878  30 #313E90  40 #4A57A9  80 #B9C3FF  90 #DEE0FF  95 #F0EFFF
 Secondary  10 #410004  20 #601A18  30 #7E2D2C  40 #9C4341  80 #FFB3AE  90 #FFDAD6  95 #FFEDEA
 Tertiary   10 #092016  20 #1F352A  30 #354B40  40 #4C6357  80 #B2CCBD  90 #CEE9D8  95 #DCF7E6
@@ -2300,8 +2303,8 @@ drift.
   newer `ToggleOn`/`ToggleOff` constants sight-unseen against a BOM this build
   couldn't inspect offline.
 - New `ui/favorites/FavoritesScreen.kt` + `FavoritesViewModel.kt`. No new DAO
-  query: `FavoritesViewModel` reuses `repository.observeFiltered(null, null,
-  null)` unchanged and filters to `favoriteIds` in memory, the same "no new
+  query: `FavoritesViewModel` reuses `repository.observeFiltered(null, null, null)`
+  unchanged and filters to `favoriteIds` in memory, the same "no new
   query" approach Roulette (Phase 6) uses for its own filters. Its own empty
   state (`favorites_empty_title` / `_body`) covers the no-favourites case.
 - `AppViewModelProvider` wires all of the above through `EatApplication`,
@@ -2419,6 +2422,7 @@ restructured:
 ### Phase 6 — "What to eat" · Done
 
 New [ui/roulette/RouletteViewModel.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/roulette/RouletteViewModel.kt)
+
 - [RouletteScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/roulette/RouletteScreen.kt):
 
 - Picks at random among the restaurants passing this screen's own filters,
@@ -2461,11 +2465,12 @@ in the model.
 `app/build.gradle.kts` adds a `composeCompiler {}` block, gated on
 `-Peatapp.composeMetrics=true`, that points `metricsDestination` and
 `reportsDestination` at `build/compose_metrics/`. Verified the point-1 claim
-rather than just assuming it: `gradlew.bat :app:compileDebugKotlin
--Peatapp.composeMetrics=true` produces `app-classes.txt` showing
-`stable class ...ui.model.RestaurantUiModel` with every property `stable`, and
-`app-composables.csv` showing `RestaurantRow` as `composable=1, skippable=1,
-restartable=1`. The report only reflects files Kotlin actually recompiles in
+rather than just assuming it:
+`gradlew.bat :app:compileDebugKotlin -Peatapp.composeMetrics=true` produces
+`app-classes.txt` showing `stable class ...ui.model.RestaurantUiModel` with
+every property `stable`, and `app-composables.csv` showing `RestaurantRow`
+as `composable=1, skippable=1, restartable=1`. The report only reflects
+files Kotlin actually recompiles in
 that invocation, so a metrics run after an unrelated no-op build can come back
 thin — force a real recompile (e.g. add `--rerun` on `compileDebugKotlin`) if
 that happens.
@@ -2519,9 +2524,9 @@ a connected physical device (Gradle reported it as `CPH2557 - 15`) via
 `app/src/release/generated/baselineProfiles/baseline-prof.txt` (~8,570 rules).
 **Not** `app/src/main/baseline-prof.txt` as originally planned below and as
 this doc first said — that was wrong, corrected once an actual run showed
-where the plugin puts it for a project with no product flavors. The `Task
-:app:copyReleaseBaselineProfileIntoSrc` log line names the real destination
-directly.
+where the plugin puts it for a project with no product flavors. The
+`Task :app:copyReleaseBaselineProfileIntoSrc` log line names the real
+destination directly.
 
 That path tripped a second, unrelated latent bug: `.gitignore`'s `**/release`
 rule (added for the real `app/release/` AGP APK-output directory) also
@@ -2544,7 +2549,8 @@ one module actually works, not just compiles.
 
 `StartupBenchmark` itself was then run with `gradlew.bat :baselineprofile:connectedBenchmarkReleaseAndroidTest`
 (and, correspondingly, `BaselineProfileGenerator.generate` `SKIPPED` this
-time — the same gating in reverse). First attempt failed with `ERRORS (not
+time — the same gating in reverse). First attempt failed with
+`ERRORS (not
 suppressed): DEVICE-MIRRORING` — Android Studio's "Running Devices" panel was
 mirroring the phone's screen, which adds rendering overhead the macrobenchmark
 tooling refuses to measure through, by design (there's a
@@ -2589,9 +2595,9 @@ Gradle rather than assuming:
   `nonMinifiedRelease` variants on both modules by itself. The manual build
   type was removed; the plugin's defaults are what's committed.
 
-Verified along the way: `gradlew.bat :baselineprofile:compileBenchmarkReleaseSources
-:baselineprofile:compileNonMinifiedReleaseSources` (both generator and
-benchmark classes compile, before a device was involved), and
+Verified along the way:
+`gradlew.bat :baselineprofile:compileBenchmarkReleaseSources :baselineprofile:compileNonMinifiedReleaseSources`
+(both generator and benchmark classes compile, before a device was involved), and
 `gradlew.bat test assembleDebug lint --no-daemon` — the exact command CI runs
 — confirming the new module doesn't change CI's outcome:
 `:baselineprofile:test` runs as a harmless no-op, and it has no `assembleDebug`
@@ -2631,8 +2637,9 @@ tests.
 
 Both were planned against material3's M3 Expressive surface. Checked before
 writing any code: `androidx.compose.material3:material3` resolves to **1.4.0**
-under `composeBom = "2026.08.00"` (confirmed via `gradlew.bat :app:dependencies
---configuration debugRuntimeClasspath`), and neither `ButtonGroup` nor
+under `composeBom = "2026.08.00"`
+(confirmed via `gradlew.bat :app:dependencies --configuration debugRuntimeClasspath`),
+and neither `ButtonGroup` nor
 `MaterialShapes` exists in that jar — both only appear starting at
 `1.5.0-alpha01` (checked against the actual `material3-android-1.4.0.aar`
 classes, not just changelogs). Per Google's `maven-metadata.xml`, **1.5.0's
@@ -2658,9 +2665,9 @@ goal instead of blocking the phase on it:
 `FilterSection` no longer lives inside the `LazyColumn` (was its first
 `item`, scrolling away with the list). It's now a fixed row between the
 search field and the list, gated behind the same condition the list's own
-empty states already use (`!isInitialLoad && (restaurants.isNotEmpty() ||
-hasActiveFilter)`) so it doesn't appear over the loading spinner or the
-first-sync empty state.
+empty states already use
+(`!isInitialLoad && (restaurants.isNotEmpty() || hasActiveFilter)`) so it
+doesn't appear over the loading spinner or the first-sync empty state.
 
 The row itself is a clickable header (`FilterList` icon + "Filters" label +
 count `Badge` + a chevron that rotates via `animateFloatAsState`) toggling an
@@ -2702,7 +2709,7 @@ now fires a second, distinct haptic once the card's flip animation
 (`rotation.animateTo`) completes, marking the moment the pick settles rather
 than the moment it was requested.
 
-#### Verification
+#### Verification (usability polish)
 
 `gradlew.bat test assembleDebug lint --no-daemon` — 145 tests passing
 (unchanged from Phase 7, these are UI-only changes with no new ViewModel
@@ -2796,7 +2803,7 @@ mocking library.
 
 ### Verification
 
-```
+```powershell
 gradlew.bat test                 # JVM unit tests, no emulator
 gradlew.bat assembleDebug
 gradlew.bat lint
@@ -2943,7 +2950,7 @@ Fourteen improvements grouped by type, with perceived impact and estimated
 effort given the stack at the time (Compose + Material 3, local Room, no
 network).
 
-**New data**
+#### New data
 
 - *Per-restaurant photos* (impact: high, effort: medium) — System photo
   picker (Android Photo Picker) — no storage permission needed. Save the
@@ -2958,7 +2965,7 @@ network).
   groups", "bring kids" — a dedicated tags table plus an N:N relation,
   reusing the `FilterChip` pattern already built for cuisine.
 
-**Consistency across screens**
+#### Consistency across screens
 
 - *Search and filter in Favorites* (impact: medium, effort: low) — Reuse
   the list screen's own search bar and chips — today Favorites is the only
@@ -2973,7 +2980,7 @@ network).
   it's copy-pasted across list, detail and roulette. One
   `RatingAndPriceRow` reduces the risk of the three drifting apart.
 
-**Interaction**
+#### Interaction
 
 - *Swipe to favorite / delete* (impact: medium, effort: medium) —
   Material 3's `SwipeToDismissBox` over `RestaurantRow` — a quick action
@@ -2984,7 +2991,7 @@ network).
 - *Search with suggestions* (impact: medium, effort: low) — With an empty
   query, show frequent cuisines or "top 3 rated" instead of a blank box.
 
-**New functionality**
+#### New functionality
 
 - *Statistics screen* (impact: high, effort: medium) — Most common
   cuisines, average rating, price spread — all aggregated locally with
