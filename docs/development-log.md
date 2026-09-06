@@ -59,25 +59,6 @@ Found by a `/code-review high` pass over `2c8eeab^..7d1bcaa` (the F-76–F-79
 visual refresh plus the System theme removal) — see that commit range for
 context on each.
 
-### F-88 · `DataStoreUserPreferencesRepository.kt` has no dedicated test
-
-**Impact**: Medium · **Effort**: S
-
-Already called out once, as a stray note inside Appendix A's Phase 8 "Still
-to write" list rather than as its own tracked item — moving it here so it
-doesn't stay buried. Every other preferences-adjacent class picked up a test
-in F-70/F-71 (`AppLocaleManagerTest`, etc.), but the DataStore-backed
-repository behind theme/palette/language persistence still has none. Note
-`RoomRestaurantRepository.kt`, which an earlier pass of this list also
-flagged as untested, turned out to already be fully exercised via
-`RestaurantDaoTest` (see F-71) — no work needed there.
-
-**Fix**: add a `DataStoreUserPreferencesRepositoryTest` using a real
-in-memory/temp-file `DataStore<Preferences>` (the same real-thing-over-fake
-approach `AppLocaleManagerTest` already took), covering read/write/default
-for theme mode, palette, and language, plus the `ThemeMode.entries.firstOrNull`
-fallback F-76–F-79's review already traced through by hand.
-
 ### F-89 · No test coverage at all for navigation, the widget, or any Composable screen
 
 **Impact**: Low · **Effort**: L
@@ -107,7 +88,37 @@ piece to cover once a runner is chosen.
 
 Recorded here rather than deleted, so the numbering stays stable.
 
-### F-87 · `SettingsRow` reinvents `RestaurantRow`'s row layout — Done.
+### F-88 · `DataStoreUserPreferencesRepository.kt` has no dedicated test — Done
+
+Found by the same `/code-review high` pass as F-80–F-87 (originally a stray
+note inside Appendix A's Phase 8 "Still to write" list).
+
+- **New `DataStoreUserPreferencesRepositoryTest`**, in the same package as
+  `AppLocaleManagerTest`. A real `DataStore<Preferences>` backed by a JVM
+  temp file (`PreferenceDataStoreFactory.create(produceFile = { file })`),
+  not a mock — there's no mocking library in this project, and it doesn't
+  even need Robolectric: `PreferenceDataStoreFactory` is plain JVM, unlike
+  `RestaurantDaoTest`'s Room database or `AppLocaleManagerTest`'s
+  `AppCompatDelegate`, neither of which run without an Android runtime.
+  Covers: defaults before anything is written, `setPalette`/`setThemeMode`
+  round-tripping, `toggleFavorite` adding-then-removing an id (and leaving
+  other ids alone), and three corrupt/stale-data cases written straight to
+  the underlying `DataStore` — an unrecognised palette name, a favorite id
+  that isn't a valid number, and `SYSTEM` as a stored theme mode (the exact
+  real case F-76–F-79's review traced through by hand, since `SYSTEM` was a
+  valid `ThemeMode` before being removed).
+- Confirmed `RoomRestaurantRepository.kt`, flagged as untested by an earlier
+  pass of this list, is already fully exercised via `RestaurantDaoTest` (see
+  F-71) — no work needed there, exactly as this entry's note said.
+  `language` turned out not to belong to this repository at all — it's
+  `AppLocaleManager`'s own state via `AppCompatDelegate`, already covered by
+  `AppLocaleManagerTest` — so it's out of scope here rather than a gap.
+- Verified with `./gradlew test assembleDebug lint` — all succeed; the new
+  test class's own 8 cases all pass individually
+  (`:app:testDebugUnitTest --tests
+  com.saatxi.eatapp.data.prefs.DataStoreUserPreferencesRepositoryTest`).
+
+### F-87 · `SettingsRow` reinvents `RestaurantRow`'s row layout — Done
 
 Found by the same `/code-review high` pass as F-80–F-86.
 
@@ -130,7 +141,7 @@ Found by the same `/code-review high` pass as F-80–F-86.
   and the existing test suite (which doesn't cover either screen's
   Composable directly — see F-89) still passes.
 
-### F-86 · `DetailTopBar`'s three overflow menu items are copy-pasted boilerplate — Done.
+### F-86 · `DetailTopBar`'s three overflow menu items are copy-pasted boilerplate — Done
 
 Found by the same `/code-review high` pass as F-80–F-85, F-87.
 
@@ -141,7 +152,7 @@ Found by the same `/code-review high` pass as F-80–F-85, F-87.
   shape living in one place instead of three copies.
 - Verified with `./gradlew test assembleDebug` — both succeed.
 
-### F-85 · `HeadlineStatTile`/`SupportingStatTile` are near-duplicate composables — Done.
+### F-85 · `HeadlineStatTile`/`SupportingStatTile` are near-duplicate composables — Done
 
 Found by the same `/code-review high` pass as F-80–F-84, F-86, F-87.
 
@@ -156,7 +167,7 @@ Found by the same `/code-review high` pass as F-80–F-84, F-86, F-87.
 - Verified with `./gradlew test assembleDebug lint` — all succeed; lint's
   `UnusedResources` count is unchanged at 3.
 
-### F-84 · `SettingsRow`'s chevron implies navigation on rows that don't navigate — Done.
+### F-84 · `SettingsRow`'s chevron implies navigation on rows that don't navigate — Done
 
 Found by the same `/code-review high` pass as F-80–F-83, F-85–F-87.
 
@@ -169,7 +180,7 @@ Found by the same `/code-review high` pass as F-80–F-83, F-85–F-87.
   off.
 - Verified with `./gradlew test assembleDebug` — both succeed.
 
-### F-83 · Palette swatch's colored selection halo silently degrades below API 28 — Done.
+### F-83 · Palette swatch's colored selection halo silently degrades below API 28 — Done
 
 Found by the same `/code-review high` pass as F-80–F-82.
 
@@ -183,7 +194,7 @@ Found by the same `/code-review high` pass as F-80–F-82.
 - Verified with `./gradlew test assembleDebug` — both succeed (comment-only
   change, no behavior difference to test).
 
-### F-82 · Detail screen's "Overview"/"Rating" section headings were removed with no accessibility replacement — Done.
+### F-82 · Detail screen's "Overview"/"Rating" section headings were removed with no accessibility replacement — Done
 
 Found by the same `/code-review high` pass as F-80/F-81.
 
@@ -204,7 +215,7 @@ Found by the same `/code-review high` pass as F-80/F-81.
   labels look on a real device/emulator, only that it compiles, lints clean,
   and the existing test suite still passes.
 
-### F-81 · Roulette's price chip missed the List/Detail color migration — Done.
+### F-81 · Roulette's price chip missed the List/Detail color migration — Done
 
 Found by the same `/code-review high` pass as F-80.
 
@@ -219,7 +230,7 @@ Found by the same `/code-review high` pass as F-80.
   the actual on-screen chip color on a device or emulator, only that it
   compiles and now passes the same arguments as the other two call sites.
 
-### F-80 · Delete/overflow-menu state goes stale when switching restaurants in the tablet split view — Done.
+### F-80 · Delete/overflow-menu state goes stale when switching restaurants in the tablet split view — Done
 
 Found by a `/code-review high` pass over `2c8eeab^..7d1bcaa` — see the entry
 this replaced for the full failure scenario (restaurant A's delete dialog
@@ -236,7 +247,7 @@ surviving a tap on restaurant B in the list pane and then deleting B).
   a real device or emulator, only that the fix compiles and the existing
   test suite still passes.
 
-### F-79 · Statistics screen visual refresh — Done.
+### F-79 · Statistics screen visual refresh — Done
 
 Approved slice of F-75's proposal — see
 [Appendix C](#appendix-c-visual-refresh-proposal)'s
@@ -266,7 +277,7 @@ this was reviewed from.
   emulator, only that it compiles and the two existing `@Preview`s
   (populated and empty) are well-formed.
 
-### F-78 · Settings screen visual refresh — Done.
+### F-78 · Settings screen visual refresh — Done
 
 Approved slice of F-75's proposal — see
 [Appendix C](#appendix-c-visual-refresh-proposal)'s
@@ -315,7 +326,7 @@ separate, and applied the same card/row treatment to each instead.
   or emulator, only that it compiles and the existing/new preview is
   well-formed.
 
-### F-77 · Detail screen visual refresh — Done.
+### F-77 · Detail screen visual refresh — Done
 
 Approved slice of F-75's proposal — see
 [Appendix C](#appendix-c-visual-refresh-proposal)'s
@@ -363,7 +374,7 @@ from.
   Overview block, or the overflow menu on a real device or emulator, only
   that it compiles and both `@Preview`s (loaded, loading) are well-formed.
 
-### F-76 · List screen visual refresh — Done.
+### F-76 · List screen visual refresh — Done
 
 Approved slice of F-75's proposal — see
 [Appendix C](#appendix-c-visual-refresh-proposal)'s "List:
@@ -398,7 +409,7 @@ one row for everyone, no hierarchy" for the mockup this was reviewed from.
   the price chip's new colour on a real device or emulator, only that it
   compiles and the existing `@Preview`s are well-formed.
 
-### F-75 · Visual refresh proposal awaiting review — Done.
+### F-75 · Visual refresh proposal awaiting review — Done
 
 The proposal itself asked for nothing but a decision (see Appendix C's own
 closing note): once the user reviewed it, the only "fix" was to split
@@ -409,7 +420,7 @@ into **F-76** (List), **F-77** (Detail), **F-78** (Settings) and **F-79**
 [Appendix C](#appendix-c-visual-refresh-proposal) as the
 design record those four entries point back to.
 
-### F-74 · Roulette can't filter by visited status — Done.
+### F-74 · Roulette can't filter by visited status — Done
 
 Requested directly, not from the redesign audit: the list screen has had a
 want-to-try/visited filter-chip pair since F-55, but Roulette's own light
@@ -437,7 +448,7 @@ filters (rating, favourites-only) never grew the same pair, even though
   they compile and the existing/new tests pass — no emulator or physical
   device was available to check.
 
-### F-70 · No test coverage for the import confirmation path — Done.
+### F-70 · No test coverage for the import confirmation path — Done
 
 `ui/importing/RestaurantImportViewModel.kt` reads a real `Uri` through a real
 `Context`'s `ContentResolver` (`readContentUriCapped`) rather than through an
@@ -491,7 +502,7 @@ construction.
   data-layer classes with no rendering, so there's no on-device behaviour
   beyond what the tests already exercise.
 
-### F-71 · Other data-layer classes still have no tests — Done.
+### F-71 · Other data-layer classes still have no tests — Done
 
 Checked `RoomRestaurantRepository.kt` first, since its own listing here
 turned out to be stale: `RestaurantDaoTest` already constructs a real
@@ -538,7 +549,7 @@ Nothing to add there; the other three genuinely had zero coverage.
   data-layer classes with no UI, so there's no on-device behaviour beyond
   what the tests already exercise.
 
-### F-72 · `RestaurantListScreen.kt` has grown into a single ~1000-line file — Done.
+### F-72 · `RestaurantListScreen.kt` has grown into a single ~1000-line file — Done
 
 Split along exactly the lines the entry named, a pure reorganisation with no
 behaviour change — everything stays in the `com.saatxi.eatapp.ui.list`
@@ -579,7 +590,7 @@ package, so no other file's imports needed to change.
   three screens actually look or behave on a real device — this entry
   changed no rendering logic, only file boundaries.
 
-### F-73 · `material3Adaptive` and the Baseline Profile plugin are pinned off their own stable lines — Done.
+### F-73 · `material3Adaptive` and the Baseline Profile plugin are pinned off their own stable lines — Done
 
 Checked both against Google's Maven `maven-metadata.xml` rather than
 assuming either was still current:
@@ -604,7 +615,7 @@ which artifact each pin is even for.
   the build is still green. Not verified: nothing else, since this entry
   was a version check with no resulting code change.
 
-### F-65 · No swipe actions on list rows — Done.
+### F-65 · No swipe actions on list rows — Done
 
 Every mutation (favorite, delete) used to require either the row's heart
 icon or a trip into the detail screen. Swipe right toggles favourite; swipe
@@ -660,7 +671,7 @@ confirmation dialog it triggers is accepted.
   that it compiles and the confirm/delete/favourite logic is covered by
   tests.
 
-### F-60 · Favorites has no search or filters — Done.
+### F-60 · Favorites has no search or filters — Done
 
 Favorites reused `RestaurantRow` and `EmptyState` from the list screen but
 had none of its search bar, sort control or filter chips, even though it
@@ -722,7 +733,7 @@ abstraction than either screen's actual filtering logic.
   behaves inside Favorites on a real device or emulator, only that it
   compiles and the existing/new tests pass.
 
-### F-66 · Empty search shows a blank box — Done.
+### F-66 · Empty search shows a blank box — Done
 
 There was no guidance before the user typed anything — with no query and no
 filter active, the space above the list where a result count sometimes shows
@@ -764,7 +775,7 @@ new feature of its own.
   itself. Not verified: how it actually looks or behaves on a real device or
   emulator, only that it compiles and the preview is well-formed.
 
-### F-59 · No free-form tags — Done.
+### F-59 · No free-form tags — Done
 
 "Terraza", "para grupos", "llevar niños" — recurring, user-invented labels
 that don't fit the closed cuisine vocabulary. Built essentially as the
@@ -848,7 +859,7 @@ near-duplicate.
   that it compiles, the ViewModel/DAO logic is covered by tests, and the
   migration opens a real pre-existing database cleanly.
 
-### F-58 · Rating-and-price markup is copy-pasted three times — Done.
+### F-58 · Rating-and-price markup is copy-pasted three times — Done
 
 The stars-plus-"N/5"-plus-price-pill block was hand-duplicated across
 `RestaurantListScreen.RestaurantRow`, `RestaurantDetailScreen` and
@@ -888,7 +899,7 @@ all three now call.
   result, only that it compiles and each call site's parameters reproduce
   what the removed inline code did.
 
-### F-69 · Segmented button text clips against the default checkmark — Done.
+### F-69 · Segmented button text clips against the default checkmark — Done
 
 Found on a real device, not in the redesign audit: in a non-English locale
 (reported in Catalan — "Per provar" — but the same risk exists everywhere a
@@ -913,12 +924,13 @@ difference between selected/unselected segments is already the primary
 signal; losing the checkmark doesn't cost any clarity, and every one of
 these rows already had at least one string long enough in Spanish or
 Catalan to be at real risk of the same clipping.
+
 - Verified with `./gradlew test assembleDebug lint` — 187 tests passing
   (unchanged; purely a UI change with no ViewModel logic), no new lint
   findings. Not verified: the actual fix on a real device in Catalan, only
   that it compiles and the previous, broken layout is gone from the code.
 
-### F-68 · No home-screen widget — Done.
+### F-68 · No home-screen widget — Done
 
 The entry itself said this needed "its own investigation" and offered two
 contradictory contents (the latest roulette pick, or the next want-to-try
@@ -988,7 +1000,7 @@ Resolved with the user before writing any code:
   placing the widget on a home screen, the shuffle action, or the detail
   deep-link — none of which run outside a real device or emulator.
 
-### F-67 · Loading states are a single generic spinner — Done.
+### F-67 · Loading states are a single generic spinner — Done
 
 List and detail both showed one centred `CircularProgressIndicator` while
 loading — exactly the scope the entry's `Fix` named (edit's own loading
@@ -1018,7 +1030,7 @@ was left alone).
   pre-existing 3). Each skeleton got its own light/dark `@Preview` pair.
   Not verified: how the pulse actually looks/feels on a real device.
 
-### F-56 · No free-text notes per restaurant — Done.
+### F-56 · No free-text notes per restaurant — Done
 
 Restaurants had nowhere to record "ask for the burrata" or "go on a
 weekday" — exactly the kind of detail more useful than most of what was
@@ -1055,7 +1067,7 @@ already stored. Built as the entry's own `Fix` described, field for field:
   round-trip), release build unaffected, lint report unchanged
   (`UnusedResources` still the same pre-existing 3).
 
-### F-64 · No statistics screen — Done.
+### F-64 · No statistics screen — Done
 
 A new screen, reachable from Settings' Data section
 (`settings_action_view_statistics`, a new `Routes.STATS` full-screen route in
@@ -1103,7 +1115,7 @@ no charting library.
   `@Preview`s (populated and empty) are well-formed, and its logic is
   covered by the ViewModel/DAO tests above.
 
-### F-61 · Import candidate rows have no cuisine badge — Done.
+### F-61 · Import candidate rows have no cuisine badge — Done
 
 `ImportCandidateRow`
 ([RestaurantImportScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/importing/RestaurantImportScreen.kt))
@@ -1113,10 +1125,11 @@ roulette) leads with. The row's name/cuisine/address block now sits in a
 `Row` next to the same 48dp tinted-circle badge (`cuisineTint` +
 `cuisineIcon`, sized and coloured exactly like `RestaurantRow`'s), with the
 duplicate label and the skip/add/replace segmented row unchanged below it.
+
 - Verified with `./gradlew test assembleDebug lint` — all green, no new
   lint findings.
 
-### F-57 · The cuisine dropdown in the edit form has no icons — Done.
+### F-57 · The cuisine dropdown in the edit form has no icons — Done
 
 The list screen's cuisine filter chips each already showed the cuisine's
 icon (`cuisineIcon(key)`); `CuisineDropdown`'s `DropdownMenuItem`s
@@ -1125,10 +1138,11 @@ now do too — a `leadingIcon` calling the exact same `cuisineIcon` lookup,
 one line per entry across the 24-key vocabulary. The closed field itself
 (the `OutlinedTextField` showing the current selection) was left as
 text-only, matching the narrow scope the entry actually asked for.
+
 - Verified with `./gradlew test assembleDebug lint` — all green, no new
   lint findings.
 
-### F-63 · No restaurant photos — Done.
+### F-63 · No restaurant photos — Done
 
 The single biggest gap the visual redesign audit found — every restaurant
 was a cuisine icon in a coloured circle everywhere it appeared. Built
@@ -1219,7 +1233,7 @@ mostly as the entry's own `Fix` described, with two deliberate deviations
   the detail screen's cover image alongside the collapsing app bar, none of
   which run outside a real device or emulator.
 
-### F-62 · Edit/add form is one long ungrouped column — Done.
+### F-62 · Edit/add form is one long ungrouped column — Done
 
 [RestaurantEditScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/edit/RestaurantEditScreen.kt)'s
 eight fields were one flat `Column` with no sectioning, unlike the detail
@@ -1245,13 +1259,14 @@ No field's own behaviour, validation or error text changed — this was purely
 `RestaurantEditContent`'s layout. Three new strings
 (`edit_section_basics`/`_status_rating`/`_links`) added to `values/`,
 `values-es/` and `values-ca/`, alongside the other `edit_*` strings.
+
 - Verified with `./gradlew test assembleDebug lint` — all green, no new lint
   findings (`UnusedResources` still at 3, the same pre-existing set
   `action_ok`/`detail_link_website`/`detail_link_instagram` the F-51 entry
   already named — the three new section-title strings are consumed
   immediately by the cards that use them).
 
-### F-55 · No visited / want-to-try status — Done.
+### F-55 · No visited / want-to-try status — Done
 
 First entry closed out of the second redesign pass (see "Where to start"
 above and [Appendix B](#appendix-b-visual-redesign-proposal-audit-second-pass-audit)).
@@ -1297,7 +1312,7 @@ already happened.
   [libs.versions.toml](../gradle/libs.versions.toml) — worth adding next time
   a migration test is needed, rather than for this one change alone.
 
-### F-51 · No `@Preview` composables — Done.
+### F-51 · No `@Preview` composables — Done
 
 Section H in full, which retires the section: F-51 was its last item.
 
@@ -1306,6 +1321,7 @@ annotations (one plain, one with `uiMode = Configuration.UI_MODE_NIGHT_YES`) —
 `isSystemInDarkTheme()` inside `EatAppTheme` reads the preview's configuration
 the same way it would a real device, so no separate dark/light branching was
 needed beyond that.
+
 - **The restaurant row and both empty states**
   ([RestaurantListScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/list/RestaurantListScreen.kt)):
   `RestaurantRowPreview` against a hand-built `RestaurantUiModel`, and
@@ -1333,7 +1349,7 @@ needed beyond that.
   compiles and the preview functions are well-formed; rendering them is
   worth a manual check next time the project is open in the IDE.
 
-### F-50 · No CI — Done.
+### F-50 · No CI — Done
 
 A new [ci.yml](../.github/workflows/ci.yml) workflow runs on every push and
 pull request: checkout, JDK 17, then `./gradlew test assembleDebug lint` in
@@ -1341,6 +1357,7 @@ one invocation. `test` was added alongside the two the entry's `Fix` line
 named, since the "Where to start" note framing this entry was explicit that
 CI matters "now that there is a test suite worth running on every push" —
 leaving it out would have missed the actual point.
+
 - The checkout step sets `fetch-depth: 0` and `fetch-tags: true`, exactly the
   warning already sitting in
   [build.gradle.kts](../app/build.gradle.kts) about the git-derived
@@ -1372,7 +1389,7 @@ leaving it out would have missed the actual point.
   runs — passes on this machine. The workflow YAML itself is unverified
   against a live GitHub Actions run.
 
-### F-49 · Minification was off, so the whole icon set shipped — Done.
+### F-49 · Minification was off, so the whole icon set shipped — Done
 
 Already fixed by an earlier commit (`b178fd6`, "Enable R8 app optimization
 for release builds") that this backlog entry was never updated to reflect —
@@ -1390,13 +1407,14 @@ actually draws stay available without checking each one exists in the
 smaller artifact. `CLAUDE.md`'s security guidelines section already
 documents this as the current, permanent state ("Don't turn it off, and
 don't reintroduce `isMinifyEnabled`/`isShrinkResources`/`proguardFiles`").
+
 - Verified at the time with `./gradlew test assembleDebug assembleRelease` —
   release APK dropped from ~11.2 MB to ~1.3 MB. Re-confirmed now after F-47's
   dependency bumps: `assembleRelease` still succeeds and produces a
   ~1.46 MB APK, so R8 is still shrinking the icon set (and everything else)
   as expected on the newer toolchain.
 
-### F-47 · Dependencies were well over a year stale — Done.
+### F-47 · Dependencies were well over a year stale — Done
 
 Done in the two steps the entry asked for, each built and tested before the
 next: the Compose BOM alone first, then Kotlin and KSP together.
@@ -1466,7 +1484,7 @@ Section G in full, which retires the section: F-53 was its last item.
   `MissingTranslation` both appeared and were then resolved, not left as new
   findings).
 
-### F-44 · Screen readers get fragments — Done.
+### F-44 · Screen readers get fragments — Done
 
 Two new strings carry the spoken versions of the rating stars and the price
 marks: `restaurant_rating_description` ("Rated %1$d of 5") and
@@ -1486,12 +1504,13 @@ replacing what would otherwise merge into "3 slash 5" and "dollar dollar"
 with the real phrase. `clearAndSetSemantics`'s lambda isn't `@Composable`, so
 each description is resolved via `stringResource` into a local `val` first and
 only captured inside the lambda.
+
 - Verified with `./gradlew test assembleDebug lint` — 101 tests green, lint
   report unchanged from before the pass. No emulator or TalkBack run was
   available to confirm the actual announcement, only that the app builds and
   the existing test suite still passes.
 
-### F-42 · The window theme is light-only — Done.
+### F-42 · The window theme is light-only — Done
 
 The app has no AppCompat dependency (Compose/Material3 only, per CLAUDE.md), so
 there is no `Theme.AppCompat.DayNight` to switch to, and the framework's own
@@ -1966,7 +1985,7 @@ list/detail split.
 ### Status
 
 | Phase | | |
-|---|---|---|
+| --- | --- | --- |
 | 1 | Theme foundations — palettes, accents, typography | **Done** |
 | 2 | Preferences (DataStore) and Settings screen | **Done** |
 | 3 | Favourites | **Done** |
@@ -2005,7 +2024,7 @@ tests passing (up from 101), still JVM-only with no emulator.
 ### Decisions
 
 | Topic | Decision |
-|---|---|
+| --- | --- |
 | Tabs | Restaurants · Favorites · What to eat · Settings |
 | Colour | Three complete palettes, user-selectable in Settings |
 | Typography | Bundled variable font + full M3 scale |
@@ -2316,7 +2335,7 @@ restructured:
 ### Phase 6 — "What to eat" · Done
 
 New [ui/roulette/RouletteViewModel.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/roulette/RouletteViewModel.kt)
-+ [RouletteScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/roulette/RouletteScreen.kt):
+- [RouletteScreen.kt](../app/src/main/kotlin/com/saatxi/eatapp/ui/roulette/RouletteScreen.kt):
 
 - Picks at random among the restaurants passing this screen's own filters,
   reusing `repository.observeFiltered(...)` unchanged — no new query. A
@@ -2452,7 +2471,7 @@ passed cleanly. Real numbers, OPPO CPH2557 / Android 15 (API 35), 5 iterations
 each, `timeToInitialDisplayMs`:
 
 | | No profile (`CompilationMode.None()`) | With profile (`CompilationMode.Partial()`) |
-|---|---|---|
+| --- | --- | --- |
 | Median | 753.8 ms | 654.1 ms |
 | Min – max | 715.0 – 931.8 ms | 613.0 – 708.6 ms |
 
