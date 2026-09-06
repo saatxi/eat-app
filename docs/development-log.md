@@ -5,7 +5,7 @@ design-history record of the two redesign passes that shaped it, so none of
 it gets lost between sessions. The backlog below is a menu, not a plan —
 nothing in it is committed to, and items can be picked off in any order.
 
-Every backlog entry has a stable ID (`F-01`…`F-75`). Use those in commit
+Every backlog entry has a stable ID (`F-01`…`F-79`). Use those in commit
 messages and when asking for something to be worked on; they never get
 renumbered, and items that get done stay in the list marked **Done** rather
 than being deleted, so the file keeps a record of what changed and why.
@@ -14,11 +14,14 @@ than being deleted, so the file keeps a record of what changed and why.
   Medium: a real annoyance / Low: polish.
 - **Effort** — XS: minutes · S: under an hour · M: an afternoon · L: bigger.
 
-Large-screen and tablet support is deliberately not covered here. (A
-`tablet-adaptive-layout-idea.md` file was referenced from this backlog's
-earlier, separate-file form as where that write-up would live, but it was
-never actually created — there's nothing to read yet, this is just where
-tablet-layout notes would go if written.)
+Large-screen and tablet support has a base already: `v2.1.4` added a
+`ListDetailPaneScaffold` two-pane list/detail layout (List, Favorites and
+Roulette, at ≥600dp) and `NavigationSuiteScaffold` (Phase 5, Appendix A)
+gives those tabs a navigation rail instead of a bottom bar for free. What's
+still deliberately out of scope is extending that two-pane pattern to Add,
+Edit and Import — those three stay full-screen even on tablet-width windows
+(see `EatAppNavHost.kt`'s `isFullScreenRoute`), and no design work has been
+done on whether/how they should join the pattern.
 
 ## Where to start
 
@@ -43,7 +46,7 @@ still in progress (see CLAUDE.md's "Known blockers to revisit").
 
 A *third* pass — a visual-polish pass over List, Detail, Settings and
 Statistics, keeping all three palettes and Outfit untouched — is recorded
-in [Appendix C](#appendix-c-visual-refresh-proposal-pending-review). The
+in [Appendix C](#appendix-c-visual-refresh-proposal). The
 proposal (F-75) was reviewed and approved in full, split into **F-76**
 (List), **F-77** (Detail), **F-78** (Settings) and **F-79** (Statistics),
 and all four are now done — see **Done** for the full record.
@@ -63,7 +66,7 @@ Recorded here rather than deleted, so the numbering stays stable.
 ### F-79 · Statistics screen visual refresh — Done.
 
 Approved slice of F-75's proposal — see
-[Appendix C](#appendix-c-visual-refresh-proposal-pending-review)'s
+[Appendix C](#appendix-c-visual-refresh-proposal)'s
 "Statistics: four equal numbers, none of them the headline" for the mockup
 this was reviewed from.
 
@@ -93,7 +96,7 @@ this was reviewed from.
 ### F-78 · Settings screen visual refresh — Done.
 
 Approved slice of F-75's proposal — see
-[Appendix C](#appendix-c-visual-refresh-proposal-pending-review)'s
+[Appendix C](#appendix-c-visual-refresh-proposal)'s
 "Settings: the screen that hasn't changed since day one" for the mockup
 this was reviewed from. The mockup itself illustrated Language and Data
 merged into one unlabelled card, which turned out to be a simplification
@@ -142,7 +145,7 @@ separate, and applied the same card/row treatment to each instead.
 ### F-77 · Detail screen visual refresh — Done.
 
 Approved slice of F-75's proposal — see
-[Appendix C](#appendix-c-visual-refresh-proposal-pending-review)'s
+[Appendix C](#appendix-c-visual-refresh-proposal)'s
 "Detail: three cards, the same weight" for the mockup this was reviewed
 from.
 
@@ -190,7 +193,7 @@ from.
 ### F-76 · List screen visual refresh — Done.
 
 Approved slice of F-75's proposal — see
-[Appendix C](#appendix-c-visual-refresh-proposal-pending-review)'s "List:
+[Appendix C](#appendix-c-visual-refresh-proposal)'s "List:
 one row for everyone, no hierarchy" for the mockup this was reviewed from.
 
 - **Header**: the list's `TopAppBar` is now transparent, sitting on a
@@ -230,7 +233,7 @@ whichever parts got approved into their own per-screen entries rather than
 implementing this one directly. The user approved all four screens, split
 into **F-76** (List), **F-77** (Detail), **F-78** (Settings) and **F-79**
 (Statistics) above — this entry is closed, the mockup and writeup stay in
-[Appendix C](#appendix-c-visual-refresh-proposal-pending-review) as the
+[Appendix C](#appendix-c-visual-refresh-proposal) as the
 design record those four entries point back to.
 
 ### F-74 · Roulette can't filter by visited status — Done.
@@ -2724,9 +2727,11 @@ with.
 
 ---
 
-## Appendix C: Visual refresh proposal (pending review)
+## Appendix C: Visual refresh proposal
 
-*Design proposal · 2026-09-05 · not yet reviewed, nothing implemented.*
+*Design proposal · 2026-09-05 · reviewed and approved in full, split into
+F-76 (List), F-77 (Detail), F-78 (Settings) and F-79 (Statistics), all four
+now done — see "Where to start" and **Done** for the full record.*
 
 Published as an interactive mockup rather than only written here:
 `https://claude.ai/code/artifact/14a2e745-d144-49e9-aa8d-89a506e0cb0f`
