@@ -53,6 +53,7 @@
     <string name="detail_placeholder_body">Elige uno de la lista para ver aquí sus detalles.</string>
 
     <string name="about_version_template">Versión %1$s (compilación %2$d, %3$s)</string>
+    <string name="about_version_template_clean">Versión %1$s</string>
 
     <string name="action_ok">Aceptar</string>
 

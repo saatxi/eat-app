@@ -55,6 +55,8 @@
     <string name="detail_placeholder_body">Choose one from the list to see its details here.</string>
 
     <string name="about_version_template">Version %1$s (build %2$d, %3$s)</string>
+    <!-- Shown instead of about_version_template for a clean build (no local changes on top of a committed tree) — just the bare semantic version. -->
+    <string name="about_version_template_clean">Version %1$s</string>
 
     <string name="action_ok">OK</string>
 

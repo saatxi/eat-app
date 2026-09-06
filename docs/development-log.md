@@ -5,7 +5,7 @@ design-history record of the two redesign passes that shaped it, so none of
 it gets lost between sessions. The backlog below is a menu, not a plan —
 nothing in it is committed to, and items can be picked off in any order.
 
-Every backlog entry has a stable ID (`F-01`…`F-91`). Use those in commit
+Every backlog entry has a stable ID (`F-01`…`F-92`). Use those in commit
 messages and when asking for something to be worked on; they never get
 renumbered, and items that get done stay in the list marked **Done** rather
 than being deleted, so the file keeps a record of what changed and why.
@@ -87,6 +87,35 @@ piece to cover once a runner is chosen.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-92 · About row always showed the full dev-build version string, even for a clean build — Done
+
+Requested by the user from a screenshot of Settings' About row showing
+"Versió 2.4.1-6-g1289c86-dirty (compilació 139, 1289c86)" — the full
+git-describe string plus build number and commit hash is exactly what a
+developer wants mid-work, but a release built from a clean, committed tree
+doesn't need any of that; a plain "Versió 2.4.1" is what a user would
+recognise from a release note.
+
+- **Fix**: `SettingsScreen.kt`'s About row now checks whether
+  `BuildConfig.VERSION_NAME` ends with `-dirty` (the suffix `git describe`
+  appends only when the working tree has uncommitted changes on top of a
+  commit — see `app/build.gradle.kts`'s versioning comment). A dirty build
+  keeps today's full `about_version_template` (version, build number,
+  commit hash) unchanged; a clean build instead shows the new
+  `about_version_template_clean` with just
+  `BuildConfig.VERSION_NAME.substringBefore("-")` — the bare `X.Y.Z`, which
+  strips both a `-dirty` suffix (moot, since this branch only runs without
+  one) and a `-N-gHASH` "N commits past the tag" suffix the same way, since
+  neither means anything to someone just checking which version they're on.
+- Verified with `./gradlew test assembleDebug lint` — all succeed; lint's
+  `UnusedResources` count is unchanged at 3.
+  `./gradlew :app:printVersionInfo` confirms this repository's current
+  working tree is itself dirty (`2.4.1-7-gbf35ecf-dirty`), so the new
+  clean-build path isn't exercised by hand until this change itself is
+  committed. Not verified: the actual on-device appearance of either
+  branch, only that it compiles, lints clean, and the existing test suite
+  still passes.
 
 ### F-91 · List's third search-suggestion chip got cut off at the screen edge on narrow phones — Done
 

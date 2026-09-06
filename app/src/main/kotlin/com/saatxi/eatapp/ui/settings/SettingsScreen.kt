@@ -233,12 +233,21 @@ fun SettingsScreen(
                 Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
                     SettingsRow(
                         icon = Icons.Outlined.Info,
-                        label = stringResource(
-                            R.string.about_version_template,
-                            BuildConfig.VERSION_NAME,
-                            BuildConfig.VERSION_CODE,
-                            BuildConfig.GIT_COMMIT
-                        ),
+                        // A clean build (no local changes on top of a committed tree) just
+                        // shows the bare "X.Y.Z" a user would recognise from a release note
+                        // — the build number and commit hash only earn their place once the
+                        // build doesn't match a plain committed state ("-dirty" from git
+                        // describe), where they're what actually tells two dev builds apart.
+                        label = if (BuildConfig.VERSION_NAME.endsWith("-dirty")) {
+                            stringResource(
+                                R.string.about_version_template,
+                                BuildConfig.VERSION_NAME,
+                                BuildConfig.VERSION_CODE,
+                                BuildConfig.GIT_COMMIT
+                            )
+                        } else {
+                            stringResource(R.string.about_version_template_clean, BuildConfig.VERSION_NAME.substringBefore("-"))
+                        },
                         showChevron = false,
                         onClick = null
                     )
