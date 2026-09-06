@@ -31,15 +31,19 @@ import androidx.compose.material.icons.outlined.RestaurantMenu
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -60,6 +64,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -226,69 +231,60 @@ private fun RestaurantDetailContent(
                         )
                     }
 
-                    Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = stringResource(R.string.detail_section_overview),
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            )
+                    // Borderless rather than a card (F-77): this is the reason the screen
+                    // was opened, so it gets larger type instead of the same card weight
+                    // Rating/notes below it used to share.
+                    Column {
+                        InfoRow(
+                            icon = cuisineIcon(current.cuisineKey),
+                            text = cuisineLabel(current.cuisineKey),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        if (!current.visited) {
                             InfoRow(
-                                icon = cuisineIcon(current.cuisineKey),
-                                text = cuisineLabel(current.cuisineKey)
+                                icon = Icons.Outlined.Schedule,
+                                text = stringResource(R.string.visit_status_want_to_try),
+                                topPadding = 10.dp
                             )
-                            if (!current.visited) {
-                                InfoRow(
-                                    icon = Icons.Outlined.Schedule,
-                                    text = stringResource(R.string.visit_status_want_to_try),
-                                    topPadding = 10.dp
-                                )
-                            }
-                            current.address?.let { address ->
-                                InfoRow(
-                                    icon = Icons.Outlined.LocationOn,
-                                    text = address,
-                                    topPadding = 10.dp,
-                                    onClick = {
-                                        context.openUri("geo:0,0?q=${Uri.encode(address)}")
-                                    }
-                                )
-                            }
-                            if (current.tagsLabel.isNotEmpty()) {
-                                TagPillRow(
-                                    tags = current.tagsLabel.split(", "),
-                                    modifier = Modifier.padding(top = 10.dp)
-                                )
-                            }
+                        }
+                        current.address?.let { address ->
+                            InfoRow(
+                                icon = Icons.Outlined.LocationOn,
+                                text = address,
+                                topPadding = 10.dp,
+                                onClick = {
+                                    context.openUri("geo:0,0?q=${Uri.encode(address)}")
+                                }
+                            )
+                        }
+                        if (current.tagsLabel.isNotEmpty()) {
+                            TagPillRow(
+                                tags = current.tagsLabel.split(", "),
+                                modifier = Modifier.padding(top = 10.dp)
+                            )
                         }
                     }
 
-                    Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = stringResource(R.string.detail_section_rating),
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            )
-                            // The star icons are decorative (contentDescription = null) and the
-                            // "3/5" text next to them isn't natural speech, so each half of the
-                            // row gets its own merged description instead of announcing as
-                            // silent stars followed by "3 slash 5", or "$$" as "dollar dollar".
-                            RatingAndPriceRow(
-                                rating = current.rating,
-                                priceLabel = current.priceLabel,
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                pricePaddingHorizontal = 10.dp,
-                                pricePaddingVertical = 4.dp,
-                                ratingContentDescription = stringResource(R.string.restaurant_rating_description, current.rating),
-                                priceContentDescription = stringResource(R.string.restaurant_price_description, current.priceLabel.length)
-                            )
-                        }
-                    }
+                    // Compressed into one inline row rather than a second card of its own
+                    // (F-77) — the star icons are decorative (contentDescription = null) and
+                    // the "3/5" text next to them isn't natural speech, so each half of the
+                    // row gets its own merged description instead of announcing as silent
+                    // stars followed by "3 slash 5", or "$$" as "dollar dollar".
+                    RatingAndPriceRow(
+                        rating = current.rating,
+                        priceLabel = current.priceLabel,
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        pricePaddingHorizontal = 10.dp,
+                        pricePaddingVertical = 4.dp,
+                        ratingContentDescription = stringResource(R.string.restaurant_rating_description, current.rating),
+                        priceContentDescription = stringResource(R.string.restaurant_price_description, current.priceLabel.length),
+                        priceContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        priceContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
 
                     current.notes?.let { notes ->
-                        NotesCard(notes = notes)
+                        NotesCard(notes = notes, cuisineKey = current.cuisineKey)
                     }
 
                     if (current.hasLinks) {
@@ -312,49 +308,50 @@ private fun RestaurantDetailContent(
  */
 @Composable
 private fun RestaurantDetailSkeleton(modifier: Modifier = Modifier) {
+    // Borderless, matching the loaded screen's own card-free Overview/Rating
+    // treatment (F-77) rather than the card shapes this used to mirror.
     Column(
         modifier = modifier
             .padding(horizontal = 16.dp)
             .padding(top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Box(modifier = Modifier.fillMaxWidth(0.4f).height(20.dp).shimmerPlaceholder())
-                Box(modifier = Modifier.padding(top = 16.dp).fillMaxWidth(0.75f).height(16.dp).shimmerPlaceholder())
-                Box(modifier = Modifier.padding(top = 10.dp).fillMaxWidth(0.55f).height(16.dp).shimmerPlaceholder())
-            }
+        Column {
+            Box(modifier = Modifier.fillMaxWidth(0.4f).height(20.dp).shimmerPlaceholder())
+            Box(modifier = Modifier.padding(top = 12.dp).fillMaxWidth(0.75f).height(16.dp).shimmerPlaceholder())
+            Box(modifier = Modifier.padding(top = 10.dp).fillMaxWidth(0.55f).height(16.dp).shimmerPlaceholder())
         }
-        Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Box(modifier = Modifier.fillMaxWidth(0.35f).height(20.dp).shimmerPlaceholder())
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Box(modifier = Modifier.width(110.dp).height(18.dp).shimmerPlaceholder())
-                    Box(modifier = Modifier.width(36.dp).height(20.dp).shimmerPlaceholder())
-                }
-            }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(modifier = Modifier.width(110.dp).height(18.dp).shimmerPlaceholder())
+            Box(modifier = Modifier.width(36.dp).height(20.dp).shimmerPlaceholder())
         }
     }
 }
 
-/** The user's own free-text note — drawn only when there is one. */
+/**
+ * The user's own free-text note — drawn only when there is one. Tinted with the
+ * restaurant's own cuisine colour rather than a plain surface (F-77), so it reads
+ * as a personal annotation rather than another data row of the same weight as
+ * Overview/Rating above it — which is also why it carries no section title of
+ * its own; the tint and the italic voice already say what it is.
+ */
 @Composable
-private fun NotesCard(notes: String) {
-    Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.detail_section_notes),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            Text(
-                text = notes,
-                style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic)
-            )
-        }
+private fun NotesCard(notes: String, cuisineKey: String) {
+    val tint = cuisineTint(cuisineKey)
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = tint.container,
+        contentColor = tint.onContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = notes,
+            style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
+            modifier = Modifier.padding(16.dp)
+        )
     }
 }
 
@@ -454,6 +451,9 @@ private fun DetailTopBar(
     scrollBehavior: TopAppBarScrollBehavior
 ) {
     val haptic = LocalHapticFeedback.current
+    // Edit/share/delete collapse behind this (F-77) — favourite is the only
+    // action still worth a fixed spot on the bar.
+    var menuExpanded by remember { mutableStateOf(false) }
     val backButton: @Composable () -> Unit = {
         IconButton(onClick = onBack) {
             Icon(
@@ -495,14 +495,36 @@ private fun DetailTopBar(
                     )
                 )
             }
-            IconButton(onClick = { onEdit(restaurant.id) }) {
-                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.detail_action_edit))
-            }
-            IconButton(onClick = onShare) {
-                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.detail_action_share))
-            }
-            IconButton(onClick = onDeleteRequest) {
-                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.detail_action_delete))
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.detail_action_more))
+                }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.detail_action_edit)) },
+                        leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                        onClick = {
+                            menuExpanded = false
+                            onEdit(restaurant.id)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.detail_action_share)) },
+                        leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
+                        onClick = {
+                            menuExpanded = false
+                            onShare()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.detail_action_delete)) },
+                        leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                        onClick = {
+                            menuExpanded = false
+                            onDeleteRequest()
+                        }
+                    )
+                }
             }
             Icon(
                 cuisineIcon(restaurant.cuisineKey),
@@ -532,7 +554,8 @@ private fun InfoRow(
     icon: ImageVector,
     text: String,
     topPadding: Dp = 0.dp,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    style: TextStyle = MaterialTheme.typography.bodyLarge
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -546,7 +569,7 @@ private fun InfoRow(
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(18.dp).padding(end = 8.dp)
         )
-        Text(text = text, style = MaterialTheme.typography.bodyLarge)
+        Text(text = text, style = style)
     }
 }
 

@@ -1,6 +1,7 @@
 package com.saatxi.eatapp.ui.list
 
 import android.content.res.Configuration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,6 +37,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -73,14 +77,24 @@ fun RestaurantListScreen(
 
     Scaffold(
         topBar = {
-            Column {
+            // A two-stop tonal wash rather than a flat container colour (F-76) — a
+            // sense of place above the list without touching the app bar's own
+            // (non-collapsing, unlike Detail's) scroll behaviour.
+            Column(
+                modifier = Modifier.background(
+                    Brush.verticalGradient(
+                        listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.background)
+                    )
+                )
+            ) {
                 TopAppBar(
                     title = { Text(stringResource(R.string.list_title)) },
                     actions = {
                         IconButton(onClick = { viewModel.onShareAll(context) }) {
                             Icon(Icons.Default.Share, contentDescription = stringResource(R.string.list_action_share_all))
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }

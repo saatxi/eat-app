@@ -45,6 +45,7 @@
     <string name="detail_action_edit">Editar</string>
     <string name="detail_action_share">Compartir</string>
     <string name="detail_action_delete">Eliminar</string>
+    <string name="detail_action_more">Más opciones</string>
     <string name="detail_delete_confirm_title">¿Eliminar este restaurante?</string>
     <string name="detail_delete_confirm_body">Esta acción no se puede deshacer.</string>
 
@@ -56,9 +57,6 @@
     <string name="action_ok">Aceptar</string>
 
     <string name="rating_format">%1$d/5</string>
-    <string name="detail_section_overview">General</string>
-    <string name="detail_section_rating">Puntuación y precio</string>
-    <string name="detail_section_notes">Notas</string>
 
     <!-- Visited vs. want-to-try, shared across the list filter, the row badge,
          the detail overview and the edit form's toggle. -->

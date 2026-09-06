@@ -43,6 +43,7 @@
     <string name="detail_action_edit">Edita</string>
     <string name="detail_action_share">Comparteix</string>
     <string name="detail_action_delete">Elimina</string>
+    <string name="detail_action_more">Més opcions</string>
     <string name="detail_delete_confirm_title">Vols eliminar aquest restaurant?</string>
     <string name="detail_delete_confirm_body">Aquesta acció no es pot desfer.</string>
 
@@ -54,9 +55,6 @@
     <string name="action_ok">D\'acord</string>
 
     <string name="rating_format">%1$d/5</string>
-    <string name="detail_section_overview">Resum</string>
-    <string name="detail_section_rating">Puntuació i preu</string>
-    <string name="detail_section_notes">Notes</string>
 
     <!-- Visited vs. want-to-try, shared across the list filter, the row badge,
          the detail overview and the edit form's toggle. -->

@@ -62,7 +62,12 @@ internal fun RatingAndPriceRow(
     pricePaddingHorizontal: Dp = 8.dp,
     pricePaddingVertical: Dp = 2.dp,
     ratingContentDescription: String? = null,
-    priceContentDescription: String? = null
+    priceContentDescription: String? = null,
+    // Defaults preserve the original tertiary pill everywhere except List/Detail
+    // (F-76/F-77), which pass the primary container explicitly so the price chip
+    // reads as one consistent accent instead of competing with the cuisine tint.
+    priceContainerColor: Color = MaterialTheme.colorScheme.tertiaryContainer,
+    priceContentColor: Color = MaterialTheme.colorScheme.onTertiaryContainer
 ) {
     val stars: @Composable () -> Unit = {
         Row(
@@ -101,7 +106,7 @@ internal fun RatingAndPriceRow(
         if (priceLabel.isNotEmpty()) {
             Surface(
                 shape = RoundedCornerShape(percent = 50),
-                color = MaterialTheme.colorScheme.tertiaryContainer,
+                color = priceContainerColor,
                 modifier = priceContentDescription
                     ?.let { description -> Modifier.clearAndSetSemantics { contentDescription = description } }
                     ?: Modifier
@@ -109,7 +114,7 @@ internal fun RatingAndPriceRow(
                 Text(
                     text = priceLabel,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    color = priceContentColor,
                     modifier = Modifier.padding(horizontal = pricePaddingHorizontal, vertical = pricePaddingVertical)
                 )
             }

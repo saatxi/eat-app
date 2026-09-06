@@ -2,6 +2,7 @@ package com.saatxi.eatapp.ui.list
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -55,6 +56,9 @@ import com.saatxi.eatapp.ui.common.shimmerCircle
 import com.saatxi.eatapp.ui.common.shimmerPlaceholder
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
+
+/** Grown from 48dp (F-76) so a photo reads as a portrait rather than a clipped thumbnail. */
+private val BADGE_SIZE = 52.dp
 
 /** Internal rather than private: reused by [com.saatxi.eatapp.ui.favorites.FavoritesScreen]. */
 @Composable
@@ -147,11 +151,14 @@ internal fun RestaurantRow(
                     val tint = cuisineTint(restaurant.cuisineKey)
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(BADGE_SIZE)
                             // The element the container transform into the detail screen runs on.
                             .cuisineBadgeTransition(restaurant.id)
                             .clip(CircleShape)
-                            .background(tint.container),
+                            .background(tint.container)
+                            // A ring in the cuisine's own accent (F-76) — onContainer stands in
+                            // for that, since CuisineTint only carries the container/on-container pair.
+                            .border(1.5.dp, tint.onContainer, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         if (restaurant.photoPath != null) {
@@ -223,7 +230,12 @@ internal fun RestaurantRow(
                         priceLabel = restaurant.priceLabel,
                         starCount = 1,
                         starSize = 16.dp,
-                        stacked = true
+                        stacked = true,
+                        // A consistent accent chip (F-76) rather than tertiary, so it reads
+                        // apart from the "want to try" pill above without fighting the badge's
+                        // own per-cuisine tint.
+                        priceContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        priceContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
             }

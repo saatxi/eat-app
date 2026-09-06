@@ -5,7 +5,7 @@ design-history record of the two redesign passes that shaped it, so none of
 it gets lost between sessions. The backlog below is a menu, not a plan —
 nothing in it is committed to, and items can be picked off in any order.
 
-Every backlog entry has a stable ID (`F-01`…`F-74`). Use those in commit
+Every backlog entry has a stable ID (`F-01`…`F-75`). Use those in commit
 messages and when asking for something to be worked on; they never get
 renumbered, and items that get done stay in the list marked **Done** rather
 than being deleted, so the file keeps a record of what changed and why.
@@ -41,6 +41,13 @@ performance pass). All seven of its phases are done; its eighth and last —
 usability polish, partly gated on a stable Material3 1.5.x release — is
 still in progress (see CLAUDE.md's "Known blockers to revisit").
 
+A *third* pass — a visual-polish pass over List, Detail, Settings and
+Statistics, keeping all three palettes and Outfit untouched — is recorded
+in [Appendix C](#appendix-c-visual-refresh-proposal-pending-review). The
+proposal (F-75) was reviewed and approved in full, split into **F-76**
+(List), **F-77** (Detail), **F-78** (Settings) and **F-79** (Statistics),
+and all four are now done — see **Done** for the full record.
+
 ---
 
 ## Open
@@ -52,6 +59,179 @@ Nothing open right now — see **Done** below.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-79 · Statistics screen visual refresh — Done.
+
+Approved slice of F-75's proposal — see
+[Appendix C](#appendix-c-visual-refresh-proposal-pending-review)'s
+"Statistics: four equal numbers, none of them the headline" for the mockup
+this was reviewed from.
+
+- **Headline promotion**: `StatTile` split into `HeadlineStatTile` (the
+  total, alone, full-width, `primaryContainer`-tinted, `displaySmall` type)
+  and `SupportingStatTile` (visited/want-to-try/average-rating, a smaller
+  three-across row underneath) — the four equal tiles are gone. Both use
+  `fontFeatureSettings = "tnum"` for tabular numerals, so the digits don't
+  shift width as the counts change.
+- **Cuisine bars already used their own `cuisineTint`**: checked the actual
+  code (`CuisineBarRow`'s `StatBar(color = tint.onContainer, ...)`) before
+  changing anything, and this bullet of the proposal turned out to already
+  be true — the mockup's "before" state showing grey bars didn't match what
+  was actually there. Left untouched, no code change needed for it.
+- **Value moved to the bar's end**: `CuisineBarRow`'s header used to carry
+  the label and the count side by side (`Arrangement.SpaceBetween`); the
+  count now sits to the right of the bar itself, matching the pattern
+  `PriceBarRow` already used. Same icons, same badge, same layout otherwise.
+- Verified with `./gradlew test assembleDebug assembleRelease lint` — 269
+  tests passing (unchanged; pure UI, no ViewModel/DAO logic touched), R8
+  still minifies the release build cleanly, lint report unchanged
+  (`UnusedResources` still the same pre-existing 3). Not verified: how the
+  headline tile and the moved bar values actually look on a real device or
+  emulator, only that it compiles and the two existing `@Preview`s
+  (populated and empty) are well-formed.
+
+### F-78 · Settings screen visual refresh — Done.
+
+Approved slice of F-75's proposal — see
+[Appendix C](#appendix-c-visual-refresh-proposal-pending-review)'s
+"Settings: the screen that hasn't changed since day one" for the mockup
+this was reviewed from. The mockup itself illustrated Language and Data
+merged into one unlabelled card, which turned out to be a simplification
+for the demo rather than something the written proposal actually asked
+for — kept all four existing sections (Appearance, Language, Data, About)
+separate, and applied the same card/row treatment to each instead.
+
+- **Every section's content now sits in a `Card`**, the same
+  `shape = MaterialTheme.shapes.medium` language Detail's cards and the
+  edit form's `EditSectionCard` already use, replacing the flat
+  colour-labelled list of controls.
+- **New shared `SettingsRow`** (icon, label, optional supporting text,
+  optional trailing chevron, optional destructive tint): the Data
+  section's three `OutlinedButton`s became rows in one card
+  (statistics → chevron, export → chevron plus the description text that
+  used to sit above the button as supporting text, delete-all → error-tinted,
+  no chevron since it's an in-place confirm rather than navigation); the
+  Language section's `OutlinedButton` became a row showing the current
+  language with a chevron, opening the same `DropdownMenu` anchored on the
+  row instead of the button; About's version text became a plain
+  non-chevron info row. Both section headers ("Language", "About") stayed,
+  rather than dropping them for a single self-labelled row, so the existing
+  strings didn't need touching and multi-locale wording stayed intact.
+- **`PaletteCard` (a bordered `Card` with three small dots and a label)
+  replaced by `PaletteSwatch`**: one circle per palette, sized 30dp (up
+  from the old dots' 20dp — there was no literal "26dp swatch" in the old
+  code to grow from 1:1, the mockup's single-swatch-per-palette framing
+  didn't match the actual three-dot component, so this maps the same
+  "grow it, give it a halo" intent onto the component that actually
+  exists), filled with a `Brush.sweepGradient` of the palette's primary/
+  secondary/tertiary tones so one circle still stands in for the whole
+  scheme, and a soft coloured `Modifier.shadow` halo (`ambientColor`/
+  `spotColor` = the palette's own primary) rather than a hard 2dp border
+  on the selected one. The palette name stays as a small label underneath,
+  which the mockup's own minimal swatch dropped — kept for the same reason
+  the section headers were kept: nothing else on this row says which
+  palette is which.
+- Verified with `./gradlew test assembleDebug assembleRelease lint` — 269
+  tests passing (unchanged; pure UI, no ViewModel logic touched), R8 still
+  minifies cleanly, lint report unchanged (`UnusedResources` still the same
+  pre-existing 3, no new `MissingTranslation`). Not verified: the halo
+  effect, the sweep-gradient swatches, or the row layout on a real device
+  or emulator, only that it compiles and the existing/new preview is
+  well-formed.
+
+### F-77 · Detail screen visual refresh — Done.
+
+Approved slice of F-75's proposal — see
+[Appendix C](#appendix-c-visual-refresh-proposal-pending-review)'s
+"Detail: three cards, the same weight" for the mockup this was reviewed
+from.
+
+- **Overview dropped its `Card`**: cuisine icon/label, visit status,
+  address and tags now sit in a plain `Column`, no title header, with the
+  cuisine `InfoRow` bumped from `bodyLarge` to `titleMedium` — the mockup's
+  own repeated restaurant-name headline wasn't reproduced, since the name
+  already lives in the `LargeTopAppBar`'s title and repeating it below
+  would just duplicate that, not "give it larger type."
+- **Rating and price dropped its `Card`** too, compressed into one inline
+  `RatingAndPriceRow` directly under the Overview block instead of a
+  second card of its own; the price chip now uses `primaryContainer`/
+  `onPrimaryContainer` (via `RatingAndPriceRow`'s new `priceContainerColor`/
+  `priceContentColor` parameters, defaulting to the old `tertiaryContainer`
+  everywhere else so Roulette's own call site is untouched) rather than
+  tertiary, matching List's own price chip (F-76) so the two screens read
+  as one consistent accent.
+- **Notes now tinted with the restaurant's own `cuisineTint`**
+  (`Surface(color = tint.container, contentColor = tint.onContainer)`)
+  instead of a plain `Card`, and lost its "Notes" title — the tint and the
+  italic voice already say what it is, matching the mockup's own untitled
+  treatment. `detail_section_overview`/`_rating`/`_notes` are no longer
+  referenced by anything and were removed from all three locale files
+  rather than left as orphaned strings.
+- **Edit/share/delete collapsed behind one overflow menu** (`MoreVert` +
+  `DropdownMenu`), leaving favourite as the only action still pinned to
+  the bar. New `detail_action_more` string ("More options") in all three
+  locales, since none of the existing action strings covered the menu
+  button itself.
+- **Explicitly left untouched**: the large flat-tinted app bar and its
+  cuisine badge — it's what the list→detail shared-element transition
+  (F-38) runs on, and F-63 already weighed and rejected touching it for
+  the same reason; this entry doesn't revisit that.
+- `RestaurantDetailSkeleton` updated to match — both placeholder blocks
+  lost their `Card` wrapper so the loading state's shape still mirrors the
+  loaded one.
+- Verified with `./gradlew test assembleDebug assembleRelease lint` — 269
+  tests passing (unchanged; pure UI, no ViewModel logic touched), R8 still
+  minifies cleanly, lint report unchanged (`UnusedResources` still the
+  same pre-existing 3, no new `MissingTranslation` across the new string ×
+  three locales). Not verified: the tinted notes surface, the borderless
+  Overview block, or the overflow menu on a real device or emulator, only
+  that it compiles and both `@Preview`s (loaded, loading) are well-formed.
+
+### F-76 · List screen visual refresh — Done.
+
+Approved slice of F-75's proposal — see
+[Appendix C](#appendix-c-visual-refresh-proposal-pending-review)'s "List:
+one row for everyone, no hierarchy" for the mockup this was reviewed from.
+
+- **Header**: the list's `TopAppBar` is now transparent, sitting on a
+  `Brush.verticalGradient(primaryContainer → background)` painted behind it
+  — a plain two-stop wash behind the app bar itself, not extended under the
+  search field below it as the proposal's wording literally suggested;
+  bleeding the same gradient across the `Scaffold`'s separate topBar/content
+  slots without a fragile height-matching hack wasn't worth the risk for an
+  Effort: S entry. The app bar's own (non-collapsing, unlike Detail's)
+  behaviour is untouched.
+- **Badge**: grown from 48dp to 52dp (`RestaurantRow`'s new `BADGE_SIZE`
+  constant), with a 1.5dp `Modifier.border` ring using the cuisine tint's
+  own `onContainer` colour — `CuisineTint` only carries a container/
+  on-container pair, not a separate "accent" tone the mockup's ring colour
+  would map onto exactly, so `onContainer` (same hue family, legible
+  against the container fill) stands in for it rather than extending the
+  theme's accent model just for this ring.
+- **Price**: `RatingAndPriceRow` gained optional `priceContainerColor`/
+  `priceContentColor` parameters (defaulting to the existing
+  `tertiaryContainer`/`onTertiaryContainer`, so Roulette's own call site —
+  not part of this proposal — is unaffected); the list row now passes
+  `primaryContainer`/`onPrimaryContainer` explicitly, so the price chip
+  reads as one consistent accent instead of tertiary, matching Detail's own
+  price chip (F-77).
+- Verified with `./gradlew test assembleDebug assembleRelease lint` — 269
+  tests passing (unchanged; pure UI, no ViewModel logic touched), R8 still
+  minifies cleanly, lint report unchanged (`UnusedResources` still the same
+  pre-existing 3). Not verified: the gradient header, the badge ring, or
+  the price chip's new colour on a real device or emulator, only that it
+  compiles and the existing `@Preview`s are well-formed.
+
+### F-75 · Visual refresh proposal awaiting review — Done.
+
+The proposal itself asked for nothing but a decision (see Appendix C's own
+closing note): once the user reviewed it, the only "fix" was to split
+whichever parts got approved into their own per-screen entries rather than
+implementing this one directly. The user approved all four screens, split
+into **F-76** (List), **F-77** (Detail), **F-78** (Settings) and **F-79**
+(Statistics) above — this entry is closed, the mockup and writeup stay in
+[Appendix C](#appendix-c-visual-refresh-proposal-pending-review) as the
+design record those four entries point back to.
 
 ### F-74 · Roulette can't filter by visited status — Done.
 
@@ -2541,3 +2721,95 @@ were called out as the two highest-impact, lowest-effort items to start
 with.
 
 *Design proposal · did not itself implement any code changes · 2026-09-04.*
+
+---
+
+## Appendix C: Visual refresh proposal (pending review)
+
+*Design proposal · 2026-09-05 · not yet reviewed, nothing implemented.*
+
+Published as an interactive mockup rather than only written here:
+`https://claude.ai/code/artifact/14a2e745-d144-49e9-aa8d-89a506e0cb0f`
+(a private Claude Artifact link under the account that generated it — the
+writeup below stands on its own if that link ever becomes unreachable).
+
+Prompted directly ("¿alguna alternativa para el revamping visual de la
+app...?"), not by an audit — the two earlier passes (Appendix A and
+Appendix B) already closed the functional gaps a redesign pass usually
+chases (photos, notes, tags, status, stats, swipe actions — see the "Where
+to start" note above). What's left is execution polish on four screens,
+not missing features. The mockup deliberately keeps all three palettes and
+Outfit typography untouched — see its "materials strip," which restates
+Azafrán/Huerto/Índigo's real hex values and the Outfit-for-headlines,
+system-font-for-body split exactly as `ui/theme/` already declares them —
+and proposes changes that stay inside Material3 with no new dependency.
+
+### List: one row for everyone, no hierarchy
+
+Today's top bar is a single flat tone, and every row — with or without a
+photo — carries identical visual weight; the price and the "want to try"
+status are two small labels competing for the same attention.
+
+- **Header**: a two-stop tonal wash (primary container → surface) behind
+  the search field, for a sense of place without touching the collapsing
+  scroll behaviour.
+- **Badge**: grows from 48dp to ~50–56dp and gains a 1.5dp ring in the
+  cuisine's own accent colour, so a photo reads as a deliberate portrait
+  rather than a clipped circle.
+- **Price**: becomes a filled tonal chip instead of plain text, so status
+  and price stop competing for the same visual register.
+
+### Detail: three cards, the same weight
+
+Overview, rating and notes share the exact same card treatment — nothing
+signals which fact is the one the user actually opened the screen for.
+
+- **Overview** drops its card entirely and becomes a borderless block with
+  larger type — it's the reason the screen was opened.
+- **Rating and price** compress into one inline row directly under it,
+  instead of a second, separate card.
+- **Notes** gains the cuisine's own container colour as a tinted
+  background, so a personal note reads as an annotation, not another data
+  row.
+- **Actions**: edit/share/delete collapse behind one overflow menu, leaving
+  favourite as the only action that keeps a fixed spot on the bar.
+- **Explicitly kept as-is**: the large flat-tinted app bar itself — it's
+  what makes the shared-element transition from the list badge (F-38)
+  possible, and F-63 already weighed and rejected touching it for the same
+  reason.
+
+### Settings: the screen that hasn't changed since day one
+
+Coloured section labels with no card, buttons stacked with no icon — every
+other screen in the app already groups into cards; this one never did.
+
+- **Sections** become cards, the same language Detail and the edit form
+  already use — not a new one.
+- **Rows** gain a leading icon and a trailing value/chevron — "export data"
+  stops being a lost button and becomes an actual settings row.
+- **Palette swatches** grow slightly (26dp → 30dp) and the selected one
+  gets a soft halo in its own primary colour — the one screen element that
+  already has some charm, made more visible rather than less.
+
+### Statistics: four equal numbers, none of them the headline
+
+The four stat tiles carry equal weight and the bars are a neutral grey —
+the most interesting number doesn't stand out until each label is read.
+
+- **One number is promoted** to a large headline tile (bigger digits, set
+  in tabular numerals) with the other three demoted to a smaller supporting
+  row — no longer a grid of four equals.
+- **Cuisine bars take on their own `cuisineTint`** — the same colour their
+  badge already uses elsewhere — instead of a generic grey, so the data
+  labels itself by colour.
+- **Each bar's value moves to the end of the bar**, at the point of
+  comparison, rather than only in the row's header.
+
+### If any of this becomes backlog work
+
+None of it changes behaviour — every change stays inside Material3, no new
+dependency. Impact: medium-high (all perceptual, nothing functional).
+Effort: low-medium per screen. Once specific parts are approved, split them
+into their own `F-76` onward entries rather than treating F-75 itself as
+one task — the four screens are independent and don't need to land
+together.

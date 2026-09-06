@@ -20,12 +20,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.BarChart
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.RestaurantMenu
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -105,29 +101,25 @@ private fun StatisticsContent(uiState: StatisticsUiState, onBack: () -> Unit) {
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                        StatTile(
-                            icon = Icons.Outlined.RestaurantMenu,
-                            value = uiState.totalCount.toString(),
-                            label = stringResource(R.string.stats_tile_total),
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatTile(
-                            icon = Icons.Outlined.CheckCircle,
+                    // The total is promoted to its own headline tile (F-79) rather than one
+                    // of four equal-weight tiles — it's the number that actually answers
+                    // "how much have I collected", the other three just qualify it.
+                    HeadlineStatTile(
+                        value = uiState.totalCount.toString(),
+                        label = stringResource(R.string.stats_tile_total)
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        SupportingStatTile(
                             value = uiState.visitedCount.toString(),
                             label = stringResource(R.string.stats_tile_visited),
                             modifier = Modifier.weight(1f)
                         )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                        StatTile(
-                            icon = Icons.Outlined.Schedule,
+                        SupportingStatTile(
                             value = uiState.wantToTryCount.toString(),
                             label = stringResource(R.string.stats_tile_want_to_try),
                             modifier = Modifier.weight(1f)
                         )
-                        StatTile(
-                            icon = Icons.Filled.Star,
+                        SupportingStatTile(
                             value = uiState.averageRating?.let { stringResource(R.string.stats_average_rating_value, it) }
                                 ?: stringResource(R.string.stats_average_rating_none),
                             label = stringResource(R.string.stats_tile_average_rating),
@@ -158,23 +150,50 @@ private fun StatisticsContent(uiState: StatisticsUiState, onBack: () -> Unit) {
     }
 }
 
+/**
+ * The total promoted to its own large tile (F-79) — tabular numerals so the
+ * digits don't shift width as the count changes, matching [SupportingStatTile]'s
+ * own figures below it.
+ */
 @Composable
-private fun StatTile(icon: ImageVector, value: String, label: String, modifier: Modifier = Modifier) {
-    Card(modifier = modifier) {
+private fun HeadlineStatTile(value: String, label: String, modifier: Modifier = Modifier) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        modifier = modifier.fillMaxWidth()
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier.fillMaxWidth().padding(20.dp)
         ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(top = 8.dp)
+                style = MaterialTheme.typography.displaySmall.copy(fontFeatureSettings = "tnum"),
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+/** The three stats that used to share equal billing with the total (F-79), now a smaller supporting row under it. */
+@Composable
+private fun SupportingStatTile(value: String, label: String, modifier: Modifier = Modifier) {
+    Card(modifier = modifier) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth().padding(12.dp)
+        ) {
+            Text(text = value, style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp)
             )
         }
     }
@@ -213,19 +232,22 @@ private fun CuisineBarRow(cuisineCount: CuisineCount, maxCount: Int) {
             )
         }
         Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = cuisineLabel(cuisineCount.cuisineType), style = MaterialTheme.typography.bodyMedium)
+            Text(text = cuisineLabel(cuisineCount.cuisineType), style = MaterialTheme.typography.bodyMedium)
+            // The count reads at the bar's own end (F-79) — the point of comparison —
+            // rather than only in this header, which now carries the label alone.
+            Row(modifier = Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                StatBar(
+                    fraction = cuisineCount.count.toFloat() / maxCount,
+                    color = tint.onContainer,
+                    modifier = Modifier.weight(1f)
+                )
                 Text(
                     text = cuisineCount.count.toString(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = tint.onContainer,
+                    modifier = Modifier.padding(start = 8.dp)
                 )
             }
-            StatBar(
-                fraction = cuisineCount.count.toFloat() / maxCount,
-                color = tint.onContainer,
-                modifier = Modifier.padding(top = 4.dp)
-            )
         }
     }
 }

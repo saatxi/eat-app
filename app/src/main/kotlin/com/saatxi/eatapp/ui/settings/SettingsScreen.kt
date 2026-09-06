@@ -1,8 +1,9 @@
 package com.saatxi.eatapp.ui.settings
 
 import android.content.res.Configuration
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,17 +17,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -44,6 +49,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -103,44 +112,50 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            // Every section's content now sits in a Card (F-78) — the same language
+            // Detail and the edit form already use — rather than a flat list of
+            // controls with only a coloured label to separate them.
             SettingsSection(title = stringResource(R.string.settings_section_appearance)) {
-                Text(stringResource(R.string.settings_palette), style = MaterialTheme.typography.labelLarge)
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                ) {
-                    // Resolved against the mode actually in effect (not the raw system
-                    // setting), so a swatch previews what picking that palette will
-                    // really look like right now.
-                    val darkTheme = isDarkTheme(uiState.themeMode)
-                    AppPalette.entries.forEach { palette ->
-                        PaletteCard(
-                            palette = palette,
-                            darkTheme = darkTheme,
-                            selected = palette == uiState.palette,
-                            onClick = { viewModel.onPaletteChange(palette) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                Text(
-                    text = stringResource(R.string.settings_theme_mode),
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    ThemeMode.entries.forEachIndexed { index, mode ->
-                        SegmentedButton(
-                            selected = mode == uiState.themeMode,
-                            onClick = { viewModel.onThemeModeChange(mode) },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = ThemeMode.entries.size),
-                            // The default checkmark eats into this row's three-way split
-                            // and clips a longer translation — the fill colour already
-                            // marks the selection.
-                            icon = {}
+                Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(stringResource(R.string.settings_palette), style = MaterialTheme.typography.labelLarge)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(20.dp),
+                            modifier = Modifier.padding(top = 12.dp)
                         ) {
-                            Text(stringResource(mode.labelRes))
+                            // Resolved against the mode actually in effect (not the raw system
+                            // setting), so a swatch previews what picking that palette will
+                            // really look like right now.
+                            val darkTheme = isDarkTheme(uiState.themeMode)
+                            AppPalette.entries.forEach { palette ->
+                                PaletteSwatch(
+                                    palette = palette,
+                                    darkTheme = darkTheme,
+                                    selected = palette == uiState.palette,
+                                    onClick = { viewModel.onPaletteChange(palette) }
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = stringResource(R.string.settings_theme_mode),
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(top = 20.dp)
+                        )
+                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                            ThemeMode.entries.forEachIndexed { index, mode ->
+                                SegmentedButton(
+                                    selected = mode == uiState.themeMode,
+                                    onClick = { viewModel.onThemeModeChange(mode) },
+                                    shape = SegmentedButtonDefaults.itemShape(index = index, count = ThemeMode.entries.size),
+                                    // The default checkmark eats into this row's three-way split
+                                    // and clips a longer translation — the fill colour already
+                                    // marks the selection.
+                                    icon = {}
+                                ) {
+                                    Text(stringResource(mode.labelRes))
+                                }
+                            }
                         }
                     }
                 }
@@ -148,74 +163,82 @@ fun SettingsScreen(
 
             SettingsSection(title = stringResource(R.string.settings_section_language)) {
                 var languageMenuExpanded by remember { mutableStateOf(false) }
-                Box {
-                    OutlinedButton(onClick = { languageMenuExpanded = true }) {
-                        Text(stringResource(uiState.language.labelRes))
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = null,
-                            modifier = Modifier.padding(start = 4.dp)
+                Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+                    Box {
+                        SettingsRow(
+                            icon = Icons.Outlined.Language,
+                            label = stringResource(uiState.language.labelRes),
+                            onClick = { languageMenuExpanded = true }
                         )
-                    }
-                    DropdownMenu(
-                        expanded = languageMenuExpanded,
-                        onDismissRequest = { languageMenuExpanded = false }
-                    ) {
-                        AppLanguage.entries.forEach { language ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(language.labelRes)) },
-                                onClick = {
-                                    languageMenuExpanded = false
-                                    viewModel.onLanguageChange(language)
-                                    // AppCompatDelegate applies the new locale to the
-                                    // process, but MainActivity only picks it up once
-                                    // it is recreated — the framework does this for us
-                                    // on API 33+, but some OEM builds don't reliably
-                                    // deliver that config change, so trigger it
-                                    // explicitly rather than rely on it.
-                                    activity?.recreate()
-                                },
-                                trailingIcon = if (language == uiState.language) {
-                                    { Icon(Icons.Default.Check, contentDescription = null) }
-                                } else null
-                            )
+                        DropdownMenu(
+                            expanded = languageMenuExpanded,
+                            onDismissRequest = { languageMenuExpanded = false }
+                        ) {
+                            AppLanguage.entries.forEach { language ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(language.labelRes)) },
+                                    onClick = {
+                                        languageMenuExpanded = false
+                                        viewModel.onLanguageChange(language)
+                                        // AppCompatDelegate applies the new locale to the
+                                        // process, but MainActivity only picks it up once
+                                        // it is recreated — the framework does this for us
+                                        // on API 33+, but some OEM builds don't reliably
+                                        // deliver that config change, so trigger it
+                                        // explicitly rather than rely on it.
+                                        activity?.recreate()
+                                    },
+                                    trailingIcon = if (language == uiState.language) {
+                                        { Icon(Icons.Default.Check, contentDescription = null) }
+                                    } else null
+                                )
+                            }
                         }
                     }
                 }
             }
 
             SettingsSection(title = stringResource(R.string.settings_section_data)) {
-                OutlinedButton(onClick = onOpenStatistics) {
-                    Text(stringResource(R.string.settings_action_view_statistics))
-                }
-
-                Text(
-                    text = stringResource(R.string.settings_data_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                )
-                OutlinedButton(onClick = { viewModel.onExportData(context) }) {
-                    Text(stringResource(R.string.settings_action_export_data))
-                }
-                OutlinedButton(
-                    onClick = { showDeleteAllConfirm = true },
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(stringResource(R.string.settings_action_delete_all_data))
+                Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        SettingsRow(
+                            icon = Icons.Outlined.BarChart,
+                            label = stringResource(R.string.settings_action_view_statistics),
+                            onClick = onOpenStatistics
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        SettingsRow(
+                            icon = Icons.Filled.Share,
+                            label = stringResource(R.string.settings_action_export_data),
+                            supportingText = stringResource(R.string.settings_data_description),
+                            onClick = { viewModel.onExportData(context) }
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        SettingsRow(
+                            icon = Icons.Filled.Delete,
+                            label = stringResource(R.string.settings_action_delete_all_data),
+                            showChevron = false,
+                            tint = MaterialTheme.colorScheme.error,
+                            onClick = { showDeleteAllConfirm = true }
+                        )
+                    }
                 }
             }
 
             SettingsSection(title = stringResource(R.string.settings_section_about)) {
-                Text(
-                    text = stringResource(
-                        R.string.about_version_template,
-                        BuildConfig.VERSION_NAME,
-                        BuildConfig.VERSION_CODE,
-                        BuildConfig.GIT_COMMIT
-                    ),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Card(shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+                    SettingsRow(
+                        icon = Icons.Outlined.Info,
+                        label = stringResource(
+                            R.string.about_version_template,
+                            BuildConfig.VERSION_NAME,
+                            BuildConfig.VERSION_CODE,
+                            BuildConfig.GIT_COMMIT
+                        ),
+                        showChevron = false,
+                        onClick = null
+                    )
+                }
             }
         }
     }
@@ -229,12 +252,62 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary
         )
-        Column(content = content)
+        Column(modifier = Modifier.padding(top = 8.dp), content = content)
     }
 }
 
+/**
+ * The icon-plus-label-plus-trailing-chevron row every settings section now
+ * shares (F-78) — "export data" used to be a lost `OutlinedButton`; this is
+ * what makes it read as an actual settings row instead. [showChevron] is
+ * false for a row that isn't navigation (an in-place destructive action, or
+ * plain informational text), and [onClick] is null for the latter case.
+ */
 @Composable
-private fun PaletteCard(
+private fun SettingsRow(
+    icon: ImageVector,
+    label: String,
+    modifier: Modifier = Modifier,
+    supportingText: String? = null,
+    showChevron: Boolean = true,
+    tint: Color = MaterialTheme.colorScheme.onSurface,
+    onClick: (() -> Unit)?
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+        Column(modifier = Modifier.padding(start = 16.dp).weight(1f)) {
+            Text(text = label, style = MaterialTheme.typography.bodyLarge, color = tint)
+            supportingText?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+        }
+        if (showChevron) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+/** Grown from 26dp to 30dp (F-78) — the one screen element that already had some charm. */
+private val PALETTE_SWATCH_SIZE = 30.dp
+
+@Composable
+private fun PaletteSwatch(
     palette: AppPalette,
     darkTheme: Boolean,
     selected: Boolean,
@@ -242,48 +315,49 @@ private fun PaletteCard(
     modifier: Modifier = Modifier
 ) {
     // The tones a palette declares, not the currently active MaterialTheme, so
-    // all three cards preview correctly even though only one of them is the
+    // all three swatches preview correctly even though only one of them is the
     // scheme actually applied to the screen right now.
     val scheme = remember(palette, darkTheme) {
         if (darkTheme) palette.tones.darkScheme() else palette.tones.lightScheme()
     }
-    Card(
-        onClick = onClick,
-        modifier = modifier,
-        border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.clickable(onClick = onClick).padding(4.dp)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth().padding(12.dp)
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                listOf(scheme.primary, scheme.secondary, scheme.tertiary).forEach { color ->
-                    Box(
-                        modifier = Modifier
-                            .size(20.dp)
-                            .clip(CircleShape)
-                            .background(color)
-                    )
+        Box(
+            modifier = Modifier
+                .size(PALETTE_SWATCH_SIZE)
+                // A soft halo in the palette's own primary colour (F-78) rather than a
+                // hard-edged border, on top of the three-colour sweep that stands in for
+                // the whole scheme in one small circle.
+                .let {
+                    if (selected) {
+                        it.shadow(elevation = 6.dp, shape = CircleShape, ambientColor = scheme.primary, spotColor = scheme.primary)
+                    } else {
+                        it
+                    }
                 }
-            }
-            Text(
-                text = stringResource(palette.labelRes),
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-        }
+                .clip(CircleShape)
+                .background(Brush.sweepGradient(listOf(scheme.primary, scheme.secondary, scheme.tertiary, scheme.primary)))
+                .let { if (selected) it.border(2.dp, scheme.primary, CircleShape) else it }
+        )
+        Text(
+            text = stringResource(palette.labelRes),
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(top = 6.dp)
+        )
     }
 }
 
 @Preview(name = "Light")
 @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun PaletteCardPreview() {
+private fun PaletteSwatchPreview() {
     EatAppTheme {
         Surface {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(16.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.padding(16.dp)) {
                 AppPalette.entries.forEach { palette ->
-                    PaletteCard(
+                    PaletteSwatch(
                         palette = palette,
                         darkTheme = false,
                         selected = palette == AppPalette.Default,
