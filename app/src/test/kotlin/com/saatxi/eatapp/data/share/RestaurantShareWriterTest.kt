@@ -1,6 +1,7 @@
 package com.saatxi.eatapp.data.share
 
 import android.content.Context
+import androidx.core.content.FileProvider
 import androidx.test.core.app.ApplicationProvider
 import java.io.File
 import kotlinx.serialization.json.Json
@@ -21,19 +22,34 @@ import org.robolectric.RobolectricTestRunner
  * to. Robolectric: needs the real `FileProvider` declared in the manifest,
  * and a real `cacheDir`.
  *
- * Skipped on Windows (see [setUp]): `androidx.core.content.FileProvider`'s
- * `SimplePathStrategy.belongsToRoot` hardcodes a `/` separator when checking
- * whether a file's canonical path sits under a configured root — correct on
- * a real device, where the filesystem is always `/`-separated, but Robolectric
- * runs this as plain JVM code against the *host* filesystem, and
- * `File.getCanonicalPath()` on Windows returns `\`-separated paths. The root
- * and the file both resolve correctly (verified directly: both canonicalize
- * to the same `cacheDir\shared` prefix), but the hardcoded `rootPath + '/'`
- * check can never match a `\`-joined path, so every call to
- * `FileProvider.getUriForFile` throws here — a genuine host-OS limitation of
- * the library under test, not a bug in this app or a fixable test mistake.
- * The CI workflow (`ci.yml`) runs on `ubuntu-latest`, where this isn't an
- * issue, so this file still gets exercised there even though it skips here.
+ * Two Robolectric/host quirks around `FileProvider`, neither a bug in this
+ * app, need working around here:
+ *
+ * - `FileProvider` caches the parsed `PathStrategy` per authority in a
+ *   private static `sCache` map for the classloader's lifetime — fine on a
+ *   real device, where `cacheDir` never moves, but Robolectric hands out a
+ *   fresh `cacheDir` under a new temp directory for every test method while
+ *   reusing the same classloader (and so the same `sCache`) across the whole
+ *   class. Left alone, only the first test method to call
+ *   [writeRestaurantShareFile] resolves the root correctly; every later one
+ *   fails with `IllegalArgumentException: Failed to find configured root`
+ *   because it's matched against a previous test's now-gone temp dir.
+ *   [resetFileProviderPathStrategyCache] clears that static map before each
+ *   test so `FileProvider` re-resolves it against the *current* test's
+ *   `context`.
+ * - Skipped on Windows (see [setUp]): even with a freshly-resolved root,
+ *   `SimplePathStrategy.belongsToRoot` hardcodes a `/` separator when
+ *   checking whether a file's canonical path sits under it — correct on a
+ *   real device, where the filesystem is always `/`-separated, but
+ *   Robolectric runs this as plain JVM code against the *host* filesystem,
+ *   and `File.getCanonicalPath()` on Windows returns `\`-separated paths.
+ *   The root and the file both resolve correctly (verified directly: both
+ *   canonicalize to the same `cacheDir\shared` prefix), but the hardcoded
+ *   `rootPath + '/'` check can never match a `\`-joined path, so every call
+ *   to `FileProvider.getUriForFile` throws here regardless of the cache fix
+ *   above — a genuine host-OS limitation of the library under test. The CI
+ *   workflow (`ci.yml`) runs on `ubuntu-latest`, where this isn't an issue,
+ *   so this file still gets exercised there even though it skips here.
  */
 @RunWith(RobolectricTestRunner::class)
 class RestaurantShareWriterTest {
@@ -43,7 +59,14 @@ class RestaurantShareWriterTest {
     @Before
     fun setUp() {
         assumeTrue("FileProvider path-matching is / -only; skipped on Windows, see class kdoc", File.separatorChar == '/')
+        resetFileProviderPathStrategyCache()
         context = ApplicationProvider.getApplicationContext()
+    }
+
+    private fun resetFileProviderPathStrategyCache() {
+        val cacheField = FileProvider::class.java.getDeclaredField("sCache")
+        cacheField.isAccessible = true
+        (cacheField.get(null) as MutableMap<*, *>).clear()
     }
 
     @After
