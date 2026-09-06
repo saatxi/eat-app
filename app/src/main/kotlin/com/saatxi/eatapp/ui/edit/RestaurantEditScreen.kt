@@ -219,7 +219,7 @@ private fun RestaurantEditContent(
             EditSectionCard(title = stringResource(R.string.edit_section_status_rating)) {
                 Column {
                     Text(stringResource(R.string.edit_field_visit_status), style = MaterialTheme.typography.labelLarge)
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.padding(top = 4.dp)) {
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                         SegmentedButton(
                             selected = !uiState.visited,
                             onClick = { onVisitedChange(false) },
