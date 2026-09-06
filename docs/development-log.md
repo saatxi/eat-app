@@ -788,7 +788,8 @@ abstraction than either screen's actual filtering logic.
   pulled out so `FavoritesViewModel` builds its repository query the exact
   same way instead of a second, hand-rolled copy that could quietly drift
   out of sync with it.
-- **`FavoritesViewModel`** now calls the same `repository.observeFiltered(query, minRating, cuisineType, sort, visited)`
+- **`FavoritesViewModel`** now calls the same
+  `repository.observeFiltered(query, minRating, cuisineType, sort, visited)`
   the list screen does — no new DAO query — and narrows the result down to
   favourited ids afterward, same as before this entry. `FavoritesUiState`
   gained the same shape `RestaurantListUiState` already has
@@ -1686,11 +1687,11 @@ Section E in full, which retires the section along with F-33 before it.
   runs from a sort menu in the app bar — a check mark on the active order,
   no vertical space taken from the list — through `RestaurantListUiState.sort`
   and the ViewModel's `Filters` into the repository. The DAO takes a
-  `sortByRating: Boolean` rather than the enum, so the ordering stays a bound
-  parameter
-  (`ORDER BY CASE WHEN :sortByRating THEN rating ELSE 0 END DESC, name COLLATE NOCASE ASC`)
-  instead of SQL assembled from a value, and the name order remains the
-  tiebreak within a rating so both orders are stable.
+  `sortByRating: Boolean` rather than the enum, so the ordering stays a
+  bound parameter (`ORDER BY CASE WHEN :sortByRating THEN rating ELSE 0 END
+  DESC, name COLLATE NOCASE ASC`) instead of SQL assembled from a value, and
+  the name order remains the tiebreak within a rating so both orders are
+  stable.
   Sorting is not a filter: it is excluded from `hasActiveFilter`, and
   `clearFilters()` deliberately preserves it, since that button is reached
   from the "No matches" state where the user wants their restaurants back,
@@ -2566,6 +2567,7 @@ each, `timeToInitialDisplayMs`:
 | Min – max | 715.0 – 931.8 ms | 613.0 – 708.6 ms |
 
 **~13% faster cold start** (99.7 ms off the median). Raw data:
+<!-- markdownlint-disable-next-line MD013 -->
 `baselineprofile/build/outputs/connected_android_test_additional_output/benchmarkRelease/connected/CPH2557 - 15/com.saatxi.eatapp.baselineprofile-benchmarkData.json`
 (gitignored build output, not committed).
 

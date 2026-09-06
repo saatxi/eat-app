@@ -1,10 +1,17 @@
 {
-  // MD013 (line-length) shouldn't reflow fenced code blocks: reformatting
-  // code or fixed-width data to fit 80 columns breaks it (development-log.md
-  // has literal column-aligned data dumps that can't be rewrapped at all).
+  // MD013 (line-length) can't be satisfied by rewrapping these three
+  // element types without losing content, since none of them can span
+  // multiple physical lines: a heading is one line by syntax (and
+  // development-log.md's "### F-XX · <description>" finding headings are a
+  // repo-wide convention of long, fully descriptive one-liners); a table
+  // row is one line by syntax; a fenced code block holds real code or
+  // fixed-width data (development-log.md has literal column-aligned data
+  // dumps) that reformatting would corrupt.
   "config": {
     "MD013": {
-      "code_blocks": false
+      "code_blocks": false,
+      "headings": false,
+      "tables": false
     }
   },
   // The exact scope CLAUDE.md documents — README.md, CLAUDE.md and

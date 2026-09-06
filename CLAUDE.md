@@ -153,15 +153,21 @@ app/src/main/kotlin/com/saatxi/eatapp/
 - Markdown files (`README.md`, `CLAUDE.md`, `docs/*.md`) must satisfy
   markdownlint (`markdownlint-cli2`, already installed) — run it with no
   arguments; `.markdownlint-cli2.jsonc`'s `globs` already point it at just
-  those files. It also `ignores` `.claude/` (third-party skill repos tracked
-  as gitlinks, not this project's own docs). Neither setting changes a
-  rule, so the default rule set still applies to everything in scope. Check
-  the editor's lint warnings on any Markdown file you touch and fix them
-  before moving on, rather than leaving them for the next edit to trip
-  over. A warning that's actually an established, repo-wide
-  convention (e.g. `docs/development-log.md`'s "— Done" section headings
-  dropping their trailing period so MD026 doesn't fire) is fine to keep as
-  long as it's applied consistently — don't silently break that consistency
+  those files, and it `ignores` `.claude/` (third-party skill repos tracked
+  as gitlinks, not this project's own docs). It also turns off MD013
+  (line-length) for headings, tables and code blocks, since none of those
+  can be rewrapped without either losing content or corrupting real code or
+  data — everything else still runs the default rule set. A single
+  otherwise-unfixable line (a benchmark output path in
+  `docs/development-log.md` whose only whitespace falls past column 80) is
+  suppressed individually with a `markdownlint-disable-next-line` comment
+  rather than loosening a rule for the whole file. Check the editor's lint
+  warnings on any Markdown file you touch and fix them before moving on,
+  rather than leaving them for the next edit to trip over. A warning that's
+  actually an established, repo-wide convention (e.g.
+  `docs/development-log.md`'s "— Done" section headings dropping their
+  trailing period so MD026 doesn't fire) is fine to keep as long as it's
+  applied consistently — don't silently break that consistency
   in just the section you're touching.
 
 ## Security guidelines
