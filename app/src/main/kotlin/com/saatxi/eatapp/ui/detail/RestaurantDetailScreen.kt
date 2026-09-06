@@ -64,6 +64,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -233,8 +235,19 @@ private fun RestaurantDetailContent(
 
                     // Borderless rather than a card (F-77): this is the reason the screen
                     // was opened, so it gets larger type instead of the same card weight
-                    // Rating/notes below it used to share.
+                    // Rating/notes below it used to share. The section label itself stays
+                    // quiet (labelMedium, no card weight) rather than the titleMedium
+                    // LinksCard uses below — it's here for the heading() landmark TalkBack's
+                    // "next heading" gesture needs (F-82) as much as for sighted users.
                     Column {
+                        Text(
+                            text = stringResource(R.string.detail_section_overview),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .padding(bottom = 6.dp)
+                                .semantics { heading() }
+                        )
                         InfoRow(
                             icon = cuisineIcon(current.cuisineKey),
                             text = cuisineLabel(current.cuisineKey),
@@ -269,19 +282,31 @@ private fun RestaurantDetailContent(
                     // (F-77) — the star icons are decorative (contentDescription = null) and
                     // the "3/5" text next to them isn't natural speech, so each half of the
                     // row gets its own merged description instead of announcing as silent
-                    // stars followed by "3 slash 5", or "$$" as "dollar dollar".
-                    RatingAndPriceRow(
-                        rating = current.rating,
-                        priceLabel = current.priceLabel,
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        pricePaddingHorizontal = 10.dp,
-                        pricePaddingVertical = 4.dp,
-                        ratingContentDescription = stringResource(R.string.restaurant_rating_description, current.rating),
-                        priceContentDescription = stringResource(R.string.restaurant_price_description, current.priceLabel.length),
-                        priceContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        priceContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    // stars followed by "3 slash 5", or "$$" as "dollar dollar". The label
+                    // above it is a separate node, not merged into either half, so it
+                    // doesn't disturb that split (F-82).
+                    Column {
+                        Text(
+                            text = stringResource(R.string.detail_section_rating),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .padding(bottom = 6.dp)
+                                .semantics { heading() }
+                        )
+                        RatingAndPriceRow(
+                            rating = current.rating,
+                            priceLabel = current.priceLabel,
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            pricePaddingHorizontal = 10.dp,
+                            pricePaddingVertical = 4.dp,
+                            ratingContentDescription = stringResource(R.string.restaurant_rating_description, current.rating),
+                            priceContentDescription = stringResource(R.string.restaurant_price_description, current.priceLabel.length),
+                            priceContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            priceContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
 
                     current.notes?.let { notes ->
                         NotesCard(notes = notes, cuisineKey = current.cuisineKey)

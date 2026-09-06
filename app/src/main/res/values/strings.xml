@@ -157,6 +157,12 @@
         <item quantity="other">%1$d restaurants had invalid data and were skipped</item>
     </plurals>
 
+    <!-- Quiet section labels for Detail's Overview and Rating content (F-82):
+         no card weight of their own, but give TalkBack's "next heading"
+         gesture a landmark the borderless F-77 layout otherwise lacks. -->
+    <string name="detail_section_overview">Overview</string>
+    <string name="detail_section_rating">Rating and price</string>
+
     <!-- Optional links, shown only when the restaurant has them. -->
     <string name="detail_section_links">Links</string>
     <string name="detail_photo_description">Restaurant photo</string>

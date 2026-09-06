@@ -59,24 +59,6 @@ Found by a `/code-review high` pass over `2c8eeab^..7d1bcaa` (the F-76–F-79
 visual refresh plus the System theme removal) — see that commit range for
 context on each.
 
-### F-82 · Detail screen's "Overview"/"Rating" section headings were removed with no accessibility replacement
-
-**Impact**: Medium · **Effort**: XS
-
-The plain-text section headings that used to open the Overview and
-Rating-and-price cards were deleted along with their strings
-(`detail_section_overview`, `detail_section_rating` — confirmed gone from
-all three `strings.xml` files with zero remaining references anywhere in
-`app/src/main`), and nothing replaces them: the codebase has no
-`Modifier.semantics { heading() }` usage anywhere, so this was the only
-section landmark TalkBack users had. A screen-reader user now swipes
-straight from the photo into cuisine/rating/price content with no verbal
-section context.
-
-**Fix**: either restore a (possibly visually-quieter) section label, or mark
-the visual replacement — the cuisine `InfoRow`, the price/rating row — with
-`Modifier.semantics { heading() }` so assistive tech still gets a landmark.
-
 ### F-83 · Palette swatch's colored selection halo silently degrades below API 28
 
 **Impact**: Low · **Effort**: XS
@@ -201,6 +183,27 @@ piece to cover once a runner is chosen.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-82 · Detail screen's "Overview"/"Rating" section headings were removed with no accessibility replacement — Done.
+
+Found by the same `/code-review high` pass as F-80/F-81.
+
+- **Restored both**, rather than only marking the visual replacements as
+  headings: `RestaurantDetailScreen.kt` brings back `detail_section_overview`
+  and `detail_section_rating` (same English/Spanish/Catalan wording the F-77
+  refresh removed) as quiet `labelMedium`/`onSurfaceVariant` labels — no card
+  weight, so the borderless Overview/Rating treatment F-77 wanted is
+  unchanged — each also carrying `Modifier.semantics { heading() }` so
+  TalkBack's "next heading" gesture has a landmark again. The Rating label
+  sits as its own semantics node above `RatingAndPriceRow`, not merged into
+  either of that row's two existing merged-description halves, so it doesn't
+  disturb the rating/price split that row was already built around.
+- Verified with `./gradlew test assembleDebug lint` — all succeed; lint's
+  `UnusedResources` count is unchanged at 3 (the same pre-existing ones from
+  F-79), confirming the two restored strings are actually referenced now.
+  Not verified: the actual TalkBack "next heading" navigation or how the
+  labels look on a real device/emulator, only that it compiles, lints clean,
+  and the existing test suite still passes.
 
 ### F-81 · Roulette's price chip missed the List/Detail color migration — Done.
 
