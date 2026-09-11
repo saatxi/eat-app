@@ -1,6 +1,7 @@
 package com.saatxi.eatapp.ui.model
 
 import com.saatxi.eatapp.data.local.Restaurant
+import com.saatxi.eatapp.data.local.formatAddress
 
 /** Stars the rating scale is drawn on. */
 const val MAX_RATING = 5
@@ -27,8 +28,11 @@ data class RestaurantUiModel(
     val id: Long,
     val name: String,
     val cuisineKey: String,
-    /** Null when the row has no address, so the screens can just skip the block. */
-    val address: String?,
+    /** Street line only — null when absent/blank. See [formattedAddress] for the joined display string. */
+    val streetAddress: String?,
+    val city: String?,
+    val region: String?,
+    val country: String?,
     val rating: Int,
     /** For example "$$". Empty when the row has no price range. */
     val priceLabel: String,
@@ -55,15 +59,21 @@ data class RestaurantUiModel(
 ) {
     /** True when there is at least one link worth drawing a section for. */
     val hasLinks: Boolean get() = website != null || instagram != null
+
+    /** Every non-blank address component joined together — see [com.saatxi.eatapp.data.local.formatAddress]. */
+    val formattedAddress: String? get() = formatAddress(streetAddress, city, region, country)
 }
 
 fun Restaurant.toUiModel(isFavorite: Boolean = false, tags: List<String> = emptyList()): RestaurantUiModel = RestaurantUiModel(
     id = id,
     name = name,
     cuisineKey = cuisineType,
-    // A row whose address is present but blank would otherwise draw an empty
-    // location line; treat it the same as a missing one.
-    address = address?.takeIf { it.isNotBlank() },
+    // A row whose address component is present but blank would otherwise draw
+    // an empty location line; treat it the same as a missing one.
+    streetAddress = streetAddress?.takeIf { it.isNotBlank() },
+    city = city?.takeIf { it.isNotBlank() },
+    region = region?.takeIf { it.isNotBlank() },
+    country = country?.takeIf { it.isNotBlank() },
     rating = rating,
     // The reader already rejects out-of-range values, but clamping keeps a
     // hand-built entity from producing an absurdly long chip.

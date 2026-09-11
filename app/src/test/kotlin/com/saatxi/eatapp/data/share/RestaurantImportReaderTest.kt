@@ -10,7 +10,7 @@ class RestaurantImportReaderTest {
     private fun export(name: String, rating: Int = 3, priceRange: Int = 2) = RestaurantExport(
         name = name,
         cuisineType = "mediterranean",
-        address = null,
+        streetAddress = null,
         rating = rating,
         priceRange = priceRange
     )

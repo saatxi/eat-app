@@ -17,18 +17,24 @@ class RestaurantShareModelsTest {
         visited: Boolean = true,
         website: String? = null,
         instagram: String? = null,
-        notes: String? = null
+        notes: String? = null,
+        city: String? = null,
+        region: String? = null,
+        country: String? = null
     ) = Restaurant(
         id = 7,
         name = name,
         cuisineType = cuisineType,
-        address = address,
+        streetAddress = address,
         rating = rating,
         priceRange = priceRange,
         visited = visited,
         website = website,
         instagram = instagram,
-        notes = notes
+        notes = notes,
+        city = city,
+        region = region,
+        country = country
     )
 
     // --- Restaurant -> RestaurantExport --------------------------------
@@ -39,11 +45,30 @@ class RestaurantShareModelsTest {
 
         assertEquals("Cal Ferran", export.name)
         assertEquals("mediterranean", export.cuisineType)
-        assertEquals("Rambla 1", export.address)
+        assertEquals("Rambla 1", export.streetAddress)
         assertEquals(4, export.rating)
         assertEquals(2, export.priceRange)
         assertEquals("https://example.com", export.website)
         assertEquals("cal_ferran", export.instagram)
+    }
+
+    @Test
+    fun `toExport carries city, region and country`() {
+        val export = restaurant(city = "Girona", region = "Girona (província)", country = "Spain").toExport()
+
+        assertEquals("Girona", export.city)
+        assertEquals("Girona (província)", export.region)
+        assertEquals("Spain", export.country)
+    }
+
+    @Test
+    fun `city, region and country default to null when a share file predates the fields`() {
+        // Mirrors decoding an older export whose JSON has no "city"/"region"/"country" keys at all.
+        val export = RestaurantExport(name = "Cal Ferran", cuisineType = "mediterranean", rating = 4, priceRange = 2)
+
+        assertNull(export.city)
+        assertNull(export.region)
+        assertNull(export.country)
     }
 
     @Test
@@ -132,7 +157,7 @@ class RestaurantShareModelsTest {
     @Test
     fun `toRestaurantOrNull trims whitespace from name, cuisine and address`() {
         val export = RestaurantExport(
-            name = "  Cal Ferran  ", cuisineType = " mediterranean ", address = "  Rambla 1  ",
+            name = "  Cal Ferran  ", cuisineType = " mediterranean ", streetAddress = "  Rambla 1  ",
             rating = 3, priceRange = 1
         )
 
@@ -140,14 +165,42 @@ class RestaurantShareModelsTest {
 
         assertEquals("Cal Ferran", result?.name)
         assertEquals("mediterranean", result?.cuisineType)
-        assertEquals("Rambla 1", result?.address)
+        assertEquals("Rambla 1", result?.streetAddress)
     }
 
     @Test
     fun `toRestaurantOrNull treats a blank address as no address`() {
-        val export = RestaurantExport(name = "A", cuisineType = "bar", address = "   ", rating = 3, priceRange = 1)
+        val export = RestaurantExport(name = "A", cuisineType = "bar", streetAddress = "   ", rating = 3, priceRange = 1)
 
-        assertNull(export.toRestaurantOrNull()?.address)
+        assertNull(export.toRestaurantOrNull()?.streetAddress)
+    }
+
+    @Test
+    fun `toRestaurantOrNull trims whitespace from city, region and country`() {
+        val export = RestaurantExport(
+            name = "A", cuisineType = "bar", rating = 3, priceRange = 1,
+            city = "  Girona  ", region = "  Girona (província)  ", country = "  Spain  "
+        )
+
+        val result = export.toRestaurantOrNull()
+
+        assertEquals("Girona", result?.city)
+        assertEquals("Girona (província)", result?.region)
+        assertEquals("Spain", result?.country)
+    }
+
+    @Test
+    fun `toRestaurantOrNull treats blank city, region or country as absent`() {
+        val export = RestaurantExport(
+            name = "A", cuisineType = "bar", rating = 3, priceRange = 1,
+            city = "   ", region = "   ", country = "   "
+        )
+
+        val result = export.toRestaurantOrNull()
+
+        assertNull(result?.city)
+        assertNull(result?.region)
+        assertNull(result?.country)
     }
 
     @Test

@@ -177,6 +177,49 @@ class FavoritesViewModelTest {
     }
 
     @Test
+    fun `a city lands in the state and in the query`() = runTest {
+        observeState()
+
+        viewModel.onCityChange("Girona")
+
+        assertEquals("Girona", viewModel.uiState.value.city)
+        assertEquals("Girona", repository.lastCity)
+        assertTrue(viewModel.uiState.value.hasActiveFilter)
+    }
+
+    @Test
+    fun `a region lands in the state and in the query`() = runTest {
+        observeState()
+
+        viewModel.onRegionChange("Girona (província)")
+
+        assertEquals("Girona (província)", viewModel.uiState.value.region)
+        assertEquals("Girona (província)", repository.lastRegion)
+    }
+
+    @Test
+    fun `a country lands in the state and in the query`() = runTest {
+        observeState()
+
+        viewModel.onCountryChange("Spain")
+
+        assertEquals("Spain", viewModel.uiState.value.country)
+        assertEquals("Spain", repository.lastCountry)
+    }
+
+    @Test
+    fun `availableCities, availableRegions and availableCountries come from the repository`() = runTest {
+        repository.cities.value = listOf("Girona", "Barcelona")
+        repository.regions.value = listOf("Girona (província)")
+        repository.countries.value = listOf("Spain", "France")
+        observeState()
+
+        assertEquals(listOf("Girona", "Barcelona"), viewModel.uiState.value.availableCities)
+        assertEquals(listOf("Girona (província)"), viewModel.uiState.value.availableRegions)
+        assertEquals(listOf("Spain", "France"), viewModel.uiState.value.availableCountries)
+    }
+
+    @Test
     fun `clearFilters resets every filter but keeps the chosen sort order`() = runTest {
         observeState()
         viewModel.onSortChange(RestaurantSort.RATING)
@@ -184,6 +227,9 @@ class FavoritesViewModelTest {
         viewModel.onMinRatingChange(4)
         viewModel.onCuisineChange("japanese")
         viewModel.onVisitedChange(true)
+        viewModel.onCityChange("Girona")
+        viewModel.onRegionChange("Girona (província)")
+        viewModel.onCountryChange("Spain")
 
         viewModel.clearFilters()
 
@@ -192,6 +238,9 @@ class FavoritesViewModelTest {
         assertNull(state.minRating)
         assertNull(state.cuisineType)
         assertNull(state.visited)
+        assertNull(state.city)
+        assertNull(state.region)
+        assertNull(state.country)
         assertEquals(RestaurantSort.RATING, state.sort)
         assertFalse(state.hasActiveFilter)
     }
@@ -211,7 +260,7 @@ class FavoritesViewModelTest {
         id = id,
         name = name,
         cuisineType = "mediterranean",
-        address = null,
+        streetAddress = null,
         rating = 3,
         priceRange = 2
     )
@@ -221,6 +270,9 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
     val cuisines = MutableStateFlow<List<String>>(emptyList())
+    val cities = MutableStateFlow<List<String>>(emptyList())
+    val regions = MutableStateFlow<List<String>>(emptyList())
+    val countries = MutableStateFlow<List<String>>(emptyList())
     val tagsByRestaurantId = MutableStateFlow<Map<Long, List<String>>>(emptyMap())
 
     var lastQuery: String? = null
@@ -233,6 +285,12 @@ private class FakeRestaurantRepository : RestaurantRepository {
         private set
     var lastVisited: Boolean? = null
         private set
+    var lastCity: String? = null
+        private set
+    var lastRegion: String? = null
+        private set
+    var lastCountry: String? = null
+        private set
     var lastDeletedId: Long? = null
         private set
 
@@ -241,17 +299,26 @@ private class FakeRestaurantRepository : RestaurantRepository {
         minRating: Int?,
         cuisineType: String?,
         sort: RestaurantSort,
-        visited: Boolean?
+        visited: Boolean?,
+        city: String?,
+        region: String?,
+        country: String?
     ): Flow<List<Restaurant>> {
         lastQuery = query
         lastMinRating = minRating
         lastCuisine = cuisineType
         lastSort = sort
         lastVisited = visited
+        lastCity = city
+        lastRegion = region
+        lastCountry = country
         return restaurants
     }
 
     override fun observeCuisineTypes(): Flow<List<String>> = cuisines
+    override fun observeCities(): Flow<List<String>> = cities
+    override fun observeRegions(): Flow<List<String>> = regions
+    override fun observeCountries(): Flow<List<String>> = countries
 
     override fun observeById(id: Long): Flow<Restaurant?> =
         throw NotImplementedError("Not used by FavoritesViewModel")

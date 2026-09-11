@@ -92,7 +92,7 @@ internal fun RestaurantRow(
         cuisineLabelText,
         ratingDescription,
         priceDescription,
-        restaurant.address,
+        restaurant.formattedAddress,
         // Only worth announcing for the exception case; "visited" is the
         // default and every row already implies it by omission.
         visitStatusText.takeIf { !restaurant.visited }
@@ -213,7 +213,7 @@ internal fun RestaurantRow(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    restaurant.address?.let { address ->
+                    restaurant.formattedAddress?.let { address ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Outlined.LocationOn,
@@ -332,7 +332,10 @@ private val previewRestaurant = RestaurantUiModel(
     id = 1,
     name = "Cal Ferran",
     cuisineKey = "mediterranean",
-    address = "Plaça Santa Anna, Mataró",
+    streetAddress = "Plaça Santa Anna",
+    city = "Mataró",
+    region = null,
+    country = null,
     rating = 4,
     priceLabel = "$$",
     visited = true,

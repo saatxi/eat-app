@@ -86,7 +86,16 @@ fun FavoritesScreen(
                 availableCuisines = uiState.availableCuisines,
                 onCuisineChange = viewModel::onCuisineChange,
                 visited = uiState.visited,
-                onVisitedChange = viewModel::onVisitedChange
+                onVisitedChange = viewModel::onVisitedChange,
+                city = uiState.city,
+                availableCities = uiState.availableCities,
+                onCityChange = viewModel::onCityChange,
+                region = uiState.region,
+                availableRegions = uiState.availableRegions,
+                onRegionChange = viewModel::onRegionChange,
+                country = uiState.country,
+                availableCountries = uiState.availableCountries,
+                onCountryChange = viewModel::onCountryChange
             )
 
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -156,7 +165,10 @@ private val previewFavorite = RestaurantUiModel(
     id = 1,
     name = "Cal Ferran",
     cuisineKey = "mediterranean",
-    address = "Plaça Santa Anna, Mataró",
+    streetAddress = "Plaça Santa Anna",
+    city = "Mataró",
+    region = null,
+    country = null,
     rating = 4,
     priceLabel = "$$",
     visited = true,

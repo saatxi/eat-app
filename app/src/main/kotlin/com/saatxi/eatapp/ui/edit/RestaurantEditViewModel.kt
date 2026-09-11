@@ -27,7 +27,10 @@ data class RestaurantEditUiState(
     val isLoading: Boolean = false,
     val name: String = "",
     val cuisineType: String? = null,
-    val address: String = "",
+    val streetAddress: String = "",
+    val city: String = "",
+    val region: String = "",
+    val country: String = "",
     val notes: String = "",
     val visited: Boolean = true,
     val rating: Int = 0,
@@ -71,6 +74,14 @@ class RestaurantEditViewModel(
     val tagSuggestions: StateFlow<List<String>> = repository.observeAllTagNames()
         .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = emptyList())
 
+    /** Existing city/region/country values across all restaurants, offered as suggestions while typing. */
+    val citySuggestions: StateFlow<List<String>> = repository.observeCities()
+        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = emptyList())
+    val regionSuggestions: StateFlow<List<String>> = repository.observeRegions()
+        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = emptyList())
+    val countrySuggestions: StateFlow<List<String>> = repository.observeCountries()
+        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = emptyList())
+
     init {
         val id = restaurantId
         if (id != null) {
@@ -83,7 +94,10 @@ class RestaurantEditViewModel(
                             isLoading = false,
                             name = restaurant.name,
                             cuisineType = restaurant.cuisineType,
-                            address = restaurant.address.orEmpty(),
+                            streetAddress = restaurant.streetAddress.orEmpty(),
+                            city = restaurant.city.orEmpty(),
+                            region = restaurant.region.orEmpty(),
+                            country = restaurant.country.orEmpty(),
                             notes = restaurant.notes.orEmpty(),
                             visited = restaurant.visited,
                             rating = restaurant.rating,
@@ -109,8 +123,20 @@ class RestaurantEditViewModel(
         _uiState.update { it.copy(cuisineType = cuisineType, cuisineError = false) }
     }
 
-    fun onAddressChange(address: String) {
-        _uiState.update { it.copy(address = address) }
+    fun onStreetAddressChange(streetAddress: String) {
+        _uiState.update { it.copy(streetAddress = streetAddress) }
+    }
+
+    fun onCityChange(city: String) {
+        _uiState.update { it.copy(city = city) }
+    }
+
+    fun onRegionChange(region: String) {
+        _uiState.update { it.copy(region = region) }
+    }
+
+    fun onCountryChange(country: String) {
+        _uiState.update { it.copy(country = country) }
     }
 
     fun onNotesChange(notes: String) {
@@ -204,7 +230,10 @@ class RestaurantEditViewModel(
                 id = restaurantId ?: 0,
                 name = trimmedName,
                 cuisineType = state.cuisineType,
-                address = state.address.trim().takeIf { it.isNotBlank() },
+                streetAddress = state.streetAddress.trim().takeIf { it.isNotBlank() },
+                city = state.city.trim().takeIf { it.isNotBlank() },
+                region = state.region.trim().takeIf { it.isNotBlank() },
+                country = state.country.trim().takeIf { it.isNotBlank() },
                 notes = state.notes.trim().takeIf { it.isNotBlank() },
                 visited = state.visited,
                 rating = state.rating,

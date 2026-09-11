@@ -10,10 +10,19 @@
     <string name="list_filter_min_rating">Minimum rating</string>
     <string name="list_filter_cuisine">Cuisine</string>
     <string name="list_filter_visit_status">Status</string>
+    <!-- The combined entry point for the city/region/country panel — not a filter dimension itself. -->
+    <string name="list_filter_location">Location</string>
+    <string name="list_filter_city">City</string>
+    <string name="list_filter_region">Region</string>
+    <string name="list_filter_country">Country</string>
+    <!-- The "clear this dimension" option inside each of the three location groups. -->
+    <string name="list_filter_all">All</string>
+    <!-- The Location chip's label once at least one of city/region/country is set — %1$d is how many of the three. -->
+    <string name="list_filter_location_active">Location · %1$d</string>
     <string name="list_empty_title">No restaurants yet</string>
     <string name="list_empty_body">Add your first restaurant to get started.</string>
     <string name="list_empty_no_results_title">No matches</string>
-    <string name="list_empty_no_results_body">Try a different search or rating filter.</string>
+    <string name="list_empty_no_results_body">Try a different search or filter.</string>
     <string name="list_action_add_restaurant">Add restaurant</string>
     <string name="list_action_share_all">Share all restaurants</string>
     <string name="list_action_clear_filters">Clear filters</string>
@@ -41,6 +50,7 @@
     <string name="action_retry">Retry</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_delete">Delete</string>
+    <string name="action_done">Done</string>
 
     <string name="detail_not_found_title">Restaurant not found</string>
     <string name="detail_not_found_body">This restaurant was removed.</string>
@@ -102,8 +112,7 @@
     <string name="palette_indigo">Indigo</string>
     <string name="settings_section_data">Data</string>
     <string name="settings_action_view_statistics">View statistics</string>
-    <string name="settings_data_description">Export all your restaurants as a JSON file you can keep as a backup or share with a friend.</string>
-    <string name="settings_action_export_data">Export / share my data</string>
+    <string name="settings_action_export_data">Export my data</string>
     <string name="settings_action_delete_all_data">Delete all restaurants</string>
     <string name="settings_delete_all_confirm_title">Delete all restaurants?</string>
     <string name="settings_delete_all_confirm_body">This deletes every restaurant in the app. This can\'t be undone.</string>
@@ -127,7 +136,10 @@
     <string name="edit_field_name">Name</string>
     <string name="edit_field_cuisine">Cuisine</string>
     <string name="edit_cuisine_placeholder">Select a cuisine</string>
-    <string name="edit_field_address">Address (optional)</string>
+    <string name="edit_field_address">Street address (optional)</string>
+    <string name="edit_field_city">Town / city (optional)</string>
+    <string name="edit_field_region">Region (optional)</string>
+    <string name="edit_field_country">Country (optional)</string>
     <string name="edit_field_notes">Notes (optional)</string>
     <string name="edit_field_visit_status">Status</string>
     <string name="edit_field_rating">Rating</string>

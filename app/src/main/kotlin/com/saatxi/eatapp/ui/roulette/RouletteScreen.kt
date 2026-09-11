@@ -299,7 +299,7 @@ private fun RouletteResultCard(restaurant: RestaurantUiModel, onClick: () -> Uni
                 priceContainerColor = MaterialTheme.colorScheme.primaryContainer,
                 priceContentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
-            restaurant.address?.let { address ->
+            restaurant.formattedAddress?.let { address ->
                 Text(
                     text = address,
                     style = MaterialTheme.typography.bodyMedium,
@@ -315,7 +315,10 @@ private val previewPick = RestaurantUiModel(
     id = 1,
     name = "Cal Ferran",
     cuisineKey = "mediterranean",
-    address = "Plaça Santa Anna, Mataró",
+    streetAddress = "Plaça Santa Anna",
+    city = "Mataró",
+    region = null,
+    country = null,
     rating = 4,
     priceLabel = "$$",
     visited = true,

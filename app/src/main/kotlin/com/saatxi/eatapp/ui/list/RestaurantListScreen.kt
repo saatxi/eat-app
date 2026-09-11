@@ -121,7 +121,16 @@ fun RestaurantListScreen(
                 availableCuisines = uiState.availableCuisines,
                 onCuisineChange = viewModel::onCuisineChange,
                 visited = uiState.visited,
-                onVisitedChange = viewModel::onVisitedChange
+                onVisitedChange = viewModel::onVisitedChange,
+                city = uiState.city,
+                availableCities = uiState.availableCities,
+                onCityChange = viewModel::onCityChange,
+                region = uiState.region,
+                availableRegions = uiState.availableRegions,
+                onRegionChange = viewModel::onRegionChange,
+                country = uiState.country,
+                availableCountries = uiState.availableCountries,
+                onCountryChange = viewModel::onCountryChange
             )
 
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {

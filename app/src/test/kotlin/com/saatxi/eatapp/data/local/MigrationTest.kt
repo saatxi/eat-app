@@ -67,9 +67,13 @@ class MigrationTest {
 
         // Opened with no fallback: a schema mismatch throws here instead of
         // being silently papered over by `fallbackToDestructiveMigration`.
+        // MIGRATION_9_10 has to ride along too since EatAppDatabase's version
+        // has moved past 9 since this test was written — this test only
+        // exercises MIGRATION_8_9's own behaviour, MIGRATION_9_10 just needs
+        // to not blow up the chain.
         val migrated = Room.databaseBuilder(context, EatAppDatabase::class.java, dbName)
             .allowMainThreadQueries()
-            .addMigrations(MIGRATION_8_9)
+            .addMigrations(MIGRATION_8_9, MIGRATION_9_10)
             .build()
 
         val tagDao = migrated.tagDao()
@@ -80,6 +84,81 @@ class MigrationTest {
 
         val allTagNames = tagDao.observeAllTagNames().first()
         assertEquals(listOf("Terraza"), allTagNames)
+
+        migrated.close()
+    }
+
+    /**
+     * MIGRATION_9_10 (this feature) adds [Restaurant.city]/[Restaurant.region]/[Restaurant.country]
+     * as plain `ADD COLUMN`s next to the existing `address` column (kept as the physical name for
+     * [Restaurant.streetAddress] — see its `@ColumnInfo`), so unlike MIGRATION_8_9 above there's no
+     * foreign key/composite key shape to get wrong, but the open-with-no-fallback check is still
+     * what actually proves the hand-written v9 schema below matches Room's generated one.
+     */
+    @Test
+    fun `MIGRATION_9_10 opens cleanly on a real version-9 database and leaves existing rows' city, region and country null`() = runTest {
+        context = ApplicationProvider.getApplicationContext()
+        val dbFile = context.getDatabasePath(dbName)
+
+        // A v9-shaped database file on disk — restaurants plus the tags/restaurant_tags
+        // tables MIGRATION_8_9 already added, none of them touched by this migration.
+        SQLiteDatabase.openOrCreateDatabase(dbFile, null).use { legacyDb ->
+            legacyDb.execSQL(
+                "CREATE TABLE IF NOT EXISTS `restaurants` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, `cuisineType` TEXT NOT NULL, `address` TEXT, `rating` INTEGER NOT NULL, " +
+                    "`priceRange` INTEGER NOT NULL, `visited` INTEGER NOT NULL, `website` TEXT, `instagram` TEXT, " +
+                    "`photoPath` TEXT, `notes` TEXT, `searchText` TEXT NOT NULL)"
+            )
+            legacyDb.execSQL("CREATE INDEX IF NOT EXISTS `index_restaurants_name` ON `restaurants` (`name`)")
+            legacyDb.execSQL("CREATE INDEX IF NOT EXISTS `index_restaurants_rating` ON `restaurants` (`rating`)")
+            legacyDb.execSQL(
+                "CREATE TABLE IF NOT EXISTS `tags` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL COLLATE NOCASE)"
+            )
+            legacyDb.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_tags_name` ON `tags` (`name`)")
+            legacyDb.execSQL(
+                "CREATE TABLE IF NOT EXISTS `restaurant_tags` (`restaurantId` INTEGER NOT NULL, `tagId` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`restaurantId`, `tagId`), " +
+                    "FOREIGN KEY(`restaurantId`) REFERENCES `restaurants`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE, " +
+                    "FOREIGN KEY(`tagId`) REFERENCES `tags`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)"
+            )
+            legacyDb.execSQL("CREATE INDEX IF NOT EXISTS `index_restaurant_tags_tagId` ON `restaurant_tags` (`tagId`)")
+            legacyDb.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
+            legacyDb.execSQL(
+                "INSERT INTO restaurants (id, name, cuisineType, address, rating, priceRange, visited, searchText) " +
+                    "VALUES (1, 'Cal Ferran', 'mediterranean', 'Rambla 1, Barcelona', 4, 2, 1, 'cal ferran mediterranean rambla 1 barcelona')"
+            )
+            legacyDb.version = 9
+        }
+
+        // Opened with no fallback: a schema mismatch throws here instead of
+        // being silently papered over by `fallbackToDestructiveMigration`.
+        val migrated = Room.databaseBuilder(context, EatAppDatabase::class.java, dbName)
+            .allowMainThreadQueries()
+            .addMigrations(MIGRATION_9_10)
+            .build()
+
+        val existing = migrated.restaurantDao().getAll().single()
+        assertEquals("Rambla 1, Barcelona", existing.streetAddress)
+        assertEquals(null, existing.city)
+        assertEquals(null, existing.region)
+        assertEquals(null, existing.country)
+
+        val newId = migrated.restaurantDao().insert(
+            Restaurant(
+                name = "Sakura",
+                cuisineType = "japanese",
+                streetAddress = null,
+                city = "Girona",
+                region = "Girona (província)",
+                country = "Spain",
+                rating = 5,
+                priceRange = 2
+            )
+        )
+        val inserted = migrated.restaurantDao().observeById(newId).first()
+        assertEquals("Girona", inserted?.city)
+        assertEquals("Girona (província)", inserted?.region)
+        assertEquals("Spain", inserted?.country)
 
         migrated.close()
     }

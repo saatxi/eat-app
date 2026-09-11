@@ -18,6 +18,9 @@ class RestaurantUiModelTest {
         name: String = "Cal Ferran",
         cuisineType: String = "catalan",
         address: String? = "Carrer Gran 1",
+        city: String? = null,
+        region: String? = null,
+        country: String? = null,
         rating: Int = 3,
         priceRange: Int = 2,
         visited: Boolean = true,
@@ -29,7 +32,10 @@ class RestaurantUiModelTest {
         id = id,
         name = name,
         cuisineType = cuisineType,
-        address = address,
+        streetAddress = address,
+        city = city,
+        region = region,
+        country = country,
         rating = rating,
         priceRange = priceRange,
         visited = visited,
@@ -64,10 +70,29 @@ class RestaurantUiModelTest {
     }
 
     @Test
-    fun `a missing or blank address is null, so the screens skip the row`() {
-        assertNull(entity(address = null).toUiModel().address)
-        assertNull(entity(address = "   ").toUiModel().address)
-        assertEquals("Carrer Gran 1", entity().toUiModel().address)
+    fun `a missing or blank street address is null, so the screens skip the row`() {
+        assertNull(entity(address = null).toUiModel().streetAddress)
+        assertNull(entity(address = "   ").toUiModel().streetAddress)
+        assertEquals("Carrer Gran 1", entity().toUiModel().streetAddress)
+    }
+
+    @Test
+    fun `formattedAddress is null when every component is missing`() {
+        assertNull(entity(address = null).toUiModel().formattedAddress)
+    }
+
+    @Test
+    fun `formattedAddress joins the present components with commas`() {
+        val model = entity(address = "Carrer Gran 1", city = "Girona", region = "Girona (província)", country = "Spain").toUiModel()
+
+        assertEquals("Carrer Gran 1, Girona, Girona (província), Spain", model.formattedAddress)
+    }
+
+    @Test
+    fun `formattedAddress skips components that are blank or absent`() {
+        val model = entity(address = null, city = "Girona", region = null, country = "Spain").toUiModel()
+
+        assertEquals("Girona, Spain", model.formattedAddress)
     }
 
     @Test

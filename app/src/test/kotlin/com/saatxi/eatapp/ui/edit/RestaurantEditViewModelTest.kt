@@ -183,7 +183,7 @@ class RestaurantEditViewModelTest {
         observeState(viewModel)
         viewModel.onNameChange("  Cal Ferran  ")
         viewModel.onCuisineChange("mediterranean")
-        viewModel.onAddressChange("Rambla 1")
+        viewModel.onStreetAddressChange("Rambla 1")
         viewModel.onRatingChange(4)
         viewModel.onPriceRangeChange(2)
         viewModel.onWebsiteChange("example.com")
@@ -201,6 +201,56 @@ class RestaurantEditViewModelTest {
         assertEquals("https://example.com", inserted?.website)
         assertEquals("cal_ferran", inserted?.instagram)
         assertEquals(0L, inserted?.id)
+    }
+
+    @Test
+    fun `saving passes trimmed city, region and country through, and leaves them null when blank`() = runTest {
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        observeState(viewModel)
+        viewModel.onNameChange("Cal Ferran")
+        viewModel.onCuisineChange("mediterranean")
+        viewModel.onCityChange("  Girona  ")
+        viewModel.onRegionChange("  Girona (província)  ")
+        viewModel.onCountryChange("  Spain  ")
+
+        viewModel.onSave(onSaved = {})
+
+        val inserted = repository.lastInserted
+        assertEquals("Girona", inserted?.city)
+        assertEquals("Girona (província)", inserted?.region)
+        assertEquals("Spain", inserted?.country)
+    }
+
+    @Test
+    fun `saving with city, region and country left blank saves without error`() = runTest {
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        observeState(viewModel)
+        viewModel.onNameChange("Cal Ferran")
+        viewModel.onCuisineChange("mediterranean")
+        var saved = false
+
+        viewModel.onSave(onSaved = { saved = true })
+
+        assertTrue(saved)
+        assertNull(repository.lastInserted?.city)
+        assertNull(repository.lastInserted?.region)
+        assertNull(repository.lastInserted?.country)
+    }
+
+    @Test
+    fun `citySuggestions, regionSuggestions and countrySuggestions come from the repository`() = runTest {
+        repository.cities.value = listOf("Girona", "Barcelona")
+        repository.regions.value = listOf("Girona (província)")
+        repository.countries.value = listOf("Spain", "France")
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        observeState(viewModel)
+        backgroundScope.launch(dispatcher) { viewModel.citySuggestions.collect {} }
+        backgroundScope.launch(dispatcher) { viewModel.regionSuggestions.collect {} }
+        backgroundScope.launch(dispatcher) { viewModel.countrySuggestions.collect {} }
+
+        assertEquals(listOf("Girona", "Barcelona"), viewModel.citySuggestions.value)
+        assertEquals(listOf("Girona (província)"), viewModel.regionSuggestions.value)
+        assertEquals(listOf("Spain", "France"), viewModel.countrySuggestions.value)
     }
 
     // --- tags (F-59) --------------------------------------------------------
@@ -267,7 +317,8 @@ class RestaurantEditViewModelTest {
     fun `edit mode loads the existing restaurant into the form`() = runTest {
         repository.restaurants.value = listOf(
             Restaurant(
-                id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = "Rambla 1",
+                id = 1, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1",
+                city = "Girona", region = "Girona (província)", country = "Spain",
                 rating = 4, priceRange = 2, visited = false, notes = "Ask for the burrata"
             )
         )
@@ -281,12 +332,16 @@ class RestaurantEditViewModelTest {
         assertEquals(4, state.rating)
         assertFalse(state.visited)
         assertEquals("Ask for the burrata", state.notes)
+        assertEquals("Rambla 1", state.streetAddress)
+        assertEquals("Girona", state.city)
+        assertEquals("Girona (província)", state.region)
+        assertEquals("Spain", state.country)
     }
 
     @Test
     fun `edit mode loads the existing restaurant's tags into the form`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = null, rating = 4, priceRange = 2)
+            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, rating = 4, priceRange = 2)
         )
         repository.tagNamesByRestaurantId.value = mapOf(1L to listOf("Terraza", "Brunch"))
         val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = 1L)
@@ -298,7 +353,7 @@ class RestaurantEditViewModelTest {
     @Test
     fun `saving in edit mode updates rather than inserts`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 1, name = "Old Name", cuisineType = "mediterranean", address = null, rating = 3, priceRange = 1)
+            Restaurant(id = 1, name = "Old Name", cuisineType = "mediterranean", streetAddress = null, rating = 3, priceRange = 1)
         )
         val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = 1L)
         observeState(viewModel)
@@ -316,7 +371,7 @@ class RestaurantEditViewModelTest {
     @Test
     fun `saving in edit mode passes the current tags to update`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = null, rating = 3, priceRange = 1)
+            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, rating = 3, priceRange = 1)
         )
         repository.tagNamesByRestaurantId.value = mapOf(1L to listOf("Terraza"))
         val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = 1L)
@@ -339,7 +394,7 @@ class RestaurantEditViewModelTest {
     @Test
     fun `onRemovePhoto clears the preview and marks the photo removed`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = null, rating = 3, priceRange = 1, photoPath = "/existing/photo.jpg")
+            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, rating = 3, priceRange = 1, photoPath = "/existing/photo.jpg")
         )
         val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = 1L)
         observeState(viewModel)
@@ -353,7 +408,7 @@ class RestaurantEditViewModelTest {
     @Test
     fun `removing the photo and saving clears it`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = null, rating = 3, priceRange = 1, photoPath = "/existing/photo.jpg")
+            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, rating = 3, priceRange = 1, photoPath = "/existing/photo.jpg")
         )
         val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = 1L)
         observeState(viewModel)
@@ -368,7 +423,7 @@ class RestaurantEditViewModelTest {
     @Test
     fun `saving without touching the photo keeps the one already stored`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 1, name = "Old Name", cuisineType = "mediterranean", address = null, rating = 3, priceRange = 1, photoPath = "/existing/photo.jpg")
+            Restaurant(id = 1, name = "Old Name", cuisineType = "mediterranean", streetAddress = null, rating = 3, priceRange = 1, photoPath = "/existing/photo.jpg")
         )
         val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = 1L)
         observeState(viewModel)
@@ -385,6 +440,9 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
     val tagNamesByRestaurantId = MutableStateFlow<Map<Long, List<String>>>(emptyMap())
     val allTagNames = MutableStateFlow<List<String>>(emptyList())
+    val cities = MutableStateFlow<List<String>>(emptyList())
+    val regions = MutableStateFlow<List<String>>(emptyList())
+    val countries = MutableStateFlow<List<String>>(emptyList())
 
     var lastInserted: Restaurant? = null
         private set
@@ -398,11 +456,20 @@ internal class FakeRestaurantRepository : RestaurantRepository {
         minRating: Int?,
         cuisineType: String?,
         sort: RestaurantSort,
-        visited: Boolean?
+        visited: Boolean?,
+        city: String?,
+        region: String?,
+        country: String?
     ): Flow<List<Restaurant>> = restaurants
 
     override fun observeCuisineTypes(): Flow<List<String>> =
         throw NotImplementedError("Not used by RestaurantEditViewModel")
+
+    override fun observeCities(): Flow<List<String>> = cities
+
+    override fun observeRegions(): Flow<List<String>> = regions
+
+    override fun observeCountries(): Flow<List<String>> = countries
 
     override fun observeById(id: Long): Flow<Restaurant?> =
         restaurants.map { list -> list.firstOrNull { it.id == id } }

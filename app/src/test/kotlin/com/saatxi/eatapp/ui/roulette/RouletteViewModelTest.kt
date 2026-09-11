@@ -172,7 +172,7 @@ class RouletteViewModelTest {
         id = id,
         name = "Restaurant $id",
         cuisineType = "mediterranean",
-        address = null,
+        streetAddress = null,
         rating = 4,
         priceRange = 2
     )
@@ -192,7 +192,10 @@ private class FakeRestaurantRepository : RestaurantRepository {
         minRating: Int?,
         cuisineType: String?,
         sort: RestaurantSort,
-        visited: Boolean?
+        visited: Boolean?,
+        city: String?,
+        region: String?,
+        country: String?
     ): Flow<List<Restaurant>> {
         lastMinRating = minRating
         lastVisited = visited
@@ -200,6 +203,15 @@ private class FakeRestaurantRepository : RestaurantRepository {
     }
 
     override fun observeCuisineTypes(): Flow<List<String>> =
+        throw NotImplementedError("Not used by RouletteViewModel")
+
+    override fun observeCities(): Flow<List<String>> =
+        throw NotImplementedError("Not used by RouletteViewModel")
+
+    override fun observeRegions(): Flow<List<String>> =
+        throw NotImplementedError("Not used by RouletteViewModel")
+
+    override fun observeCountries(): Flow<List<String>> =
         throw NotImplementedError("Not used by RouletteViewModel")
 
     override fun observeById(id: Long): Flow<Restaurant?> =

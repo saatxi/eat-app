@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Restaurant::class, Tag::class, RestaurantTag::class], version = 9, exportSchema = false)
+@Database(entities = [Restaurant::class, Tag::class, RestaurantTag::class], version = 10, exportSchema = false)
 abstract class EatAppDatabase : RoomDatabase() {
 
     abstract fun restaurantDao(): RestaurantDao
@@ -65,13 +65,29 @@ internal val MIGRATION_8_9 = object : Migration(8, 9) {
     }
 }
 
+/**
+ * Adds [Restaurant.city]/[Restaurant.region]/[Restaurant.country] — the rest of what a single
+ * free-text `address` used to hold. The street line stays in the existing `address` column (see
+ * [Restaurant.streetAddress]'s `@ColumnInfo`) so no column is renamed; existing rows simply read
+ * back with these three new columns null until the user re-saves them — their old `address` text
+ * (and its contribution to `searchText`) is left untouched, matching how earlier additive
+ * migrations (`notes`, `photoPath`) never touched pre-existing rows either.
+ */
+internal val MIGRATION_9_10 = object : Migration(9, 10) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE restaurants ADD COLUMN city TEXT")
+        db.execSQL("ALTER TABLE restaurants ADD COLUMN region TEXT")
+        db.execSQL("ALTER TABLE restaurants ADD COLUMN country TEXT")
+    }
+}
+
 fun buildEatAppDatabase(context: Context): EatAppDatabase =
     Room.databaseBuilder(
         context.applicationContext,
         EatAppDatabase::class.java,
         "eatapp.db"
     )
-        .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+        .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
         // The restaurants here are entered by hand and not recoverable from
         // anywhere else, unlike the old re-downloadable .db cache this used to
         // hold. The next time `version` changes, this MUST be replaced with a

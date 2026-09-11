@@ -12,10 +12,16 @@ interface RestaurantRepository {
         minRating: Int?,
         cuisineType: String?,
         sort: RestaurantSort = RestaurantSort.NAME,
-        visited: Boolean? = null
+        visited: Boolean? = null,
+        city: String? = null,
+        region: String? = null,
+        country: String? = null
     ): Flow<List<Restaurant>>
 
     fun observeCuisineTypes(): Flow<List<String>>
+    fun observeCities(): Flow<List<String>>
+    fun observeRegions(): Flow<List<String>>
+    fun observeCountries(): Flow<List<String>>
     fun observeById(id: Long): Flow<Restaurant?>
 
     /** Returns the newly assigned id. [restaurant] must have `id == 0`. [tags] replaces any prior tags in the same write. */

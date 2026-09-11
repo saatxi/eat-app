@@ -114,6 +114,6 @@ class RestaurantImportViewModel(
 
 private fun Restaurant.isLikelyDuplicateOf(other: Restaurant): Boolean {
     val sameName = name.trim().equals(other.name.trim(), ignoreCase = true)
-    val sameAddress = address?.trim().orEmpty().equals(other.address?.trim().orEmpty(), ignoreCase = true)
+    val sameAddress = streetAddress?.trim().orEmpty().equals(other.streetAddress?.trim().orEmpty(), ignoreCase = true)
     return sameName && sameAddress
 }

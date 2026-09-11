@@ -213,7 +213,6 @@ fun SettingsScreen(
                         SettingsRow(
                             icon = Icons.Filled.Share,
                             label = stringResource(R.string.settings_action_export_data),
-                            supportingText = stringResource(R.string.settings_data_description),
                             showChevron = false,
                             onClick = { viewModel.onExportData(context) }
                         )
@@ -273,15 +272,13 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
  * The icon-plus-label-plus-trailing-chevron row every settings section now
  * shares (F-78) — "export data" used to be a lost `OutlinedButton`; this is
  * what makes it read as an actual settings row instead. [showChevron] is
- * false for a row that isn't navigation (an in-place destructive action, or
- * plain informational text), and [onClick] is null for the latter case.
+ * false for a row that isn't navigation (an in-place action instead).
  */
 @Composable
 private fun SettingsRow(
     icon: ImageVector,
     label: String,
     modifier: Modifier = Modifier,
-    supportingText: String? = null,
     showChevron: Boolean = true,
     tint: Color = MaterialTheme.colorScheme.onSurface,
     onClick: (() -> Unit)?
@@ -307,14 +304,6 @@ private fun SettingsRow(
         }
     ) {
         Text(text = label, style = MaterialTheme.typography.bodyLarge, color = tint)
-        supportingText?.let {
-            Text(
-                text = it,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-        }
     }
 }
 

@@ -66,7 +66,7 @@ class RestaurantImportViewModelTest {
     private fun export(name: String, address: String? = "Rambla 1") = RestaurantExport(
         name = name,
         cuisineType = "mediterranean",
-        address = address,
+        streetAddress = address,
         rating = 3,
         priceRange = 2
     )
@@ -112,7 +112,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `a candidate matching an existing restaurant by name and address defaults to skip`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 5, name = "Cal Ferran", cuisineType = "mediterranean", address = "Rambla 1", rating = 4, priceRange = 2)
+            Restaurant(id = 5, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", rating = 4, priceRange = 2)
         )
         val uri = writeContentFile("duplicate.json", jsonOf(export("cal ferran", address = "rambla 1")))
         val viewModel = RestaurantImportViewModel(context, repository, uri)
@@ -126,7 +126,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `a candidate with no matching existing restaurant defaults to add`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 5, name = "Cal Ferran", cuisineType = "mediterranean", address = "Rambla 1", rating = 4, priceRange = 2)
+            Restaurant(id = 5, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", rating = 4, priceRange = 2)
         )
         val uri = writeContentFile("no-duplicate.json", jsonOf(export("Bar Nil", address = "Carrer Nou 4")))
         val viewModel = RestaurantImportViewModel(context, repository, uri)
@@ -199,7 +199,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `confirming a skip decision inserts and updates nothing`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 5, name = "Cal Ferran", cuisineType = "mediterranean", address = "Rambla 1", rating = 4, priceRange = 2)
+            Restaurant(id = 5, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", rating = 4, priceRange = 2)
         )
         val uri = writeContentFile("skip.json", jsonOf(export("Cal Ferran")))
         val viewModel = RestaurantImportViewModel(context, repository, uri)
@@ -214,7 +214,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `confirming a replace decision updates the existing row's id`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 5, name = "Cal Ferran", cuisineType = "mediterranean", address = "Rambla 1", rating = 2, priceRange = 1)
+            Restaurant(id = 5, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", rating = 2, priceRange = 1)
         )
         val uri = writeContentFile("replace.json", jsonOf(export("Cal Ferran", address = "Rambla 1").copy(rating = 5)))
         val viewModel = RestaurantImportViewModel(context, repository, uri)
@@ -240,10 +240,22 @@ internal class FakeRestaurantRepository : RestaurantRepository {
         minRating: Int?,
         cuisineType: String?,
         sort: RestaurantSort,
-        visited: Boolean?
+        visited: Boolean?,
+        city: String?,
+        region: String?,
+        country: String?
     ): Flow<List<Restaurant>> = restaurants
 
     override fun observeCuisineTypes(): Flow<List<String>> =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override fun observeCities(): Flow<List<String>> =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override fun observeRegions(): Flow<List<String>> =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override fun observeCountries(): Flow<List<String>> =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
     override fun observeById(id: Long): Flow<Restaurant?> =

@@ -174,6 +174,68 @@ class RestaurantListViewModelTest {
         assertFalse(state.hasActiveFilter)
     }
 
+    // --- location filters (poble/regió/país) --------------------------------
+
+    @Test
+    fun `a city lands in the state and in the query`() = runTest {
+        observeState()
+
+        viewModel.onCityChange("Girona")
+
+        assertEquals("Girona", viewModel.uiState.value.city)
+        assertEquals("Girona", repository.lastCity)
+        assertTrue(viewModel.uiState.value.hasActiveFilter)
+    }
+
+    @Test
+    fun `a region lands in the state and in the query`() = runTest {
+        observeState()
+
+        viewModel.onRegionChange("Girona (província)")
+
+        assertEquals("Girona (província)", viewModel.uiState.value.region)
+        assertEquals("Girona (província)", repository.lastRegion)
+    }
+
+    @Test
+    fun `a country lands in the state and in the query`() = runTest {
+        observeState()
+
+        viewModel.onCountryChange("Spain")
+
+        assertEquals("Spain", viewModel.uiState.value.country)
+        assertEquals("Spain", repository.lastCountry)
+    }
+
+    @Test
+    fun `available cities, regions and countries reach the state`() = runTest {
+        observeState()
+
+        repository.cities.value = listOf("Girona", "Barcelona")
+        repository.regions.value = listOf("Girona (província)")
+        repository.countries.value = listOf("Spain", "France")
+
+        assertEquals(listOf("Girona", "Barcelona"), viewModel.uiState.value.availableCities)
+        assertEquals(listOf("Girona (província)"), viewModel.uiState.value.availableRegions)
+        assertEquals(listOf("Spain", "France"), viewModel.uiState.value.availableCountries)
+    }
+
+    @Test
+    fun `clearFilters also resets city, region and country`() = runTest {
+        observeState()
+        viewModel.onCityChange("Girona")
+        viewModel.onRegionChange("Girona (província)")
+        viewModel.onCountryChange("Spain")
+
+        viewModel.clearFilters()
+
+        val state = viewModel.uiState.value
+        assertNull(state.city)
+        assertNull(state.region)
+        assertNull(state.country)
+        assertFalse(state.hasActiveFilter)
+    }
+
     // --- visit status filter -------------------------------------------------
 
     @Test
@@ -324,7 +386,7 @@ class RestaurantListViewModelTest {
         id = id,
         name = name,
         cuisineType = "mediterranean",
-        address = null,
+        streetAddress = null,
         rating = 3,
         priceRange = 2
     )
@@ -372,6 +434,9 @@ private class FakeRestaurantRepository : RestaurantRepository {
 
     val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
     val cuisines = MutableStateFlow<List<String>>(emptyList())
+    val cities = MutableStateFlow<List<String>>(emptyList())
+    val regions = MutableStateFlow<List<String>>(emptyList())
+    val countries = MutableStateFlow<List<String>>(emptyList())
     val tagsByRestaurantId = MutableStateFlow<Map<Long, List<String>>>(emptyMap())
 
     var lastQuery: String? = null
@@ -384,6 +449,12 @@ private class FakeRestaurantRepository : RestaurantRepository {
         private set
     var lastVisited: Boolean? = null
         private set
+    var lastCity: String? = null
+        private set
+    var lastRegion: String? = null
+        private set
+    var lastCountry: String? = null
+        private set
     var lastDeletedId: Long? = null
         private set
 
@@ -392,17 +463,26 @@ private class FakeRestaurantRepository : RestaurantRepository {
         minRating: Int?,
         cuisineType: String?,
         sort: RestaurantSort,
-        visited: Boolean?
+        visited: Boolean?,
+        city: String?,
+        region: String?,
+        country: String?
     ): Flow<List<Restaurant>> {
         lastQuery = query
         lastMinRating = minRating
         lastCuisine = cuisineType
         lastSort = sort
         lastVisited = visited
+        lastCity = city
+        lastRegion = region
+        lastCountry = country
         return restaurants
     }
 
     override fun observeCuisineTypes(): Flow<List<String>> = cuisines
+    override fun observeCities(): Flow<List<String>> = cities
+    override fun observeRegions(): Flow<List<String>> = regions
+    override fun observeCountries(): Flow<List<String>> = countries
 
     override fun observeById(id: Long): Flow<Restaurant?> =
         restaurants.map { list -> list.firstOrNull { it.id == id } }

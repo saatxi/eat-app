@@ -33,6 +33,7 @@ import com.saatxi.eatapp.MainActivity
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.Cuisine
 import com.saatxi.eatapp.data.local.Restaurant
+import com.saatxi.eatapp.data.local.formattedAddress
 
 /** Read by [MainActivity] to jump straight to a restaurant's detail screen when the widget is tapped. */
 const val EXTRA_RESTAURANT_ID = "com.saatxi.eatapp.widget.EXTRA_RESTAURANT_ID"
@@ -118,7 +119,7 @@ private fun WidgetContent(context: Context, restaurant: Restaurant?) {
                     maxLines = 1,
                     style = TextStyle(color = WidgetMuted, fontSize = 13.sp)
                 )
-                restaurant.address?.let { address ->
+                restaurant.formattedAddress()?.let { address ->
                     Text(
                         text = address,
                         maxLines = 1,

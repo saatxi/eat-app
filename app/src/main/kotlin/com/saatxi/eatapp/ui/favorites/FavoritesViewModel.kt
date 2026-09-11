@@ -5,8 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
 import com.saatxi.eatapp.data.repository.RestaurantRepository
+import com.saatxi.eatapp.ui.list.AvailableFilterValues
 import com.saatxi.eatapp.ui.list.RestaurantFilters
 import com.saatxi.eatapp.ui.list.debounced
+import com.saatxi.eatapp.ui.list.observeAvailableFilterValues
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.model.toUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,7 +34,13 @@ data class FavoritesUiState(
     val cuisineType: String? = null,
     val visited: Boolean? = null,
     val sort: RestaurantSort = RestaurantSort.NAME,
+    val city: String? = null,
+    val region: String? = null,
+    val country: String? = null,
     val availableCuisines: List<String> = emptyList(),
+    val availableCities: List<String> = emptyList(),
+    val availableRegions: List<String> = emptyList(),
+    val availableCountries: List<String> = emptyList(),
     val restaurants: List<RestaurantUiModel> = emptyList(),
     // Same purpose as RestaurantListUiState.isInitialLoad: true until the
     // repository has emitted for the first time, so the empty state doesn't
@@ -40,7 +48,8 @@ data class FavoritesUiState(
     val isInitialLoad: Boolean = true
 ) {
     val hasActiveFilter: Boolean
-        get() = searchQuery.isNotBlank() || minRating != null || cuisineType != null || visited != null
+        get() = searchQuery.isNotBlank() || minRating != null || cuisineType != null || visited != null ||
+            city != null || region != null || country != null
 }
 
 /**
@@ -64,7 +73,7 @@ class FavoritesViewModel(
     // outer combine() within kotlinx.coroutines' typed 5-flow overload.
     private val favoriteRestaurants: Flow<List<RestaurantUiModel>> = combine(
         queryFilters.flatMapLatest {
-            repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort, it.visited)
+            repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort, it.visited, it.city, it.region, it.country)
         },
         preferencesRepository.preferences.map { it.favoriteIds },
         repository.observeTagsByRestaurantId()
@@ -74,18 +83,26 @@ class FavoritesViewModel(
             .map { it.toUiModel(isFavorite = true, tags = tagsByRestaurantId[it.id].orEmpty()) }
     }
 
+    private val availableFilterValues: Flow<AvailableFilterValues> = repository.observeAvailableFilterValues()
+
     val uiState: StateFlow<FavoritesUiState> = combine(
         filters,
         favoriteRestaurants,
-        repository.observeCuisineTypes()
-    ) { activeFilters, restaurants, availableCuisines ->
+        availableFilterValues
+    ) { activeFilters, restaurants, available ->
         FavoritesUiState(
             searchQuery = activeFilters.query,
             minRating = activeFilters.minRating,
             cuisineType = activeFilters.cuisineType,
             visited = activeFilters.visited,
             sort = activeFilters.sort,
-            availableCuisines = availableCuisines,
+            city = activeFilters.city,
+            region = activeFilters.region,
+            country = activeFilters.country,
+            availableCuisines = available.cuisines,
+            availableCities = available.cities,
+            availableRegions = available.regions,
+            availableCountries = available.countries,
             restaurants = restaurants,
             isInitialLoad = false
         )
@@ -113,6 +130,18 @@ class FavoritesViewModel(
 
     fun onSortChange(sort: RestaurantSort) {
         filters.update { it.copy(sort = sort) }
+    }
+
+    fun onCityChange(city: String?) {
+        filters.update { it.copy(city = city) }
+    }
+
+    fun onRegionChange(region: String?) {
+        filters.update { it.copy(region = region) }
+    }
+
+    fun onCountryChange(country: String?) {
+        filters.update { it.copy(country = country) }
     }
 
     fun onFavoriteToggle(restaurantId: Long) {

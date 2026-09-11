@@ -260,7 +260,7 @@ private fun RestaurantDetailContent(
                                 topPadding = 10.dp
                             )
                         }
-                        current.address?.let { address ->
+                        current.formattedAddress?.let { address ->
                             InfoRow(
                                 icon = Icons.Outlined.LocationOn,
                                 text = address,
@@ -440,14 +440,17 @@ private fun LinksCard(
 private fun RestaurantUiModel.toExport() = RestaurantExport(
     name = name,
     cuisineType = cuisineKey,
-    address = address,
+    streetAddress = streetAddress,
     rating = rating,
     priceRange = priceLabel.length,
     visited = visited,
     website = website,
     instagram = instagram,
     notes = notes,
-    tags = tagsLabel.split(", ").filter { it.isNotBlank() }
+    tags = tagsLabel.split(", ").filter { it.isNotBlank() },
+    city = city,
+    region = region,
+    country = country
 )
 
 private fun Context.openUri(uri: String) {
@@ -595,7 +598,10 @@ private val previewRestaurant = RestaurantUiModel(
     id = 1,
     name = "Cal Ferran",
     cuisineKey = "mediterranean",
-    address = "Plaça Santa Anna, Mataró",
+    streetAddress = "Plaça Santa Anna",
+    city = "Mataró",
+    region = null,
+    country = null,
     rating = 4,
     priceLabel = "$$",
     visited = true,

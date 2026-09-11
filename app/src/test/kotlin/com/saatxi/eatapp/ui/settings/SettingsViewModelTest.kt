@@ -108,7 +108,7 @@ class SettingsViewModelTest {
     @Test
     fun `deleting all data clears every restaurant`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = null, rating = 4, priceRange = 2)
+            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, rating = 4, priceRange = 2)
         )
 
         viewModel.onDeleteAllData()
@@ -158,10 +158,16 @@ private class FakeRestaurantRepository : RestaurantRepository {
         minRating: Int?,
         cuisineType: String?,
         sort: RestaurantSort,
-        visited: Boolean?
+        visited: Boolean?,
+        city: String?,
+        region: String?,
+        country: String?
     ): Flow<List<Restaurant>> = restaurants
 
     override fun observeCuisineTypes(): Flow<List<String>> = MutableStateFlow(emptyList())
+    override fun observeCities(): Flow<List<String>> = MutableStateFlow(emptyList())
+    override fun observeRegions(): Flow<List<String>> = MutableStateFlow(emptyList())
+    override fun observeCountries(): Flow<List<String>> = MutableStateFlow(emptyList())
 
     override fun observeById(id: Long): Flow<Restaurant?> =
         restaurants.map { list -> list.firstOrNull { it.id == id } }

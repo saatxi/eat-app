@@ -57,26 +57,48 @@ class SearchNormalizerTest {
         val text = buildSearchText(
             name = "Cal Ferran",
             cuisineType = "mediterranean",
-            address = "Plaça Santa Anna, Mataró"
+            streetAddress = "Plaça Santa Anna",
+            city = "Mataró",
+            region = null,
+            country = null
         )
         assertTrue(text.contains("cal ferran"))
         assertTrue(text.contains("mediterranean"))
         assertTrue(text.contains("placa santa anna"))
+        assertTrue(text.contains("mataro"))
     }
 
     @Test
-    fun `buildSearchText tolerates a null address`() {
+    fun `buildSearchText covers city, region and country`() {
+        val text = buildSearchText(
+            name = "Sakura",
+            cuisineType = "japanese",
+            streetAddress = null,
+            city = "Girona",
+            region = "Girona (província)",
+            country = "Spain"
+        )
+        assertTrue(text.contains("girona"))
+        assertTrue(text.contains(normalizeForSearch("província")))
+        assertTrue(text.contains("spain"))
+    }
+
+    @Test
+    fun `buildSearchText tolerates every address component being null`() {
         val text = buildSearchText(
             name = "Nil",
             cuisineType = "cafe",
-            address = null
+            streetAddress = null,
+            city = null,
+            region = null,
+            country = null
         )
         assertEquals("nil cafe", text)
     }
 
     @Test
     fun `buildSearchText output is itself normalized`() {
-        val text = buildSearchText("Café Niló", "cafe", "Rambla")
+        val text = buildSearchText("Café Niló", "cafe", "Rambla", "Mataró", null, null)
         assertEquals(text, normalizeForSearch(text))
     }
 

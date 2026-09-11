@@ -27,6 +27,9 @@ interface RestaurantDao {
           AND (:minRating IS NULL OR rating >= :minRating)
           AND (:cuisineType IS NULL OR cuisineType = :cuisineType)
           AND (:visited IS NULL OR visited = :visited)
+          AND (:city IS NULL OR city = :city)
+          AND (:region IS NULL OR region = :region)
+          AND (:country IS NULL OR country = :country)
         ORDER BY
           CASE WHEN :sortByRating THEN rating ELSE 0 END DESC,
           name COLLATE NOCASE ASC
@@ -37,7 +40,10 @@ interface RestaurantDao {
         minRating: Int?,
         cuisineType: String?,
         sortByRating: Boolean,
-        visited: Boolean? = null
+        visited: Boolean? = null,
+        city: String? = null,
+        region: String? = null,
+        country: String? = null
     ): Flow<List<Restaurant>>
 
     /**
@@ -46,6 +52,18 @@ interface RestaurantDao {
      */
     @Query("SELECT DISTINCT cuisineType FROM restaurants")
     fun observeCuisineTypes(): Flow<List<String>>
+
+    /** Distinct, non-null [Restaurant.city] values actually present, for the location filter panel. */
+    @Query("SELECT DISTINCT city FROM restaurants WHERE city IS NOT NULL ORDER BY city COLLATE NOCASE ASC")
+    fun observeCities(): Flow<List<String>>
+
+    /** Distinct, non-null [Restaurant.region] values actually present, for the location filter panel. */
+    @Query("SELECT DISTINCT region FROM restaurants WHERE region IS NOT NULL ORDER BY region COLLATE NOCASE ASC")
+    fun observeRegions(): Flow<List<String>>
+
+    /** Distinct, non-null [Restaurant.country] values actually present, for the location filter panel. */
+    @Query("SELECT DISTINCT country FROM restaurants WHERE country IS NOT NULL ORDER BY country COLLATE NOCASE ASC")
+    fun observeCountries(): Flow<List<String>>
 
     @Query("SELECT * FROM restaurants WHERE id = :id")
     fun observeById(id: Long): Flow<Restaurant?>

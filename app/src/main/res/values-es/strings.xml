@@ -9,10 +9,16 @@
     <string name="list_filter_min_rating">Puntuación mínima</string>
     <string name="list_filter_cuisine">Cocina</string>
     <string name="list_filter_visit_status">Estado</string>
+    <string name="list_filter_location">Ubicación</string>
+    <string name="list_filter_city">Ciudad</string>
+    <string name="list_filter_region">Región</string>
+    <string name="list_filter_country">País</string>
+    <string name="list_filter_all">Todos</string>
+    <string name="list_filter_location_active">Ubicación · %1$d</string>
     <string name="list_empty_title">Aún no hay restaurantes</string>
     <string name="list_empty_body">Añade tu primer restaurante para empezar.</string>
     <string name="list_empty_no_results_title">Sin resultados</string>
-    <string name="list_empty_no_results_body">Prueba otra búsqueda o filtro de puntuación.</string>
+    <string name="list_empty_no_results_body">Prueba otra búsqueda o filtro.</string>
     <string name="list_action_add_restaurant">Añadir restaurante</string>
     <string name="list_action_share_all">Compartir todos los restaurantes</string>
     <string name="list_action_clear_filters">Borrar filtros</string>
@@ -39,6 +45,7 @@
     <string name="action_retry">Reintentar</string>
     <string name="action_cancel">Cancelar</string>
     <string name="action_delete">Eliminar</string>
+    <string name="action_done">Hecho</string>
 
     <string name="detail_not_found_title">Restaurante no encontrado</string>
     <string name="detail_not_found_body">Este restaurante se ha eliminado.</string>
@@ -99,8 +106,7 @@
     <string name="palette_indigo">Índigo</string>
     <string name="settings_section_data">Datos</string>
     <string name="settings_action_view_statistics">Ver estadísticas</string>
-    <string name="settings_data_description">Exporta todos tus restaurantes como un archivo JSON que puedes guardar como copia de seguridad o compartir con un amigo.</string>
-    <string name="settings_action_export_data">Exportar / compartir mis datos</string>
+    <string name="settings_action_export_data">Exportar mis datos</string>
     <string name="settings_action_delete_all_data">Eliminar todos los restaurantes</string>
     <string name="settings_delete_all_confirm_title">¿Eliminar todos los restaurantes?</string>
     <string name="settings_delete_all_confirm_body">Esto elimina todos los restaurantes de la aplicación. Esta acción no se puede deshacer.</string>
@@ -124,7 +130,10 @@
     <string name="edit_field_name">Nombre</string>
     <string name="edit_field_cuisine">Cocina</string>
     <string name="edit_cuisine_placeholder">Selecciona una cocina</string>
-    <string name="edit_field_address">Dirección (opcional)</string>
+    <string name="edit_field_address">Dirección (calle, opcional)</string>
+    <string name="edit_field_city">Ciudad (opcional)</string>
+    <string name="edit_field_region">Región (opcional)</string>
+    <string name="edit_field_country">País (opcional)</string>
     <string name="edit_field_notes">Notas (opcional)</string>
     <string name="edit_field_visit_status">Estado</string>
     <string name="edit_field_rating">Puntuación</string>

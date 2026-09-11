@@ -74,6 +74,7 @@ import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.Cuisine
 import com.saatxi.eatapp.ui.AppViewModelProvider
+import com.saatxi.eatapp.ui.common.AutocompleteTextField
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
@@ -90,14 +91,23 @@ fun RestaurantEditScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val tagSuggestions by viewModel.tagSuggestions.collectAsState()
+    val citySuggestions by viewModel.citySuggestions.collectAsState()
+    val regionSuggestions by viewModel.regionSuggestions.collectAsState()
+    val countrySuggestions by viewModel.countrySuggestions.collectAsState()
     RestaurantEditContent(
         uiState = uiState,
         isEditingExisting = viewModel.isEditingExisting,
         tagSuggestions = tagSuggestions,
+        citySuggestions = citySuggestions,
+        regionSuggestions = regionSuggestions,
+        countrySuggestions = countrySuggestions,
         onBack = onBack,
         onNameChange = viewModel::onNameChange,
         onCuisineChange = viewModel::onCuisineChange,
-        onAddressChange = viewModel::onAddressChange,
+        onStreetAddressChange = viewModel::onStreetAddressChange,
+        onCityChange = viewModel::onCityChange,
+        onRegionChange = viewModel::onRegionChange,
+        onCountryChange = viewModel::onCountryChange,
         onNotesChange = viewModel::onNotesChange,
         onVisitedChange = viewModel::onVisitedChange,
         onRatingChange = viewModel::onRatingChange,
@@ -118,10 +128,16 @@ private fun RestaurantEditContent(
     uiState: RestaurantEditUiState,
     isEditingExisting: Boolean,
     tagSuggestions: List<String>,
+    citySuggestions: List<String>,
+    regionSuggestions: List<String>,
+    countrySuggestions: List<String>,
     onBack: () -> Unit,
     onNameChange: (String) -> Unit,
     onCuisineChange: (String) -> Unit,
-    onAddressChange: (String) -> Unit,
+    onStreetAddressChange: (String) -> Unit,
+    onCityChange: (String) -> Unit,
+    onRegionChange: (String) -> Unit,
+    onCountryChange: (String) -> Unit,
     onNotesChange: (String) -> Unit,
     onVisitedChange: (Boolean) -> Unit,
     onRatingChange: (Int) -> Unit,
@@ -199,12 +215,33 @@ private fun RestaurantEditContent(
                 )
 
                 OutlinedTextField(
-                    value = uiState.address,
-                    onValueChange = onAddressChange,
+                    value = uiState.streetAddress,
+                    onValueChange = onStreetAddressChange,
                     label = { Text(stringResource(R.string.edit_field_address)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                     modifier = Modifier.fillMaxWidth()
+                )
+
+                AutocompleteTextField(
+                    value = uiState.city,
+                    onValueChange = onCityChange,
+                    suggestions = citySuggestions,
+                    label = { Text(stringResource(R.string.edit_field_city)) }
+                )
+
+                AutocompleteTextField(
+                    value = uiState.region,
+                    onValueChange = onRegionChange,
+                    suggestions = regionSuggestions,
+                    label = { Text(stringResource(R.string.edit_field_region)) }
+                )
+
+                AutocompleteTextField(
+                    value = uiState.country,
+                    onValueChange = onCountryChange,
+                    suggestions = countrySuggestions,
+                    label = { Text(stringResource(R.string.edit_field_country)) }
                 )
 
                 OutlinedTextField(
@@ -567,10 +604,16 @@ private fun RestaurantEditScreenPreview() {
             ),
             isEditingExisting = false,
             tagSuggestions = listOf("Terraza", "Para grupos", "Brunch"),
+            citySuggestions = listOf("Girona", "Barcelona"),
+            regionSuggestions = listOf("Girona (província)"),
+            countrySuggestions = listOf("Spain", "France"),
             onBack = {},
             onNameChange = {},
             onCuisineChange = {},
-            onAddressChange = {},
+            onStreetAddressChange = {},
+            onCityChange = {},
+            onRegionChange = {},
+            onCountryChange = {},
             onNotesChange = {},
             onVisitedChange = {},
             onRatingChange = {},

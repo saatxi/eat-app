@@ -55,15 +55,21 @@ class RestaurantDaoTest {
         address: String? = "Rambla 1",
         rating: Int = 3,
         priceRange: Int = 2,
-        visited: Boolean = true
+        visited: Boolean = true,
+        city: String? = null,
+        region: String? = null,
+        country: String? = null
     ) = Restaurant(
         id = id,
         name = name,
         cuisineType = cuisineType,
-        address = address,
+        streetAddress = address,
         rating = rating,
         priceRange = priceRange,
-        visited = visited
+        visited = visited,
+        city = city,
+        region = region,
+        country = country
     )
 
     private suspend fun seed(vararg restaurants: Restaurant) {
@@ -269,6 +275,79 @@ class RestaurantDaoTest {
 
         val names = repository.observeFiltered(null, null, "  ").first().map { it.name }
         assertEquals(listOf("Sakura"), names)
+    }
+
+    // --- location filters (poble/regió/país) --------------------------------
+
+    @Test
+    fun `filters by city on an exact match`() = runTest {
+        seed(
+            restaurant(1, "Sakura", city = "Girona"),
+            restaurant(2, "Alga", city = "Barcelona")
+        )
+
+        val names = repository.observeFiltered(null, null, null, city = "Girona").first().map { it.name }
+        assertEquals(listOf("Sakura"), names)
+    }
+
+    @Test
+    fun `filters by region on an exact match`() = runTest {
+        seed(
+            restaurant(1, "Sakura", region = "Girona (província)"),
+            restaurant(2, "Alga", region = "Barcelonès")
+        )
+
+        val names = repository.observeFiltered(null, null, null, region = "Girona (província)").first().map { it.name }
+        assertEquals(listOf("Sakura"), names)
+    }
+
+    @Test
+    fun `filters by country on an exact match`() = runTest {
+        seed(
+            restaurant(1, "Sakura", country = "Spain"),
+            restaurant(2, "Alga", country = "France")
+        )
+
+        val names = repository.observeFiltered(null, null, null, country = "Spain").first().map { it.name }
+        assertEquals(listOf("Sakura"), names)
+    }
+
+    @Test
+    fun `combines location filters with the existing ones`() = runTest {
+        seed(
+            restaurant(1, "Sakura", cuisineType = "japanese", city = "Girona", country = "Spain"),
+            restaurant(2, "Kioto", cuisineType = "japanese", city = "Barcelona", country = "Spain"),
+            restaurant(3, "Alga", cuisineType = "seafood", city = "Girona", country = "Spain")
+        )
+
+        val names = repository.observeFiltered(null, null, "japanese", city = "Girona").first().map { it.name }
+        assertEquals(listOf("Sakura"), names)
+    }
+
+    @Test
+    fun `lists each city present in the data once, sorted, excluding rows with none`() = runTest {
+        seed(
+            restaurant(1, "Sakura", city = "Girona"),
+            restaurant(2, "Kioto", city = "Girona"),
+            restaurant(3, "Alga", city = "Barcelona"),
+            restaurant(4, "No City", city = null)
+        )
+
+        assertEquals(listOf("Barcelona", "Girona"), repository.observeCities().first())
+    }
+
+    @Test
+    fun `lists each region present in the data once`() = runTest {
+        seed(restaurant(1, "Sakura", region = "Girona (província)"), restaurant(2, "Alga", region = "Barcelonès"))
+
+        assertEquals(setOf("Barcelonès", "Girona (província)"), repository.observeRegions().first().toSet())
+    }
+
+    @Test
+    fun `lists each country present in the data once`() = runTest {
+        seed(restaurant(1, "Sakura", country = "Spain"), restaurant(2, "Alga", country = "France"))
+
+        assertEquals(setOf("France", "Spain"), repository.observeCountries().first().toSet())
     }
 
     @Test

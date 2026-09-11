@@ -35,7 +35,7 @@ class BackupWriterTest {
     private fun export(name: String) = RestaurantExport(
         name = name,
         cuisineType = "mediterranean",
-        address = null,
+        streetAddress = null,
         rating = 3,
         priceRange = 2
     )

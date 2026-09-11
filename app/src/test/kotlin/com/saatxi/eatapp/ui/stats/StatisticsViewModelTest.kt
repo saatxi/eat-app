@@ -106,11 +106,23 @@ private class FakeRestaurantRepository : RestaurantRepository {
         minRating: Int?,
         cuisineType: String?,
         sort: RestaurantSort,
-        visited: Boolean?
+        visited: Boolean?,
+        city: String?,
+        region: String?,
+        country: String?
     ): Flow<List<Restaurant>> =
         throw NotImplementedError("Not used by StatisticsViewModel")
 
     override fun observeCuisineTypes(): Flow<List<String>> =
+        throw NotImplementedError("Not used by StatisticsViewModel")
+
+    override fun observeCities(): Flow<List<String>> =
+        throw NotImplementedError("Not used by StatisticsViewModel")
+
+    override fun observeRegions(): Flow<List<String>> =
+        throw NotImplementedError("Not used by StatisticsViewModel")
+
+    override fun observeCountries(): Flow<List<String>> =
         throw NotImplementedError("Not used by StatisticsViewModel")
 
     override fun observeById(id: Long): Flow<Restaurant?> =

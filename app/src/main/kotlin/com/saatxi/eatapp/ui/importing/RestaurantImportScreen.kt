@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.Restaurant
+import com.saatxi.eatapp.data.local.formattedAddress
 import com.saatxi.eatapp.data.share.ImportFailureReason
 import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.TagPillRow
@@ -194,7 +195,7 @@ private fun ImportCandidateRow(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    candidate.restaurant.address?.let { address ->
+                    candidate.restaurant.formattedAddress()?.let { address ->
                         Text(
                             text = address,
                             style = MaterialTheme.typography.bodySmall,
@@ -251,7 +252,8 @@ private val previewCandidate = ImportCandidate(
         id = 0,
         name = "Cal Ferran",
         cuisineType = "mediterranean",
-        address = "Plaça Santa Anna, Mataró",
+        streetAddress = "Plaça Santa Anna",
+        city = "Mataró",
         rating = 4,
         priceRange = 2
     ),

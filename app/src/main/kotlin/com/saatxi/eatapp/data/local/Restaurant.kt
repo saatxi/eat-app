@@ -1,5 +1,6 @@
 package com.saatxi.eatapp.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -13,7 +14,13 @@ data class Restaurant(
     val id: Long = 0,
     val name: String,
     val cuisineType: String,
-    val address: String?,
+    /**
+     * Street line only — town/region/country live in [city]/[region]/[country]. The physical
+     * column stays named `address` (via [ColumnInfo]) so adding those three columns could stay a
+     * plain `ADD COLUMN` migration rather than a column rename.
+     */
+    @ColumnInfo(name = "address")
+    val streetAddress: String? = null,
     val rating: Int,
     val priceRange: Int,
     /**
@@ -48,10 +55,16 @@ data class Restaurant(
      * to search is a separate decision the F-56 entry didn't ask for.
      */
     val notes: String? = null,
+    /** Town/city ("poble"). Free text with autocomplete over existing values — no closed vocabulary, unlike [cuisineType]. */
+    val city: String? = null,
+    /** State/province ("regió"). Same free-text-with-autocomplete treatment as [city]. */
+    val region: String? = null,
+    /** Country ("país"). Same free-text-with-autocomplete treatment as [city]. */
+    val country: String? = null,
     /**
      * Accent-stripped, lowercased concatenation of every searchable field.
      * Derived by default so it can never drift from the fields it mirrors; see
      * [buildSearchText].
      */
-    val searchText: String = buildSearchText(name, cuisineType, address)
+    val searchText: String = buildSearchText(name, cuisineType, streetAddress, city, region, country)
 )

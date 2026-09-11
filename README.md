@@ -1,13 +1,14 @@
 # EatApp
 
 An Android app to browse restaurants you've visited — name, cuisine type,
-address, rating, price range, an optional photo and your own notes.
+address (street, town, region and country), rating, price range, an optional
+photo and your own notes.
 
 ## Features
 
-- List restaurants, searchable across name, cuisine and address
-  (accent- and case-insensitive), and filterable by minimum rating and
-  cuisine type
+- List restaurants, searchable across name, cuisine and every address field
+  (accent- and case-insensitive), and filterable by minimum rating, cuisine
+  type, and town/region/country
 - Sort the list by name or by rating (highest first), from the app bar
 - Add, edit and delete your own restaurants from the phone, including a
   photo, a free-text note, and links to the restaurant's website and
@@ -29,8 +30,9 @@ The app installs with an empty list — there is no bundled or downloaded
 dataset. Every restaurant is entered by hand, from the phone:
 
 - Tap the **+** button on the list screen to add a restaurant: name, cuisine,
-  address, rating, price range, an optional photo, a free-text note ("ask
-  for the burrata", "go on a weekday"), and the two optional links below.
+  street address, town, region and country (all optional), rating, price
+  range, an optional photo, a free-text note ("ask for the burrata", "go on
+  a weekday"), and the two optional links below.
 - The photo comes from the system Photo Picker — no storage permission
   needed. The app copies it into its own private storage and shows it in
   place of the cuisine badge on the list row, the roulette result, and a
@@ -108,7 +110,8 @@ someone sent you (from WhatsApp, Files, or wherever it landed) offers "Open
 with EatApp", which shows a review screen before anything is saved. Each
 restaurant in the file is shown individually, and:
 
-- If it looks like something already in your list (same name and address),
+- If it looks like something already in your list (same name and street
+  address),
   it's flagged and defaults to **Skip**; you can still choose **Add anyway**
   or **Replace** the existing one.
 - Otherwise it defaults to **Add**.
@@ -494,7 +497,8 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
    the release artifact on a device and smoke-test it — open the list, search,
    filter, add/edit/delete a restaurant, open its detail screen, and share a
    restaurant to another app and reopen the resulting file with "Open with
-   EatApp" — before handing it to anyone. Archive `app/build/outputs/mapping/release/mapping.txt` and
+   EatApp" — before handing it to anyone. Archive
+   `app/build/outputs/mapping/release/mapping.txt` and
    `app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip`
    alongside the artifact: without them, crash reports from that build are
    unreadable, and the next build overwrites both files (see **App

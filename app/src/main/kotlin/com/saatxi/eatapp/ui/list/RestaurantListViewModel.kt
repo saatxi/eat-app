@@ -29,7 +29,13 @@ data class RestaurantListUiState(
     val cuisineType: String? = null,
     val visited: Boolean? = null,
     val sort: RestaurantSort = RestaurantSort.NAME,
+    val city: String? = null,
+    val region: String? = null,
+    val country: String? = null,
     val availableCuisines: List<String> = emptyList(),
+    val availableCities: List<String> = emptyList(),
+    val availableRegions: List<String> = emptyList(),
+    val availableCountries: List<String> = emptyList(),
     val restaurants: List<RestaurantUiModel> = emptyList(),
     // True until the database has emitted for the first time. Without it this
     // initial (empty) state is indistinguishable from a genuinely empty
@@ -38,7 +44,8 @@ data class RestaurantListUiState(
     val isInitialLoad: Boolean = true
 ) {
     val hasActiveFilter: Boolean
-        get() = searchQuery.isNotBlank() || minRating != null || cuisineType != null || visited != null
+        get() = searchQuery.isNotBlank() || minRating != null || cuisineType != null || visited != null ||
+            city != null || region != null || country != null
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -55,7 +62,7 @@ class RestaurantListViewModel(
     // vararg one.
     private val restaurantsWithFavorites: Flow<List<RestaurantUiModel>> = combine(
         queryFilters.flatMapLatest {
-            repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort, it.visited)
+            repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort, it.visited, it.city, it.region, it.country)
         },
         preferencesRepository.preferences.map { it.favoriteIds },
         repository.observeTagsByRestaurantId()
@@ -63,18 +70,26 @@ class RestaurantListViewModel(
         restaurants.map { it.toUiModel(isFavorite = it.id in favoriteIds, tags = tagsByRestaurantId[it.id].orEmpty()) }
     }
 
+    private val availableFilterValues: Flow<AvailableFilterValues> = repository.observeAvailableFilterValues()
+
     val uiState: StateFlow<RestaurantListUiState> = combine(
         filters,
         restaurantsWithFavorites,
-        repository.observeCuisineTypes()
-    ) { activeFilters, restaurants, availableCuisines ->
+        availableFilterValues
+    ) { activeFilters, restaurants, available ->
         RestaurantListUiState(
             searchQuery = activeFilters.query,
             minRating = activeFilters.minRating,
             cuisineType = activeFilters.cuisineType,
             visited = activeFilters.visited,
             sort = activeFilters.sort,
-            availableCuisines = availableCuisines,
+            city = activeFilters.city,
+            region = activeFilters.region,
+            country = activeFilters.country,
+            availableCuisines = available.cuisines,
+            availableCities = available.cities,
+            availableRegions = available.regions,
+            availableCountries = available.countries,
             restaurants = restaurants,
             // Reaching this block at all means the database has emitted, since
             // combine produces nothing until every source has.
@@ -104,6 +119,18 @@ class RestaurantListViewModel(
 
     fun onSortChange(sort: RestaurantSort) {
         filters.update { it.copy(sort = sort) }
+    }
+
+    fun onCityChange(city: String?) {
+        filters.update { it.copy(city = city) }
+    }
+
+    fun onRegionChange(region: String?) {
+        filters.update { it.copy(region = region) }
+    }
+
+    fun onCountryChange(country: String?) {
+        filters.update { it.copy(country = country) }
     }
 
     fun onFavoriteToggle(restaurantId: Long) {

@@ -83,7 +83,7 @@ class RestaurantEditViewModelPhotoTest {
     @Test
     fun `a copy that fails falls back to the photo that was already there`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", address = null, rating = 3, priceRange = 1, photoPath = "/existing/photo.jpg")
+            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, rating = 3, priceRange = 1, photoPath = "/existing/photo.jpg")
         )
         val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = 1L)
         observeState(viewModel)

@@ -131,7 +131,7 @@ class RestaurantDetailViewModelTest {
         id = id,
         name = "Cal Ferran",
         cuisineType = "mediterranean",
-        address = null,
+        streetAddress = null,
         rating = 4,
         priceRange = 2
     )
@@ -147,10 +147,19 @@ private class FakeRestaurantRepository : RestaurantRepository {
         minRating: Int?,
         cuisineType: String?,
         sort: RestaurantSort,
-        visited: Boolean?
+        visited: Boolean?,
+        city: String?,
+        region: String?,
+        country: String?
     ): Flow<List<Restaurant>> = restaurants
 
     override fun observeCuisineTypes(): Flow<List<String>> = restaurants.map { list -> list.map { it.cuisineType } }
+
+    override fun observeCities(): Flow<List<String>> = throw NotImplementedError("Not used by RestaurantDetailViewModel")
+
+    override fun observeRegions(): Flow<List<String>> = throw NotImplementedError("Not used by RestaurantDetailViewModel")
+
+    override fun observeCountries(): Flow<List<String>> = throw NotImplementedError("Not used by RestaurantDetailViewModel")
 
     override fun observeById(id: Long): Flow<Restaurant?> =
         restaurants.map { list -> list.firstOrNull { it.id == id } }

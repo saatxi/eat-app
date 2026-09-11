@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
 data class RestaurantExport(
     val name: String,
     val cuisineType: String,
-    val address: String? = null,
+    val streetAddress: String? = null,
     val rating: Int,
     val priceRange: Int,
     // Defaults true so a file written before this field existed still imports
@@ -32,7 +32,12 @@ data class RestaurantExport(
     val notes: String? = null,
     // Defaults empty for the same reason `notes` defaults null — a file
     // written before tags existed (F-59) still imports, just without any.
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    // Defaults null for the same reason: a file written before city/region/country
+    // existed still imports, just without them, via ignoreUnknownKeys + these defaults.
+    val city: String? = null,
+    val region: String? = null,
+    val country: String? = null
 )
 
 /**
@@ -56,14 +61,17 @@ data class RestaurantShareFile(
 fun Restaurant.toExport(tags: List<String> = emptyList()): RestaurantExport = RestaurantExport(
     name = name,
     cuisineType = cuisineType,
-    address = address,
+    streetAddress = streetAddress,
     rating = rating,
     priceRange = priceRange,
     visited = visited,
     website = website,
     instagram = instagram,
     notes = notes,
-    tags = tags
+    tags = tags,
+    city = city,
+    region = region,
+    country = country
 )
 
 /**
@@ -86,13 +94,16 @@ fun RestaurantExport.toRestaurantOrNull(): Restaurant? {
         id = 0,
         name = trimmedName,
         cuisineType = trimmedCuisine,
-        address = address?.trim()?.takeIf { it.isNotBlank() },
+        streetAddress = streetAddress?.trim()?.takeIf { it.isNotBlank() },
         rating = rating,
         priceRange = priceRange,
         visited = visited,
         website = website?.let(::normalizeWebsite),
         instagram = instagram?.let(::normalizeInstagramHandle),
-        notes = notes?.trim()?.takeIf { it.isNotBlank() }
+        notes = notes?.trim()?.takeIf { it.isNotBlank() },
+        city = city?.trim()?.takeIf { it.isNotBlank() },
+        region = region?.trim()?.takeIf { it.isNotBlank() },
+        country = country?.trim()?.takeIf { it.isNotBlank() }
     )
 }
 

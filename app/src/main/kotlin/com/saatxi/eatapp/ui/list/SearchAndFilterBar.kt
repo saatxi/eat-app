@@ -22,8 +22,10 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -31,12 +33,15 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SelectableChipColors
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -87,6 +92,15 @@ internal fun SearchAndFilterBar(
     onCuisineChange: (String?) -> Unit,
     visited: Boolean?,
     onVisitedChange: (Boolean?) -> Unit,
+    city: String?,
+    availableCities: List<String>,
+    onCityChange: (String?) -> Unit,
+    region: String?,
+    availableRegions: List<String>,
+    onRegionChange: (String?) -> Unit,
+    country: String?,
+    availableCountries: List<String>,
+    onCountryChange: (String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Survives rotation but not process death on purpose: which filters are
@@ -151,7 +165,10 @@ internal fun SearchAndFilterBar(
 
             val activeFilterCount = (if (minRating != null) 1 else 0) +
                 (if (cuisineType != null) 1 else 0) +
-                (if (visited != null) 1 else 0)
+                (if (visited != null) 1 else 0) +
+                (if (city != null) 1 else 0) +
+                (if (region != null) 1 else 0) +
+                (if (country != null) 1 else 0)
             val chevronRotation by animateFloatAsState(
                 targetValue = if (filtersExpanded) 180f else 0f,
                 label = "filters-chevron"
@@ -204,6 +221,15 @@ internal fun SearchAndFilterBar(
                     onCuisineChange = onCuisineChange,
                     visited = visited,
                     onVisitedChange = onVisitedChange,
+                    city = city,
+                    availableCities = availableCities,
+                    onCityChange = onCityChange,
+                    region = region,
+                    availableRegions = availableRegions,
+                    onRegionChange = onRegionChange,
+                    country = country,
+                    availableCountries = availableCountries,
+                    onCountryChange = onCountryChange,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
             }
@@ -224,6 +250,7 @@ private fun sortLabelShort(sort: RestaurantSort): String = when (sort) {
     RestaurantSort.RATING -> stringResource(R.string.list_sort_rating_short)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilterSection(
     minRating: Int?,
@@ -233,6 +260,15 @@ private fun FilterSection(
     onCuisineChange: (String?) -> Unit,
     visited: Boolean?,
     onVisitedChange: (Boolean?) -> Unit,
+    city: String?,
+    availableCities: List<String>,
+    onCityChange: (String?) -> Unit,
+    region: String?,
+    availableRegions: List<String>,
+    onRegionChange: (String?) -> Unit,
+    country: String?,
+    availableCountries: List<String>,
+    onCountryChange: (String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val chipColors = FilterChipDefaults.filterChipColors(
@@ -321,6 +357,166 @@ private fun FilterSection(
                         colors = chipColors
                     )
                 }
+            }
+        }
+
+        // City/region/country are unbounded free text, unlike the closed cuisine
+        // vocabulary above — showing each as its own always-visible chip row
+        // would mean up to three horizontally-scrolling rows the moment the
+        // user's data spans more than a couple of places. One combined chip
+        // opens a sheet with all three instead.
+        if (availableCities.isNotEmpty() || availableRegions.isNotEmpty() || availableCountries.isNotEmpty()) {
+            var locationSheetOpen by rememberSaveable { mutableStateOf(false) }
+            val activeLocationCount = (if (city != null) 1 else 0) +
+                (if (region != null) 1 else 0) +
+                (if (country != null) 1 else 0)
+
+            Text(
+                text = stringResource(R.string.list_filter_location),
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Row(modifier = Modifier.padding(vertical = 4.dp)) {
+                FilterChip(
+                    selected = activeLocationCount > 0,
+                    onClick = { locationSheetOpen = true },
+                    label = {
+                        Text(
+                            if (activeLocationCount > 0) {
+                                stringResource(R.string.list_filter_location_active, activeLocationCount)
+                            } else {
+                                stringResource(R.string.list_filter_location)
+                            }
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    },
+                    colors = chipColors
+                )
+            }
+
+            if (locationSheetOpen) {
+                val sheetState = rememberModalBottomSheetState()
+                ModalBottomSheet(
+                    onDismissRequest = { locationSheetOpen = false },
+                    sheetState = sheetState
+                ) {
+                    LocationFilterSheetContent(
+                        city = city,
+                        availableCities = availableCities,
+                        onCityChange = onCityChange,
+                        region = region,
+                        availableRegions = availableRegions,
+                        onRegionChange = onRegionChange,
+                        country = country,
+                        availableCountries = availableCountries,
+                        onCountryChange = onCountryChange,
+                        onDone = { locationSheetOpen = false },
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The sheet [FilterSection]'s combined "Location" chip opens: city/region/country as three
+ * independent single-select groups, each with an "All" chip that clears that one dimension.
+ */
+@Composable
+private fun LocationFilterSheetContent(
+    city: String?,
+    availableCities: List<String>,
+    onCityChange: (String?) -> Unit,
+    region: String?,
+    availableRegions: List<String>,
+    onRegionChange: (String?) -> Unit,
+    country: String?,
+    availableCountries: List<String>,
+    onCountryChange: (String?) -> Unit,
+    onDone: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val chipColors = FilterChipDefaults.filterChipColors(
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+    )
+
+    Column(modifier = modifier) {
+        Text(text = stringResource(R.string.list_filter_location), style = MaterialTheme.typography.titleMedium)
+
+        LocationFilterGroup(
+            label = stringResource(R.string.list_filter_city),
+            selected = city,
+            options = availableCities,
+            onChange = onCityChange,
+            chipColors = chipColors,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+        LocationFilterGroup(
+            label = stringResource(R.string.list_filter_region),
+            selected = region,
+            options = availableRegions,
+            onChange = onRegionChange,
+            chipColors = chipColors,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+        LocationFilterGroup(
+            label = stringResource(R.string.list_filter_country),
+            selected = country,
+            options = availableCountries,
+            onChange = onCountryChange,
+            chipColors = chipColors,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+
+        Button(onClick = onDone, modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 12.dp)) {
+            Text(stringResource(R.string.action_done))
+        }
+    }
+}
+
+@Composable
+private fun LocationFilterGroup(
+    label: String,
+    selected: String?,
+    options: List<String>,
+    onChange: (String?) -> Unit,
+    chipColors: SelectableChipColors,
+    modifier: Modifier = Modifier
+) {
+    if (options.isEmpty()) return
+
+    Column(modifier = modifier) {
+        Text(text = label, style = MaterialTheme.typography.labelMedium)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = selected == null,
+                onClick = { onChange(null) },
+                label = { Text(stringResource(R.string.list_filter_all)) },
+                colors = chipColors
+            )
+            options.forEach { option ->
+                FilterChip(
+                    selected = selected == option,
+                    onClick = { onChange(option) },
+                    label = { Text(option) },
+                    colors = chipColors
+                )
             }
         }
     }
