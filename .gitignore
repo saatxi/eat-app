@@ -19,3 +19,6 @@ local.properties
 # Signing keystores must never be committed
 *.jks
 *.keystore
+
+# Android Studio Navigation editor temp files
+.scratch/
