@@ -36,12 +36,14 @@ class RestaurantEditViewModelPhotoTest {
     private val dispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: FakeRestaurantRepository
     private lateinit var photoStorage: FakeRestaurantPhotoStorage
+    private lateinit var geocoder: FakeAddressGeocoder
 
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
         repository = FakeRestaurantRepository()
         photoStorage = FakeRestaurantPhotoStorage()
+        geocoder = FakeAddressGeocoder()
     }
 
     @After
@@ -57,7 +59,7 @@ class RestaurantEditViewModelPhotoTest {
     fun `onPhotoPicked copies the pick right away and adds it to the carousel`() = runTest {
         val pickedUri = Uri.parse("content://media/picker/0/1")
         photoStorage.nextCopyResult = "/internal/photos/new.jpg"
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, geocoder, SavedStateHandle())
         observeState(viewModel)
 
         viewModel.onPhotoPicked(pickedUri)
@@ -69,7 +71,7 @@ class RestaurantEditViewModelPhotoTest {
     @Test
     fun `saving with a freshly added photo persists its copied path`() = runTest {
         val pickedUri = Uri.parse("content://media/picker/0/1")
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, geocoder, SavedStateHandle())
         observeState(viewModel)
         viewModel.onNameChange("Cal Ferran")
         viewModel.onCuisineChange("mediterranean")
@@ -89,7 +91,7 @@ class RestaurantEditViewModelPhotoTest {
         )
         repository.photosByRestaurantId["1"] =
             listOf(Photo(id = "p1", restaurantId = "1", path = "/existing/photo.jpg", position = 0))
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, geocoder, SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
         photoStorage.nextCopyResult = null // simulates an unreadable/corrupt pick
 

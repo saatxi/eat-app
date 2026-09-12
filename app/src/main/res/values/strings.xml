@@ -145,6 +145,8 @@
     <string name="edit_field_country">Country (optional)</string>
     <string name="edit_field_latitude">Latitude (optional)</string>
     <string name="edit_field_longitude">Longitude (optional)</string>
+    <string name="edit_action_geocode">Look up coordinates from address</string>
+    <string name="edit_error_geocode_not_found">No coordinates found for this address</string>
     <string name="edit_field_price_range">Price range</string>
     <string name="edit_field_website">Website (optional)</string>
     <string name="edit_field_instagram">Instagram (optional)</string>

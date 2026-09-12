@@ -139,6 +139,8 @@
     <string name="edit_field_country">País (opcional)</string>
     <string name="edit_field_latitude">Latitud (opcional)</string>
     <string name="edit_field_longitude">Longitud (opcional)</string>
+    <string name="edit_action_geocode">Buscar coordenadas a partir de la dirección</string>
+    <string name="edit_error_geocode_not_found">No se han encontrado coordenadas para esta dirección</string>
     <string name="edit_field_price_range">Rango de precio</string>
     <string name="edit_field_website">Web (opcional)</string>
     <string name="edit_field_instagram">Instagram (opcional)</string>

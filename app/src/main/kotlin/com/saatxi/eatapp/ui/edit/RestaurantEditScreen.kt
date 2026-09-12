@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.AddAPhoto
+import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +50,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -112,6 +114,7 @@ fun RestaurantEditScreen(
         onCountryChange = viewModel::onCountryChange,
         onLatitudeChange = viewModel::onLatitudeChange,
         onLongitudeChange = viewModel::onLongitudeChange,
+        onGeocodeAddress = viewModel::onGeocodeAddress,
         onPriceRangeChange = viewModel::onPriceRangeChange,
         onWebsiteChange = viewModel::onWebsiteChange,
         onInstagramChange = viewModel::onInstagramChange,
@@ -141,6 +144,7 @@ private fun RestaurantEditContent(
     onCountryChange: (String) -> Unit,
     onLatitudeChange: (String) -> Unit,
     onLongitudeChange: (String) -> Unit,
+    onGeocodeAddress: () -> Unit,
     onPriceRangeChange: (Int) -> Unit,
     onWebsiteChange: (String) -> Unit,
     onInstagramChange: (String) -> Unit,
@@ -268,6 +272,25 @@ private fun RestaurantEditContent(
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onGeocodeAddress, enabled = !uiState.isGeocoding) {
+                        if (uiState.isGeocoding) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Text(stringResource(R.string.edit_action_geocode), modifier = Modifier.padding(start = 8.dp))
+                        } else {
+                            Icon(Icons.Outlined.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(stringResource(R.string.edit_action_geocode), modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+                if (uiState.geocodeError) {
+                    Text(
+                        text = stringResource(R.string.edit_error_geocode_not_found),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
             }
@@ -596,6 +619,7 @@ private fun RestaurantEditScreenPreview() {
             onCountryChange = {},
             onLatitudeChange = {},
             onLongitudeChange = {},
+            onGeocodeAddress = {},
             onPriceRangeChange = {},
             onWebsiteChange = {},
             onInstagramChange = {},

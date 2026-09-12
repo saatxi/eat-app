@@ -137,6 +137,8 @@
     <string name="edit_field_country">País (opcional)</string>
     <string name="edit_field_latitude">Latitud (opcional)</string>
     <string name="edit_field_longitude">Longitud (opcional)</string>
+    <string name="edit_action_geocode">Cerca coordenades a partir de l\'adreça</string>
+    <string name="edit_error_geocode_not_found">No s\'han trobat coordenades per a aquesta adreça</string>
     <string name="edit_field_price_range">Rang de preu</string>
     <string name="edit_field_website">Web (opcional)</string>
     <string name="edit_field_instagram">Instagram (opcional)</string>

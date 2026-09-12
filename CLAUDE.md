@@ -80,12 +80,17 @@ Optional detailed explanation
   factory.
 - **Networking**: essentially none. Every restaurant is entered, edited and
   deleted on-device via Room, and there's no account/sync/remote data source.
-  The one deliberate exception is the Map screen (F-89, `ui/map/`), which
-  uses `osmdroid` to fetch OpenStreetMap tiles — the app's only real network
-  traffic, gated by the `INTERNET` permission in `AndroidManifest.xml` (see
-  that file's comment) and `EatApplication.onCreate()`'s osmdroid
-  configuration. Don't add any other networking library or a remote/file-based
-  data source without discussing it first.
+  The one deliberate exception is the Map screen (F-89, `ui/map/`): `osmdroid`
+  fetches CartoDB Positron map tiles, and the edit form's "look up
+  coordinates" action (`data/geocoding/NominatimAddressGeocoder.kt`) calls
+  OpenStreetMap's own Nominatim geocoder — both gated by the `INTERNET`
+  permission in `AndroidManifest.xml` (see that file's comment) and
+  `EatApplication.onCreate()`'s osmdroid configuration. Nominatim's usage
+  policy requires a distinct User-Agent (set on every request) and asks for
+  at most ~1 request/second — fine for a one-tap, user-triggered lookup, but
+  don't call it in a loop, on a timer, or for anything but that one button.
+  Don't add any other networking library or a remote/file-based data source
+  without discussing it first.
 - **Build**: Gradle Kotlin DSL (`build.gradle.kts`), AGP + version catalog
   (`gradle/libs.versions.toml`) for dependency versions — add new
   dependencies there, not as inline coordinates.
@@ -223,9 +228,12 @@ app/src/main/kotlin/com/saatxi/eatapp/
   restaurant-sharing feature (`data/share/`), which is local IPC
   (`Intent.ACTION_SEND`/`ACTION_VIEW` + a `FileProvider`), never a network
   request. The Map screen (`ui/map/`, F-89) is the one deliberate exception
-  to "no network calls": it fetches OpenStreetMap tiles via `osmdroid`, an
-  unauthenticated, read-only, no-credentials request for public map imagery —
-  no restaurant data is ever sent out over it. Don't add any other networking
+  to "no network calls": it fetches OpenStreetMap tiles via `osmdroid`, and
+  the edit form's "look up coordinates" action sends the restaurant's own
+  address text (street/city/region/country — never its name, notes, photos
+  or anything else) to OpenStreetMap's Nominatim geocoder. Both are
+  unauthenticated, no-credentials requests to a public OSM service; no
+  restaurant data is ever sent anywhere else. Don't add any other networking
   dependency or a remote data source without discussing it first.
 - A file received through the sharing intent-filter (`MainActivity`'s second
   `<intent-filter>`, matching `application/json`) is untrusted input, the

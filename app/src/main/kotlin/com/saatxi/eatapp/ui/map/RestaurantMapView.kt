@@ -9,17 +9,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.ui.common.cuisineTint
 import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -27,6 +27,28 @@ import org.osmdroid.views.overlay.Marker
 
 /** Zoom level used when only a single pin is on-screen — a bounding box can't fit around one point. */
 private const val SINGLE_PIN_ZOOM = 15.0
+
+/**
+ * CartoDB Positron: a light, low-saturation basemap (thin grey streets, muted
+ * labels) — reads much better as a backdrop for the app's own coloured pins
+ * than OSM's own default Mapnik style, which is busy and heavily saturated.
+ * Same osmdroid tile-fetch machinery, just a different tile server; free for
+ * non-commercial use with attribution, which the copyright string here covers.
+ */
+private val CARTO_POSITRON_TILE_SOURCE = XYTileSource(
+    "CartoDBPositron",
+    0,
+    20,
+    256,
+    ".png",
+    arrayOf(
+        "https://a.basemaps.cartocdn.com/light_all/",
+        "https://b.basemaps.cartocdn.com/light_all/",
+        "https://c.basemaps.cartocdn.com/light_all/",
+        "https://d.basemaps.cartocdn.com/light_all/"
+    ),
+    "© OpenStreetMap contributors © CARTO"
+)
 
 /** Extra room (px) left around the tightest bounding box that fits every pin, so edge markers aren't clipped by the view's border. */
 private const val BOUNDING_BOX_PADDING_PX = 48
@@ -65,7 +87,7 @@ fun RestaurantMapView(
     // block below, which runs outside composition.
     val markerColors = pinned.associate { it.id to cuisineTint(it.cuisineKey).container.toArgb() }
     val lifecycleOwner = LocalLifecycleOwner.current
-    val mapView = remember { MapView(context).apply { setTileSource(TileSourceFactory.MAPNIK); setMultiTouchControls(true) } }
+    val mapView = remember { MapView(context).apply { setTileSource(CARTO_POSITRON_TILE_SOURCE); setMultiTouchControls(true) } }
 
     // osmdroid's MapView owns background tile-fetch threads that must be paused
     // and resumed with the host lifecycle, or they keep running (and the tile

@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.saatxi.eatapp.data.geocoding.AddressGeocoder
 import com.saatxi.eatapp.data.local.Photo
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.normalizeInstagramHandle
@@ -60,6 +61,9 @@ data class RestaurantEditUiState(
     val instagramError: Boolean = false,
     val latitudeError: Boolean = false,
     val longitudeError: Boolean = false,
+    val isGeocoding: Boolean = false,
+    /** Set when [RestaurantEditViewModel.onGeocodeAddress] finds no match — cleared as soon as the address or either coordinate field changes. */
+    val geocodeError: Boolean = false,
     val tags: List<String> = emptyList()
 ) {
     /** Every photo the carousel should show: surviving persisted ones first, then freshly added ones. */
@@ -80,6 +84,7 @@ data class RestaurantEditUiState(
 class RestaurantEditViewModel @Inject constructor(
     private val repository: RestaurantRepository,
     private val photoStorage: RestaurantPhotoStorage,
+    private val geocoder: AddressGeocoder,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -144,27 +149,61 @@ class RestaurantEditViewModel @Inject constructor(
     }
 
     fun onStreetAddressChange(streetAddress: String) {
-        _uiState.update { it.copy(streetAddress = streetAddress) }
+        _uiState.update { it.copy(streetAddress = streetAddress, geocodeError = false) }
     }
 
     fun onCityChange(city: String) {
-        _uiState.update { it.copy(city = city) }
+        _uiState.update { it.copy(city = city, geocodeError = false) }
     }
 
     fun onRegionChange(region: String) {
-        _uiState.update { it.copy(region = region) }
+        _uiState.update { it.copy(region = region, geocodeError = false) }
     }
 
     fun onCountryChange(country: String) {
-        _uiState.update { it.copy(country = country) }
+        _uiState.update { it.copy(country = country, geocodeError = false) }
     }
 
     fun onLatitudeChange(latitude: String) {
-        _uiState.update { it.copy(latitude = latitude, latitudeError = false) }
+        _uiState.update { it.copy(latitude = latitude, latitudeError = false, geocodeError = false) }
     }
 
     fun onLongitudeChange(longitude: String) {
-        _uiState.update { it.copy(longitude = longitude, longitudeError = false) }
+        _uiState.update { it.copy(longitude = longitude, longitudeError = false, geocodeError = false) }
+    }
+
+    /**
+     * Looks up lat/lng from the address fields already on the form (street,
+     * city, region, country — whichever are filled in) via [geocoder], so the
+     * user doesn't have to know or type coordinates by hand. A no-match or
+     * failed lookup sets [RestaurantEditUiState.geocodeError] rather than
+     * touching [RestaurantEditUiState.latitude]/[RestaurantEditUiState.longitude],
+     * so nothing already typed there is ever clobbered by a bad lookup.
+     */
+    fun onGeocodeAddress() {
+        val state = _uiState.value
+        val query = listOf(state.streetAddress, state.city, state.region, state.country)
+            .filter { it.isNotBlank() }
+            .joinToString(", ")
+        if (query.isBlank() || state.isGeocoding) return
+
+        _uiState.update { it.copy(isGeocoding = true, geocodeError = false) }
+        viewModelScope.launch {
+            val result = geocoder.geocode(query)
+            _uiState.update {
+                if (result != null) {
+                    it.copy(
+                        isGeocoding = false,
+                        latitude = result.latitude.toString(),
+                        longitude = result.longitude.toString(),
+                        latitudeError = false,
+                        longitudeError = false
+                    )
+                } else {
+                    it.copy(isGeocoding = false, geocodeError = true)
+                }
+            }
+        }
     }
 
     fun onPriceRangeChange(priceRange: Int) {
