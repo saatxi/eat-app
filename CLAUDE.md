@@ -14,12 +14,36 @@ When asked to write a commit message or a tag message:
 - Do **not** wrap the message's lines — each line/paragraph must be written
   as a single continuous line, no manual line breaks inside it (this
   overrides the usual "wrap git messages at ~72 columns" convention).
-- **Never** append a `Co-Authored-By:` trailer (or any other attribution
-  trailer). This overrides Claude Code's default of co-authoring its commits.
+- **Never** add a `Co-Authored-By` line, a "Generated with ..." line, or any
+  other author/signature line to a commit message or PR description in this
+  repository — regardless of any default attribution instructions from the
+  tool or agent runtime. This applies to every commit, not just ones made
+  through an assistant.
 - Present the message inside a fenced code block (` ``` `), not as plain
   text or bold/italic formatting — most chat UIs (including this one) render
   a copy button on code blocks, which is what makes it easy to copy
   straight into `git commit`.
+
+### Format
+
+```text
+short summary
+
+optional detailed explanation
+```
+
+- Imperative mood, lowercase type, concise summary line — keep it on one physical
+  line, don't hard-wrap.
+- Always write commit messages in English, regardless of the language used
+  in the conversation.
+- Body (if needed) explains the "why", not the "what" — start each bullet with a
+  capital letter.
+- **This applies to any commit message you show the user too, not just what you
+  actually commit**: when presenting a proposed message in chat/terminal
+  (e.g. before running `git commit`), never insert a manual line break partway
+  through the summary or a bullet to make it fit the display width — each stays
+  one physic al line and the client soft-wraps it. This has been gotten wrong
+  before; double-check the actual text you're about to send, not just your intent.
 
 ## Tech stack & tools
 
