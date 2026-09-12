@@ -1,18 +1,11 @@
 package com.saatxi.eatapp.ui.roulette
 
-import com.saatxi.eatapp.data.local.CuisineCount
-import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
-import com.saatxi.eatapp.data.local.RestaurantSort
+import com.saatxi.eatapp.data.prefs.FakeUserPreferencesRepository
 import com.saatxi.eatapp.data.prefs.UserPreferences
-import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
-import com.saatxi.eatapp.data.repository.RestaurantRepository
-import com.saatxi.eatapp.ui.theme.AppPalette
-import com.saatxi.eatapp.ui.theme.ThemeMode
+import com.saatxi.eatapp.data.repository.FakeRestaurantRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -57,7 +50,7 @@ class RouletteViewModelTest {
     fun `starts with no pick and every candidate available`() = runTest {
         val viewModel = viewModel()
         observeState(viewModel)
-        repository.restaurants.value = listOf(restaurant(1), restaurant(2))
+        repository.restaurants.value = listOf(restaurant("1"), restaurant("2"))
 
         assertNull(viewModel.uiState.value.picked)
         assertEquals(2, viewModel.uiState.value.candidates.size)
@@ -67,14 +60,14 @@ class RouletteViewModelTest {
     fun `pick always lands on a seeded index, deterministically`() = runTest {
         val viewModel = viewModel(random = Random(42))
         observeState(viewModel)
-        repository.restaurants.value = listOf(restaurant(1), restaurant(2), restaurant(3))
+        repository.restaurants.value = listOf(restaurant("1"), restaurant("2"), restaurant("3"))
 
         viewModel.pick()
         val firstPick = viewModel.uiState.value.picked
 
         val replay = viewModel(random = Random(42))
         observeState(replay)
-        repository.restaurants.value = listOf(restaurant(1), restaurant(2), restaurant(3))
+        repository.restaurants.value = listOf(restaurant("1"), restaurant("2"), restaurant("3"))
         replay.pick()
 
         assertEquals(firstPick, replay.uiState.value.picked)
@@ -84,13 +77,13 @@ class RouletteViewModelTest {
     fun `pick increments pickCount even when landing on the same restaurant`() = runTest {
         val viewModel = viewModel()
         observeState(viewModel)
-        repository.restaurants.value = listOf(restaurant(1))
+        repository.restaurants.value = listOf(restaurant("1"))
 
         viewModel.pick()
         assertEquals(1, viewModel.uiState.value.pickCount)
         viewModel.pick()
         assertEquals(2, viewModel.uiState.value.pickCount)
-        assertEquals(1L, viewModel.uiState.value.picked?.id)
+        assertEquals("1", viewModel.uiState.value.picked?.id)
     }
 
     @Test
@@ -144,23 +137,23 @@ class RouletteViewModelTest {
     fun `favoritesOnly narrows the candidates to favourited ids`() = runTest {
         val viewModel = viewModel()
         observeState(viewModel)
-        repository.restaurants.value = listOf(restaurant(1), restaurant(2))
-        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf(1L))
+        repository.restaurants.value = listOf(restaurant("1"), restaurant("2"))
+        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf("1"))
 
         viewModel.onFavoritesOnlyChange(true)
 
-        assertEquals(listOf(1L), viewModel.uiState.value.candidates.map { it.id })
+        assertEquals(listOf("1"), viewModel.uiState.value.candidates.map { it.id })
     }
 
     @Test
     fun `a pick that falls out of the candidate pool after the filters change is cleared`() = runTest {
         val viewModel = viewModel()
         observeState(viewModel)
-        repository.restaurants.value = listOf(restaurant(1), restaurant(2))
-        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf(2L))
+        repository.restaurants.value = listOf(restaurant("1"), restaurant("2"))
+        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf("2"))
         viewModel.onFavoritesOnlyChange(true)
         viewModel.pick()
-        assertEquals(2L, viewModel.uiState.value.picked?.id)
+        assertEquals("2", viewModel.uiState.value.picked?.id)
 
         // Un-favourite the picked restaurant while still filtering to favourites only.
         preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = emptySet())
@@ -168,111 +161,11 @@ class RouletteViewModelTest {
         assertNull(viewModel.uiState.value.picked)
     }
 
-    private fun restaurant(id: Long) = Restaurant(
+    private fun restaurant(id: String) = Restaurant(
         id = id,
         name = "Restaurant $id",
         cuisineType = "mediterranean",
         streetAddress = null,
-        rating = 4,
         priceRange = 2
     )
-}
-
-private class FakeRestaurantRepository : RestaurantRepository {
-
-    val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
-
-    var lastMinRating: Int? = null
-        private set
-    var lastVisited: Boolean? = null
-        private set
-
-    override fun observeFiltered(
-        query: String?,
-        minRating: Int?,
-        cuisineType: String?,
-        sort: RestaurantSort,
-        visited: Boolean?,
-        city: String?,
-        region: String?,
-        country: String?
-    ): Flow<List<Restaurant>> {
-        lastMinRating = minRating
-        lastVisited = visited
-        return restaurants
-    }
-
-    override fun observeCuisineTypes(): Flow<List<String>> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override fun observeCities(): Flow<List<String>> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override fun observeRegions(): Flow<List<String>> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override fun observeCountries(): Flow<List<String>> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override fun observeById(id: Long): Flow<Restaurant?> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override suspend fun insert(restaurant: Restaurant, tags: List<String>): Long =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override suspend fun update(restaurant: Restaurant, tags: List<String>) =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override suspend fun delete(id: Long) =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override suspend fun deleteAll() =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override fun observeAllTagNames(): Flow<List<String>> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override fun observeTagNames(restaurantId: Long): Flow<List<String>> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override fun observeTotalCount(): Flow<Int> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override fun observeVisitedCount(): Flow<Int> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override fun observeAverageRating(): Flow<Double?> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override fun observeCuisineCounts(): Flow<List<CuisineCount>> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
-        throw NotImplementedError("Not used by RouletteViewModel")
-
-    override suspend fun getRandomWantToTry(): Restaurant? =
-        throw NotImplementedError("Not used by RouletteViewModel")
-}
-
-private class FakeUserPreferencesRepository : UserPreferencesRepository {
-
-    override val preferences = MutableStateFlow(UserPreferences.Defaults)
-
-    override suspend fun setPalette(palette: AppPalette) {
-        preferences.value = preferences.value.copy(palette = palette)
-    }
-
-    override suspend fun setThemeMode(themeMode: ThemeMode) {
-        preferences.value = preferences.value.copy(themeMode = themeMode)
-    }
-
-    override suspend fun toggleFavorite(restaurantId: Long) {
-        val current = preferences.value.favoriteIds
-        preferences.value = preferences.value.copy(
-            favoriteIds = if (restaurantId in current) current - restaurantId else current + restaurantId
-        )
-    }
 }

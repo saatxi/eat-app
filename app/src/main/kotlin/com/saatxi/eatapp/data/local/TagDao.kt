@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -21,10 +22,10 @@ abstract class TagDao {
     abstract suspend fun insertTag(tag: Tag): Long
 
     @Query("SELECT id FROM tags WHERE name = :name")
-    abstract suspend fun findTagId(name: String): Long?
+    abstract suspend fun findTagId(name: String): String?
 
     @Query("DELETE FROM restaurant_tags WHERE restaurantId = :restaurantId")
-    abstract suspend fun deleteLinks(restaurantId: Long)
+    abstract suspend fun deleteLinks(restaurantId: String)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     abstract suspend fun insertLinks(links: List<RestaurantTag>)
@@ -43,7 +44,7 @@ abstract class TagDao {
         ORDER BY t.name COLLATE NOCASE
         """
     )
-    abstract fun observeTagNames(restaurantId: Long): Flow<List<String>>
+    abstract fun observeTagNames(restaurantId: String): Flow<List<String>>
 
     /** Backs `RestaurantRepository.observeTagsByRestaurantId()` — one query, grouped by the caller. */
     @Query(
@@ -63,15 +64,17 @@ abstract class TagDao {
      * no-op instead of a `SQLiteConstraintException` aborting the save.
      */
     @Transaction
-    open suspend fun setTags(restaurantId: Long, tagNames: List<String>) {
+    open suspend fun setTags(restaurantId: String, tagNames: List<String>) {
         val distinctNames = tagNames.distinctBy { it.trim().lowercase() }
         deleteLinks(restaurantId)
         val tagIds = distinctNames.map { name ->
-            findTagId(name) ?: insertTag(Tag(name = name)).let { insertedId ->
+            findTagId(name) ?: run {
+                val newTagId = UUID.randomUUID().toString()
+                val insertedRowId = insertTag(Tag(id = newTagId, name = name))
                 // -1 means insertTag's own IGNORE fired (a concurrent insert
                 // won the race between findTagId and insertTag) — look the
                 // row up again instead of writing a link to a nonexistent tag.
-                if (insertedId == -1L) findTagId(name)!! else insertedId
+                if (insertedRowId == -1L) findTagId(name)!! else newTagId
             }
         }
         insertLinks(tagIds.map { tagId -> RestaurantTag(restaurantId = restaurantId, tagId = tagId) })

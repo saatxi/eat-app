@@ -1,6 +1,7 @@
 package com.saatxi.eatapp.ui.model
 
 import com.saatxi.eatapp.data.local.Restaurant
+import com.saatxi.eatapp.data.local.Visit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -10,24 +11,22 @@ import org.junit.Test
 /**
  * The mapper is where every presentation decision that doesn't need a string
  * resource is made, so this is where those decisions are pinned down.
+ * Rating/visited/notes now come from the restaurant's latest [Visit], passed
+ * in separately — see [toUiModel].
  */
 class RestaurantUiModelTest {
 
     private fun entity(
-        id: Long = 1,
+        id: String = "1",
         name: String = "Cal Ferran",
         cuisineType: String = "catalan",
         address: String? = "Carrer Gran 1",
         city: String? = null,
         region: String? = null,
         country: String? = null,
-        rating: Int = 3,
         priceRange: Int = 2,
-        visited: Boolean = true,
         website: String? = null,
-        instagram: String? = null,
-        photoPath: String? = null,
-        notes: String? = null
+        instagram: String? = null
     ) = Restaurant(
         id = id,
         name = name,
@@ -36,20 +35,18 @@ class RestaurantUiModelTest {
         city = city,
         region = region,
         country = country,
-        rating = rating,
         priceRange = priceRange,
-        visited = visited,
         website = website,
-        instagram = instagram,
-        photoPath = photoPath,
-        notes = notes
+        instagram = instagram
     )
+
+    private fun visit(rating: Int = 3, notes: String? = null) = Visit(id = "v", restaurantId = "1", visitDate = 0L, rating = rating, notes = notes)
 
     @Test
     fun `carries the identifying fields through unchanged`() {
-        val model = entity(id = 7, name = "Bar Nil", cuisineType = "bar").toUiModel()
+        val model = entity(id = "7", name = "Bar Nil", cuisineType = "bar").toUiModel(latestVisit = visit(rating = 3))
 
-        assertEquals(7L, model.id)
+        assertEquals("7", model.id)
         assertEquals("Bar Nil", model.name)
         assertEquals("bar", model.cuisineKey)
         assertEquals(3, model.rating)
@@ -105,10 +102,10 @@ class RestaurantUiModelTest {
 
     /** Drives whether the detail screen draws a Notes card at all. */
     @Test
-    fun `notes are carried through, with a blank one treated as none`() {
+    fun `notes come from the latest visit, with a blank one treated as none`() {
         assertNull(entity().toUiModel().notes)
-        assertNull(entity(notes = "   ").toUiModel().notes)
-        assertEquals("Ask for the burrata", entity(notes = "Ask for the burrata").toUiModel().notes)
+        assertNull(entity().toUiModel(latestVisit = visit(notes = "   ")).notes)
+        assertEquals("Ask for the burrata", entity().toUiModel(latestVisit = visit(notes = "Ask for the burrata")).notes)
     }
 
     /** Drives whether the detail screen draws a Links card at all. */
@@ -130,15 +127,18 @@ class RestaurantUiModelTest {
     }
 
     @Test
-    fun `visited is carried through unchanged, both ways`() {
-        assertTrue(entity(visited = true).toUiModel().visited)
-        assertFalse(entity(visited = false).toUiModel().visited)
+    fun `visited is true only when a latest visit is passed in`() {
+        assertTrue(entity().toUiModel(latestVisit = visit()).visited)
+        assertFalse(entity().toUiModel(latestVisit = null).visited)
     }
 
     /** Drives whether a row/card draws the stored photo instead of the cuisine badge. */
     @Test
     fun `photoPath is carried through unchanged, defaulting to null`() {
         assertNull(entity().toUiModel().photoPath)
-        assertEquals("/data/user/0/com.saatxi.eatapp/files/photos/a.jpg", entity(photoPath = "/data/user/0/com.saatxi.eatapp/files/photos/a.jpg").toUiModel().photoPath)
+        assertEquals(
+            "/data/user/0/com.saatxi.eatapp/files/photos/a.jpg",
+            entity().toUiModel(photoPath = "/data/user/0/com.saatxi.eatapp/files/photos/a.jpg").photoPath
+        )
     }
 }

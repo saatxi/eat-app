@@ -76,11 +76,18 @@ class FavoritesViewModel(
             repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort, it.visited, it.city, it.region, it.country)
         },
         preferencesRepository.preferences.map { it.favoriteIds },
-        repository.observeTagsByRestaurantId()
-    ) { restaurants, favoriteIds, tagsByRestaurantId ->
+        repository.observeTagsByRestaurantId(),
+        repository.observeLatestVisitByRestaurantId()
+    ) { restaurants, favoriteIds, tagsByRestaurantId, latestVisitByRestaurantId ->
         restaurants
             .filter { it.id in favoriteIds }
-            .map { it.toUiModel(isFavorite = true, tags = tagsByRestaurantId[it.id].orEmpty()) }
+            .map {
+                it.toUiModel(
+                    isFavorite = true,
+                    tags = tagsByRestaurantId[it.id].orEmpty(),
+                    latestVisit = latestVisitByRestaurantId[it.id]
+                )
+            }
     }
 
     private val availableFilterValues: Flow<AvailableFilterValues> = repository.observeAvailableFilterValues()
@@ -144,12 +151,12 @@ class FavoritesViewModel(
         filters.update { it.copy(country = country) }
     }
 
-    fun onFavoriteToggle(restaurantId: Long) {
+    fun onFavoriteToggle(restaurantId: String) {
         viewModelScope.launch { preferencesRepository.toggleFavorite(restaurantId) }
     }
 
     /** F-65's swipe-to-delete — the caller has already shown a confirmation before calling this. */
-    fun onDeleteRestaurant(restaurantId: Long) {
+    fun onDeleteRestaurant(restaurantId: String) {
         viewModelScope.launch { repository.delete(restaurantId) }
     }
 

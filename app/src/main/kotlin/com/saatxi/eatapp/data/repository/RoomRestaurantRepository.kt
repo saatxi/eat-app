@@ -4,15 +4,18 @@ import android.content.Context
 import androidx.room.withTransaction
 import com.saatxi.eatapp.data.local.CuisineCount
 import com.saatxi.eatapp.data.local.EatAppDatabase
+import com.saatxi.eatapp.data.local.Photo
 import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
+import com.saatxi.eatapp.data.local.Visit
 import com.saatxi.eatapp.data.local.escapeLikeWildcards
 import com.saatxi.eatapp.data.local.normalizeForSearch
 import com.saatxi.eatapp.data.photo.deleteAllRestaurantPhotoFiles
 import com.saatxi.eatapp.data.photo.deleteRestaurantPhotoFile
 import com.saatxi.eatapp.data.share.toExport
 import com.saatxi.eatapp.data.share.writeBackupFile
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -24,6 +27,8 @@ class RoomRestaurantRepository(
 
     private val dao = database.restaurantDao()
     private val tagDao = database.tagDao()
+    private val visitDao = database.visitDao()
+    private val photoDao = database.photoDao()
 
     override fun observeFiltered(
         query: String?,
@@ -53,38 +58,27 @@ class RoomRestaurantRepository(
     override fun observeRegions(): Flow<List<String>> = dao.observeRegions()
     override fun observeCountries(): Flow<List<String>> = dao.observeCountries()
 
-    override fun observeById(id: Long): Flow<Restaurant?> = dao.observeById(id)
+    override fun observeById(id: String): Flow<Restaurant?> = dao.observeById(id)
 
-    override suspend fun insert(restaurant: Restaurant, tags: List<String>): Long {
-        val id = database.withTransaction {
-            val newId = dao.insert(restaurant)
-            tagDao.setTags(newId, tags)
-            newId
+    override suspend fun insert(restaurant: Restaurant, tags: List<String>) {
+        database.withTransaction {
+            dao.insert(restaurant)
+            tagDao.setTags(restaurant.id, tags)
         }
         writeBackup()
-        return id
     }
 
-    /**
-     * The old photo — if this update moves the row away from it — is deleted only
-     * *after* the transaction below succeeds, so a mid-write failure can never
-     * leave a row pointing at a file that's already gone.
-     */
     override suspend fun update(restaurant: Restaurant, tags: List<String>) {
-        val previousPhotoPath = dao.getPhotoPath(restaurant.id)
         database.withTransaction {
             dao.update(restaurant)
             tagDao.setTags(restaurant.id, tags)
         }
-        if (previousPhotoPath != null && previousPhotoPath != restaurant.photoPath) {
-            deleteRestaurantPhotoFile(previousPhotoPath)
-        }
         writeBackup()
     }
 
-    override suspend fun delete(id: Long) {
-        val photoPath = dao.getPhotoPath(id)
-        // No explicit tag cleanup needed: restaurant_tags cascades on delete.
+    override suspend fun delete(id: String) {
+        val photoPath = photoDao.getFirstPhotoForRestaurant(id)?.path
+        // No explicit tag/visit/photo cleanup needed: they all cascade on delete.
         dao.delete(id)
         photoPath?.let(::deleteRestaurantPhotoFile)
         writeBackup()
@@ -107,19 +101,92 @@ class RoomRestaurantRepository(
     private suspend fun writeBackup() {
         val tagsByRestaurantId = tagDao.observeAllRestaurantTagLinks().first()
             .groupBy({ it.restaurantId }, { it.name })
-        writeBackupFile(context, dao.getAll().map { it.toExport(tagsByRestaurantId[it.id].orEmpty()) })
+        val visitsByRestaurantId = visitDao.getAll().groupBy { it.restaurantId }
+        writeBackupFile(
+            context,
+            dao.getAll().map {
+                it.toExport(tagsByRestaurantId[it.id].orEmpty(), visitsByRestaurantId[it.id].orEmpty())
+            }
+        )
     }
 
     override fun observeAllTagNames(): Flow<List<String>> = tagDao.observeAllTagNames()
-    override fun observeTagNames(restaurantId: Long): Flow<List<String>> = tagDao.observeTagNames(restaurantId)
-    override fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>> =
+    override fun observeTagNames(restaurantId: String): Flow<List<String>> = tagDao.observeTagNames(restaurantId)
+    override fun observeTagsByRestaurantId(): Flow<Map<String, List<String>>> =
         tagDao.observeAllRestaurantTagLinks().map { links -> links.groupBy({ it.restaurantId }, { it.name }) }
 
     override fun observeTotalCount(): Flow<Int> = dao.observeTotalCount()
-    override fun observeVisitedCount(): Flow<Int> = dao.observeVisitedCount()
-    override fun observeAverageRating(): Flow<Double?> = dao.observeAverageRating()
+    override fun observeVisitedCount(): Flow<Int> = visitDao.observeVisitedCount()
+    override fun observeAverageRating(): Flow<Double?> = visitDao.observeAverageRating()
     override fun observeCuisineCounts(): Flow<List<CuisineCount>> = dao.observeCuisineCounts()
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> = dao.observePriceRangeCounts()
 
     override suspend fun getRandomWantToTry(): Restaurant? = dao.getRandomWantToTry()
+
+    override fun observeVisitsForRestaurant(restaurantId: String): Flow<List<Visit>> =
+        visitDao.observeVisitsForRestaurant(restaurantId)
+
+    override fun observeLatestVisitByRestaurantId(): Flow<Map<String, Visit>> =
+        visitDao.observeLatestVisitByRestaurantId().map { visits -> visits.associateBy { it.restaurantId } }
+
+    override suspend fun getLatestVisit(restaurantId: String): Visit? = visitDao.getLatestVisit(restaurantId)
+
+    override suspend fun saveSingleVisit(restaurantId: String, visited: Boolean, rating: Int, notes: String?) {
+        database.withTransaction {
+            val existing = visitDao.getLatestVisit(restaurantId)
+            visitDao.deleteAllForRestaurant(restaurantId)
+            if (visited) {
+                visitDao.insert(
+                    Visit(
+                        id = existing?.id ?: UUID.randomUUID().toString(),
+                        restaurantId = restaurantId,
+                        visitDate = existing?.visitDate ?: System.currentTimeMillis(),
+                        rating = rating,
+                        notes = notes
+                    )
+                )
+            }
+        }
+        writeBackup()
+    }
+
+    override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?) {
+        visitDao.insert(Visit(id = UUID.randomUUID().toString(), restaurantId = restaurantId, visitDate = visitDate, rating = rating, notes = notes))
+        writeBackup()
+    }
+
+    override suspend fun deleteVisit(id: String) {
+        visitDao.delete(id)
+        writeBackup()
+    }
+
+    override fun observePhotosForRestaurant(restaurantId: String): Flow<List<Photo>> =
+        photoDao.observePhotosForRestaurant(restaurantId)
+
+    override fun observePhotosForVisit(visitId: String): Flow<List<Photo>> =
+        photoDao.observePhotosForVisit(visitId)
+
+    override suspend fun getRestaurantPhotoPath(restaurantId: String): String? =
+        photoDao.getFirstPhotoForRestaurant(restaurantId)?.path
+
+    /**
+     * The old photo — if this moves the restaurant away from it — is deleted only
+     * *after* the write below succeeds, so a mid-write failure can never leave a
+     * row pointing at a file that's already gone.
+     */
+    override suspend fun setRestaurantPhoto(restaurantId: String, path: String?) {
+        val previous = photoDao.getFirstPhotoForRestaurant(restaurantId)
+        if (previous?.path == path) return
+        database.withTransaction {
+            photoDao.deleteAllForRestaurant(restaurantId)
+            if (path != null) {
+                photoDao.insert(Photo(id = UUID.randomUUID().toString(), restaurantId = restaurantId, path = path))
+            }
+        }
+        previous?.path?.let(::deleteRestaurantPhotoFile)
+    }
+
+    override suspend fun deletePhoto(id: String) {
+        photoDao.delete(id)
+    }
 }

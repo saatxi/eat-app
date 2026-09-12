@@ -10,6 +10,7 @@ import com.saatxi.eatapp.data.share.ContentReadResult
 import com.saatxi.eatapp.data.share.ImportFailureReason
 import com.saatxi.eatapp.data.share.ImportOutcome
 import com.saatxi.eatapp.data.share.RestaurantImportReader
+import com.saatxi.eatapp.data.share.VisitExport
 import com.saatxi.eatapp.data.share.readContentUriCapped
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ enum class ImportDecision { ADD, SKIP, REPLACE }
 data class ImportCandidate(
     val restaurant: Restaurant,
     val tags: List<String>,
+    val visits: List<VisitExport>,
     /** The existing row this looks like a duplicate of (by name + address), or null. */
     val duplicateOf: Restaurant?,
     val decision: ImportDecision
@@ -65,6 +67,7 @@ class RestaurantImportViewModel(
                         ImportCandidate(
                             restaurant = imported.restaurant,
                             tags = imported.tags,
+                            visits = imported.visits,
                             duplicateOf = duplicate,
                             decision = if (duplicate != null) ImportDecision.SKIP else ImportDecision.ADD
                         )
@@ -99,12 +102,21 @@ class RestaurantImportViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isImporting = true) }
             candidates.forEach { candidate ->
-                when (candidate.decision) {
-                    ImportDecision.ADD -> repository.insert(candidate.restaurant, candidate.tags)
+                val restaurantId = when (candidate.decision) {
+                    ImportDecision.ADD -> {
+                        repository.insert(candidate.restaurant, candidate.tags)
+                        candidate.restaurant.id
+                    }
                     ImportDecision.REPLACE -> candidate.duplicateOf?.let {
                         repository.update(candidate.restaurant.copy(id = it.id), candidate.tags)
+                        it.id
                     }
-                    ImportDecision.SKIP -> Unit
+                    ImportDecision.SKIP -> null
+                }
+                if (restaurantId != null) {
+                    candidate.visits.forEach { visit ->
+                        repository.addVisit(restaurantId, visit.visitDate, visit.rating, visit.notes)
+                    }
                 }
             }
             onDone()

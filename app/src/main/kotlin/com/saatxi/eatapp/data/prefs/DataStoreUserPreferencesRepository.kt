@@ -60,11 +60,10 @@ class DataStoreUserPreferencesRepository(
         dataStore.edit { it[Keys.THEME_MODE] = themeMode.name }
     }
 
-    override suspend fun toggleFavorite(restaurantId: Long) {
+    override suspend fun toggleFavorite(restaurantId: String) {
         dataStore.edit { prefs ->
             val current = prefs[Keys.FAVORITE_IDS].orEmpty()
-            val id = restaurantId.toString()
-            prefs[Keys.FAVORITE_IDS] = if (id in current) current - id else current + id
+            prefs[Keys.FAVORITE_IDS] = if (restaurantId in current) current - restaurantId else current + restaurantId
         }
     }
 }
@@ -81,7 +80,5 @@ private fun Preferences.toUserPreferences(): UserPreferences = UserPreferences(
     themeMode = this[Keys.THEME_MODE]?.let { name ->
         ThemeMode.entries.firstOrNull { it.name == name }
     } ?: ThemeMode.Default,
-    favoriteIds = this[Keys.FAVORITE_IDS]
-        ?.mapNotNullTo(mutableSetOf()) { it.toLongOrNull() }
-        .orEmpty()
+    favoriteIds = this[Keys.FAVORITE_IDS].orEmpty()
 )

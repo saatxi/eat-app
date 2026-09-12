@@ -22,17 +22,20 @@ sealed interface DetailUiState {
 class RestaurantDetailViewModel(
     private val repository: RestaurantRepository,
     private val preferencesRepository: UserPreferencesRepository,
-    private val restaurantId: Long
+    private val restaurantId: String
 ) : ViewModel() {
 
     val uiState: StateFlow<DetailUiState> = combine(
         repository.observeById(restaurantId),
         preferencesRepository.preferences.map { it.favoriteIds },
-        repository.observeTagNames(restaurantId)
-    ) { restaurant, favoriteIds, tags ->
+        repository.observeTagNames(restaurantId),
+        repository.observeVisitsForRestaurant(restaurantId)
+    ) { restaurant, favoriteIds, tags, visits ->
         when (restaurant) {
             null -> DetailUiState.NotFound
-            else -> DetailUiState.Loaded(restaurant.toUiModel(isFavorite = restaurant.id in favoriteIds, tags = tags))
+            else -> DetailUiState.Loaded(
+                restaurant.toUiModel(isFavorite = restaurant.id in favoriteIds, tags = tags, latestVisit = visits.firstOrNull())
+            )
         }
     }.stateIn(
         scope = viewModelScope,

@@ -47,7 +47,7 @@ private val badgeBoundsTransform = BoundsTransform { _, _ ->
  * bounds animate while the contents cross-fade.
  */
 @Composable
-fun Modifier.cuisineBadgeTransition(restaurantId: Long): Modifier {
+fun Modifier.cuisineBadgeTransition(restaurantId: String): Modifier {
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalNavAnimatedVisibilityScope.current
     if (sharedTransitionScope == null || animatedVisibilityScope == null) return this

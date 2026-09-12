@@ -55,7 +55,7 @@ import com.saatxi.eatapp.ui.theme.EatAppTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RestaurantListScreen(
-    onOpenRestaurant: (Long) -> Unit,
+    onOpenRestaurant: (String) -> Unit,
     onAddRestaurant: () -> Unit,
     viewModel: RestaurantListViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {

@@ -4,81 +4,18 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Restaurant::class, Tag::class, RestaurantTag::class], version = 10, exportSchema = false)
+@Database(
+    entities = [Restaurant::class, Tag::class, RestaurantTag::class, Visit::class, Photo::class],
+    version = 11,
+    exportSchema = false
+)
 abstract class EatAppDatabase : RoomDatabase() {
 
     abstract fun restaurantDao(): RestaurantDao
     abstract fun tagDao(): TagDao
-}
-
-/**
- * Adds [Restaurant.visited]. Existing rows default to `1` (visited) — the
- * app's only mode until now — except rows with no rating yet, which read as
- * a place noted down but never actually tried.
- */
-private val MIGRATION_5_6 = object : Migration(5, 6) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE restaurants ADD COLUMN visited INTEGER NOT NULL DEFAULT 1")
-        db.execSQL("UPDATE restaurants SET visited = 0 WHERE rating = 0")
-    }
-}
-
-/** Adds [Restaurant.photoPath] (F-63). Nullable with no default, so every existing row reads back with no photo. */
-private val MIGRATION_6_7 = object : Migration(6, 7) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE restaurants ADD COLUMN photoPath TEXT")
-    }
-}
-
-/** Adds [Restaurant.notes] (F-56). Nullable with no default, so every existing row reads back with no note. */
-private val MIGRATION_7_8 = object : Migration(7, 8) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE restaurants ADD COLUMN notes TEXT")
-    }
-}
-
-/**
- * Adds [Tag] and [RestaurantTag] (F-59). This hand-written SQL must match
- * Room's own generated schema exactly (`exportSchema = false` leaves no
- * schema JSON to diff against instead) — see `MigrationTest` for the
- * regression test covering that (which is also why this is `internal`
- * rather than `private`, unlike the migrations above it: the test needs to
- * pass it into its own builder directly). Room's runtime schema validation
- * checks column/index/foreign-key shape but not `COLLATE`, so `COLLATE
- * NOCASE` here specifically relies on that test, not on this migration
- * throwing.
- */
-internal val MIGRATION_8_9 = object : Migration(8, 9) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS `tags` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL COLLATE NOCASE)")
-        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_tags_name` ON `tags` (`name`)")
-        db.execSQL(
-            "CREATE TABLE IF NOT EXISTS `restaurant_tags` (`restaurantId` INTEGER NOT NULL, `tagId` INTEGER NOT NULL, " +
-                "PRIMARY KEY(`restaurantId`, `tagId`), " +
-                "FOREIGN KEY(`restaurantId`) REFERENCES `restaurants`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE, " +
-                "FOREIGN KEY(`tagId`) REFERENCES `tags`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)"
-        )
-        db.execSQL("CREATE INDEX IF NOT EXISTS `index_restaurant_tags_tagId` ON `restaurant_tags` (`tagId`)")
-    }
-}
-
-/**
- * Adds [Restaurant.city]/[Restaurant.region]/[Restaurant.country] — the rest of what a single
- * free-text `address` used to hold. The street line stays in the existing `address` column (see
- * [Restaurant.streetAddress]'s `@ColumnInfo`) so no column is renamed; existing rows simply read
- * back with these three new columns null until the user re-saves them — their old `address` text
- * (and its contribution to `searchText`) is left untouched, matching how earlier additive
- * migrations (`notes`, `photoPath`) never touched pre-existing rows either.
- */
-internal val MIGRATION_9_10 = object : Migration(9, 10) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE restaurants ADD COLUMN city TEXT")
-        db.execSQL("ALTER TABLE restaurants ADD COLUMN region TEXT")
-        db.execSQL("ALTER TABLE restaurants ADD COLUMN country TEXT")
-    }
+    abstract fun visitDao(): VisitDao
+    abstract fun photoDao(): PhotoDao
 }
 
 fun buildEatAppDatabase(context: Context): EatAppDatabase =
@@ -87,11 +24,11 @@ fun buildEatAppDatabase(context: Context): EatAppDatabase =
         EatAppDatabase::class.java,
         "eatapp.db"
     )
-        .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
-        // The restaurants here are entered by hand and not recoverable from
-        // anywhere else, unlike the old re-downloadable .db cache this used to
-        // hold. The next time `version` changes, this MUST be replaced with a
-        // real Migration — falling back to this would silently delete every
-        // restaurant the user has ever added.
+        // This is a pre-release app with no production users yet, and the id
+        // type itself changed (Long autoincrement -> client-generated UUID
+        // String) along with the relational split of rating/visited/notes/photo
+        // into Visit/Photo — there is no meaningful in-place migration to write
+        // for that. Once real user data exists, this MUST be replaced with a
+        // real Migration before the next schema bump.
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()

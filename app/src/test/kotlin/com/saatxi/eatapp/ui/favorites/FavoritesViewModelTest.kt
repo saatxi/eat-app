@@ -1,18 +1,12 @@
 package com.saatxi.eatapp.ui.favorites
 
-import com.saatxi.eatapp.data.local.CuisineCount
-import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
+import com.saatxi.eatapp.data.prefs.FakeUserPreferencesRepository
 import com.saatxi.eatapp.data.prefs.UserPreferences
-import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
-import com.saatxi.eatapp.data.repository.RestaurantRepository
-import com.saatxi.eatapp.ui.theme.AppPalette
-import com.saatxi.eatapp.ui.theme.ThemeMode
+import com.saatxi.eatapp.data.repository.FakeRestaurantRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -76,26 +70,26 @@ class FavoritesViewModelTest {
     fun `only favourited restaurants reach the state, each marked isFavorite`() = runTest {
         observeState()
         repository.restaurants.value = listOf(
-            restaurant(1, "Cal Ferran"),
-            restaurant(2, "Bar Nil"),
-            restaurant(3, "Sushi Kobe")
+            restaurant("1", "Cal Ferran"),
+            restaurant("2", "Bar Nil"),
+            restaurant("3", "Sushi Kobe")
         )
 
-        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf(1L, 3L))
+        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf("1", "3"))
 
         val result = viewModel.uiState.value.restaurants
-        assertEquals(setOf(1L, 3L), result.map { it.id }.toSet())
+        assertEquals(setOf("1", "3"), result.map { it.id }.toSet())
         assertTrue(result.all { it.isFavorite })
     }
 
     @Test
     fun `un-favouriting a restaurant removes it from the state`() = runTest {
         observeState()
-        repository.restaurants.value = listOf(restaurant(1, "Cal Ferran"))
-        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf(1L))
+        repository.restaurants.value = listOf(restaurant("1", "Cal Ferran"))
+        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf("1"))
         assertEquals(1, viewModel.uiState.value.restaurants.size)
 
-        viewModel.onFavoriteToggle(1L)
+        viewModel.onFavoriteToggle("1")
 
         assertEquals(emptyList<Any>(), viewModel.uiState.value.restaurants)
     }
@@ -103,9 +97,9 @@ class FavoritesViewModelTest {
     @Test
     fun `each favourited restaurant's tags reach the state as a comma-joined label`() = runTest {
         observeState()
-        repository.restaurants.value = listOf(restaurant(1, "Cal Ferran"))
-        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf(1L))
-        repository.tagsByRestaurantId.value = mapOf(1L to listOf("Terraza", "Brunch"))
+        repository.restaurants.value = listOf(restaurant("1", "Cal Ferran"))
+        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf("1"))
+        repository.tagsByRestaurantId.value = mapOf("1" to listOf("Terraza", "Brunch"))
 
         assertEquals("Terraza, Brunch", viewModel.uiState.value.restaurants.single().tagsLabel)
     }
@@ -251,134 +245,16 @@ class FavoritesViewModelTest {
     fun `onDeleteRestaurant deletes the given restaurant through the repository`() = runTest {
         observeState()
 
-        viewModel.onDeleteRestaurant(1L)
+        viewModel.onDeleteRestaurant("1")
 
-        assertEquals(1L, repository.lastDeletedId)
+        assertEquals("1", repository.lastDeletedId)
     }
 
-    private fun restaurant(id: Long, name: String) = Restaurant(
+    private fun restaurant(id: String, name: String) = Restaurant(
         id = id,
         name = name,
         cuisineType = "mediterranean",
         streetAddress = null,
-        rating = 3,
         priceRange = 2
     )
-}
-
-private class FakeRestaurantRepository : RestaurantRepository {
-
-    val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
-    val cuisines = MutableStateFlow<List<String>>(emptyList())
-    val cities = MutableStateFlow<List<String>>(emptyList())
-    val regions = MutableStateFlow<List<String>>(emptyList())
-    val countries = MutableStateFlow<List<String>>(emptyList())
-    val tagsByRestaurantId = MutableStateFlow<Map<Long, List<String>>>(emptyMap())
-
-    var lastQuery: String? = null
-        private set
-    var lastMinRating: Int? = null
-        private set
-    var lastCuisine: String? = null
-        private set
-    var lastSort: RestaurantSort? = null
-        private set
-    var lastVisited: Boolean? = null
-        private set
-    var lastCity: String? = null
-        private set
-    var lastRegion: String? = null
-        private set
-    var lastCountry: String? = null
-        private set
-    var lastDeletedId: Long? = null
-        private set
-
-    override fun observeFiltered(
-        query: String?,
-        minRating: Int?,
-        cuisineType: String?,
-        sort: RestaurantSort,
-        visited: Boolean?,
-        city: String?,
-        region: String?,
-        country: String?
-    ): Flow<List<Restaurant>> {
-        lastQuery = query
-        lastMinRating = minRating
-        lastCuisine = cuisineType
-        lastSort = sort
-        lastVisited = visited
-        lastCity = city
-        lastRegion = region
-        lastCountry = country
-        return restaurants
-    }
-
-    override fun observeCuisineTypes(): Flow<List<String>> = cuisines
-    override fun observeCities(): Flow<List<String>> = cities
-    override fun observeRegions(): Flow<List<String>> = regions
-    override fun observeCountries(): Flow<List<String>> = countries
-
-    override fun observeById(id: Long): Flow<Restaurant?> =
-        throw NotImplementedError("Not used by FavoritesViewModel")
-
-    override suspend fun insert(restaurant: Restaurant, tags: List<String>): Long =
-        throw NotImplementedError("Not used by FavoritesViewModel")
-
-    override suspend fun update(restaurant: Restaurant, tags: List<String>) =
-        throw NotImplementedError("Not used by FavoritesViewModel")
-
-    override suspend fun delete(id: Long) {
-        lastDeletedId = id
-    }
-
-    override suspend fun deleteAll() =
-        throw NotImplementedError("Not used by FavoritesViewModel")
-
-    override fun observeAllTagNames(): Flow<List<String>> =
-        throw NotImplementedError("Not used by FavoritesViewModel")
-
-    override fun observeTagNames(restaurantId: Long): Flow<List<String>> =
-        throw NotImplementedError("Not used by FavoritesViewModel")
-
-    override fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>> = tagsByRestaurantId
-
-    override fun observeTotalCount(): Flow<Int> =
-        throw NotImplementedError("Not used by FavoritesViewModel")
-
-    override fun observeVisitedCount(): Flow<Int> =
-        throw NotImplementedError("Not used by FavoritesViewModel")
-
-    override fun observeAverageRating(): Flow<Double?> =
-        throw NotImplementedError("Not used by FavoritesViewModel")
-
-    override fun observeCuisineCounts(): Flow<List<CuisineCount>> =
-        throw NotImplementedError("Not used by FavoritesViewModel")
-
-    override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
-        throw NotImplementedError("Not used by FavoritesViewModel")
-
-    override suspend fun getRandomWantToTry(): Restaurant? =
-        throw NotImplementedError("Not used by FavoritesViewModel")
-}
-
-private class FakeUserPreferencesRepository : UserPreferencesRepository {
-
-    override val preferences = MutableStateFlow(UserPreferences.Defaults)
-
-    override suspend fun setPalette(palette: AppPalette) {
-        preferences.value = preferences.value.copy(palette = palette)
-    }
-
-    override suspend fun setThemeMode(themeMode: ThemeMode) {
-        preferences.value = preferences.value.copy(themeMode = themeMode)
-    }
-
-    override suspend fun toggleFavorite(restaurantId: Long) {
-        val current = preferences.value.favoriteIds
-        preferences.value = preferences.value.copy(
-            favoriteIds = if (restaurantId in current) current - restaurantId else current + restaurantId
-        )
-    }
 }

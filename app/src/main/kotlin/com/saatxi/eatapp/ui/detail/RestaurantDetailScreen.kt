@@ -78,6 +78,7 @@ import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.instagramUrl
 import com.saatxi.eatapp.data.share.RestaurantExport
+import com.saatxi.eatapp.data.share.VisitExport
 import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.cuisineBadgeTransition
 import com.saatxi.eatapp.ui.common.cuisineIcon
@@ -97,12 +98,12 @@ private val CUISINE_BADGE_SIZE = 32.dp
 @Composable
 fun RestaurantDetailScreen(
     onBack: () -> Unit,
-    onEditRestaurant: (Long) -> Unit,
+    onEditRestaurant: (String) -> Unit,
     // Non-null only when hosted inside a list-detail pane (EatAppNavHost's
     // ListDetailPaneHost): there the id comes from the pane navigator, not
     // from a nav-backstack entry, so the default SavedStateHandle-backed
     // factory has nothing to read it from.
-    restaurantId: Long? = null,
+    restaurantId: String? = null,
     viewModel: RestaurantDetailViewModel = viewModel(
         key = restaurantId?.let { "detail-$it" },
         factory = restaurantId?.let(AppViewModelProvider::detailViewModelFactory) ?: AppViewModelProvider.Factory
@@ -129,7 +130,7 @@ private fun RestaurantDetailContent(
     uiState: DetailUiState,
     onBack: () -> Unit,
     onFavoriteToggle: () -> Unit = {},
-    onEdit: (Long) -> Unit = {},
+    onEdit: (String) -> Unit = {},
     onDelete: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -441,16 +442,18 @@ private fun RestaurantUiModel.toExport() = RestaurantExport(
     name = name,
     cuisineType = cuisineKey,
     streetAddress = streetAddress,
-    rating = rating,
     priceRange = priceLabel.length,
-    visited = visited,
     website = website,
     instagram = instagram,
-    notes = notes,
     tags = tagsLabel.split(", ").filter { it.isNotBlank() },
     city = city,
     region = region,
-    country = country
+    country = country,
+    visits = if (visited) {
+        listOf(VisitExport(visitDate = System.currentTimeMillis(), rating = rating, notes = notes))
+    } else {
+        emptyList()
+    }
 )
 
 private fun Context.openUri(uri: String) {
@@ -473,7 +476,7 @@ private fun DetailTopBar(
     restaurant: RestaurantUiModel?,
     onBack: () -> Unit,
     onFavoriteToggle: () -> Unit,
-    onEdit: (Long) -> Unit,
+    onEdit: (String) -> Unit,
     onDeleteRequest: () -> Unit,
     onShare: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior
@@ -595,7 +598,7 @@ private fun InfoRow(
 }
 
 private val previewRestaurant = RestaurantUiModel(
-    id = 1,
+    id = "1",
     name = "Cal Ferran",
     cuisineKey = "mediterranean",
     streetAddress = "Plaça Santa Anna",

@@ -60,7 +60,7 @@ object AppViewModelProvider {
      * nav-backstack entry's [android.os.Bundle], so there is no
      * [androidx.lifecycle.SavedStateHandle] to read it from.
      */
-    fun detailViewModelFactory(restaurantId: Long): ViewModelProvider.Factory = viewModelFactory {
+    fun detailViewModelFactory(restaurantId: String): ViewModelProvider.Factory = viewModelFactory {
         initializer {
             RestaurantDetailViewModel(
                 eatApplication().repository,
@@ -71,7 +71,7 @@ object AppViewModelProvider {
     }
 
     /** `restaurantId == null` means "add a new restaurant" rather than edit an existing one. */
-    fun editViewModelFactory(restaurantId: Long?): ViewModelProvider.Factory = viewModelFactory {
+    fun editViewModelFactory(restaurantId: String?): ViewModelProvider.Factory = viewModelFactory {
         initializer {
             RestaurantEditViewModel(
                 eatApplication().repository,

@@ -12,7 +12,8 @@ interface RestaurantDao {
     /**
      * Ordering is fixed by [sortByRating] rather than interpolated into the SQL:
      * true puts the highest ratings first (name breaking ties), false leaves the
-     * CASE constant so the name order alone applies.
+     * CASE constant so the name order alone applies. "Rating" and "visited" now
+     * resolve through the `visits` table rather than a restaurant-level column.
      *
      * [query] must already be folded with `normalizeForSearch` and escaped
      * with `escapeLikeWildcards`, since it is matched as a literal substring
@@ -22,16 +23,20 @@ interface RestaurantDao {
      */
     @Query(
         """
-        SELECT * FROM restaurants
+        SELECT * FROM restaurants r
         WHERE (:query IS NULL OR searchText LIKE '%' || :query || '%' ESCAPE '\')
-          AND (:minRating IS NULL OR rating >= :minRating)
+          AND (:minRating IS NULL OR EXISTS (SELECT 1 FROM visits v WHERE v.restaurantId = r.id AND v.rating >= :minRating))
           AND (:cuisineType IS NULL OR cuisineType = :cuisineType)
-          AND (:visited IS NULL OR visited = :visited)
+          AND (
+            :visited IS NULL
+            OR (:visited = 1 AND EXISTS (SELECT 1 FROM visits v WHERE v.restaurantId = r.id))
+            OR (:visited = 0 AND NOT EXISTS (SELECT 1 FROM visits v WHERE v.restaurantId = r.id))
+          )
           AND (:city IS NULL OR city = :city)
           AND (:region IS NULL OR region = :region)
           AND (:country IS NULL OR country = :country)
         ORDER BY
-          CASE WHEN :sortByRating THEN rating ELSE 0 END DESC,
+          CASE WHEN :sortByRating THEN (SELECT MAX(v2.rating) FROM visits v2 WHERE v2.restaurantId = r.id) ELSE 0 END DESC,
           name COLLATE NOCASE ASC
         """
     )
@@ -66,50 +71,32 @@ interface RestaurantDao {
     fun observeCountries(): Flow<List<String>>
 
     @Query("SELECT * FROM restaurants WHERE id = :id")
-    fun observeById(id: Long): Flow<Restaurant?>
-
-    /**
-     * A one-shot read of just the photo path, used by the repository to know
-     * what file (if any) to delete once [update] or [delete] has moved a row
-     * past its old photo — see `RoomRestaurantRepository`.
-     */
-    @Query("SELECT photoPath FROM restaurants WHERE id = :id")
-    suspend fun getPhotoPath(id: Long): String?
+    fun observeById(id: String): Flow<Restaurant?>
 
     /** A one-shot snapshot of every row, used to write the full `backup.json` after each write. */
     @Query("SELECT * FROM restaurants ORDER BY name COLLATE NOCASE ASC")
     suspend fun getAll(): List<Restaurant>
 
-    /** [Restaurant.id] must be 0 (the default) so Room assigns a fresh one. */
     @Insert
-    suspend fun insert(restaurant: Restaurant): Long
+    suspend fun insert(restaurant: Restaurant)
 
     @Update
     suspend fun update(restaurant: Restaurant)
 
     @Query("DELETE FROM restaurants WHERE id = :id")
-    suspend fun delete(id: Long)
+    suspend fun delete(id: String)
 
     @Query("DELETE FROM restaurants")
     suspend fun deleteAll()
 
     // --- Statistics (F-64) ---------------------------------------------
     //
-    // Five small, independent queries rather than one hand-assembled
-    // aggregate object: each maps directly to one GROUP BY/aggregate and
-    // stays trivial to read, and StatisticsViewModel's own combine() (a
-    // typed 5-flow overload, not the untyped vararg one — see F-3's history
-    // of that exact overload boundary) is what turns them into one state.
+    // Restaurant-level stats stay here; visit-derived ones (visited count,
+    // average rating) moved to VisitDao since rating/visited no longer live
+    // on this table.
 
     @Query("SELECT COUNT(*) FROM restaurants")
     fun observeTotalCount(): Flow<Int>
-
-    @Query("SELECT COUNT(*) FROM restaurants WHERE visited = 1")
-    fun observeVisitedCount(): Flow<Int>
-
-    /** Null when nothing has a real rating yet — a want-to-try row's `rating = 0` doesn't count as one. */
-    @Query("SELECT AVG(rating) FROM restaurants WHERE rating > 0")
-    fun observeAverageRating(): Flow<Double?>
 
     @Query("SELECT cuisineType, COUNT(*) AS count FROM restaurants GROUP BY cuisineType ORDER BY count DESC")
     fun observeCuisineCounts(): Flow<List<CuisineCount>>
@@ -123,6 +110,6 @@ interface RestaurantDao {
      * this itself each time it (re)renders instead of observing a live stream.
      * Null when nothing is marked want-to-try.
      */
-    @Query("SELECT * FROM restaurants WHERE visited = 0 ORDER BY RANDOM() LIMIT 1")
+    @Query("SELECT * FROM restaurants WHERE NOT EXISTS (SELECT 1 FROM visits WHERE restaurantId = restaurants.id) ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandomWantToTry(): Restaurant?
 }

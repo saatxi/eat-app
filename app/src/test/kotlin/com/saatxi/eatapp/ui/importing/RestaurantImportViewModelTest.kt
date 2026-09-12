@@ -4,14 +4,17 @@ import android.content.Context
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import com.saatxi.eatapp.data.local.CuisineCount
+import com.saatxi.eatapp.data.local.Photo
 import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
+import com.saatxi.eatapp.data.local.Visit
 import com.saatxi.eatapp.data.repository.RestaurantRepository
 import com.saatxi.eatapp.data.share.ImportFailureReason
 import com.saatxi.eatapp.data.share.MAX_IMPORT_BYTES
 import com.saatxi.eatapp.data.share.RestaurantExport
 import com.saatxi.eatapp.data.share.RestaurantShareFile
+import com.saatxi.eatapp.data.share.VisitExport
 import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -63,12 +66,12 @@ class RestaurantImportViewModelTest {
         File(context.cacheDir, "import-test").deleteRecursively()
     }
 
-    private fun export(name: String, address: String? = "Rambla 1") = RestaurantExport(
+    private fun export(name: String, address: String? = "Rambla 1", visits: List<VisitExport> = emptyList()) = RestaurantExport(
         name = name,
         cuisineType = "mediterranean",
         streetAddress = address,
-        rating = 3,
-        priceRange = 2
+        priceRange = 2,
+        visits = visits
     )
 
     /** A real file under `cacheDir`, exposed through a `file://` Uri the same way a shared file's content Uri resolves. */
@@ -112,7 +115,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `a candidate matching an existing restaurant by name and address defaults to skip`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 5, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", rating = 4, priceRange = 2)
+            Restaurant(id = "5", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", priceRange = 2)
         )
         val uri = writeContentFile("duplicate.json", jsonOf(export("cal ferran", address = "rambla 1")))
         val viewModel = RestaurantImportViewModel(context, repository, uri)
@@ -120,13 +123,13 @@ class RestaurantImportViewModelTest {
         val candidate = viewModel.loaded().candidates.single()
 
         assertEquals(ImportDecision.SKIP, candidate.decision)
-        assertEquals(5L, candidate.duplicateOf?.id)
+        assertEquals("5", candidate.duplicateOf?.id)
     }
 
     @Test
     fun `a candidate with no matching existing restaurant defaults to add`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 5, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", rating = 4, priceRange = 2)
+            Restaurant(id = "5", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", priceRange = 2)
         )
         val uri = writeContentFile("no-duplicate.json", jsonOf(export("Bar Nil", address = "Carrer Nou 4")))
         val viewModel = RestaurantImportViewModel(context, repository, uri)
@@ -199,7 +202,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `confirming a skip decision inserts and updates nothing`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 5, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", rating = 4, priceRange = 2)
+            Restaurant(id = "5", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", priceRange = 2)
         )
         val uri = writeContentFile("skip.json", jsonOf(export("Cal Ferran")))
         val viewModel = RestaurantImportViewModel(context, repository, uri)
@@ -214,9 +217,12 @@ class RestaurantImportViewModelTest {
     @Test
     fun `confirming a replace decision updates the existing row's id`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 5, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", rating = 2, priceRange = 1)
+            Restaurant(id = "5", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", priceRange = 1)
         )
-        val uri = writeContentFile("replace.json", jsonOf(export("Cal Ferran", address = "Rambla 1").copy(rating = 5)))
+        val uri = writeContentFile(
+            "replace.json",
+            jsonOf(export("Cal Ferran", address = "Rambla 1", visits = listOf(VisitExport(visitDate = 1L, rating = 5))))
+        )
         val viewModel = RestaurantImportViewModel(context, repository, uri)
         viewModel.loaded()
         viewModel.onDecisionChange(0, ImportDecision.REPLACE)
@@ -224,8 +230,8 @@ class RestaurantImportViewModelTest {
         viewModel.onConfirm(onDone = {})
 
         val updated = repository.updated.single()
-        assertEquals(5L, updated.id)
-        assertEquals(5, updated.rating)
+        assertEquals("5", updated.id)
+        assertEquals(listOf(Triple("5", 1L, 5)), repository.addedVisits)
     }
 }
 
@@ -234,6 +240,8 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
     val inserted = mutableListOf<Restaurant>()
     val updated = mutableListOf<Restaurant>()
+    /** (restaurantId, visitDate, rating) recorded from every [addVisit] call. */
+    val addedVisits = mutableListOf<Triple<String, Long, Int>>()
 
     override fun observeFiltered(
         query: String?,
@@ -258,19 +266,18 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     override fun observeCountries(): Flow<List<String>> =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
-    override fun observeById(id: Long): Flow<Restaurant?> =
+    override fun observeById(id: String): Flow<Restaurant?> =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
-    override suspend fun insert(restaurant: Restaurant, tags: List<String>): Long {
+    override suspend fun insert(restaurant: Restaurant, tags: List<String>) {
         inserted += restaurant
-        return restaurant.id
     }
 
     override suspend fun update(restaurant: Restaurant, tags: List<String>) {
         updated += restaurant
     }
 
-    override suspend fun delete(id: Long) =
+    override suspend fun delete(id: String) =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
     override suspend fun deleteAll() =
@@ -279,10 +286,10 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     override fun observeAllTagNames(): Flow<List<String>> =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
-    override fun observeTagNames(restaurantId: Long): Flow<List<String>> =
+    override fun observeTagNames(restaurantId: String): Flow<List<String>> =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
-    override fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>> =
+    override fun observeTagsByRestaurantId(): Flow<Map<String, List<String>>> =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
     override fun observeTotalCount(): Flow<Int> =
@@ -301,5 +308,39 @@ internal class FakeRestaurantRepository : RestaurantRepository {
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
     override suspend fun getRandomWantToTry(): Restaurant? =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override fun observeVisitsForRestaurant(restaurantId: String): Flow<List<Visit>> =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override fun observeLatestVisitByRestaurantId(): Flow<Map<String, Visit>> =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override suspend fun getLatestVisit(restaurantId: String): Visit? =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override suspend fun saveSingleVisit(restaurantId: String, visited: Boolean, rating: Int, notes: String?) =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?) {
+        addedVisits += Triple(restaurantId, visitDate, rating)
+    }
+
+    override suspend fun deleteVisit(id: String) =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override fun observePhotosForRestaurant(restaurantId: String): Flow<List<Photo>> =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override fun observePhotosForVisit(visitId: String): Flow<List<Photo>> =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override suspend fun getRestaurantPhotoPath(restaurantId: String): String? =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override suspend fun setRestaurantPhoto(restaurantId: String, path: String?) =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override suspend fun deletePhoto(id: String) =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 }

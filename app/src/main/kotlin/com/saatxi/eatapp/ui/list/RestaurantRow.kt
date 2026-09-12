@@ -66,7 +66,7 @@ private val BADGE_SIZE = 52.dp
 internal fun RestaurantRow(
     restaurant: RestaurantUiModel,
     onClick: () -> Unit,
-    onFavoriteToggle: (Long) -> Unit,
+    onFavoriteToggle: (String) -> Unit,
     // Only ever requests a delete — the caller decides whether/how to confirm
     // (both screens show the same DeleteConfirmDialog) and only then actually
     // removes the row, so this row itself never has to know whether the
@@ -329,7 +329,7 @@ internal fun RestaurantRowSkeleton() {
 }
 
 private val previewRestaurant = RestaurantUiModel(
-    id = 1,
+    id = "1",
     name = "Cal Ferran",
     cuisineKey = "mediterranean",
     streetAddress = "Plaça Santa Anna",
@@ -345,7 +345,7 @@ private val previewRestaurant = RestaurantUiModel(
 )
 
 private val previewWantToTryRestaurant = previewRestaurant.copy(
-    id = 2,
+    id = "2",
     name = "Ramen Ko",
     cuisineKey = "japanese",
     rating = 0,

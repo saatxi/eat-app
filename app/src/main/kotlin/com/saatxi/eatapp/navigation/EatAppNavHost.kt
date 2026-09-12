@@ -63,8 +63,8 @@ private object Routes {
     const val STATS = "stats"
 }
 
-private fun detailRoute(restaurantId: Long) = "detail/$restaurantId"
-private fun editRoute(restaurantId: Long) = "edit/$restaurantId"
+private fun detailRoute(restaurantId: String) = "detail/$restaurantId"
+private fun editRoute(restaurantId: String) = "edit/$restaurantId"
 private fun importRoute(uri: Uri) = "import/${Uri.encode(uri.toString())}"
 
 private fun NavDestination?.isTopLevelDestinationInHierarchy(destination: TopLevelDestination): Boolean =
@@ -79,7 +79,7 @@ fun EatAppNavHost(
     startImportUri: Uri? = null,
     // Non-null only on the cold start that opened the app by tapping a
     // restaurant on the home-screen widget (F-68).
-    startRestaurantId: Long? = null
+    startRestaurantId: String? = null
 ) {
     LaunchedEffect(startImportUri) {
         startImportUri?.let { navController.navigate(importRoute(it)) }
@@ -208,7 +208,7 @@ fun EatAppNavHost(
                     }
                     composable(
                         route = Routes.DETAIL,
-                        arguments = listOf(navArgument(ARG_RESTAURANT_ID) { type = NavType.LongType })
+                        arguments = listOf(navArgument(ARG_RESTAURANT_ID) { type = NavType.StringType })
                     ) {
                         val animatedVisibilityScope = this
                         CompositionLocalProvider(
@@ -228,11 +228,11 @@ fun EatAppNavHost(
                     }
                     composable(
                         route = Routes.EDIT,
-                        arguments = listOf(navArgument(ARG_RESTAURANT_ID) { type = NavType.LongType })
+                        arguments = listOf(navArgument(ARG_RESTAURANT_ID) { type = NavType.StringType })
                     ) { backStackEntry ->
                         RestaurantEditScreen(
                             onBack = { navController.popBackStack() },
-                            restaurantId = backStackEntry.arguments?.getLong(ARG_RESTAURANT_ID)
+                            restaurantId = backStackEntry.arguments?.getString(ARG_RESTAURANT_ID)
                         )
                     }
                     composable(
@@ -266,10 +266,10 @@ fun EatAppNavHost(
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 private fun ListDetailPaneHost(
-    onEditRestaurant: (Long) -> Unit,
-    listContent: @Composable (onOpenRestaurant: (Long) -> Unit) -> Unit
+    onEditRestaurant: (String) -> Unit,
+    listContent: @Composable (onOpenRestaurant: (String) -> Unit) -> Unit
 ) {
-    val navigator = rememberListDetailPaneScaffoldNavigator<Long>()
+    val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()
 
     NavigableListDetailPaneScaffold(
