@@ -5,6 +5,7 @@ import com.saatxi.eatapp.data.local.Photo
 import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
+import com.saatxi.eatapp.data.local.TagCount
 import com.saatxi.eatapp.data.local.Visit
 import kotlinx.coroutines.flow.Flow
 
@@ -43,6 +44,9 @@ interface RestaurantRepository {
     fun observeAverageRating(): Flow<Double?>
     fun observeCuisineCounts(): Flow<List<CuisineCount>>
     fun observePriceRangeCounts(): Flow<List<PriceRangeCount>>
+    fun observeTagCounts(): Flow<List<TagCount>>
+    /** Every visit's raw date, across every restaurant — bucketed into months by `StatisticsViewModel`. */
+    fun observeAllVisitDates(): Flow<List<Long>>
 
     /** For the home-screen widget (F-68) — see `RestaurantDao.getRandomWantToTry`. */
     suspend fun getRandomWantToTry(): Restaurant?
@@ -76,7 +80,8 @@ interface RestaurantRepository {
     fun observePhotosForRestaurant(restaurantId: String): Flow<List<Photo>>
     fun observePhotosForVisit(visitId: String): Flow<List<Photo>>
     suspend fun getRestaurantPhotoPath(restaurantId: String): String?
-    /** Replaces the restaurant's own photo (there's only ever at most one in this pass) with [path], or clears it when null. */
-    suspend fun setRestaurantPhoto(restaurantId: String, path: String?)
+    /** Appends [photoPaths] as new restaurant-level photos, after whatever's already there. No-op for an empty list. */
+    suspend fun addRestaurantPhotos(restaurantId: String, photoPaths: List<String>)
+    /** Deletes one photo row (restaurant- or visit-level) and the file it points at. */
     suspend fun deletePhoto(id: String)
 }

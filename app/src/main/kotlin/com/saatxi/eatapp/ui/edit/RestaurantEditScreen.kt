@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -57,12 +59,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
@@ -130,7 +139,7 @@ private fun RestaurantEditContent(
     onWebsiteChange: (String) -> Unit,
     onInstagramChange: (String) -> Unit,
     onPhotoPicked: (Uri) -> Unit,
-    onRemovePhoto: () -> Unit,
+    onRemovePhoto: (String) -> Unit,
     onAddTag: (String) -> Unit,
     onRemoveTag: (String) -> Unit,
     onSave: () -> Unit
@@ -173,8 +182,8 @@ private fun RestaurantEditContent(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            PhotoPicker(
-                previewPhoto = uiState.previewPhoto,
+            PhotoCarousel(
+                photoPaths = uiState.photoPaths,
                 onPhotoPicked = onPhotoPicked,
                 onRemovePhoto = onRemovePhoto
             )
@@ -378,74 +387,114 @@ private fun EditSectionCard(title: String, content: @Composable ColumnScope.() -
     }
 }
 
+/** Size of one square photo tile in [PhotoCarousel] — both the filled and the dashed "add" tile. */
+private val PHOTO_TILE_SIZE = 96.dp
+
 /**
- * A tappable preview box that opens the system Photo Picker — no storage
- * permission needed, on API 26+ through the picker's own backport — and shows
- * either the resulting pick (or, in edit mode, the already-stored photo) or a
- * plain placeholder when there is none. [previewPhoto] is whatever
- * [RestaurantEditUiState.previewPhoto] resolves to: a picked [Uri], an
- * absolute path [String] to an existing photo, or null.
+ * A horizontal-scrolling row of the restaurant's photos, each with a small
+ * remove badge, plus a trailing dashed-border "add" tile that opens the
+ * system Photo Picker — no storage permission needed, on API 26+ through the
+ * picker's own backport. Mirrors the mockup's "Editar restaurante" carousel
+ * treatment; [photoPaths] is [RestaurantEditUiState.photoPaths].
  */
 @Composable
-private fun PhotoPicker(
-    previewPhoto: Any?,
+private fun PhotoCarousel(
+    photoPaths: List<String>,
     onPhotoPicked: (Uri) -> Unit,
-    onRemovePhoto: () -> Unit
+    onRemovePhoto: (String) -> Unit
 ) {
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) onPhotoPicked(uri)
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(160.dp)
-            .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable {
-                launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        if (previewPhoto != null) {
-            AsyncImage(
-                model = previewPhoto,
-                contentDescription = stringResource(R.string.edit_photo_preview_description),
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        items(photoPaths, key = { it }) { path ->
+            PhotoTile(path = path, onRemove = { onRemovePhoto(path) })
+        }
+        item(key = "add") {
+            AddPhotoTile(
+                onClick = { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
             )
-            IconButton(
-                onClick = onRemovePhoto,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.45f))
-            ) {
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = stringResource(R.string.edit_action_remove_photo),
-                    tint = Color.White
-                )
-            }
-        } else {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    Icons.Outlined.AddAPhoto,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = stringResource(R.string.edit_action_add_photo),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
         }
     }
 }
+
+@Composable
+private fun PhotoTile(path: String, onRemove: () -> Unit) {
+    Box(modifier = Modifier.size(PHOTO_TILE_SIZE)) {
+        AsyncImage(
+            model = path,
+            contentDescription = stringResource(R.string.edit_photo_preview_description),
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(MaterialTheme.shapes.medium)
+        )
+        IconButton(
+            onClick = onRemove,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp)
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.45f))
+        ) {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = stringResource(R.string.edit_action_remove_photo),
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+/** Corner radius of the "add" tile's dashed border — matches `MaterialTheme.shapes.medium`'s own rounding. */
+private val PHOTO_TILE_CORNER_RADIUS = 12.dp
+
+@Composable
+private fun AddPhotoTile(onClick: () -> Unit) {
+    val outlineColor = MaterialTheme.colorScheme.outline
+    Box(
+        modifier = Modifier
+            .size(PHOTO_TILE_SIZE)
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .dashedBorder(color = outlineColor, cornerRadius = PHOTO_TILE_CORNER_RADIUS)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                Icons.Outlined.AddAPhoto,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = stringResource(R.string.edit_action_add_photo),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+    }
+}
+
+/** A dashed rounded-rect outline, per the mockup's "add" tile — Compose has no built-in dashed [Modifier.border]. */
+private fun Modifier.dashedBorder(color: Color, cornerRadius: Dp, width: Dp = 1.5.dp) =
+    this.drawWithContent {
+        drawContent()
+        val strokeWidthPx = width.toPx()
+        // Inset by half the stroke width so the dashed line draws fully inside the tile's bounds.
+        val inset = strokeWidthPx / 2
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(inset, inset),
+            size = Size(size.width - strokeWidthPx, size.height - strokeWidthPx),
+            cornerRadius = CornerRadius(cornerRadius.toPx(), cornerRadius.toPx()),
+            style = Stroke(width = strokeWidthPx, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f)))
+        )
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

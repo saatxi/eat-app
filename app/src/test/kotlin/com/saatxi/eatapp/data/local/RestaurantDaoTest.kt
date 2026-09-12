@@ -479,32 +479,34 @@ class RestaurantDaoTest {
     }
 
     @Test
-    fun `setRestaurantPhoto deletes the old photo file once it is replaced by a new one`() = runTest {
-        val oldPhoto = fakePhotoFile("old.jpg")
+    fun `deletePhoto deletes the underlying file`() = runTest {
+        val photo = fakePhotoFile("old.jpg")
         repository.insert(restaurant("1", "Cal Ferran"))
-        repository.setRestaurantPhoto("1", oldPhoto.absolutePath)
+        repository.addRestaurantPhotos("1", listOf(photo.absolutePath))
+        val photoId = repository.observePhotosForRestaurant("1").first().first().id
 
-        repository.setRestaurantPhoto("1", "/photos/new.jpg")
+        repository.deletePhoto(photoId)
 
-        assertFalse(oldPhoto.exists())
+        assertFalse(photo.exists())
     }
 
     @Test
-    fun `setRestaurantPhoto leaves the photo file alone when the path does not change`() = runTest {
+    fun `addRestaurantPhotos leaves an existing photo's file alone`() = runTest {
         val photo = fakePhotoFile("unchanged.jpg")
         repository.insert(restaurant("1", "Cal Ferran"))
-        repository.setRestaurantPhoto("1", photo.absolutePath)
+        repository.addRestaurantPhotos("1", listOf(photo.absolutePath))
 
-        repository.setRestaurantPhoto("1", photo.absolutePath)
+        repository.addRestaurantPhotos("1", listOf("/photos/new.jpg"))
 
         assertTrue(photo.exists())
+        assertEquals(2, repository.observePhotosForRestaurant("1").first().size)
     }
 
     @Test
     fun `delete removes the row's photo file`() = runTest {
         val photo = fakePhotoFile("to-delete.jpg")
         repository.insert(restaurant("1", "Cal Ferran"))
-        repository.setRestaurantPhoto("1", photo.absolutePath)
+        repository.addRestaurantPhotos("1", listOf(photo.absolutePath))
 
         repository.delete("1")
 
@@ -516,9 +518,9 @@ class RestaurantDaoTest {
         val first = fakePhotoFile("one.jpg")
         val second = fakePhotoFile("two.jpg")
         repository.insert(restaurant("1", "One"))
-        repository.setRestaurantPhoto("1", first.absolutePath)
+        repository.addRestaurantPhotos("1", listOf(first.absolutePath))
         repository.insert(restaurant("2", "Two"))
-        repository.setRestaurantPhoto("2", second.absolutePath)
+        repository.addRestaurantPhotos("2", listOf(second.absolutePath))
 
         repository.deleteAll()
 
@@ -577,6 +579,26 @@ class RestaurantDaoTest {
 
         val counts = repository.observePriceRangeCounts().first().associate { it.priceRange to it.count }
         assertEquals(mapOf(1 to 1, 2 to 2), counts)
+    }
+
+    @Test
+    fun `tag counts group by tag name, highest first`() = runTest {
+        repository.insert(restaurant("1", "Sakura"), tags = listOf("Terraza", "Brunch"))
+        repository.insert(restaurant("2", "Kioto"), tags = listOf("Terraza"))
+
+        assertEquals(
+            listOf(TagCount("Terraza", 2), TagCount("Brunch", 1)),
+            repository.observeTagCounts().first()
+        )
+    }
+
+    @Test
+    fun `every visit's raw date is exposed for month bucketing`() = runTest {
+        seed(restaurant("1", "One"))
+        visit("1", visitDate = 100L)
+        visit("1", visitDate = 200L)
+
+        assertEquals(listOf(100L, 200L), repository.observeAllVisitDates().first())
     }
 
     // --- Part 3: backup.json, written through the repository -----------------

@@ -18,6 +18,13 @@ interface PhotoDao {
     @Query("SELECT * FROM photos WHERE restaurantId = :restaurantId ORDER BY position ASC LIMIT 1")
     suspend fun getFirstPhotoForRestaurant(restaurantId: String): Photo?
 
+    @Query("SELECT * FROM photos WHERE id = :id")
+    suspend fun getById(id: String): Photo?
+
+    /** -1 when the restaurant has no photos yet, so a caller can always append at `+ 1`. */
+    @Query("SELECT COALESCE(MAX(position), -1) FROM photos WHERE restaurantId = :restaurantId")
+    suspend fun getMaxPositionForRestaurant(restaurantId: String): Int
+
     @Insert
     suspend fun insert(photo: Photo)
 

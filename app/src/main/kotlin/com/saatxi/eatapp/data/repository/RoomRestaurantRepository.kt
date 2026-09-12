@@ -8,6 +8,7 @@ import com.saatxi.eatapp.data.local.Photo
 import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
+import com.saatxi.eatapp.data.local.TagCount
 import com.saatxi.eatapp.data.local.Visit
 import com.saatxi.eatapp.data.local.escapeLikeWildcards
 import com.saatxi.eatapp.data.local.normalizeForSearch
@@ -124,6 +125,8 @@ class RoomRestaurantRepository @Inject constructor(
     override fun observeAverageRating(): Flow<Double?> = visitDao.observeAverageRating()
     override fun observeCuisineCounts(): Flow<List<CuisineCount>> = dao.observeCuisineCounts()
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> = dao.observePriceRangeCounts()
+    override fun observeTagCounts(): Flow<List<TagCount>> = tagDao.observeTagCounts()
+    override fun observeAllVisitDates(): Flow<List<Long>> = visitDao.observeAllVisitDates()
 
     override suspend fun getRandomWantToTry(): Restaurant? = dao.getRandomWantToTry()
 
@@ -191,24 +194,24 @@ class RoomRestaurantRepository @Inject constructor(
     override suspend fun getRestaurantPhotoPath(restaurantId: String): String? =
         photoDao.getFirstPhotoForRestaurant(restaurantId)?.path
 
-    /**
-     * The old photo — if this moves the restaurant away from it — is deleted only
-     * *after* the write below succeeds, so a mid-write failure can never leave a
-     * row pointing at a file that's already gone.
-     */
-    override suspend fun setRestaurantPhoto(restaurantId: String, path: String?) {
-        val previous = photoDao.getFirstPhotoForRestaurant(restaurantId)
-        if (previous?.path == path) return
+    override suspend fun addRestaurantPhotos(restaurantId: String, photoPaths: List<String>) {
+        if (photoPaths.isEmpty()) return
+        val startPosition = photoDao.getMaxPositionForRestaurant(restaurantId) + 1
         database.withTransaction {
-            photoDao.deleteAllForRestaurant(restaurantId)
-            if (path != null) {
-                photoDao.insert(Photo(id = UUID.randomUUID().toString(), restaurantId = restaurantId, path = path))
+            photoPaths.forEachIndexed { index, path ->
+                photoDao.insert(
+                    Photo(id = UUID.randomUUID().toString(), restaurantId = restaurantId, path = path, position = startPosition + index)
+                )
             }
         }
-        previous?.path?.let(::deleteRestaurantPhotoFile)
+        writeBackup()
     }
 
+    /** The row is deleted first, then its file — a mid-write failure never leaves a row pointing at a missing file. */
     override suspend fun deletePhoto(id: String) {
+        val photo = photoDao.getById(id)
         photoDao.delete(id)
+        photo?.path?.let(::deleteRestaurantPhotoFile)
+        writeBackup()
     }
 }

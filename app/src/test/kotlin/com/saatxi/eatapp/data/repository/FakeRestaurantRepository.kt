@@ -5,6 +5,7 @@ import com.saatxi.eatapp.data.local.Photo
 import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
+import com.saatxi.eatapp.data.local.TagCount
 import com.saatxi.eatapp.data.local.Visit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +34,8 @@ class FakeRestaurantRepository : RestaurantRepository {
     val averageRating = MutableStateFlow<Double?>(null)
     val cuisineCounts = MutableStateFlow<List<CuisineCount>>(emptyList())
     val priceRangeCounts = MutableStateFlow<List<PriceRangeCount>>(emptyList())
+    val tagCounts = MutableStateFlow<List<TagCount>>(emptyList())
+    val allVisitDates = MutableStateFlow<List<Long>>(emptyList())
     var randomWantToTry: Restaurant? = null
 
     var lastQuery: String? = null
@@ -128,6 +131,8 @@ class FakeRestaurantRepository : RestaurantRepository {
     override fun observeAverageRating(): Flow<Double?> = averageRating
     override fun observeCuisineCounts(): Flow<List<CuisineCount>> = cuisineCounts
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> = priceRangeCounts
+    override fun observeTagCounts(): Flow<List<TagCount>> = tagCounts
+    override fun observeAllVisitDates(): Flow<List<Long>> = allVisitDates
 
     override suspend fun getRandomWantToTry(): Restaurant? = randomWantToTry
 
@@ -186,8 +191,11 @@ class FakeRestaurantRepository : RestaurantRepository {
         latestVisitByRestaurantId.value = latestVisitByRestaurantId.value.filterValues { it.id != id }
     }
 
+    /** Empty by default; a test that cares about a restaurant's photos can push into this. */
+    val photosByRestaurantId = MutableStateFlow<Map<String, List<Photo>>>(emptyMap())
+
     override fun observePhotosForRestaurant(restaurantId: String): Flow<List<Photo>> =
-        throw NotImplementedError("Not used by these tests")
+        photosByRestaurantId.map { it[restaurantId].orEmpty() }
 
     /** Empty by default; a test that cares about a visit's photos can push into [photosByVisitId]. */
     val photosByVisitId = MutableStateFlow<Map<String, List<Photo>>>(emptyMap())
@@ -197,9 +205,18 @@ class FakeRestaurantRepository : RestaurantRepository {
 
     override suspend fun getRestaurantPhotoPath(restaurantId: String): String? = lastPhotoPath
 
-    override suspend fun setRestaurantPhoto(restaurantId: String, path: String?) {
-        lastPhotoPath = path
+    var lastAddedRestaurantPhotos: Pair<String, List<String>>? = null
+        private set
+
+    override suspend fun addRestaurantPhotos(restaurantId: String, photoPaths: List<String>) {
+        lastAddedRestaurantPhotos = restaurantId to photoPaths
+        lastPhotoPath = photoPaths.lastOrNull() ?: lastPhotoPath
     }
 
-    override suspend fun deletePhoto(id: String) = Unit
+    var lastDeletedPhotoId: String? = null
+        private set
+
+    override suspend fun deletePhoto(id: String) {
+        lastDeletedPhotoId = id
+    }
 }

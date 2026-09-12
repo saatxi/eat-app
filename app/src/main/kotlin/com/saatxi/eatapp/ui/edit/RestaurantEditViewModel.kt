@@ -4,11 +4,13 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.saatxi.eatapp.data.local.Photo
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.normalizeInstagramHandle
 import com.saatxi.eatapp.data.local.normalizeTagName
 import com.saatxi.eatapp.data.local.normalizeWebsite
 import com.saatxi.eatapp.data.photo.RestaurantPhotoStorage
+import com.saatxi.eatapp.data.photo.deleteRestaurantPhotoFile
 import com.saatxi.eatapp.data.repository.RestaurantRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
@@ -37,21 +39,27 @@ data class RestaurantEditUiState(
     val priceRange: Int = 0,
     val website: String = "",
     val instagram: String = "",
-    /** Already-persisted photo of the restaurant being edited; null when adding a new one. */
-    val existingPhotoPath: String? = null,
-    /** A freshly picked photo, not yet copied into storage — that only happens on [RestaurantEditViewModel.onSave]. */
-    val pendingPhotoUri: Uri? = null,
-    /** True once the user has cleared [existingPhotoPath] without picking a replacement. */
-    val photoRemoved: Boolean = false,
+    /** Already-persisted photos of the restaurant being edited, in display order; empty when adding a new one. */
+    val existingPhotos: List<Photo> = emptyList(),
+    /** [existingPhotos] whose [Photo.id] is in here are hidden and deleted (row + file) on [RestaurantEditViewModel.onSave]. */
+    val removedPhotoIds: Set<String> = emptySet(),
+    /**
+     * Freshly picked photos, already copied into permanent storage (unlike
+     * the old single-photo field, which deferred the copy to save time) —
+     * matching `LogVisitViewModel`'s pattern, since a carousel needs each
+     * pick resolved to its own path as soon as it's made. Persisted as new
+     * [Photo] rows on save.
+     */
+    val newPhotoPaths: List<String> = emptyList(),
     val nameError: Boolean = false,
     val cuisineError: Boolean = false,
     val websiteError: Boolean = false,
     val instagramError: Boolean = false,
     val tags: List<String> = emptyList()
 ) {
-    /** What the form should preview: a pending pick beats the existing photo, which a removal beats. */
-    val previewPhoto: Any?
-        get() = pendingPhotoUri ?: existingPhotoPath?.takeUnless { photoRemoved }
+    /** Every photo the carousel should show: surviving persisted ones first, then freshly added ones. */
+    val photoPaths: List<String>
+        get() = existingPhotos.filterNot { it.id in removedPhotoIds }.map { it.path } + newPhotoPaths
 }
 
 /**
@@ -96,7 +104,7 @@ class RestaurantEditViewModel @Inject constructor(
                 val restaurant = repository.observeById(id).first()
                 if (restaurant != null) {
                     val tags = repository.observeTagNames(id).first()
-                    val photoPath = repository.getRestaurantPhotoPath(id)
+                    val photos = repository.observePhotosForRestaurant(id).first()
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -109,7 +117,7 @@ class RestaurantEditViewModel @Inject constructor(
                             priceRange = restaurant.priceRange,
                             website = restaurant.website.orEmpty(),
                             instagram = restaurant.instagram.orEmpty(),
-                            existingPhotoPath = photoPath,
+                            existingPhotos = photos,
                             tags = tags
                         )
                     }
@@ -156,13 +164,34 @@ class RestaurantEditViewModel @Inject constructor(
         _uiState.update { it.copy(instagram = instagram, instagramError = false) }
     }
 
-    /** [uri] is only ever held in memory until [onSave] copies it — see [RestaurantEditUiState.pendingPhotoUri]. */
+    /**
+     * Copies [uri] into permanent storage right away — like
+     * [com.saatxi.eatapp.ui.logvisit.LogVisitViewModel]'s photos, unlike the
+     * old single deferred pick — and appends the resulting path to the
+     * carousel. A copy that fails is silently dropped.
+     */
     fun onPhotoPicked(uri: Uri) {
-        _uiState.update { it.copy(pendingPhotoUri = uri, photoRemoved = false) }
+        viewModelScope.launch {
+            val path = photoStorage.copy(uri) ?: return@launch
+            _uiState.update { it.copy(newPhotoPaths = it.newPhotoPaths + path) }
+        }
     }
 
-    fun onRemovePhoto() {
-        _uiState.update { it.copy(pendingPhotoUri = null, photoRemoved = true) }
+    /**
+     * Removes one tile from the carousel. A still-persisted photo is only
+     * hidden and queued for deletion on [onSave] (so cancelling the form
+     * leaves it untouched); a freshly picked one that was never saved has
+     * nothing left referencing it, so its copied file is deleted immediately.
+     */
+    fun onRemovePhoto(path: String) {
+        val state = _uiState.value
+        val existingMatch = state.existingPhotos.firstOrNull { it.path == path && it.id !in state.removedPhotoIds }
+        if (existingMatch != null) {
+            _uiState.update { it.copy(removedPhotoIds = it.removedPhotoIds + existingMatch.id) }
+        } else {
+            _uiState.update { it.copy(newPhotoPaths = it.newPhotoPaths.filterNot { existing -> existing == path }) }
+            deleteRestaurantPhotoFile(path)
+        }
     }
 
     /** Ignored (no-op) when [raw] fails validation or already matches a tag already added, case-insensitively. */
@@ -208,17 +237,6 @@ class RestaurantEditViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            // A pending pick is only copied into permanent storage now, at the moment the
-            // restaurant is actually saved — not when it was picked — so cancelling the
-            // form (back, without saving) never leaves an orphaned file behind. A copy
-            // that fails (an unreadable or corrupt source) falls back to whatever photo
-            // was already there rather than losing it over one bad pick.
-            val photoPath = when {
-                state.pendingPhotoUri != null -> photoStorage.copy(state.pendingPhotoUri) ?: state.existingPhotoPath
-                state.photoRemoved -> null
-                else -> state.existingPhotoPath
-            }
-
             val id = restaurantId ?: UUID.randomUUID().toString()
             val restaurant = Restaurant(
                 id = id,
@@ -238,7 +256,8 @@ class RestaurantEditViewModel @Inject constructor(
             } else {
                 repository.insert(restaurant, state.tags)
             }
-            repository.setRestaurantPhoto(id, photoPath)
+            state.removedPhotoIds.forEach { repository.deletePhoto(it) }
+            repository.addRestaurantPhotos(id, state.newPhotoPaths)
             onSaved()
         }
     }

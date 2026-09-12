@@ -9,6 +9,7 @@ import com.saatxi.eatapp.data.local.Photo
 import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
+import com.saatxi.eatapp.data.local.TagCount
 import com.saatxi.eatapp.data.local.Visit
 import com.saatxi.eatapp.data.repository.RestaurantRepository
 import com.saatxi.eatapp.data.share.ImportFailureReason
@@ -308,6 +309,12 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
+    override fun observeTagCounts(): Flow<List<TagCount>> =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
+    override fun observeAllVisitDates(): Flow<List<Long>> =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
     override suspend fun getRandomWantToTry(): Restaurant? =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
@@ -342,7 +349,7 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     override suspend fun getRestaurantPhotoPath(restaurantId: String): String? =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
-    override suspend fun setRestaurantPhoto(restaurantId: String, path: String?) =
+    override suspend fun addRestaurantPhotos(restaurantId: String, photoPaths: List<String>) =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
     override suspend fun deletePhoto(id: String) =

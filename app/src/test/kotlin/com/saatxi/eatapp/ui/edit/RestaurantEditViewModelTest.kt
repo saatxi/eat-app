@@ -329,49 +329,65 @@ class RestaurantEditViewModelTest {
     // when a real Android type is unavoidable (see RestaurantDaoTest).
 
     @Test
-    fun `onRemovePhoto clears the preview and marks the photo removed`() = runTest {
+    fun `edit mode loads the existing restaurant's photos into the carousel`() = runTest {
         repository.restaurants.value = listOf(
             Restaurant(id = "1", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, priceRange = 1)
         )
-        repository.photoPathByRestaurantId["1"] = "/existing/photo.jpg"
+        repository.photosByRestaurantId["1"] =
+            listOf(Photo(id = "p1", restaurantId = "1", path = "/existing/photo.jpg", position = 0))
         val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
 
-        viewModel.onRemovePhoto()
-
-        assertNull(viewModel.uiState.value.previewPhoto)
-        assertTrue(viewModel.uiState.value.photoRemoved)
+        assertEquals(listOf("/existing/photo.jpg"), viewModel.uiState.value.photoPaths)
     }
 
     @Test
-    fun `removing the photo and saving clears it`() = runTest {
+    fun `onRemovePhoto hides an existing photo from the carousel without deleting it yet`() = runTest {
         repository.restaurants.value = listOf(
             Restaurant(id = "1", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, priceRange = 1)
         )
-        repository.photoPathByRestaurantId["1"] = "/existing/photo.jpg"
+        repository.photosByRestaurantId["1"] =
+            listOf(Photo(id = "p1", restaurantId = "1", path = "/existing/photo.jpg", position = 0))
         val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
-        viewModel.onRemovePhoto()
+
+        viewModel.onRemovePhoto("/existing/photo.jpg")
+
+        assertEquals(emptyList<String>(), viewModel.uiState.value.photoPaths)
+        assertNull(repository.lastDeletedPhotoId)
+    }
+
+    @Test
+    fun `removing an existing photo and saving deletes it`() = runTest {
+        repository.restaurants.value = listOf(
+            Restaurant(id = "1", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, priceRange = 1)
+        )
+        repository.photosByRestaurantId["1"] =
+            listOf(Photo(id = "p1", restaurantId = "1", path = "/existing/photo.jpg", position = 0))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
+        observeState(viewModel)
+        viewModel.onRemovePhoto("/existing/photo.jpg")
 
         viewModel.onSave(onSaved = {})
 
-        assertNull(repository.lastPhotoPath)
-        assertNull(photoStorage.lastCopiedSource)
+        assertEquals("p1", repository.lastDeletedPhotoId)
     }
 
     @Test
-    fun `saving without touching the photo keeps the one already stored`() = runTest {
+    fun `saving without touching photos keeps the ones already stored`() = runTest {
         repository.restaurants.value = listOf(
             Restaurant(id = "1", name = "Old Name", cuisineType = "mediterranean", streetAddress = null, priceRange = 1)
         )
-        repository.photoPathByRestaurantId["1"] = "/existing/photo.jpg"
+        repository.photosByRestaurantId["1"] =
+            listOf(Photo(id = "p1", restaurantId = "1", path = "/existing/photo.jpg", position = 0))
         val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
         viewModel.onNameChange("New Name")
 
         viewModel.onSave(onSaved = {})
 
-        assertEquals("/existing/photo.jpg", repository.lastPhotoPath)
+        assertNull(repository.lastDeletedPhotoId)
+        assertEquals(listOf("/existing/photo.jpg"), viewModel.uiState.value.photoPaths)
     }
 }
 
@@ -384,7 +400,7 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     val regions = MutableStateFlow<List<String>>(emptyList())
     val countries = MutableStateFlow<List<String>>(emptyList())
     val latestVisitByRestaurantId = MutableStateFlow<Map<String, Visit>>(emptyMap())
-    val photoPathByRestaurantId = mutableMapOf<String, String>()
+    val photosByRestaurantId = mutableMapOf<String, List<Photo>>()
 
     var lastInserted: Restaurant? = null
         private set
@@ -397,7 +413,9 @@ internal class FakeRestaurantRepository : RestaurantRepository {
         private set
     var lastSingleVisitNotes: String? = null
         private set
-    var lastPhotoPath: String? = null
+    var lastAddedRestaurantPhotos: Pair<String, List<String>>? = null
+        private set
+    var lastDeletedPhotoId: String? = null
         private set
 
     override fun observeFiltered(
@@ -463,6 +481,12 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
         throw NotImplementedError("Not used by RestaurantEditViewModel")
 
+    override fun observeTagCounts(): Flow<List<com.saatxi.eatapp.data.local.TagCount>> =
+        throw NotImplementedError("Not used by RestaurantEditViewModel")
+
+    override fun observeAllVisitDates(): Flow<List<Long>> =
+        throw NotImplementedError("Not used by RestaurantEditViewModel")
+
     override suspend fun getRandomWantToTry(): Restaurant? =
         throw NotImplementedError("Not used by RestaurantEditViewModel")
 
@@ -488,18 +512,21 @@ internal class FakeRestaurantRepository : RestaurantRepository {
         throw NotImplementedError("Not used by RestaurantEditViewModel")
 
     override fun observePhotosForRestaurant(restaurantId: String): Flow<List<Photo>> =
-        throw NotImplementedError("Not used by RestaurantEditViewModel")
+        MutableStateFlow(photosByRestaurantId[restaurantId].orEmpty())
 
     override fun observePhotosForVisit(visitId: String): Flow<List<Photo>> =
         throw NotImplementedError("Not used by RestaurantEditViewModel")
 
-    override suspend fun getRestaurantPhotoPath(restaurantId: String): String? = photoPathByRestaurantId[restaurantId]
+    override suspend fun getRestaurantPhotoPath(restaurantId: String): String? =
+        photosByRestaurantId[restaurantId]?.firstOrNull()?.path
 
-    override suspend fun setRestaurantPhoto(restaurantId: String, path: String?) {
-        lastPhotoPath = path
+    override suspend fun addRestaurantPhotos(restaurantId: String, photoPaths: List<String>) {
+        lastAddedRestaurantPhotos = restaurantId to photoPaths
     }
 
-    override suspend fun deletePhoto(id: String) = Unit
+    override suspend fun deletePhoto(id: String) {
+        lastDeletedPhotoId = id
+    }
 }
 
 internal class FakeRestaurantPhotoStorage : RestaurantPhotoStorage {
