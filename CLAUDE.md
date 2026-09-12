@@ -34,9 +34,9 @@ When asked to write a commit message or a tag message:
 ### Format
 
 ```text
-short summary
+Short summary
 
-optional detailed explanation
+Optional detailed explanation
 ```
 
 - Imperative mood, lowercase type, concise summary line — keep it on one physical
