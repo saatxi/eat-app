@@ -166,9 +166,9 @@ class FakeRestaurantRepository : RestaurantRepository {
         }
     }
 
-    override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?) {
+    override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?, priceRange: Int) {
         latestVisitByRestaurantId.value = latestVisitByRestaurantId.value +
-            (restaurantId to Visit(id = "fake-visit-$visitDate", restaurantId = restaurantId, visitDate = visitDate, rating = rating, notes = notes))
+            (restaurantId to Visit(id = "fake-visit-$visitDate", restaurantId = restaurantId, visitDate = visitDate, rating = rating, notes = notes, priceRange = priceRange))
     }
 
     var lastAddedVisit: Visit? = null
@@ -181,9 +181,10 @@ class FakeRestaurantRepository : RestaurantRepository {
         visitDate: Long,
         rating: Int,
         notes: String?,
+        priceRange: Int,
         photoPaths: List<String>
     ): String {
-        val visit = Visit(id = "fake-visit-new-$visitDate", restaurantId = restaurantId, visitDate = visitDate, rating = rating, notes = notes)
+        val visit = Visit(id = "fake-visit-new-$visitDate", restaurantId = restaurantId, visitDate = visitDate, rating = rating, notes = notes, priceRange = priceRange)
         lastAddedVisit = visit
         lastAddedVisitPhotoPaths = photoPaths
         latestVisitByRestaurantId.value = latestVisitByRestaurantId.value + (restaurantId to visit)

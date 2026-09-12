@@ -505,10 +505,17 @@ internal class FakeRestaurantRepository : RestaurantRepository {
         lastSingleVisitNotes = notes
     }
 
-    override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?) =
+    override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?, priceRange: Int) =
         throw NotImplementedError("Not used by RestaurantEditViewModel")
 
-    override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?, photoPaths: List<String>): String =
+    override suspend fun addVisit(
+        restaurantId: String,
+        visitDate: Long,
+        rating: Int,
+        notes: String?,
+        priceRange: Int,
+        photoPaths: List<String>
+    ): String =
         throw NotImplementedError("Not used by RestaurantEditViewModel")
 
     override suspend fun deleteVisit(id: String) =

@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
+import com.saatxi.eatapp.ui.common.PriceRangePicker
 import com.saatxi.eatapp.ui.theme.EatAppTheme
 import java.text.DateFormat
 import java.util.Date
@@ -72,6 +73,7 @@ fun LogVisitScreen(
         onBack = onDone,
         onDateChange = viewModel::onDateChange,
         onRatingChange = viewModel::onRatingChange,
+        onPriceRangeChange = viewModel::onPriceRangeChange,
         onNotesChange = viewModel::onNotesChange,
         onPhotoPicked = viewModel::onPhotoPicked,
         onRemovePhoto = viewModel::onRemovePhoto,
@@ -86,6 +88,7 @@ private fun LogVisitContent(
     onBack: () -> Unit,
     onDateChange: (Long) -> Unit,
     onRatingChange: (Int) -> Unit,
+    onPriceRangeChange: (Int) -> Unit,
     onNotesChange: (String) -> Unit,
     onPhotoPicked: (Uri) -> Unit,
     onRemovePhoto: (String) -> Unit,
@@ -162,6 +165,15 @@ private fun LogVisitContent(
                         RatingPicker(
                             rating = uiState.rating,
                             onRatingChange = onRatingChange,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+
+                    Column {
+                        Text(stringResource(R.string.logvisit_field_price), style = MaterialTheme.typography.labelLarge)
+                        PriceRangePicker(
+                            priceRange = uiState.priceRange,
+                            onPriceRangeChange = onPriceRangeChange,
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
@@ -280,10 +292,11 @@ private fun VisitPhotoStrip(
 private fun LogVisitScreenPreview() {
     EatAppTheme {
         LogVisitContent(
-            uiState = LogVisitUiState(rating = 4, notes = "Ask for the burrata to start."),
+            uiState = LogVisitUiState(rating = 4, priceRange = 2, notes = "Ask for the burrata to start."),
             onBack = {},
             onDateChange = {},
             onRatingChange = {},
+            onPriceRangeChange = {},
             onNotesChange = {},
             onPhotoPicked = {},
             onRemovePhoto = {},

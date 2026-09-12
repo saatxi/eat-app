@@ -13,7 +13,9 @@ import kotlinx.serialization.Serializable
 data class VisitExport(
     val visitDate: Long,
     val rating: Int,
-    val notes: String? = null
+    val notes: String? = null,
+    /** 0-4, same scale as [RestaurantExport.priceRange]; 0 means "not set". Defaults to 0 so a v2-era file written before this field existed still imports cleanly. */
+    val priceRange: Int = 0
 )
 
 /**
@@ -68,7 +70,7 @@ fun Restaurant.toExport(tags: List<String> = emptyList(), visits: List<Visit> = 
     city = city,
     region = region,
     country = country,
-    visits = visits.map { VisitExport(visitDate = it.visitDate, rating = it.rating, notes = it.notes) }
+    visits = visits.map { VisitExport(visitDate = it.visitDate, rating = it.rating, notes = it.notes, priceRange = it.priceRange) }
 )
 
 /**
@@ -84,7 +86,7 @@ fun RestaurantExport.toRestaurantOrNull(id: String): Restaurant? {
     val trimmedCuisine = cuisineType.trim()
     if (trimmedName.isEmpty() || trimmedCuisine.isEmpty()) return null
     if (priceRange !in 0..4) return null
-    if (visits.any { it.rating !in 0..5 }) return null
+    if (visits.any { it.rating !in 0..5 || it.priceRange !in 0..4 }) return null
 
     return Restaurant(
         id = id,
@@ -101,7 +103,7 @@ fun RestaurantExport.toRestaurantOrNull(id: String): Restaurant? {
 }
 
 /** The row's visits, dropping any that individually fail validation rather than failing the whole row. */
-fun RestaurantExport.toValidatedVisits(): List<VisitExport> = visits.filter { it.rating in 0..5 }
+fun RestaurantExport.toValidatedVisits(): List<VisitExport> = visits.filter { it.rating in 0..5 && it.priceRange in 0..4 }
 
 /**
  * Validates the raw [RestaurantExport.tags] list the same per-item-lenient

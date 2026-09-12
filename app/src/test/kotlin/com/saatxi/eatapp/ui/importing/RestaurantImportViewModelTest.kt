@@ -333,11 +333,18 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     override suspend fun saveSingleVisit(restaurantId: String, visited: Boolean, rating: Int, notes: String?) =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
-    override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?) {
+    override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?, priceRange: Int) {
         addedVisits += Triple(restaurantId, visitDate, rating)
     }
 
-    override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?, photoPaths: List<String>): String =
+    override suspend fun addVisit(
+        restaurantId: String,
+        visitDate: Long,
+        rating: Int,
+        notes: String?,
+        priceRange: Int,
+        photoPaths: List<String>
+    ): String =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
     override suspend fun deleteVisit(id: String) =

@@ -30,5 +30,7 @@ data class Visit(
     val visitDate: Long,
     /** 0-5. */
     val rating: Int,
-    val notes: String? = null
+    val notes: String? = null,
+    /** Price level on this particular visit (0-4, same scale as [Restaurant.priceRange]); 0 means "not set". */
+    val priceRange: Int = 0
 )

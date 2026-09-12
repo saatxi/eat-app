@@ -125,7 +125,7 @@ class RestaurantImportViewModel @Inject constructor(
                 }
                 if (restaurantId != null) {
                     candidate.visits.forEach { visit ->
-                        repository.addVisit(restaurantId, visit.visitDate, visit.rating, visit.notes)
+                        repository.addVisit(restaurantId, visit.visitDate, visit.rating, visit.notes, visit.priceRange)
                     }
                 }
             }

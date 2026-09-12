@@ -189,6 +189,7 @@
     <string name="logvisit_action_save">Guardar</string>
     <string name="logvisit_field_date">Fecha</string>
     <string name="logvisit_field_rating">Puntuación</string>
+    <string name="logvisit_field_price">Rango de precio</string>
     <string name="logvisit_field_notes">Notas (opcional)</string>
     <string name="logvisit_action_add_photo">Añadir foto</string>
     <string name="logvisit_action_remove_photo">Quitar foto</string>

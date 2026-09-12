@@ -194,6 +194,7 @@
     <string name="logvisit_action_save">Save</string>
     <string name="logvisit_field_date">Date</string>
     <string name="logvisit_field_rating">Rating</string>
+    <string name="logvisit_field_price">Price range</string>
     <string name="logvisit_field_notes">Notes (optional)</string>
     <string name="logvisit_action_add_photo">Add photo</string>
     <string name="logvisit_action_remove_photo">Remove photo</string>

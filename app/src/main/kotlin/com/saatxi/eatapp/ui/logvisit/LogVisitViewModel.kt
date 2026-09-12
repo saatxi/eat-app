@@ -17,10 +17,15 @@ import kotlinx.coroutines.launch
 /** Widest rating scale a visit can hold; see [com.saatxi.eatapp.data.local.Visit]. */
 private const val MAX_RATING = 5
 
+/** Widest price-range level a visit can hold; see [com.saatxi.eatapp.data.local.Visit.priceRange]. */
+private const val MAX_PRICE_RANGE = 4
+
 data class LogVisitUiState(
     /** Epoch millis; defaults to "now" and is only ever changed through the date picker. */
     val visitDate: Long = System.currentTimeMillis(),
     val rating: Int = 0,
+    /** 0-4, same scale as [com.saatxi.eatapp.data.local.Restaurant.priceRange]; 0 means "not set". */
+    val priceRange: Int = 0,
     val notes: String = "",
     /** Already-copied photos for this visit, in the order they'll be saved. */
     val photoPaths: List<String> = emptyList(),
@@ -52,6 +57,10 @@ class LogVisitViewModel @Inject constructor(
 
     fun onRatingChange(rating: Int) {
         _uiState.update { it.copy(rating = rating.coerceIn(0, MAX_RATING)) }
+    }
+
+    fun onPriceRangeChange(priceRange: Int) {
+        _uiState.update { it.copy(priceRange = priceRange.coerceIn(0, MAX_PRICE_RANGE)) }
     }
 
     fun onNotesChange(notes: String) {
@@ -86,6 +95,7 @@ class LogVisitViewModel @Inject constructor(
                 visitDate = state.visitDate,
                 rating = state.rating,
                 notes = state.notes.trim().takeIf { it.isNotBlank() },
+                priceRange = state.priceRange,
                 photoPaths = state.photoPaths
             )
             onSaved()

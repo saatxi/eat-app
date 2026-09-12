@@ -29,6 +29,8 @@ data class VisitUiModel(
     val visitDate: Long,
     val rating: Int,
     val notes: String?,
+    /** 0-4, 0 meaning "not set" — see [com.saatxi.eatapp.data.local.Visit.priceRange]. */
+    val priceRange: Int,
     val photoPaths: List<String>
 )
 
@@ -92,6 +94,7 @@ class RestaurantDetailViewModel @Inject constructor(
                         visitDate = visit.visitDate,
                         rating = visit.rating,
                         notes = visit.notes?.takeIf { it.isNotBlank() },
+                        priceRange = visit.priceRange,
                         photoPaths = photosByVisitId[visit.id].orEmpty().map { it.path }
                     )
                 },

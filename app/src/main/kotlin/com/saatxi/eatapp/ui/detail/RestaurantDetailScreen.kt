@@ -523,7 +523,12 @@ private fun VisitCard(visit: VisitUiModel, cuisineKey: String) {
                     text = dateFormatter.format(Date(visit.visitDate)),
                     style = MaterialTheme.typography.titleSmall
                 )
-                RatingAndPriceRow(rating = visit.rating, priceLabel = "", showRatingLabel = false, starSize = 16.dp)
+                RatingAndPriceRow(
+                    rating = visit.rating,
+                    priceLabel = if (visit.priceRange > 0) "$".repeat(visit.priceRange) else "",
+                    showRatingLabel = false,
+                    starSize = 16.dp
+                )
             }
             visit.notes?.let { notes ->
                 Text(
@@ -828,7 +833,14 @@ private fun RestaurantDetailScreenPreview() {
             uiState = DetailUiState.Loaded(
                 restaurant = previewRestaurant,
                 visits = listOf(
-                    VisitUiModel(id = "v1", visitDate = System.currentTimeMillis(), rating = 4, notes = "Ask for the burrata to start.", photoPaths = emptyList())
+                    VisitUiModel(
+                        id = "v1",
+                        visitDate = System.currentTimeMillis(),
+                        rating = 4,
+                        notes = "Ask for the burrata to start.",
+                        priceRange = 2,
+                        photoPaths = emptyList()
+                    )
                 )
             ),
             onBack = {}

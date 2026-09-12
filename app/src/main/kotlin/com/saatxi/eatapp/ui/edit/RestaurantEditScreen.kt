@@ -78,6 +78,7 @@ import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.Cuisine
 import com.saatxi.eatapp.ui.common.AutocompleteTextField
+import com.saatxi.eatapp.ui.common.PriceRangePicker
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
@@ -531,31 +532,6 @@ private fun CuisineDropdown(
                         onSelect(cuisine.key)
                         expanded = false
                     }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PriceRangePicker(priceRange: Int, onPriceRangeChange: (Int) -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        (1..4).forEach { level ->
-            val selected = level <= priceRange
-            Surface(
-                onClick = { onPriceRangeChange(if (priceRange == level) level - 1 else level) },
-                shape = MaterialTheme.shapes.small,
-                color = if (selected) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant
-            ) {
-                Text(
-                    text = "$".repeat(level),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (selected) {
-                        MaterialTheme.colorScheme.onTertiaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                 )
             }
         }

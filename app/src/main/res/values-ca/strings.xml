@@ -186,6 +186,7 @@
     <string name="logvisit_action_save">Desar</string>
     <string name="logvisit_field_date">Data</string>
     <string name="logvisit_field_rating">Puntuació</string>
+    <string name="logvisit_field_price">Rang de preu</string>
     <string name="logvisit_field_notes">Notes (opcional)</string>
     <string name="logvisit_action_add_photo">Afegir foto</string>
     <string name="logvisit_action_remove_photo">Treure foto</string>
