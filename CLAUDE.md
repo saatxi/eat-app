@@ -49,7 +49,7 @@ Optional detailed explanation
   actually commit**: when presenting a proposed message in chat/terminal
   (e.g. before running `git commit`), never insert a manual line break partway
   through the summary or a bullet to make it fit the display width — each stays
-  one physic al line and the client soft-wraps it. This has been gotten wrong
+  one physical line and the client soft-wraps it. This has been gotten wrong
   before; double-check the actual text you're about to send, not just your intent.
 
 ## Tech stack & tools
@@ -110,25 +110,24 @@ Optional detailed explanation
   this repo's dependencies or UI and it's a natural moment to check** — don't
   go looking on a schedule — glance at
   `https://dl.google.com/android/maven2/androidx/compose/material3/material3/maven-metadata.xml`
-  for a stable 1.5.x — last checked 2026-09-06, still only alphas
-  (`1.5.0-alpha27`). If one exists, tell the user: bumping `composeBom` in
+  for a stable 1.5.x — last checked 2026-09-12, still only alphas
+  (`1.5.0-alpha28`). If one exists, tell the user: bumping `composeBom` in
   `gradle/libs.versions.toml` would unblock the cuisine-badge shape morphing
   that Phase 8 deferred (`ButtonGroup` itself was already replaced with the
   stable `SingleChoiceSegmentedButtonRow` and doesn't need revisiting).
   `material3Adaptive` (`1.3.0` in the same catalog, versioned independently)
-  is worth re-checking at the same time — last checked 2026-09-06, still no
+  is worth re-checking at the same time — last checked 2026-09-12, still no
   stable release past `1.3.0` (latest overall is `1.4.0-alpha01`) — see
   [development-log.md](docs/development-log.md)'s F-73.
-- **Baseline Profile plugin pinned to a pre-release**: `androidx.baselineprofile`
-  is pinned to `1.5.0-rc02` because the latest *stable* release (1.4.1)
-  doesn't recognize this project's AGP 9.3.2 (see
+- ~~**Baseline Profile plugin pinned to a pre-release**~~ — resolved
+  2026-09-12: `androidx.baselineprofile` (and `androidx.benchmark:benchmark-macro-junit4`)
+  reached a stable `1.5.0`, so `baselineProfile` in
+  `gradle/libs.versions.toml` now points at `1.5.0` instead of the
+  `1.5.0-rc02` pre-release it used to need for AGP 9.3.2 compatibility (see
   [development-log.md](docs/development-log.md)'s Appendix A, Phase 7, and
-  F-73). Same "revisit once stable ships" shape as the material3 entry
-  above — check for a stable `1.5.x` release of `androidx.baselineprofile`
-  (via `androidx.benchmark:benchmark-macro-junit4`'s `maven-metadata.xml`)
-  at the same time you check material3. Last checked 2026-09-06: `1.5.0-rc02`
-  is still the newest version on that line, and `1.4.1` is still the newest
-  stable one.
+  F-73 for the original blocker). Verified against this project's current
+  AGP (9.4.0) with `:baselineprofile:tasks`, `./gradlew test` and
+  `./gradlew assembleDebug` — all pass.
 
 ## Build & verify
 
