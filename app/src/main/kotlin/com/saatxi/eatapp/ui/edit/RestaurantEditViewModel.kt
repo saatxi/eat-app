@@ -1,6 +1,7 @@
 package com.saatxi.eatapp.ui.edit
 
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saatxi.eatapp.data.local.Restaurant
@@ -9,7 +10,9 @@ import com.saatxi.eatapp.data.local.normalizeTagName
 import com.saatxi.eatapp.data.local.normalizeWebsite
 import com.saatxi.eatapp.data.photo.RestaurantPhotoStorage
 import com.saatxi.eatapp.data.repository.RestaurantRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -63,11 +66,14 @@ data class RestaurantEditUiState(
  * the new Visit-backed data model, kept only for this form's fields; see
  * `RestaurantRepository.saveSingleVisit`.
  */
-class RestaurantEditViewModel(
+@HiltViewModel
+class RestaurantEditViewModel @Inject constructor(
     private val repository: RestaurantRepository,
     private val photoStorage: RestaurantPhotoStorage,
-    private val restaurantId: String?
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val restaurantId: String? = savedStateHandle["restaurantId"]
 
     private val _uiState = MutableStateFlow(RestaurantEditUiState(isLoading = restaurantId != null))
     val uiState: StateFlow<RestaurantEditUiState> = _uiState.asStateFlow()

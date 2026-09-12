@@ -6,6 +6,8 @@ import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
 import com.saatxi.eatapp.data.repository.RestaurantRepository
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.model.toUiModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,7 +47,8 @@ data class RouletteUiState(
  * query. [random] is injected so a test can seed it and assert a deterministic pick.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class RouletteViewModel(
+@HiltViewModel
+class RouletteViewModel @Inject constructor(
     private val repository: RestaurantRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val random: Random = Random.Default

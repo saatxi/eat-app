@@ -31,9 +31,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.saatxi.eatapp.R
-import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.DeleteConfirmDialog
 import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.list.RestaurantRow
@@ -45,7 +44,7 @@ import com.saatxi.eatapp.ui.theme.EatAppTheme
 @Composable
 fun FavoritesScreen(
     onOpenRestaurant: (String) -> Unit,
-    viewModel: FavoritesViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    viewModel: FavoritesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     // Set by a row's swipe-to-delete gesture — see RestaurantRow's own

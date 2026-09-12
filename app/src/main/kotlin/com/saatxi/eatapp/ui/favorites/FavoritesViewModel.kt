@@ -11,6 +11,8 @@ import com.saatxi.eatapp.ui.list.debounced
 import com.saatxi.eatapp.ui.list.observeAvailableFilterValues
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.model.toUiModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,7 +62,8 @@ data class FavoritesUiState(
  * cuisine instead.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class FavoritesViewModel(
+@HiltViewModel
+class FavoritesViewModel @Inject constructor(
     private val repository: RestaurantRepository,
     private val preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {

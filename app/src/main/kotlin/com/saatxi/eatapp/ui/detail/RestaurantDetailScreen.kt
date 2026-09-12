@@ -73,13 +73,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.instagramUrl
 import com.saatxi.eatapp.data.share.RestaurantExport
 import com.saatxi.eatapp.data.share.VisitExport
-import com.saatxi.eatapp.ui.AppViewModelProvider
+import com.saatxi.eatapp.di.RestaurantRepositoryEntryPoint
 import com.saatxi.eatapp.ui.common.cuisineBadgeTransition
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
@@ -91,6 +95,7 @@ import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.common.shimmerPlaceholder
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
+import dagger.hilt.android.EntryPointAccessors
 
 /** Size of the cuisine icon in the app bar, where the shared transition lands. */
 private val CUISINE_BADGE_SIZE = 32.dp
@@ -104,10 +109,32 @@ fun RestaurantDetailScreen(
     // from a nav-backstack entry, so the default SavedStateHandle-backed
     // factory has nothing to read it from.
     restaurantId: String? = null,
-    viewModel: RestaurantDetailViewModel = viewModel(
-        key = restaurantId?.let { "detail-$it" },
-        factory = restaurantId?.let(AppViewModelProvider::detailViewModelFactory) ?: AppViewModelProvider.Factory
-    )
+    viewModel: RestaurantDetailViewModel = if (restaurantId != null) {
+        // hiltViewModel() alone would read the "restaurantId" SavedStateHandle
+        // entry off the current nav-backstack entry, but there is none here —
+        // the pane host isn't a nav destination of its own (see
+        // EatAppNavHost.ListDetailPaneHost). Reach the same Hilt-managed
+        // repository/preferences singletons through an EntryPoint instead,
+        // and build a one-off SavedStateHandle seeded with the id directly.
+        val context = LocalContext.current
+        val entryPoint = remember(context) {
+            EntryPointAccessors.fromApplication(context, RestaurantRepositoryEntryPoint::class.java)
+        }
+        viewModel(
+            key = "detail-$restaurantId",
+            factory = viewModelFactory {
+                initializer {
+                    RestaurantDetailViewModel(
+                        repository = entryPoint.restaurantRepository(),
+                        preferencesRepository = entryPoint.userPreferencesRepository(),
+                        savedStateHandle = SavedStateHandle(mapOf("restaurantId" to restaurantId))
+                    )
+                }
+            }
+        )
+    } else {
+        hiltViewModel()
+    }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     RestaurantDetailContent(

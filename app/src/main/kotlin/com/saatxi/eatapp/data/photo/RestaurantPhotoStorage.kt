@@ -7,9 +7,11 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.util.Log
 import androidx.exifinterface.media.ExifInterface
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
 import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -44,7 +46,9 @@ fun interface RestaurantPhotoStorage {
  * copy this produces lives under [Context.getFilesDir] for as long as the
  * restaurant that references it does.
  */
-class AndroidRestaurantPhotoStorage(private val context: Context) : RestaurantPhotoStorage {
+class AndroidRestaurantPhotoStorage @Inject constructor(
+    @ApplicationContext private val context: Context
+) : RestaurantPhotoStorage {
 
     override suspend fun copy(source: Uri): String? = withContext(Dispatchers.IO) {
         try {

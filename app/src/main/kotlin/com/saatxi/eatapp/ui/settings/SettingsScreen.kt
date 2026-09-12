@@ -58,10 +58,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.saatxi.eatapp.BuildConfig
 import com.saatxi.eatapp.R
-import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.IconLabelRow
 import com.saatxi.eatapp.ui.common.findActivity
 import com.saatxi.eatapp.ui.theme.AppPalette
@@ -75,7 +74,7 @@ import com.saatxi.eatapp.ui.theme.lightScheme
 @Composable
 fun SettingsScreen(
     onOpenStatistics: () -> Unit = {},
-    viewModel: SettingsViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current

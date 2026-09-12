@@ -28,12 +28,13 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import com.saatxi.eatapp.EatApplication
 import com.saatxi.eatapp.MainActivity
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.Cuisine
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.formattedAddress
+import com.saatxi.eatapp.di.RestaurantRepositoryEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 
 /** Read by [MainActivity] to jump straight to a restaurant's detail screen when the widget is tapped. */
 const val EXTRA_RESTAURANT_ID = "com.saatxi.eatapp.widget.EXTRA_RESTAURANT_ID"
@@ -69,7 +70,10 @@ private val WidgetAccent = ColorProvider(R.color.widget_accent)
 class WantToTryWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val repository = (context.applicationContext as EatApplication).repository
+        val repository = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            RestaurantRepositoryEntryPoint::class.java
+        ).restaurantRepository()
         val restaurant = repository.getRandomWantToTry()
 
         provideContent {

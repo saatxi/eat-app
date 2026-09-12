@@ -45,9 +45,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.saatxi.eatapp.R
-import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.DeleteConfirmDialog
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
@@ -57,7 +56,7 @@ import com.saatxi.eatapp.ui.theme.EatAppTheme
 fun RestaurantListScreen(
     onOpenRestaurant: (String) -> Unit,
     onAddRestaurant: () -> Unit,
-    viewModel: RestaurantListViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    viewModel: RestaurantListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current

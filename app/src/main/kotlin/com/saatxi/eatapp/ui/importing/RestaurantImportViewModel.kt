@@ -2,6 +2,7 @@ package com.saatxi.eatapp.ui.importing
 
 import android.content.Context
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saatxi.eatapp.data.local.Restaurant
@@ -12,6 +13,9 @@ import com.saatxi.eatapp.data.share.ImportOutcome
 import com.saatxi.eatapp.data.share.RestaurantImportReader
 import com.saatxi.eatapp.data.share.VisitExport
 import com.saatxi.eatapp.data.share.readContentUriCapped
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,11 +51,17 @@ data class RestaurantImportUiState(
  * [onConfirm] is called: the confirmation screen is the last line of defence
  * against a file that isn't what it claims to be.
  */
-class RestaurantImportViewModel(
-    private val appContext: Context,
+@HiltViewModel
+class RestaurantImportViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val repository: RestaurantRepository,
-    private val uri: Uri
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    // The nav graph's "uri" arg arrives Uri-encoded (see EatAppNavHost's
+    // importRoute/decoding), the same round trip it does there, so this
+    // ViewModel doesn't need a raw android.net.Uri passed in directly.
+    private val uri: Uri = Uri.parse(Uri.decode(checkNotNull(savedStateHandle.get<String>("uri"))))
 
     private val _uiState = MutableStateFlow(RestaurantImportUiState())
     val uiState: StateFlow<RestaurantImportUiState> = _uiState.asStateFlow()

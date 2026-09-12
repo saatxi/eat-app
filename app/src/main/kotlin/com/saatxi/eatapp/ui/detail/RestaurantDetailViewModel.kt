@@ -1,11 +1,14 @@
 package com.saatxi.eatapp.ui.detail
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
 import com.saatxi.eatapp.data.repository.RestaurantRepository
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.model.toUiModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -19,11 +22,14 @@ sealed interface DetailUiState {
     data object NotFound : DetailUiState
 }
 
-class RestaurantDetailViewModel(
+@HiltViewModel
+class RestaurantDetailViewModel @Inject constructor(
     private val repository: RestaurantRepository,
     private val preferencesRepository: UserPreferencesRepository,
-    private val restaurantId: String
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val restaurantId: String = checkNotNull(savedStateHandle["restaurantId"])
 
     val uiState: StateFlow<DetailUiState> = combine(
         repository.observeById(restaurantId),
