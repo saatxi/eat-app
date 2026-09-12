@@ -8,24 +8,28 @@ import androidx.compose.runtime.remember
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.ui.theme.palette.GardenTones
 import com.saatxi.eatapp.ui.theme.palette.IndigoTones
-import com.saatxi.eatapp.ui.theme.palette.SaffronTones
+import com.saatxi.eatapp.ui.theme.palette.MercadoFrescoTones
 
 /**
  * The palettes the user can pick between in Settings.
  *
  * The enum name is what gets persisted, so entries must not be renamed without
- * a migration; see `UserPreferencesRepository`.
+ * a migration; see `UserPreferencesRepository`. Renaming SAFFRON to
+ * MERCADO_FRESCO is safe without one: `DataStoreUserPreferencesRepository`
+ * looks the stored name up against `entries` and falls back to [Default] on a
+ * miss, so a device with the old "SAFFRON" persisted just resolves to the new
+ * default rather than crashing.
  */
 enum class AppPalette(
     @StringRes val labelRes: Int,
     internal val tones: PaletteTones
 ) {
-    SAFFRON(R.string.palette_saffron, SaffronTones),
+    MERCADO_FRESCO(R.string.palette_mercado_fresco, MercadoFrescoTones),
     GARDEN(R.string.palette_garden, GardenTones),
     INDIGO(R.string.palette_indigo, IndigoTones);
 
     companion object {
-        val Default = SAFFRON
+        val Default = MERCADO_FRESCO
     }
 }
 
