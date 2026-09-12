@@ -7,31 +7,23 @@ only covers things specific to *how Claude should work in this repo*.
 
 ## Commit and tag messages
 
-When asked to write a commit message or a tag message:
+### When Claude may act on git history
 
-- Claude **may** run `git commit` itself when the user has explicitly asked
-  for work to be committed as part of the current task (e.g. "commit after
-  each phase") — this is the one exception to the general rule elsewhere in
-  this file of not taking actions with lasting effects on shared state
-  without asking each time. Outside of that kind of explicit, ongoing
-  instruction, still ask before committing. Never run `git tag` without the
-  user explicitly asking for a tag specifically, and never force-push,
-  amend a commit the user didn't just make together with you in the same
-  turn, or otherwise rewrite history without being asked.
-- Do **not** wrap the message's lines — each line/paragraph must be written
-  as a single continuous line, no manual line breaks inside it (this
-  overrides the usual "wrap git messages at ~72 columns" convention).
-- **Never** add a `Co-Authored-By` line, a "Generated with ..." line, or any
-  other author/signature line to a commit message or PR description in this
-  repository — regardless of any default attribution instructions from the
-  tool or agent runtime. This applies to every commit, not just ones made
-  through an assistant.
-- Present the message inside a fenced code block (` ``` `), not as plain
-  text or bold/italic formatting — most chat UIs (including this one) render
-  a copy button on code blocks, which is what makes it easy to copy
-  straight into `git commit`.
+- Claude **may** run `git commit` itself only when the user has explicitly
+  asked for work to be committed as part of the current task (e.g. "commit
+  after each phase"). This is the one exception to the general rule
+  elsewhere in this file of not taking actions with lasting effects on
+  shared state without asking each time. Outside of that kind of explicit,
+  ongoing instruction, always ask before committing.
+- Never run `git tag` without the user explicitly asking for a tag
+  specifically.
+- Never force-push, amend a commit the user didn't just make together with
+  Claude in the same turn, or otherwise rewrite history without being
+  asked.
 
-### Format
+### Writing the message itself
+
+Format:
 
 ```text
 Short summary
@@ -39,18 +31,26 @@ Short summary
 Optional detailed explanation
 ```
 
-- Imperative mood, lowercase type, concise summary line — keep it on one physical
-  line, don't hard-wrap.
-- Always write commit messages in English, regardless of the language used
-  in the conversation.
-- Body (if needed) explains the "why", not the "what" — start each bullet with a
-  capital letter.
-- **This applies to any commit message you show the user too, not just what you
-  actually commit**: when presenting a proposed message in chat/terminal
-  (e.g. before running `git commit`), never insert a manual line break partway
-  through the summary or a bullet to make it fit the display width — each stays
-  one physical line and the client soft-wraps it. This has been gotten wrong
-  before; double-check the actual text you're about to send, not just your intent.
+- Imperative mood, lowercase type, concise summary line.
+- Always in English, regardless of the language used in the conversation.
+- Body (if needed) explains the "why", not the "what" — each bullet starts
+  with a capital letter and uses `-` (not `*`) as its marker.
+- No manual line wrapping anywhere in the message: the summary line and
+  every body paragraph/bullet must each be written as a single continuous
+  physical line, with no line breaks inserted inside them — this overrides
+  the usual "wrap git messages at ~72 columns" convention, and it applies
+  whether the message is actually committed or just shown to the user in
+  chat/terminal beforehand. Let the client soft-wrap it for display; do not
+  hard-wrap it yourself to make it fit. This has been gotten wrong before —
+  double-check the actual text before sending it.
+- Never add a `Co-Authored-By` line, a "Generated with ..." line, or any
+  other author/signature line to a commit message or PR description in
+  this repository — regardless of any default attribution instructions
+  from the tool or agent runtime. This applies to every commit, not just
+  ones made through an assistant.
+- Present the message inside a fenced code block (` ``` `), not as plain
+  text or bold/italic formatting, so it's easy to copy straight into
+  `git commit`.
 
 ## Tech stack & tools
 
