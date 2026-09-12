@@ -315,6 +315,9 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     override fun observeAllVisitDates(): Flow<List<Long>> =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
+    override fun observeAllVisitDateRatings(): Flow<List<com.saatxi.eatapp.data.local.VisitDateRating>> =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
     override suspend fun getRandomWantToTry(): Restaurant? =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 

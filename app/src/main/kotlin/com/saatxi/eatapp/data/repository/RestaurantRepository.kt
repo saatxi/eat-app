@@ -7,6 +7,7 @@ import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.local.TagCount
 import com.saatxi.eatapp.data.local.Visit
+import com.saatxi.eatapp.data.local.VisitDateRating
 import kotlinx.coroutines.flow.Flow
 
 interface RestaurantRepository {
@@ -47,6 +48,8 @@ interface RestaurantRepository {
     fun observeTagCounts(): Flow<List<TagCount>>
     /** Every visit's raw date, across every restaurant — bucketed into months by `StatisticsViewModel`. */
     fun observeAllVisitDates(): Flow<List<Long>>
+    /** Every visit's raw date and rating, across every restaurant — bucketed into a monthly average by `StatisticsViewModel`. */
+    fun observeAllVisitDateRatings(): Flow<List<VisitDateRating>>
 
     /** For the home-screen widget (F-68) — see `RestaurantDao.getRandomWantToTry`. */
     suspend fun getRandomWantToTry(): Restaurant?

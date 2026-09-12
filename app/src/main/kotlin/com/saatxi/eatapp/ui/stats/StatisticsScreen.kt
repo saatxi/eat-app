@@ -180,6 +180,15 @@ private fun StatisticsContent(uiState: StatisticsUiState, onBack: () -> Unit) {
                         }
                     }
 
+                    if (uiState.monthlyRatingTrend.count { it.average != null } >= 2) {
+                        StatsCard(title = stringResource(R.string.stats_section_rating_trend)) {
+                            RatingTrendPerMonthChart(
+                                points = uiState.monthlyRatingTrend,
+                                modifier = Modifier.fillMaxWidth().height(120.dp)
+                            )
+                        }
+                    }
+
                     if (uiState.tagCounts.isNotEmpty()) {
                         val maxCount = uiState.tagCounts.maxOf { it.count }
                         StatsCard(title = stringResource(R.string.stats_section_top_tags)) {
@@ -386,6 +395,40 @@ private fun VisitsPerMonthChart(counts: List<MonthlyVisitCount>, modifier: Modif
     }
 }
 
+/** Rating axis ceiling for [RatingTrendPerMonthChart] — see `Visit.rating`. */
+private const val MAX_RATING_TREND = 5f
+
+/**
+ * Canvas-drawn line chart of the average rating across every restaurant, one
+ * point per month, months with no visits skipped rather than drawn as zero —
+ * global counterpart to `RestaurantDetailScreen`'s per-restaurant
+ * `RatingTrendChart`, aggregating across restaurants instead of following one.
+ */
+@Composable
+private fun RatingTrendPerMonthChart(points: List<MonthlyAverageRating>, modifier: Modifier = Modifier) {
+    val lineColor = MaterialTheme.colorScheme.primary
+    val plotted = points.mapIndexedNotNull { index, point -> point.average?.let { index to it } }
+
+    Canvas(modifier = modifier) {
+        if (plotted.size < 2 || size.width <= 0f || size.height <= 0f) return@Canvas
+
+        val slotWidth = if (points.size > 1) size.width / (points.size - 1) else size.width
+        val offsets = plotted.map { (index, average) ->
+            Offset(
+                x = index * slotWidth,
+                y = size.height * (1f - (average.toFloat() / MAX_RATING_TREND))
+            )
+        }
+
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(offsets.first().x, offsets.first().y)
+            offsets.drop(1).forEach { lineTo(it.x, it.y) }
+        }
+        drawPath(path = path, color = lineColor, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx()))
+        offsets.forEach { offset -> drawCircle(color = lineColor, radius = 4.dp.toPx(), center = offset) }
+    }
+}
+
 /** A plain horizontal bar — no charting library needed for something this simple. */
 @Composable
 private fun StatBar(fraction: Float, color: Color, modifier: Modifier = Modifier) {
@@ -418,6 +461,14 @@ private val previewUiState = StatisticsUiState(
         PriceRangeCount(2, 6),
         PriceRangeCount(3, 2),
         PriceRangeCount(4, 1)
+    ),
+    monthlyRatingTrend = listOf(
+        MonthlyAverageRating("2026-04", 3.5),
+        MonthlyAverageRating("2026-05", 3.8),
+        MonthlyAverageRating("2026-06", 4.1),
+        MonthlyAverageRating("2026-07", 3.9),
+        MonthlyAverageRating("2026-08", null),
+        MonthlyAverageRating("2026-09", 4.3)
     ),
     monthlyVisitCounts = listOf(
         MonthlyVisitCount("2026-04", 1),

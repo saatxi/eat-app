@@ -241,6 +241,7 @@
     <string name="stats_section_cuisines">Cuisines</string>
     <string name="stats_section_price">Price range</string>
     <string name="stats_section_visits_per_month">Visits per month</string>
+    <string name="stats_section_rating_trend">Average rating over time</string>
     <string name="stats_section_top_tags">Top tags</string>
     <string name="stats_price_not_set">Not set</string>
     <string name="stats_empty_title">Nothing to show yet</string>

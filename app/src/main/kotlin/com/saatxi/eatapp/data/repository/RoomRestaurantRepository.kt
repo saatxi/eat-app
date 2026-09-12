@@ -10,6 +10,7 @@ import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.local.TagCount
 import com.saatxi.eatapp.data.local.Visit
+import com.saatxi.eatapp.data.local.VisitDateRating
 import com.saatxi.eatapp.data.local.escapeLikeWildcards
 import com.saatxi.eatapp.data.local.normalizeForSearch
 import com.saatxi.eatapp.data.photo.deleteAllRestaurantPhotoFiles
@@ -127,6 +128,7 @@ class RoomRestaurantRepository @Inject constructor(
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> = dao.observePriceRangeCounts()
     override fun observeTagCounts(): Flow<List<TagCount>> = tagDao.observeTagCounts()
     override fun observeAllVisitDates(): Flow<List<Long>> = visitDao.observeAllVisitDates()
+    override fun observeAllVisitDateRatings(): Flow<List<VisitDateRating>> = visitDao.observeAllVisitDateRatings()
 
     override suspend fun getRandomWantToTry(): Restaurant? = dao.getRandomWantToTry()
 

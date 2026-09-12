@@ -7,6 +7,7 @@ import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.local.TagCount
 import com.saatxi.eatapp.data.local.Visit
+import com.saatxi.eatapp.data.local.VisitDateRating
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -36,6 +37,7 @@ class FakeRestaurantRepository : RestaurantRepository {
     val priceRangeCounts = MutableStateFlow<List<PriceRangeCount>>(emptyList())
     val tagCounts = MutableStateFlow<List<TagCount>>(emptyList())
     val allVisitDates = MutableStateFlow<List<Long>>(emptyList())
+    val allVisitDateRatings = MutableStateFlow<List<VisitDateRating>>(emptyList())
     var randomWantToTry: Restaurant? = null
 
     var lastQuery: String? = null
@@ -133,6 +135,7 @@ class FakeRestaurantRepository : RestaurantRepository {
     override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> = priceRangeCounts
     override fun observeTagCounts(): Flow<List<TagCount>> = tagCounts
     override fun observeAllVisitDates(): Flow<List<Long>> = allVisitDates
+    override fun observeAllVisitDateRatings(): Flow<List<VisitDateRating>> = allVisitDateRatings
 
     override suspend fun getRandomWantToTry(): Restaurant? = randomWantToTry
 

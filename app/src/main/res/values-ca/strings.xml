@@ -233,6 +233,7 @@
     <string name="stats_section_cuisines">Cuines</string>
     <string name="stats_section_price">Rang de preu</string>
     <string name="stats_section_visits_per_month">Visites per mes</string>
+    <string name="stats_section_rating_trend">Puntuació mitjana al llarg del temps</string>
     <string name="stats_section_top_tags">Etiquetes més usades</string>
     <string name="stats_price_not_set">Sense definir</string>
     <string name="stats_empty_title">Encara no hi ha res a mostrar</string>

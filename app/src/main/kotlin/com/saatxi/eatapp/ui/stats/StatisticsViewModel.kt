@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.saatxi.eatapp.data.local.CuisineCount
 import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.TagCount
+import com.saatxi.eatapp.data.local.VisitDateRating
 import com.saatxi.eatapp.data.repository.RestaurantRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Calendar
@@ -20,6 +21,9 @@ private const val VISIT_TREND_MONTHS = 6
 /** One bar of the global "visits per month" chart — [monthKey] is `"YYYY-MM"`, sortable as a plain string. */
 data class MonthlyVisitCount(val monthKey: String, val count: Int)
 
+/** One point of the global "average rating per month" trend — [average] is null for a month with no visits. */
+data class MonthlyAverageRating(val monthKey: String, val average: Double?)
+
 data class StatisticsUiState(
     val totalCount: Int = 0,
     val visitedCount: Int = 0,
@@ -30,6 +34,8 @@ data class StatisticsUiState(
     val priceRangeCounts: List<PriceRangeCount> = emptyList(),
     /** Last [VISIT_TREND_MONTHS] months, oldest first, zero-filled for months with no visits. */
     val monthlyVisitCounts: List<MonthlyVisitCount> = emptyList(),
+    /** Last [VISIT_TREND_MONTHS] months, oldest first, null-average for months with no visits. */
+    val monthlyRatingTrend: List<MonthlyAverageRating> = emptyList(),
     /** Most-used tags across every restaurant, highest count first — see `TagDao.observeTagCounts`. */
     val tagCounts: List<TagCount> = emptyList(),
     // Same purpose as RestaurantListUiState.isInitialLoad: true until the
@@ -43,13 +49,13 @@ data class StatisticsUiState(
 /**
  * Backs the statistics screen (F-64, enriched further for the "mercado
  * fresco" revamp): most-picked cuisines, average rating, price-tier spread,
- * visited vs. want-to-try, a visits-per-month trend and a top-tags ranking —
- * all aggregated locally by Room, no network call and no charting library
- * (charts are Canvas-drawn in `StatisticsScreen`). The visits-per-month and
- * tag rankings are both genuinely *global* metrics (unlike a single
- * restaurant's rating trend, which lives on the Detail screen instead — see
- * `RestaurantDetailViewModel.ratingTrend`), so they belong here rather than
- * being crammed into a per-restaurant view.
+ * visited vs. want-to-try, a visits-per-month trend, a monthly average-rating
+ * trend across every restaurant, and a top-tags ranking — all aggregated
+ * locally by Room, no network call and no charting library (charts are
+ * Canvas-drawn in `StatisticsScreen`). [monthlyRatingTrend] is a global,
+ * cross-restaurant average and is distinct from a single restaurant's own
+ * rating trend, which lives on the Detail screen instead (see
+ * `RestaurantDetailViewModel.ratingTrend`).
  */
 @HiltViewModel
 class StatisticsViewModel @Inject constructor(repository: RestaurantRepository) : ViewModel() {
@@ -61,7 +67,8 @@ class StatisticsViewModel @Inject constructor(repository: RestaurantRepository) 
         repository.observeCuisineCounts(),
         repository.observePriceRangeCounts(),
         repository.observeAllVisitDates(),
-        repository.observeTagCounts()
+        repository.observeTagCounts(),
+        repository.observeAllVisitDateRatings()
     ) { values ->
         @Suppress("UNCHECKED_CAST")
         StatisticsUiState(
@@ -72,6 +79,7 @@ class StatisticsViewModel @Inject constructor(repository: RestaurantRepository) 
             priceRangeCounts = values[4] as List<PriceRangeCount>,
             monthlyVisitCounts = bucketVisitsByMonth(values[5] as List<Long>),
             tagCounts = values[6] as List<TagCount>,
+            monthlyRatingTrend = bucketRatingsByMonth(values[7] as List<VisitDateRating>),
             isInitialLoad = false
         )
     }.stateIn(
@@ -102,4 +110,32 @@ internal fun bucketVisitsByMonth(visitDates: List<Long>, now: Long = System.curr
     }
     val countsByMonth = visitDates.groupingBy(::monthKey).eachCount()
     return monthKeys.map { key -> MonthlyVisitCount(key, countsByMonth[key] ?: 0) }
+}
+
+/**
+ * Same trailing-[VISIT_TREND_MONTHS]-window bucketing as [bucketVisitsByMonth],
+ * but averaging [VisitDateRating.rating] per month instead of counting visits —
+ * backs the global rating-trend chart on Statistics (distinct from a single
+ * restaurant's own trend on Detail, see `RestaurantDetailViewModel.ratingTrend`).
+ * A month with no visits gets a null average rather than 0, so the chart can
+ * skip it instead of drawing a misleading zero rating.
+ */
+internal fun bucketRatingsByMonth(visitRatings: List<VisitDateRating>, now: Long = System.currentTimeMillis()): List<MonthlyAverageRating> {
+    fun monthKey(millis: Long): String {
+        val calendar = Calendar.getInstance().apply { timeInMillis = millis }
+        return "%04d-%02d".format(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH) + 1)
+    }
+
+    val monthKeys = (VISIT_TREND_MONTHS - 1 downTo 0).map { monthsAgo ->
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = now
+            add(Calendar.MONTH, -monthsAgo)
+        }
+        monthKey(calendar.timeInMillis)
+    }
+    val ratingsByMonth = visitRatings.groupBy { monthKey(it.visitDate) }
+    return monthKeys.map { key ->
+        val average = ratingsByMonth[key]?.map { it.rating }?.average()
+        MonthlyAverageRating(key, average?.takeUnless { it.isNaN() })
+    }
 }

@@ -59,4 +59,15 @@ interface VisitDao {
      */
     @Query("SELECT visitDate FROM visits ORDER BY visitDate ASC")
     fun observeAllVisitDates(): Flow<List<Long>>
+
+    /**
+     * Every visit's raw epoch-millis date and rating, across every
+     * restaurant — bucketed into a monthly average by the caller
+     * (`StatisticsViewModel`), same rationale as [observeAllVisitDates].
+     */
+    @Query("SELECT visitDate, rating FROM visits ORDER BY visitDate ASC")
+    fun observeAllVisitDateRatings(): Flow<List<VisitDateRating>>
 }
+
+/** One visit's date and rating, projected for the global rating-trend chart — see [VisitDao.observeAllVisitDateRatings]. */
+data class VisitDateRating(val visitDate: Long, val rating: Int)
