@@ -1,5 +1,10 @@
 package com.saatxi.eatapp.ui.map
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color as AndroidColor
+import android.graphics.Paint
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Map
@@ -11,7 +16,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -26,6 +30,7 @@ import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Marker
 
 /** Zoom level used when only a single pin is on-screen — a bounding box can't fit around one point. */
@@ -59,6 +64,36 @@ private fun mapTileSource(): ITileSource =
 
 /** Extra room (px) left around the tightest bounding box that fits every pin, so edge markers aren't clipped by the view's border. */
 private const val BOUNDING_BOX_PADDING_PX = 48
+
+/** Marker pin diameter — a plain filled circle reads much cleaner at map scale than osmdroid's stock oversized teardrop marker. */
+private const val PIN_DIAMETER_DP = 28
+
+/**
+ * Draws a small filled, white-bordered circle in [colorArgb] — the same
+ * per-cuisine colour used everywhere else in the app — as this restaurant's
+ * pin, instead of osmdroid's default `marker_default` teardrop (a generic,
+ * oversized pin never designed to be recoloured per-marker). Centered
+ * anchoring (set on the [Marker] itself, not here) matches a plain dot
+ * rather than a teardrop's bottom-tip anchoring.
+ */
+private fun pinDrawable(context: android.content.Context, colorArgb: Int): BitmapDrawable {
+    val density = context.resources.displayMetrics.density
+    val diameterPx = (PIN_DIAMETER_DP * density).toInt().coerceAtLeast(1)
+    val strokeWidthPx = 2f * density
+    val bitmap = Bitmap.createBitmap(diameterPx, diameterPx, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val center = diameterPx / 2f
+    val radius = center - strokeWidthPx
+    val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colorArgb; style = Paint.Style.FILL }
+    val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = AndroidColor.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = strokeWidthPx
+    }
+    canvas.drawCircle(center, center, radius, fillPaint)
+    canvas.drawCircle(center, center, radius, strokePaint)
+    return BitmapDrawable(context.resources, bitmap)
+}
 
 /**
  * The Map screen's content (F-89): one pin per restaurant that has a
@@ -94,7 +129,17 @@ fun RestaurantMapView(
     // block below, which runs outside composition.
     val markerColors = pinned.associate { it.id to cuisineTint(it.cuisineKey).container.toArgb() }
     val lifecycleOwner = LocalLifecycleOwner.current
-    val mapView = remember { MapView(context).apply { setTileSource(mapTileSource()); setMultiTouchControls(true) } }
+    val mapView = remember {
+        MapView(context).apply {
+            val tileSource = mapTileSource()
+            setTileSource(tileSource)
+            setMultiTouchControls(true)
+            // CARTO's free-tier key terms require this attribution stay visible on
+            // the map (carto.com/attributions) — osmdroid never draws a tile
+            // source's copyright notice on its own, only this overlay does.
+            overlays.add(CopyrightOverlay(context).apply { setCopyrightNotice(tileSource.copyrightNotice) })
+        }
+    }
 
     // osmdroid's MapView owns background tile-fetch threads that must be paused
     // and resumed with the host lifecycle, or they keep running (and the tile
@@ -118,7 +163,9 @@ fun RestaurantMapView(
     AndroidView(
         factory = { mapView },
         update = { view ->
-            view.overlays.clear()
+            // Only markers get rebuilt on every update — the CopyrightOverlay added
+            // once in `factory` above must stay, or the required attribution vanishes.
+            view.overlays.removeAll { it is Marker }
             val points = pinned.mapNotNull { restaurant ->
                 val lat = restaurant.latitude ?: return@mapNotNull null
                 val lng = restaurant.longitude ?: return@mapNotNull null
@@ -127,9 +174,8 @@ fun RestaurantMapView(
                     Marker(view).apply {
                         position = point
                         title = restaurant.name
-                        icon = ContextCompat.getDrawable(context, org.osmdroid.library.R.drawable.marker_default)
-                            ?.mutate()
-                            ?.apply { markerColors[restaurant.id]?.let(::setTint) }
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                        icon = pinDrawable(context, markerColors[restaurant.id] ?: AndroidColor.GRAY)
                         setOnMarkerClickListener { _, _ ->
                             onOpenRestaurant(restaurant.id)
                             true
