@@ -45,11 +45,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.CuisineCount
 import com.saatxi.eatapp.data.local.PriceRangeCount
-import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
@@ -59,7 +58,7 @@ import com.saatxi.eatapp.ui.theme.EatAppTheme
 @Composable
 fun StatisticsScreen(
     onBack: () -> Unit,
-    viewModel: StatisticsViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    viewModel: StatisticsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     StatisticsContent(uiState = uiState, onBack = onBack)

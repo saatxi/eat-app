@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.baselineprofile)
+    alias(libs.plugins.hilt.android)
 }
 
 // --- Git-tag-based versioning ---------------------------------------------
@@ -232,6 +233,10 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.core.splashscreen)
+
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

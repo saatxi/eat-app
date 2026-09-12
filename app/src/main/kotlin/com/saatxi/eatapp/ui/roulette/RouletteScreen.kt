@@ -51,10 +51,9 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
-import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
@@ -70,7 +69,7 @@ private const val SPIN_DURATION_MS = 450
 @Composable
 fun RouletteScreen(
     onOpenRestaurant: (String) -> Unit,
-    viewModel: RouletteViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    viewModel: RouletteViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val haptic = LocalHapticFeedback.current

@@ -69,11 +69,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.Cuisine
-import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.AutocompleteTextField
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
@@ -84,10 +83,7 @@ import com.saatxi.eatapp.ui.theme.EatAppTheme
 fun RestaurantEditScreen(
     onBack: () -> Unit,
     restaurantId: String?,
-    viewModel: RestaurantEditViewModel = viewModel(
-        key = "edit-${restaurantId ?: "new"}",
-        factory = AppViewModelProvider.editViewModelFactory(restaurantId)
-    )
+    viewModel: RestaurantEditViewModel = hiltViewModel(key = "edit-${restaurantId ?: "new"}")
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val tagSuggestions by viewModel.tagSuggestions.collectAsState()

@@ -15,14 +15,18 @@ import com.saatxi.eatapp.data.photo.deleteAllRestaurantPhotoFiles
 import com.saatxi.eatapp.data.photo.deleteRestaurantPhotoFile
 import com.saatxi.eatapp.data.share.toExport
 import com.saatxi.eatapp.data.share.writeBackupFile
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-class RoomRestaurantRepository(
+@Singleton
+class RoomRestaurantRepository @Inject constructor(
     private val database: EatAppDatabase,
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) : RestaurantRepository {
 
     private val dao = database.restaurantDao()

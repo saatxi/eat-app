@@ -10,6 +10,8 @@ import com.saatxi.eatapp.data.share.toExport
 import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.model.toUiModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,7 +51,8 @@ data class RestaurantListUiState(
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class RestaurantListViewModel(
+@HiltViewModel
+class RestaurantListViewModel @Inject constructor(
     private val repository: RestaurantRepository,
     private val preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {

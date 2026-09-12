@@ -10,6 +10,8 @@ import com.saatxi.eatapp.data.share.toExport
 import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.theme.AppPalette
 import com.saatxi.eatapp.ui.theme.ThemeMode
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +26,8 @@ data class SettingsUiState(
     val language: AppLanguage = AppLanguage.Default
 )
 
-class SettingsViewModel(
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val localeManager: AppLocaleManager,
     private val repository: RestaurantRepository

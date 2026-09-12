@@ -14,9 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.saatxi.eatapp.data.prefs.UserPreferences
+import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
 import com.saatxi.eatapp.navigation.EatAppNavHost
 import com.saatxi.eatapp.ui.theme.EatAppTheme
 import com.saatxi.eatapp.widget.EXTRA_RESTAURANT_ID
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
@@ -26,7 +29,12 @@ import kotlinx.coroutines.flow.onEach
 // which only a ComponentActivity subclassing AppCompatActivity creates. Compose,
 // enableEdgeToEdge() and the splash screen all work the same either way, since
 // AppCompatActivity is itself a ComponentActivity.
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+
+    @Inject
+    lateinit var userPreferences: UserPreferencesRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -38,7 +46,7 @@ class MainActivity : AppCompatActivity() {
         var preferences by mutableStateOf<UserPreferences?>(null)
         splashScreen.setKeepOnScreenCondition { preferences == null }
 
-        (application as EatApplication).userPreferences.preferences
+        userPreferences.preferences
             .onEach { preferences = it }
             .launchIn(lifecycleScope)
 

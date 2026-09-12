@@ -1,6 +1,7 @@
 package com.saatxi.eatapp.ui.edit
 
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import com.saatxi.eatapp.data.local.Restaurant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -55,7 +56,7 @@ class RestaurantEditViewModelPhotoTest {
     @Test
     fun `onPhotoPicked previews the pick immediately, before it is ever copied`() = runTest {
         val pickedUri = Uri.parse("content://media/picker/0/1")
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
         observeState(viewModel)
 
         viewModel.onPhotoPicked(pickedUri)
@@ -67,7 +68,7 @@ class RestaurantEditViewModelPhotoTest {
     @Test
     fun `saving with a pending pick copies it and stores the resulting path`() = runTest {
         val pickedUri = Uri.parse("content://media/picker/0/1")
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = null)
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
         observeState(viewModel)
         viewModel.onNameChange("Cal Ferran")
         viewModel.onCuisineChange("mediterranean")
@@ -86,7 +87,7 @@ class RestaurantEditViewModelPhotoTest {
             Restaurant(id = "1", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, priceRange = 1)
         )
         repository.photoPathByRestaurantId["1"] = "/existing/photo.jpg"
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = "1")
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
         viewModel.onPhotoPicked(Uri.parse("content://media/picker/0/2"))
         photoStorage.nextCopyResult = null // simulates an unreadable/corrupt pick

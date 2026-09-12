@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.saatxi.eatapp.data.local.CuisineCount
 import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.repository.RestaurantRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -31,7 +33,8 @@ data class StatisticsUiState(
  * price-tier spread, visited vs. want-to-try — all aggregated locally by
  * Room, no network call and no charting library.
  */
-class StatisticsViewModel(repository: RestaurantRepository) : ViewModel() {
+@HiltViewModel
+class StatisticsViewModel @Inject constructor(repository: RestaurantRepository) : ViewModel() {
 
     val uiState: StateFlow<StatisticsUiState> = combine(
         repository.observeTotalCount(),

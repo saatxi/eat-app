@@ -4,6 +4,7 @@ import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.Visit
 import com.saatxi.eatapp.data.prefs.FakeUserPreferencesRepository
 import com.saatxi.eatapp.data.prefs.UserPreferences
+import androidx.lifecycle.SavedStateHandle
 import com.saatxi.eatapp.data.repository.FakeRestaurantRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,7 +37,7 @@ class RestaurantDetailViewModelTest {
         viewModel = RestaurantDetailViewModel(
             repository = repository,
             preferencesRepository = preferencesRepository,
-            restaurantId = "1"
+            savedStateHandle = SavedStateHandle(mapOf("restaurantId" to "1"))
         )
     }
 

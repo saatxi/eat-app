@@ -43,12 +43,11 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.formattedAddress
 import com.saatxi.eatapp.data.share.ImportFailureReason
-import com.saatxi.eatapp.ui.AppViewModelProvider
 import com.saatxi.eatapp.ui.common.TagPillRow
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
@@ -60,10 +59,7 @@ import com.saatxi.eatapp.ui.theme.EatAppTheme
 fun RestaurantImportScreen(
     uri: Uri,
     onDone: () -> Unit,
-    viewModel: RestaurantImportViewModel = viewModel(
-        key = "import-$uri",
-        factory = AppViewModelProvider.importViewModelFactory(uri)
-    )
+    viewModel: RestaurantImportViewModel = hiltViewModel(key = "import-$uri")
 ) {
     val uiState by viewModel.uiState.collectAsState()
     RestaurantImportContent(

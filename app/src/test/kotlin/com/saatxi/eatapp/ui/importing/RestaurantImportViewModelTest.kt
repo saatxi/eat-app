@@ -2,6 +2,7 @@ package com.saatxi.eatapp.ui.importing
 
 import android.content.Context
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
 import com.saatxi.eatapp.data.local.CuisineCount
 import com.saatxi.eatapp.data.local.Photo
@@ -91,7 +92,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `loads a valid file and defaults every candidate to add`() = runTest {
         val uri = writeContentFile("valid.json", jsonOf(export("Cal Ferran"), export("Bar Nil")))
-        val viewModel = RestaurantImportViewModel(context, repository, uri)
+        val viewModel = RestaurantImportViewModel(context, repository, SavedStateHandle(mapOf("uri" to uri.toString())))
 
         val state = viewModel.loaded()
 
@@ -104,7 +105,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `reports how many rows the file itself dropped as invalid`() = runTest {
         val uri = writeContentFile("partly-invalid.json", jsonOf(export("Cal Ferran"), export(name = "  ")))
-        val viewModel = RestaurantImportViewModel(context, repository, uri)
+        val viewModel = RestaurantImportViewModel(context, repository, SavedStateHandle(mapOf("uri" to uri.toString())))
 
         val state = viewModel.loaded()
 
@@ -118,7 +119,7 @@ class RestaurantImportViewModelTest {
             Restaurant(id = "5", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", priceRange = 2)
         )
         val uri = writeContentFile("duplicate.json", jsonOf(export("cal ferran", address = "rambla 1")))
-        val viewModel = RestaurantImportViewModel(context, repository, uri)
+        val viewModel = RestaurantImportViewModel(context, repository, SavedStateHandle(mapOf("uri" to uri.toString())))
 
         val candidate = viewModel.loaded().candidates.single()
 
@@ -132,7 +133,7 @@ class RestaurantImportViewModelTest {
             Restaurant(id = "5", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", priceRange = 2)
         )
         val uri = writeContentFile("no-duplicate.json", jsonOf(export("Bar Nil", address = "Carrer Nou 4")))
-        val viewModel = RestaurantImportViewModel(context, repository, uri)
+        val viewModel = RestaurantImportViewModel(context, repository, SavedStateHandle(mapOf("uri" to uri.toString())))
 
         val candidate = viewModel.loaded().candidates.single()
 
@@ -143,7 +144,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `a file over the size cap is rejected as too large`() = runTest {
         val uri = writeContentFile("huge.json", "x".repeat(MAX_IMPORT_BYTES.toInt() + 1))
-        val viewModel = RestaurantImportViewModel(context, repository, uri)
+        val viewModel = RestaurantImportViewModel(context, repository, SavedStateHandle(mapOf("uri" to uri.toString())))
 
         val state = viewModel.loaded()
 
@@ -154,7 +155,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `a uri nothing can be read from is reported as an io error`() = runTest {
         val missing = Uri.fromFile(File(context.cacheDir, "import-test/does-not-exist.json"))
-        val viewModel = RestaurantImportViewModel(context, repository, missing)
+        val viewModel = RestaurantImportViewModel(context, repository, SavedStateHandle(mapOf("uri" to missing.toString())))
 
         val state = viewModel.loaded()
 
@@ -164,7 +165,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `malformed content is reported as an invalid file`() = runTest {
         val uri = writeContentFile("garbage.json", "not json at all")
-        val viewModel = RestaurantImportViewModel(context, repository, uri)
+        val viewModel = RestaurantImportViewModel(context, repository, SavedStateHandle(mapOf("uri" to uri.toString())))
 
         val state = viewModel.loaded()
 
@@ -176,7 +177,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `onDecisionChange updates only the targeted candidate`() = runTest {
         val uri = writeContentFile("two.json", jsonOf(export("Cal Ferran"), export("Bar Nil")))
-        val viewModel = RestaurantImportViewModel(context, repository, uri)
+        val viewModel = RestaurantImportViewModel(context, repository, SavedStateHandle(mapOf("uri" to uri.toString())))
         viewModel.loaded()
 
         viewModel.onDecisionChange(1, ImportDecision.SKIP)
@@ -189,7 +190,7 @@ class RestaurantImportViewModelTest {
     @Test
     fun `confirming inserts every add decision`() = runTest {
         val uri = writeContentFile("add.json", jsonOf(export("Cal Ferran")))
-        val viewModel = RestaurantImportViewModel(context, repository, uri)
+        val viewModel = RestaurantImportViewModel(context, repository, SavedStateHandle(mapOf("uri" to uri.toString())))
         viewModel.loaded()
         var done = false
 
@@ -205,7 +206,7 @@ class RestaurantImportViewModelTest {
             Restaurant(id = "5", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", priceRange = 2)
         )
         val uri = writeContentFile("skip.json", jsonOf(export("Cal Ferran")))
-        val viewModel = RestaurantImportViewModel(context, repository, uri)
+        val viewModel = RestaurantImportViewModel(context, repository, SavedStateHandle(mapOf("uri" to uri.toString())))
         viewModel.loaded()
 
         viewModel.onConfirm(onDone = {})
@@ -223,7 +224,7 @@ class RestaurantImportViewModelTest {
             "replace.json",
             jsonOf(export("Cal Ferran", address = "Rambla 1", visits = listOf(VisitExport(visitDate = 1L, rating = 5))))
         )
-        val viewModel = RestaurantImportViewModel(context, repository, uri)
+        val viewModel = RestaurantImportViewModel(context, repository, SavedStateHandle(mapOf("uri" to uri.toString())))
         viewModel.loaded()
         viewModel.onDecisionChange(0, ImportDecision.REPLACE)
 

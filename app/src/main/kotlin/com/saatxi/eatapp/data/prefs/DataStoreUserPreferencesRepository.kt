@@ -11,10 +11,13 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.saatxi.eatapp.ui.theme.AppPalette
 import com.saatxi.eatapp.ui.theme.ThemeMode
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-import java.io.IOException
 
 private const val TAG = "EatApp.Prefs"
 
@@ -32,11 +35,13 @@ private object Keys {
     val FAVORITE_IDS = stringSetPreferencesKey("favorite_ids")
 }
 
+@Singleton
 class DataStoreUserPreferencesRepository(
     private val dataStore: DataStore<Preferences>
 ) : UserPreferencesRepository {
 
-    constructor(context: Context) : this(context.applicationContext.dataStore)
+    @Inject
+    constructor(@ApplicationContext context: Context) : this(context.applicationContext.dataStore)
 
     override val preferences: Flow<UserPreferences> = dataStore.data
         .catch { throwable ->
