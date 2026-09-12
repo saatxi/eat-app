@@ -2,53 +2,60 @@ package com.saatxi.eatapp.data.local
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.testing.MigrationTestHelper
+import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.junit.runner.RunWith
 
 /**
- * The old hand-written MIGRATION_8_9/MIGRATION_9_10 regression tests are gone:
- * this pass's schema jump (client-generated String ids, the Restaurant ->
- * Visit/Photo split) is a destructive one — see `EatAppDatabase.kt` — since
- * there are no production users yet to preserve data for. There is no new
- * `Migration` to test. What's left is a much smaller smoke test: a database
- * that predates this schema still opens (destructively) rather than crashing.
+ * The app now has real production users (see the comment on
+ * `buildEatAppDatabase` in `EatAppDatabase.kt`), so a schema bump with no
+ * matching `Migration` must fail loudly instead of silently wiping data via a
+ * destructive fallback. Version 14's exported schema (`app/schemas/`) is the
+ * frozen baseline every future migration is tested against here: once a real
+ * `Migration` is written for the next version bump, this file is where its
+ * regression test belongs, following Room's `MigrationTestHelper` pattern
+ * used in this test.
  */
 @RunWith(RobolectricTestRunner::class)
 class MigrationTest {
 
-    private val dbName = "migration-test.db"
-    private lateinit var context: Context
-
-    @After
-    fun tearDown() {
-        context.deleteDatabase(dbName)
-    }
+    @get:Rule
+    val helper: MigrationTestHelper = MigrationTestHelper(
+        InstrumentationRegistry.getInstrumentation(),
+        EatAppDatabase::class.java
+    )
 
     @Test
-    fun `an old-shaped database file opens cleanly via destructive fallback`() = runTest {
-        context = ApplicationProvider.getApplicationContext()
-        val dbFile = context.getDatabasePath(dbName)
-
-        android.database.sqlite.SQLiteDatabase.openOrCreateDatabase(dbFile, null).use { legacyDb ->
-            legacyDb.execSQL(
-                "CREATE TABLE IF NOT EXISTS `restaurants` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
-                    "`name` TEXT NOT NULL, `cuisineType` TEXT NOT NULL, `address` TEXT, `rating` INTEGER NOT NULL, " +
-                    "`priceRange` INTEGER NOT NULL, `visited` INTEGER NOT NULL, `searchText` TEXT NOT NULL)"
+    fun `reopening a version 14 database does not delete its data`() = runTest {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        val dbName = context.getDatabasePath("migration-test.db").absolutePath
+        helper.createDatabase(dbName, 14).apply {
+            execSQL(
+                "INSERT INTO restaurants (id, name, cuisineType, address, priceRange, searchText) " +
+                    "VALUES ('r1', 'Test', 'japanese', NULL, 2, 'test')"
             )
-            legacyDb.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
-            legacyDb.version = 8
+            close()
         }
 
-        val migrated = Room.databaseBuilder(context, EatAppDatabase::class.java, dbName)
+        // Room.databaseBuilder (unlike MigrationTestHelper) has no migrations
+        // registered and, as of this app's fix for the "update wipes all
+        // restaurants" bug, no destructive-on-upgrade fallback either: opening
+        // the same version must reuse the existing file and its rows rather
+        // than recreating it from scratch.
+        val reopened = Room.databaseBuilder(context, EatAppDatabase::class.java, dbName)
+            .openHelperFactory(FrameworkSQLiteOpenHelperFactory())
             .allowMainThreadQueries()
-            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
-        assertTrue(migrated.restaurantDao().getAll().isEmpty())
-        migrated.close()
+        assertTrue(reopened.restaurantDao().getAll().isNotEmpty())
+        reopened.close()
+
+        context.deleteDatabase("migration-test.db")
     }
 }

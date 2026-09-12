@@ -8,7 +8,7 @@ import androidx.room.RoomDatabase
 @Database(
     entities = [Restaurant::class, Tag::class, RestaurantTag::class, Visit::class, Photo::class],
     version = 14,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class EatAppDatabase : RoomDatabase() {
 
@@ -24,11 +24,16 @@ fun buildEatAppDatabase(context: Context): EatAppDatabase =
         EatAppDatabase::class.java,
         "eatapp.db"
     )
-        // This is a pre-release app with no production users yet, and the id
-        // type itself changed (Long autoincrement -> client-generated UUID
-        // String) along with the relational split of rating/visited/notes/photo
-        // into Visit/Photo — there is no meaningful in-place migration to write
-        // for that. Once real user data exists, this MUST be replaced with a
-        // real Migration before the next schema bump.
-        .fallbackToDestructiveMigration(dropAllTables = true)
+        // The app now has real production users, so version 14 (exported to
+        // app/schemas/) is a frozen baseline: every future @Database version
+        // bump MUST ship a real Migration (added below via .addMigrations(...))
+        // that preserves existing rows, checked against that schema history in
+        // MigrationTest. There is deliberately no destructive-on-upgrade
+        // fallback any more — a missing Migration should crash loudly at
+        // startup instead of silently wiping the user's restaurants, which is
+        // what used to happen here (see the git history of this file).
+        // Downgrading (installing an older APK over a newer database) is the
+        // one case with no real fix, so that alone still falls back
+        // destructively.
+        .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
         .build()

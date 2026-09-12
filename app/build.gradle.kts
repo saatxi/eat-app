@@ -153,6 +153,26 @@ android {
             isIncludeAndroidResources = true
         }
     }
+
+    sourceSets {
+        // Room's exported schema JSONs (see the ksp { arg("room.schemaLocation", ...) }
+        // below) double as MigrationTestHelper's fixtures for the Robolectric test.
+        // Robolectric's `testOptions.unitTests.isIncludeAndroidResources` reads assets
+        // from the merged *debug* assets set (mergeDebugAssets), not a "test" source
+        // set, so this is scoped to the debug build type only -- it never ships in
+        // release, which merges separately (mergeReleaseAssets).
+        getByName("debug") {
+            assets.srcDirs("$projectDir/schemas")
+        }
+    }
+}
+
+ksp {
+    // Now that the app has real production users (see EatAppDatabase.kt), every
+    // future @Database version bump needs a real Migration checked against a
+    // frozen prior schema instead of relying on a destructive fallback. This
+    // writes that schema history to app/schemas/, checked into git.
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 kotlin {
@@ -266,4 +286,5 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.room.testing)
 }
