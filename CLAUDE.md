@@ -128,6 +128,23 @@ Optional detailed explanation
   F-73 for the original blocker). Verified against this project's current
   AGP (9.4.0) with `:baselineprofile:tasks`, `./gradlew test` and
   `./gradlew assembleDebug` — all pass.
+- **Local JDK pinned to Temurin 21, not Android Studio's JBR**: as of
+  2026-09-12, Android Studio's bundled JBR on this machine updated to
+  OpenJDK 25, which broke every Gradle invocation with `BUG! exception in
+  phase 'semantic analysis' in source unit '_BuildScript_' Unsupported
+  class file major version 69` (69 = Java 25) — Gradle 9.7.1's own
+  toolchain isn't able to evaluate the buildscript on that JVM yet, despite
+  the Gradle compatibility docs listing Java 25 as supported for *running*
+  Gradle since 9.1.0. Worked around by installing Eclipse Temurin 21
+  (`winget install --id EclipseAdoptium.Temurin.21.JDK`) and repointing
+  `gradle.properties`' `org.gradle.java.home` at
+  `C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot` instead of
+  the JBR path. **Whenever you're touching this repo's Gradle/JDK setup
+  and it's a natural moment to check** — don't go looking on a schedule —
+  see if a newer Gradle release (past `9.7.1`) or AGP release fixes
+  buildscript evaluation on JDK 25, so `org.gradle.java.home` could point
+  back at Android Studio's JBR again — last checked 2026-09-12, still
+  broken on Gradle 9.7.1. No fix release date found.
 
 ## Build & verify
 
