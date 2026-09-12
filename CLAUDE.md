@@ -9,8 +9,15 @@ only covers things specific to *how Claude should work in this repo*.
 
 When asked to write a commit message or a tag message:
 
-- **Never** run `git commit` or `git tag` yourself, even if a message was
-  approved earlier in the conversation. Only the user runs those commands.
+- Claude **may** run `git commit` itself when the user has explicitly asked
+  for work to be committed as part of the current task (e.g. "commit after
+  each phase") — this is the one exception to the general rule elsewhere in
+  this file of not taking actions with lasting effects on shared state
+  without asking each time. Outside of that kind of explicit, ongoing
+  instruction, still ask before committing. Never run `git tag` without the
+  user explicitly asking for a tag specifically, and never force-push,
+  amend a commit the user didn't just make together with you in the same
+  turn, or otherwise rewrite history without being asked.
 - Do **not** wrap the message's lines — each line/paragraph must be written
   as a single continuous line, no manual line breaks inside it (this
   overrides the usual "wrap git messages at ~72 columns" convention).
