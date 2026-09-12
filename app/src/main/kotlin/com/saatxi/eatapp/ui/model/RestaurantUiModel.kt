@@ -1,6 +1,7 @@
 package com.saatxi.eatapp.ui.model
 
 import com.saatxi.eatapp.data.local.Restaurant
+import com.saatxi.eatapp.data.local.Visit
 import com.saatxi.eatapp.data.local.formatAddress
 
 /** Stars the rating scale is drawn on. */
@@ -19,13 +20,12 @@ private const val MAX_PRICE_RANGE = 4
  * ViewModel deliberately doesn't have. The cuisine is therefore carried as its
  * raw vocabulary key and resolved at draw time by `CuisineVisuals`.
  *
- * Every property is a primitive or a String on purpose. Compose infers
- * stability structurally, and a single `List` property here would mark the
- * whole class unstable — which would make every row of the list unskippable and
- * recompose the lot on any state change.
+ * [rating]/[visited]/[notes] now come from the restaurant's latest [Visit]
+ * (there's at most one, in this pass's single-visit-per-restaurant UI) rather
+ * than from the restaurant entity itself — see `toUiModel`.
  */
 data class RestaurantUiModel(
-    val id: Long,
+    val id: String,
     val name: String,
     val cuisineKey: String,
     /** Street line only — null when absent/blank. See [formattedAddress] for the joined display string. */
@@ -45,7 +45,7 @@ data class RestaurantUiModel(
     val isFavorite: Boolean,
     /** Absolute path to a locally-stored copy; null draws the cuisine badge instead. */
     val photoPath: String? = null,
-    /** Free-text, user-written. Null when blank, so the detail screen can just skip the card. */
+    /** Free-text, user-written note from the latest visit. Null when blank, so the detail screen can just skip the card. */
     val notes: String? = null,
     /**
      * Comma-and-space-joined tag names, e.g. `"Terraza, Para grupos"`; empty
@@ -64,7 +64,12 @@ data class RestaurantUiModel(
     val formattedAddress: String? get() = formatAddress(streetAddress, city, region, country)
 }
 
-fun Restaurant.toUiModel(isFavorite: Boolean = false, tags: List<String> = emptyList()): RestaurantUiModel = RestaurantUiModel(
+fun Restaurant.toUiModel(
+    isFavorite: Boolean = false,
+    tags: List<String> = emptyList(),
+    latestVisit: Visit? = null,
+    photoPath: String? = null
+): RestaurantUiModel = RestaurantUiModel(
     id = id,
     name = name,
     cuisineKey = cuisineType,
@@ -74,15 +79,15 @@ fun Restaurant.toUiModel(isFavorite: Boolean = false, tags: List<String> = empty
     city = city?.takeIf { it.isNotBlank() },
     region = region?.takeIf { it.isNotBlank() },
     country = country?.takeIf { it.isNotBlank() },
-    rating = rating,
+    rating = latestVisit?.rating ?: 0,
     // The reader already rejects out-of-range values, but clamping keeps a
     // hand-built entity from producing an absurdly long chip.
     priceLabel = "$".repeat(priceRange.coerceIn(0, MAX_PRICE_RANGE)),
-    visited = visited,
+    visited = latestVisit != null,
     website = website,
     instagram = instagram,
     isFavorite = isFavorite,
     photoPath = photoPath,
-    notes = notes?.takeIf { it.isNotBlank() },
+    notes = latestVisit?.notes?.takeIf { it.isNotBlank() },
     tagsLabel = tags.joinToString(", ")
 )

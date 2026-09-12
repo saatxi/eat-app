@@ -249,15 +249,15 @@ private fun importDecisionLabel(decision: ImportDecision): String = when (decisi
 
 private val previewCandidate = ImportCandidate(
     restaurant = Restaurant(
-        id = 0,
+        id = "1",
         name = "Cal Ferran",
         cuisineType = "mediterranean",
         streetAddress = "Plaça Santa Anna",
         city = "Mataró",
-        rating = 4,
         priceRange = 2
     ),
     tags = listOf("Terraza", "Para grupos"),
+    visits = emptyList(),
     duplicateOf = null,
     decision = ImportDecision.ADD
 )

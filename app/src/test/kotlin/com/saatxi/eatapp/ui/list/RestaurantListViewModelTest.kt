@@ -1,20 +1,16 @@
 package com.saatxi.eatapp.ui.list
 
-import com.saatxi.eatapp.data.local.CuisineCount
-import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.prefs.UserPreferences
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
-import com.saatxi.eatapp.data.repository.RestaurantRepository
+import com.saatxi.eatapp.data.repository.FakeRestaurantRepository
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.AppPalette
 import com.saatxi.eatapp.ui.theme.ThemeMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -334,7 +330,7 @@ class RestaurantListViewModelTest {
     fun `restaurants from the repository reach the state`() = runTest {
         observeState()
 
-        repository.restaurants.value = listOf(restaurant(1, "Cal Ferran"), restaurant(2, "Bar Nil"))
+        repository.restaurants.value = listOf(restaurant("1", "Cal Ferran"), restaurant("2", "Bar Nil"))
 
         assertEquals(listOf("Cal Ferran", "Bar Nil"), viewModel.uiState.value.restaurants.map { it.name })
     }
@@ -343,10 +339,10 @@ class RestaurantListViewModelTest {
     fun `entities are mapped to UI models before reaching the state`() = runTest {
         observeState()
 
-        repository.restaurants.value = listOf(restaurant(1, "Cal Ferran"))
+        repository.restaurants.value = listOf(restaurant("1", "Cal Ferran"))
 
         val item = viewModel.uiState.value.restaurants.single()
-        assertEquals(1L, item.id)
+        assertEquals("1", item.id)
         assertEquals("mediterranean", item.cuisineKey)
         assertEquals("$$", item.priceLabel)
     }
@@ -354,13 +350,13 @@ class RestaurantListViewModelTest {
     @Test
     fun `each restaurant's tags reach the state as a comma-joined label`() = runTest {
         observeState()
-        repository.tagsByRestaurantId.value = mapOf(1L to listOf("Terraza", "Brunch"))
+        repository.tagsByRestaurantId.value = mapOf("1" to listOf("Terraza", "Brunch"))
 
-        repository.restaurants.value = listOf(restaurant(1, "Cal Ferran"), restaurant(2, "Bar Nil"))
+        repository.restaurants.value = listOf(restaurant("1", "Cal Ferran"), restaurant("2", "Bar Nil"))
 
         val items = viewModel.uiState.value.restaurants.associateBy { it.id }
-        assertEquals("Terraza, Brunch", items.getValue(1L).tagsLabel)
-        assertEquals("", items.getValue(2L).tagsLabel)
+        assertEquals("Terraza, Brunch", items.getValue("1").tagsLabel)
+        assertEquals("", items.getValue("2").tagsLabel)
     }
 
     @Test
@@ -375,19 +371,18 @@ class RestaurantListViewModelTest {
     @Test
     fun `a later emission replaces the previous list`() = runTest {
         observeState()
-        repository.restaurants.value = listOf(restaurant(1, "Old"))
+        repository.restaurants.value = listOf(restaurant("1", "Old"))
 
-        repository.restaurants.value = listOf(restaurant(2, "New"))
+        repository.restaurants.value = listOf(restaurant("2", "New"))
 
         assertEquals(listOf("New"), viewModel.uiState.value.restaurants.map { it.name })
     }
 
-    private fun restaurant(id: Long, name: String) = Restaurant(
+    private fun restaurant(id: String, name: String) = Restaurant(
         id = id,
         name = name,
         cuisineType = "mediterranean",
         streetAddress = null,
-        rating = 3,
         priceRange = 2
     )
 
@@ -396,22 +391,22 @@ class RestaurantListViewModelTest {
     @Test
     fun `a restaurant whose id is in favoriteIds maps to isFavorite true`() = runTest {
         observeState()
-        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf(1L))
+        preferencesRepository.preferences.value = UserPreferences.Defaults.copy(favoriteIds = setOf("1"))
 
-        repository.restaurants.value = listOf(restaurant(1, "Cal Ferran"), restaurant(2, "Bar Nil"))
+        repository.restaurants.value = listOf(restaurant("1", "Cal Ferran"), restaurant("2", "Bar Nil"))
 
         val items = viewModel.uiState.value.restaurants.associateBy { it.id }
-        assertTrue(items.getValue(1L).isFavorite)
-        assertFalse(items.getValue(2L).isFavorite)
+        assertTrue(items.getValue("1").isFavorite)
+        assertFalse(items.getValue("2").isFavorite)
     }
 
     @Test
     fun `onFavoriteToggle writes through to the preferences repository`() = runTest {
         observeState()
 
-        viewModel.onFavoriteToggle(1L)
+        viewModel.onFavoriteToggle("1")
 
-        assertEquals(setOf(1L), preferencesRepository.preferences.value.favoriteIds)
+        assertEquals(setOf("1"), preferencesRepository.preferences.value.favoriteIds)
     }
 
     // --- F-65: swipe-to-delete ------------------------------------------
@@ -420,111 +415,10 @@ class RestaurantListViewModelTest {
     fun `onDeleteRestaurant deletes the given restaurant through the repository`() = runTest {
         observeState()
 
-        viewModel.onDeleteRestaurant(1L)
+        viewModel.onDeleteRestaurant("1")
 
-        assertEquals(1L, repository.lastDeletedId)
+        assertEquals("1", repository.lastDeletedId)
     }
-}
-
-/**
- * Records the arguments the ViewModel passes down and replays whatever the test
- * pushes into it. It deliberately does not filter: that is the DAO's job.
- */
-private class FakeRestaurantRepository : RestaurantRepository {
-
-    val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
-    val cuisines = MutableStateFlow<List<String>>(emptyList())
-    val cities = MutableStateFlow<List<String>>(emptyList())
-    val regions = MutableStateFlow<List<String>>(emptyList())
-    val countries = MutableStateFlow<List<String>>(emptyList())
-    val tagsByRestaurantId = MutableStateFlow<Map<Long, List<String>>>(emptyMap())
-
-    var lastQuery: String? = null
-        private set
-    var lastMinRating: Int? = null
-        private set
-    var lastCuisine: String? = null
-        private set
-    var lastSort: RestaurantSort? = null
-        private set
-    var lastVisited: Boolean? = null
-        private set
-    var lastCity: String? = null
-        private set
-    var lastRegion: String? = null
-        private set
-    var lastCountry: String? = null
-        private set
-    var lastDeletedId: Long? = null
-        private set
-
-    override fun observeFiltered(
-        query: String?,
-        minRating: Int?,
-        cuisineType: String?,
-        sort: RestaurantSort,
-        visited: Boolean?,
-        city: String?,
-        region: String?,
-        country: String?
-    ): Flow<List<Restaurant>> {
-        lastQuery = query
-        lastMinRating = minRating
-        lastCuisine = cuisineType
-        lastSort = sort
-        lastVisited = visited
-        lastCity = city
-        lastRegion = region
-        lastCountry = country
-        return restaurants
-    }
-
-    override fun observeCuisineTypes(): Flow<List<String>> = cuisines
-    override fun observeCities(): Flow<List<String>> = cities
-    override fun observeRegions(): Flow<List<String>> = regions
-    override fun observeCountries(): Flow<List<String>> = countries
-
-    override fun observeById(id: Long): Flow<Restaurant?> =
-        restaurants.map { list -> list.firstOrNull { it.id == id } }
-
-    override suspend fun insert(restaurant: Restaurant, tags: List<String>): Long =
-        throw NotImplementedError("Not used by RestaurantListViewModel")
-
-    override suspend fun update(restaurant: Restaurant, tags: List<String>) =
-        throw NotImplementedError("Not used by RestaurantListViewModel")
-
-    override suspend fun delete(id: Long) {
-        lastDeletedId = id
-    }
-
-    override suspend fun deleteAll() =
-        throw NotImplementedError("Not used by RestaurantListViewModel")
-
-    override fun observeAllTagNames(): Flow<List<String>> =
-        throw NotImplementedError("Not used by RestaurantListViewModel")
-
-    override fun observeTagNames(restaurantId: Long): Flow<List<String>> =
-        throw NotImplementedError("Not used by RestaurantListViewModel")
-
-    override fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>> = tagsByRestaurantId
-
-    override fun observeTotalCount(): Flow<Int> =
-        throw NotImplementedError("Not used by RestaurantListViewModel")
-
-    override fun observeVisitedCount(): Flow<Int> =
-        throw NotImplementedError("Not used by RestaurantListViewModel")
-
-    override fun observeAverageRating(): Flow<Double?> =
-        throw NotImplementedError("Not used by RestaurantListViewModel")
-
-    override fun observeCuisineCounts(): Flow<List<CuisineCount>> =
-        throw NotImplementedError("Not used by RestaurantListViewModel")
-
-    override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
-        throw NotImplementedError("Not used by RestaurantListViewModel")
-
-    override suspend fun getRandomWantToTry(): Restaurant? =
-        throw NotImplementedError("Not used by RestaurantListViewModel")
 }
 
 /** Replays whatever the test pushes into [preferences] and records favourite writes. */
@@ -540,7 +434,7 @@ private class FakeUserPreferencesRepository : UserPreferencesRepository {
         preferences.value = preferences.value.copy(themeMode = themeMode)
     }
 
-    override suspend fun toggleFavorite(restaurantId: Long) {
+    override suspend fun toggleFavorite(restaurantId: String) {
         val current = preferences.value.favoriteIds
         preferences.value = preferences.value.copy(
             favoriteIds = if (restaurantId in current) current - restaurantId else current + restaurantId

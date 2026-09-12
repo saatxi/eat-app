@@ -2,13 +2,9 @@ package com.saatxi.eatapp.ui.stats
 
 import com.saatxi.eatapp.data.local.CuisineCount
 import com.saatxi.eatapp.data.local.PriceRangeCount
-import com.saatxi.eatapp.data.local.Restaurant
-import com.saatxi.eatapp.data.local.RestaurantSort
-import com.saatxi.eatapp.data.repository.RestaurantRepository
+import com.saatxi.eatapp.data.repository.FakeRestaurantRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -91,70 +87,4 @@ class StatisticsViewModelTest {
 
         assertNull(viewModel.uiState.value.averageRating)
     }
-}
-
-private class FakeRestaurantRepository : RestaurantRepository {
-
-    val totalCount = MutableStateFlow(0)
-    val visitedCount = MutableStateFlow(0)
-    val averageRating = MutableStateFlow<Double?>(null)
-    val cuisineCounts = MutableStateFlow<List<CuisineCount>>(emptyList())
-    val priceRangeCounts = MutableStateFlow<List<PriceRangeCount>>(emptyList())
-
-    override fun observeFiltered(
-        query: String?,
-        minRating: Int?,
-        cuisineType: String?,
-        sort: RestaurantSort,
-        visited: Boolean?,
-        city: String?,
-        region: String?,
-        country: String?
-    ): Flow<List<Restaurant>> =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override fun observeCuisineTypes(): Flow<List<String>> =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override fun observeCities(): Flow<List<String>> =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override fun observeRegions(): Flow<List<String>> =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override fun observeCountries(): Flow<List<String>> =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override fun observeById(id: Long): Flow<Restaurant?> =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override suspend fun insert(restaurant: Restaurant, tags: List<String>): Long =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override suspend fun update(restaurant: Restaurant, tags: List<String>) =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override suspend fun delete(id: Long) =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override suspend fun deleteAll() =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override fun observeAllTagNames(): Flow<List<String>> =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override fun observeTagNames(restaurantId: Long): Flow<List<String>> =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>> =
-        throw NotImplementedError("Not used by StatisticsViewModel")
-
-    override fun observeTotalCount(): Flow<Int> = totalCount
-    override fun observeVisitedCount(): Flow<Int> = visitedCount
-    override fun observeAverageRating(): Flow<Double?> = averageRating
-    override fun observeCuisineCounts(): Flow<List<CuisineCount>> = cuisineCounts
-    override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> = priceRangeCounts
-
-    override suspend fun getRandomWantToTry(): Restaurant? =
-        throw NotImplementedError("Not used by StatisticsViewModel")
 }

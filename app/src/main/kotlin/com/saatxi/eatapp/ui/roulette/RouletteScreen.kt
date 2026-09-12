@@ -69,7 +69,7 @@ private const val SPIN_DURATION_MS = 450
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RouletteScreen(
-    onOpenRestaurant: (Long) -> Unit,
+    onOpenRestaurant: (String) -> Unit,
     viewModel: RouletteViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -312,7 +312,7 @@ private fun RouletteResultCard(restaurant: RestaurantUiModel, onClick: () -> Uni
 }
 
 private val previewPick = RestaurantUiModel(
-    id = 1,
+    id = "1",
     name = "Cal Ferran",
     cuisineKey = "mediterranean",
     streetAddress = "Plaça Santa Anna",

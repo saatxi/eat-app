@@ -18,7 +18,7 @@ data class UserPreferences(
      * Ids of favourited restaurants. These are the ids from the source `.db`,
      * which the importer preserves verbatim, so a favourite survives a sync.
      */
-    val favoriteIds: Set<Long>
+    val favoriteIds: Set<String>
 ) {
     companion object {
         /** What the app shows before the stored values have been read back. */
@@ -39,5 +39,5 @@ interface UserPreferencesRepository {
     suspend fun setThemeMode(themeMode: ThemeMode)
 
     /** Adds the id if absent, removes it if present. */
-    suspend fun toggleFavorite(restaurantId: Long)
+    suspend fun toggleFavorite(restaurantId: String)
 }

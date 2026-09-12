@@ -80,7 +80,6 @@ class RestaurantShareWriterTest {
         name = name,
         cuisineType = "mediterranean",
         streetAddress = null,
-        rating = 3,
         priceRange = 2
     )
 

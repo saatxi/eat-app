@@ -1,6 +1,7 @@
 package com.saatxi.eatapp.data.share
 
 import com.saatxi.eatapp.data.local.Restaurant
+import java.util.UUID
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
@@ -9,8 +10,8 @@ const val MAX_IMPORT_BYTES = 5L * 1024 * 1024
 
 enum class ImportFailureReason { TOO_LARGE, INVALID_FILE, IO_ERROR }
 
-/** One validated import row: the [Restaurant] itself paired with its own validated tag names. */
-data class ImportedRestaurant(val restaurant: Restaurant, val tags: List<String>)
+/** One validated import row: the [Restaurant] itself paired with its own validated tags and visits. */
+data class ImportedRestaurant(val restaurant: Restaurant, val tags: List<String>, val visits: List<VisitExport>)
 
 sealed interface ImportOutcome {
     /**
@@ -25,10 +26,10 @@ private val json = Json { ignoreUnknownKeys = true }
 
 /**
  * Parses and validates a share file already read into memory. Deliberately
- * free of Android imports — the file's *contents* are untrusted the same way
- * the old synced `.db` was, and the same rule applies: validate every field
- * before anything reaches Room. Fetching the bytes off a `content://` Uri is
- * a separate, Android-only step; see `ContentFiles.kt`.
+ * free of Android imports — the file's *contents* are untrusted, and the
+ * same rule applies: validate every field before anything reaches Room.
+ * Fetching the bytes off a `content://` Uri is a separate, Android-only
+ * step; see `ContentFiles.kt`.
  */
 object RestaurantImportReader {
 
@@ -46,7 +47,9 @@ object RestaurantImportReader {
         }
 
         val restaurants = shareFile.restaurants.mapNotNull { export ->
-            export.toRestaurantOrNull()?.let { restaurant -> ImportedRestaurant(restaurant, export.toValidatedTagNames()) }
+            export.toRestaurantOrNull(id = UUID.randomUUID().toString())?.let { restaurant ->
+                ImportedRestaurant(restaurant, export.toValidatedTagNames(), export.toValidatedVisits())
+            }
         }
         val skippedCount = shareFile.restaurants.size - restaurants.size
         return ImportOutcome.Success(restaurants, skippedCount)

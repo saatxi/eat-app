@@ -62,19 +62,19 @@ class DataStoreUserPreferencesRepositoryTest {
 
     @Test
     fun `toggleFavorite adds the id, then removes it on a second call`() = runTest {
-        repository.toggleFavorite(42L)
-        assertEquals(setOf(42L), repository.preferences.first().favoriteIds)
+        repository.toggleFavorite("42")
+        assertEquals(setOf("42"), repository.preferences.first().favoriteIds)
 
-        repository.toggleFavorite(42L)
-        assertEquals(emptySet<Long>(), repository.preferences.first().favoriteIds)
+        repository.toggleFavorite("42")
+        assertEquals(emptySet<String>(), repository.preferences.first().favoriteIds)
     }
 
     @Test
     fun `toggleFavorite leaves other stored ids untouched`() = runTest {
-        repository.toggleFavorite(1L)
-        repository.toggleFavorite(2L)
+        repository.toggleFavorite("1")
+        repository.toggleFavorite("2")
 
-        assertEquals(setOf(1L, 2L), repository.preferences.first().favoriteIds)
+        assertEquals(setOf("1", "2"), repository.preferences.first().favoriteIds)
     }
 
     @Test
@@ -98,9 +98,9 @@ class DataStoreUserPreferencesRepositoryTest {
     }
 
     @Test
-    fun `ignores a favorite id that is not a valid number`() = runTest {
-        dataStore.edit { it[stringSetPreferencesKey("favorite_ids")] = setOf("7", "not-a-number") }
+    fun `stored favorite ids are read back verbatim`() = runTest {
+        dataStore.edit { it[stringSetPreferencesKey("favorite_ids")] = setOf("7", "a-uuid-like-id") }
 
-        assertEquals(setOf(7L), repository.preferences.first().favoriteIds)
+        assertEquals(setOf("7", "a-uuid-like-id"), repository.preferences.first().favoriteIds)
     }
 }

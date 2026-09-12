@@ -77,21 +77,22 @@ class RestaurantEditViewModelPhotoTest {
         viewModel.onSave(onSaved = {})
 
         assertEquals(pickedUri, photoStorage.lastCopiedSource)
-        assertEquals("/internal/photos/new.jpg", repository.lastInserted?.photoPath)
+        assertEquals("/internal/photos/new.jpg", repository.lastPhotoPath)
     }
 
     @Test
     fun `a copy that fails falls back to the photo that was already there`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, rating = 3, priceRange = 1, photoPath = "/existing/photo.jpg")
+            Restaurant(id = "1", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, priceRange = 1)
         )
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = 1L)
+        repository.photoPathByRestaurantId["1"] = "/existing/photo.jpg"
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, restaurantId = "1")
         observeState(viewModel)
         viewModel.onPhotoPicked(Uri.parse("content://media/picker/0/2"))
         photoStorage.nextCopyResult = null // simulates an unreadable/corrupt pick
 
         viewModel.onSave(onSaved = {})
 
-        assertEquals("/existing/photo.jpg", repository.lastUpdated?.photoPath)
+        assertEquals("/existing/photo.jpg", repository.lastPhotoPath)
     }
 }

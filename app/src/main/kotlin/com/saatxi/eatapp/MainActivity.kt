@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         // widget (see widget/WantToTryWidget.kt) — an explicit intent naming
         // this activity directly, so it never touches the ACTION_VIEW filters
         // the import flow above uses.
-        val startRestaurantId = intent?.getLongExtra(EXTRA_RESTAURANT_ID, -1L)?.takeIf { it > 0 }
+        val startRestaurantId = intent?.getStringExtra(EXTRA_RESTAURANT_ID)
 
         enableEdgeToEdge()
         setContent {

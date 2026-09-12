@@ -44,7 +44,7 @@ import com.saatxi.eatapp.ui.theme.EatAppTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesScreen(
-    onOpenRestaurant: (Long) -> Unit,
+    onOpenRestaurant: (String) -> Unit,
     viewModel: FavoritesViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -162,7 +162,7 @@ fun FavoritesScreen(
 }
 
 private val previewFavorite = RestaurantUiModel(
-    id = 1,
+    id = "1",
     name = "Cal Ferran",
     cuisineKey = "mediterranean",
     streetAddress = "Plaça Santa Anna",

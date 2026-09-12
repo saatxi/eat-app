@@ -150,7 +150,7 @@ private fun WidgetContent(context: Context, restaurant: Restaurant?) {
  * shared restaurant file, an unrelated flow) — [MainActivity] just reads
  * [EXTRA_RESTAURANT_ID] off whatever intent it was started with.
  */
-private fun detailIntent(context: Context, restaurantId: Long): Intent =
+private fun detailIntent(context: Context, restaurantId: String): Intent =
     Intent(context, MainActivity::class.java).apply {
         putExtra(EXTRA_RESTAURANT_ID, restaurantId)
         flags = Intent.FLAG_ACTIVITY_NEW_TASK

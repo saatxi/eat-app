@@ -65,9 +65,16 @@ class RestaurantListViewModel(
             repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort, it.visited, it.city, it.region, it.country)
         },
         preferencesRepository.preferences.map { it.favoriteIds },
-        repository.observeTagsByRestaurantId()
-    ) { restaurants, favoriteIds, tagsByRestaurantId ->
-        restaurants.map { it.toUiModel(isFavorite = it.id in favoriteIds, tags = tagsByRestaurantId[it.id].orEmpty()) }
+        repository.observeTagsByRestaurantId(),
+        repository.observeLatestVisitByRestaurantId()
+    ) { restaurants, favoriteIds, tagsByRestaurantId, latestVisitByRestaurantId ->
+        restaurants.map {
+            it.toUiModel(
+                isFavorite = it.id in favoriteIds,
+                tags = tagsByRestaurantId[it.id].orEmpty(),
+                latestVisit = latestVisitByRestaurantId[it.id]
+            )
+        }
     }
 
     private val availableFilterValues: Flow<AvailableFilterValues> = repository.observeAvailableFilterValues()
@@ -133,12 +140,12 @@ class RestaurantListViewModel(
         filters.update { it.copy(country = country) }
     }
 
-    fun onFavoriteToggle(restaurantId: Long) {
+    fun onFavoriteToggle(restaurantId: String) {
         viewModelScope.launch { preferencesRepository.toggleFavorite(restaurantId) }
     }
 
     /** F-65's swipe-to-delete — the caller has already shown a confirmation before calling this. */
-    fun onDeleteRestaurant(restaurantId: Long) {
+    fun onDeleteRestaurant(restaurantId: String) {
         viewModelScope.launch { repository.delete(restaurantId) }
     }
 
@@ -150,7 +157,12 @@ class RestaurantListViewModel(
         viewModelScope.launch {
             val all = repository.observeFiltered(query = null, minRating = null, cuisineType = null).first()
             val tagsByRestaurantId = repository.observeTagsByRestaurantId().first()
-            context.shareRestaurants(all.map { it.toExport(tagsByRestaurantId[it.id].orEmpty()) })
+            context.shareRestaurants(
+                all.map { restaurant ->
+                    val visits = repository.observeVisitsForRestaurant(restaurant.id).first()
+                    restaurant.toExport(tagsByRestaurantId[restaurant.id].orEmpty(), visits)
+                }
+            )
         }
     }
 

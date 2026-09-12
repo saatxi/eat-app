@@ -9,6 +9,7 @@ import com.saatxi.eatapp.data.local.normalizeTagName
 import com.saatxi.eatapp.data.local.normalizeWebsite
 import com.saatxi.eatapp.data.photo.RestaurantPhotoStorage
 import com.saatxi.eatapp.data.repository.RestaurantRepository
+import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -57,12 +58,15 @@ data class RestaurantEditUiState(
 /**
  * Backs both "add" (`restaurantId == null`) and "edit" (`restaurantId` set) —
  * the two only differ in whether a row is loaded to prefill the form and
- * whether saving inserts or updates.
+ * whether saving inserts or updates. Rating/visited/notes are still surfaced
+ * as one set of fields here — a single-visit-per-restaurant simplification of
+ * the new Visit-backed data model, kept only for this form's fields; see
+ * `RestaurantRepository.saveSingleVisit`.
  */
 class RestaurantEditViewModel(
     private val repository: RestaurantRepository,
     private val photoStorage: RestaurantPhotoStorage,
-    private val restaurantId: Long?
+    private val restaurantId: String?
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RestaurantEditUiState(isLoading = restaurantId != null))
@@ -89,6 +93,8 @@ class RestaurantEditViewModel(
                 val restaurant = repository.observeById(id).first()
                 if (restaurant != null) {
                     val tags = repository.observeTagNames(id).first()
+                    val latestVisit = repository.getLatestVisit(id)
+                    val photoPath = repository.getRestaurantPhotoPath(id)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -98,13 +104,13 @@ class RestaurantEditViewModel(
                             city = restaurant.city.orEmpty(),
                             region = restaurant.region.orEmpty(),
                             country = restaurant.country.orEmpty(),
-                            notes = restaurant.notes.orEmpty(),
-                            visited = restaurant.visited,
-                            rating = restaurant.rating,
+                            notes = latestVisit?.notes.orEmpty(),
+                            visited = latestVisit != null,
+                            rating = latestVisit?.rating ?: 0,
                             priceRange = restaurant.priceRange,
                             website = restaurant.website.orEmpty(),
                             instagram = restaurant.instagram.orEmpty(),
-                            existingPhotoPath = restaurant.photoPath,
+                            existingPhotoPath = photoPath,
                             tags = tags
                         )
                     }
@@ -226,21 +232,18 @@ class RestaurantEditViewModel(
                 else -> state.existingPhotoPath
             }
 
+            val id = restaurantId ?: UUID.randomUUID().toString()
             val restaurant = Restaurant(
-                id = restaurantId ?: 0,
+                id = id,
                 name = trimmedName,
                 cuisineType = state.cuisineType,
                 streetAddress = state.streetAddress.trim().takeIf { it.isNotBlank() },
                 city = state.city.trim().takeIf { it.isNotBlank() },
                 region = state.region.trim().takeIf { it.isNotBlank() },
                 country = state.country.trim().takeIf { it.isNotBlank() },
-                notes = state.notes.trim().takeIf { it.isNotBlank() },
-                visited = state.visited,
-                rating = state.rating,
                 priceRange = state.priceRange,
                 website = website,
-                instagram = instagram,
-                photoPath = photoPath
+                instagram = instagram
             )
 
             if (restaurantId != null) {
@@ -248,6 +251,13 @@ class RestaurantEditViewModel(
             } else {
                 repository.insert(restaurant, state.tags)
             }
+            repository.saveSingleVisit(
+                restaurantId = id,
+                visited = state.visited,
+                rating = state.rating,
+                notes = state.notes.trim().takeIf { it.isNotBlank() }
+            )
+            repository.setRestaurantPhoto(id, photoPath)
             onSaved()
         }
     }

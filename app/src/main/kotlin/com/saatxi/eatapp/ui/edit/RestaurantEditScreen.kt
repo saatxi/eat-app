@@ -83,7 +83,7 @@ import com.saatxi.eatapp.ui.theme.EatAppTheme
 @Composable
 fun RestaurantEditScreen(
     onBack: () -> Unit,
-    restaurantId: Long?,
+    restaurantId: String?,
     viewModel: RestaurantEditViewModel = viewModel(
         key = "edit-${restaurantId ?: "new"}",
         factory = AppViewModelProvider.editViewModelFactory(restaurantId)

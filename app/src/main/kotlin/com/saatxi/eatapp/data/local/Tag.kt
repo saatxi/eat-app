@@ -15,8 +15,8 @@ import androidx.room.PrimaryKey
  */
 @Entity(tableName = "tags", indices = [Index(value = ["name"], unique = true)])
 data class Tag(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    @PrimaryKey
+    val id: String,
     @ColumnInfo(collate = ColumnInfo.NOCASE)
     val name: String
 )
@@ -49,12 +49,12 @@ data class Tag(
     indices = [Index(value = ["tagId"])]
 )
 data class RestaurantTag(
-    val restaurantId: Long,
-    val tagId: Long
+    val restaurantId: String,
+    val tagId: String
 )
 
 /** Projection for [TagDao.observeAllRestaurantTagLinks] — one row per restaurant/tag-name pair. */
 data class RestaurantTagName(
-    val restaurantId: Long,
+    val restaurantId: String,
     val name: String
 )

@@ -1,20 +1,14 @@
 package com.saatxi.eatapp.ui.settings
 
-import com.saatxi.eatapp.data.local.CuisineCount
-import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
-import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.prefs.AppLocaleManager
+import com.saatxi.eatapp.data.prefs.FakeUserPreferencesRepository
 import com.saatxi.eatapp.data.prefs.UserPreferences
-import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
-import com.saatxi.eatapp.data.repository.RestaurantRepository
+import com.saatxi.eatapp.data.repository.FakeRestaurantRepository
 import com.saatxi.eatapp.ui.theme.AppPalette
 import com.saatxi.eatapp.ui.theme.ThemeMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -108,33 +102,12 @@ class SettingsViewModelTest {
     @Test
     fun `deleting all data clears every restaurant`() = runTest {
         repository.restaurants.value = listOf(
-            Restaurant(id = 1, name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, rating = 4, priceRange = 2)
+            Restaurant(id = "1", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, priceRange = 2)
         )
 
         viewModel.onDeleteAllData()
 
         assertEquals(emptyList<Restaurant>(), repository.restaurants.value)
-    }
-}
-
-/** Replays whatever the test pushes into [preferences] and records writes. */
-private class FakeUserPreferencesRepository : UserPreferencesRepository {
-
-    override val preferences = MutableStateFlow(UserPreferences.Defaults)
-
-    override suspend fun setPalette(palette: AppPalette) {
-        preferences.value = preferences.value.copy(palette = palette)
-    }
-
-    override suspend fun setThemeMode(themeMode: ThemeMode) {
-        preferences.value = preferences.value.copy(themeMode = themeMode)
-    }
-
-    override suspend fun toggleFavorite(restaurantId: Long) {
-        val current = preferences.value.favoriteIds
-        preferences.value = preferences.value.copy(
-            favoriteIds = if (restaurantId in current) current - restaurantId else current + restaurantId
-        )
     }
 }
 
@@ -146,69 +119,4 @@ private class FakeAppLocaleManager(
     override fun setLanguage(language: AppLanguage) {
         current = language
     }
-}
-
-/** Only exists to satisfy the constructor — onExportData needs a real Context to go further, so it is not exercised here. */
-private class FakeRestaurantRepository : RestaurantRepository {
-
-    val restaurants = MutableStateFlow<List<Restaurant>>(emptyList())
-
-    override fun observeFiltered(
-        query: String?,
-        minRating: Int?,
-        cuisineType: String?,
-        sort: RestaurantSort,
-        visited: Boolean?,
-        city: String?,
-        region: String?,
-        country: String?
-    ): Flow<List<Restaurant>> = restaurants
-
-    override fun observeCuisineTypes(): Flow<List<String>> = MutableStateFlow(emptyList())
-    override fun observeCities(): Flow<List<String>> = MutableStateFlow(emptyList())
-    override fun observeRegions(): Flow<List<String>> = MutableStateFlow(emptyList())
-    override fun observeCountries(): Flow<List<String>> = MutableStateFlow(emptyList())
-
-    override fun observeById(id: Long): Flow<Restaurant?> =
-        restaurants.map { list -> list.firstOrNull { it.id == id } }
-
-    override suspend fun insert(restaurant: Restaurant, tags: List<String>): Long =
-        throw NotImplementedError("Not used by SettingsViewModel")
-
-    override suspend fun update(restaurant: Restaurant, tags: List<String>) =
-        throw NotImplementedError("Not used by SettingsViewModel")
-
-    override suspend fun delete(id: Long) =
-        throw NotImplementedError("Not used by SettingsViewModel")
-
-    override suspend fun deleteAll() {
-        restaurants.value = emptyList()
-    }
-
-    override fun observeAllTagNames(): Flow<List<String>> =
-        throw NotImplementedError("Not used by SettingsViewModel")
-
-    override fun observeTagNames(restaurantId: Long): Flow<List<String>> =
-        throw NotImplementedError("Not used by SettingsViewModel")
-
-    override fun observeTagsByRestaurantId(): Flow<Map<Long, List<String>>> =
-        throw NotImplementedError("Not used by SettingsViewModel")
-
-    override fun observeTotalCount(): Flow<Int> =
-        throw NotImplementedError("Not used by SettingsViewModel")
-
-    override fun observeVisitedCount(): Flow<Int> =
-        throw NotImplementedError("Not used by SettingsViewModel")
-
-    override fun observeAverageRating(): Flow<Double?> =
-        throw NotImplementedError("Not used by SettingsViewModel")
-
-    override fun observeCuisineCounts(): Flow<List<CuisineCount>> =
-        throw NotImplementedError("Not used by SettingsViewModel")
-
-    override fun observePriceRangeCounts(): Flow<List<PriceRangeCount>> =
-        throw NotImplementedError("Not used by SettingsViewModel")
-
-    override suspend fun getRandomWantToTry(): Restaurant? =
-        throw NotImplementedError("Not used by SettingsViewModel")
 }

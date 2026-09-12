@@ -2,17 +2,18 @@ package com.saatxi.eatapp.data.share
 
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RestaurantImportReaderTest {
 
-    private fun export(name: String, rating: Int = 3, priceRange: Int = 2) = RestaurantExport(
+    private fun export(name: String, priceRange: Int = 2, visits: List<VisitExport> = emptyList()) = RestaurantExport(
         name = name,
         cuisineType = "mediterranean",
         streetAddress = null,
-        rating = rating,
-        priceRange = priceRange
+        priceRange = priceRange,
+        visits = visits
     )
 
     private fun jsonOf(shareFile: RestaurantShareFile): String =
@@ -73,7 +74,7 @@ class RestaurantImportReaderTest {
     fun `drops an invalid row but keeps the rest of the file, reporting the count`() {
         val json = jsonOf(
             RestaurantShareFile(
-                restaurants = listOf(export("Cal Ferran"), export(name = "  "), export("Bar Nil", rating = 9))
+                restaurants = listOf(export("Cal Ferran"), export(name = "  "), export("Bar Nil", priceRange = 9))
             )
         )
 
@@ -84,12 +85,43 @@ class RestaurantImportReaderTest {
     }
 
     @Test
-    fun `never assigns an id from the file`() {
-        val json = """{"format":"${RestaurantShareFile.FORMAT}","restaurants":[{"name":"Cal Ferran","cuisineType":"mediterranean","rating":3,"priceRange":2,"id":999}]}"""
+    fun `never reuses an id from the file`() {
+        val json = """{"format":"${RestaurantShareFile.FORMAT}","restaurants":[{"name":"Cal Ferran","cuisineType":"mediterranean","priceRange":2,"id":"not-a-real-id"}]}"""
 
         val outcome = RestaurantImportReader.read(json) as ImportOutcome.Success
 
-        assertEquals(0L, outcome.restaurants.single().restaurant.id)
+        assertNotEquals("not-a-real-id", outcome.restaurants.single().restaurant.id)
+    }
+
+    // --- Visits -------------------------------------------------------------
+
+    @Test
+    fun `pairs each restaurant with its own valid visits`() {
+        val json = jsonOf(
+            RestaurantShareFile(
+                restaurants = listOf(
+                    export("Cal Ferran", visits = listOf(VisitExport(visitDate = 1L, rating = 4)))
+                )
+            )
+        )
+
+        val outcome = RestaurantImportReader.read(json) as ImportOutcome.Success
+
+        assertEquals(listOf(VisitExport(visitDate = 1L, rating = 4)), outcome.restaurants.single().visits)
+    }
+
+    @Test
+    fun `drops a row whose visit has an out-of-range rating`() {
+        val json = jsonOf(
+            RestaurantShareFile(
+                restaurants = listOf(export("Cal Ferran", visits = listOf(VisitExport(visitDate = 1L, rating = 9))))
+            )
+        )
+
+        val outcome = RestaurantImportReader.read(json) as ImportOutcome.Success
+
+        assertTrue(outcome.restaurants.isEmpty())
+        assertEquals(1, outcome.skippedCount)
     }
 
     // --- Tags (F-59) ------------------------------------------------------

@@ -60,11 +60,12 @@ class RouletteViewModel(
             repository.observeFiltered(query = null, minRating = f.minRating, cuisineType = null, visited = f.visited)
         },
         preferencesRepository.preferences.map { it.favoriteIds },
-        filters
-    ) { restaurants, favoriteIds, f ->
+        filters,
+        repository.observeLatestVisitByRestaurantId()
+    ) { restaurants, favoriteIds, f, latestVisitByRestaurantId ->
         restaurants
             .filter { !f.favoritesOnly || it.id in favoriteIds }
-            .map { it.toUiModel(isFavorite = it.id in favoriteIds) }
+            .map { it.toUiModel(isFavorite = it.id in favoriteIds, latestVisit = latestVisitByRestaurantId[it.id]) }
     }
 
     val uiState: StateFlow<RouletteUiState> = combine(

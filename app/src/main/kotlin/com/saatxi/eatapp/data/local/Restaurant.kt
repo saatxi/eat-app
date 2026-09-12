@@ -5,56 +5,38 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+/**
+ * A restaurant's own, place-level facts. Per-visit data (rating, notes, date)
+ * lives in [Visit]; whether a place has been visited at all is derived from
+ * whether it has any [Visit] rows, not stored here.
+ */
 @Entity(
     tableName = "restaurants",
-    indices = [Index(value = ["name"]), Index(value = ["rating"])]
+    indices = [Index(value = ["name"])]
 )
 data class Restaurant(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    /** Client-generated UUID string, assigned by the repository at insert time — never Room autoincrement. */
+    @PrimaryKey
+    val id: String,
     val name: String,
     val cuisineType: String,
     /**
      * Street line only — town/region/country live in [city]/[region]/[country]. The physical
-     * column stays named `address` (via [ColumnInfo]) so adding those three columns could stay a
-     * plain `ADD COLUMN` migration rather than a column rename.
+     * column stays named `address` (via [ColumnInfo]) for historical continuity with earlier schemas.
      */
     @ColumnInfo(name = "address")
     val streetAddress: String? = null,
-    val rating: Int,
+    /** General price level of the place (0-4) — not per-visit. */
     val priceRange: Int,
     /**
-     * True once the user has actually been — false marks a place they still
-     * want to try. Defaults true so a hand-built entity (tests, older data
-     * paths) keeps today's implicit behaviour instead of silently becoming a
-     * wishlist entry.
-     */
-    val visited: Boolean = true,
-    /**
      * Optional links. Both are validated on import (see `LinkValidation.kt`) and
-     * are null whenever the source `.db` omits the column, leaves it empty, or
+     * are null whenever the source data omits the column, leaves it empty, or
      * holds something that isn't safe to open — the detail screen simply doesn't
      * draw a link it doesn't have.
      */
     val website: String? = null,
     /** Bare handle, no leading `@` and never a URL. */
     val instagram: String? = null,
-    /**
-     * Absolute path to a copy this app made of a user-picked photo, under its own
-     * `filesDir/photos/` (see `RestaurantPhotoStorage.kt`) — never a `content://`
-     * Uri handed back by the system Photo Picker, whose read grant is not
-     * guaranteed to outlive this process. Null means no photo, which is also
-     * what a restaurant received via import/share starts with: photos are
-     * deliberately not part of that file format (see `RestaurantExport`).
-     */
-    val photoPath: String? = null,
-    /**
-     * Free-text, user-written ("ask for the burrata", "go on a weekday").
-     * Deliberately not folded into [searchText] — this field is for the
-     * detail screen to show back, not another thing to search by; adding it
-     * to search is a separate decision the F-56 entry didn't ask for.
-     */
-    val notes: String? = null,
     /** Town/city ("poble"). Free text with autocomplete over existing values — no closed vocabulary, unlike [cuisineType]. */
     val city: String? = null,
     /** State/province ("regió"). Same free-text-with-autocomplete treatment as [city]. */
