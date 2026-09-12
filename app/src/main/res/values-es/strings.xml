@@ -121,7 +121,6 @@
     <string name="edit_title_edit">Editar restaurante</string>
     <string name="edit_action_save">Guardar</string>
     <string name="edit_section_basics">Datos básicos</string>
-    <string name="edit_section_status_rating">Estado y puntuación</string>
     <string name="edit_section_links">Enlaces</string>
     <string name="edit_section_tags">Etiquetas</string>
     <string name="edit_action_add_photo">Añadir foto</string>
@@ -134,9 +133,6 @@
     <string name="edit_field_city">Ciudad (opcional)</string>
     <string name="edit_field_region">Región (opcional)</string>
     <string name="edit_field_country">País (opcional)</string>
-    <string name="edit_field_notes">Notas (opcional)</string>
-    <string name="edit_field_visit_status">Estado</string>
-    <string name="edit_field_rating">Puntuación</string>
     <string name="edit_field_price_range">Rango de precio</string>
     <string name="edit_field_website">Web (opcional)</string>
     <string name="edit_field_instagram">Instagram (opcional)</string>
@@ -179,6 +175,25 @@
     <string name="detail_link_instagram">Instagram</string>
     <string name="detail_link_handle_format">\@%1$s</string>
     <string name="detail_link_failed">Ninguna app puede abrir este enlace.</string>
+
+    <!-- Línea de tiempo de visitas de la pantalla de detalle. -->
+    <string name="detail_section_visits">Visitas</string>
+    <string name="detail_visits_empty_title">Para probar, aún sin visitas</string>
+    <string name="detail_visits_empty_body">Registra una visita cuando hayas ido.</string>
+    <string name="detail_action_log_visit">Registrar visita</string>
+    <string name="visit_card_photo_description">Foto de esta visita</string>
+
+    <!-- Formulario para registrar una visita, abierto desde el botón flotante de la pantalla de detalle. -->
+    <string name="logvisit_title">Registrar visita</string>
+    <string name="logvisit_action_save">Guardar</string>
+    <string name="logvisit_field_date">Fecha</string>
+    <string name="logvisit_field_rating">Puntuación</string>
+    <string name="logvisit_field_notes">Notas (opcional)</string>
+    <string name="logvisit_action_add_photo">Añadir foto</string>
+    <string name="logvisit_action_remove_photo">Quitar foto</string>
+    <string name="logvisit_photo_description">Foto de la visita</string>
+    <string name="logvisit_date_picker_confirm">Aceptar</string>
+    <string name="logvisit_date_picker_cancel">Cancelar</string>
 
     <!--
         Display labels for the closed cuisine vocabulary. `cuisineType` stores

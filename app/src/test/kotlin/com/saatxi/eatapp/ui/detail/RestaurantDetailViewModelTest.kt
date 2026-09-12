@@ -108,6 +108,54 @@ class RestaurantDetailViewModelTest {
     }
 
     @Test
+    fun `exposes the full visit history in reverse-chronological order, not just the latest`() = runTest {
+        observeState()
+        repository.visitsByRestaurantId.value = mapOf(
+            "1" to listOf(
+                Visit(id = "v2", restaurantId = "1", visitDate = 200L, rating = 5, notes = "Second visit"),
+                Visit(id = "v1", restaurantId = "1", visitDate = 100L, rating = 3, notes = null)
+            )
+        )
+
+        repository.restaurants.value = listOf(restaurant("1"))
+
+        val state = viewModel.uiState.value as DetailUiState.Loaded
+        assertEquals(2, state.visits.size)
+        assertEquals("v2", state.visits[0].id)
+        assertEquals(5, state.visits[0].rating)
+        assertEquals("Second visit", state.visits[0].notes)
+        assertEquals("v1", state.visits[1].id)
+    }
+
+    @Test
+    fun `a restaurant with zero visits exposes an empty visit list`() = runTest {
+        observeState()
+
+        repository.restaurants.value = listOf(restaurant("1"))
+
+        val state = viewModel.uiState.value as DetailUiState.Loaded
+        assertTrue(state.visits.isEmpty())
+    }
+
+    @Test
+    fun `exposes each visit's own photos`() = runTest {
+        observeState()
+        repository.visitsByRestaurantId.value = mapOf(
+            "1" to listOf(Visit(id = "v1", restaurantId = "1", visitDate = 100L, rating = 4))
+        )
+        repository.photosByVisitId.value = mapOf(
+            "v1" to listOf(
+                com.saatxi.eatapp.data.local.Photo(id = "p1", visitId = "v1", path = "/photo/1.jpg", position = 0)
+            )
+        )
+
+        repository.restaurants.value = listOf(restaurant("1"))
+
+        val state = viewModel.uiState.value as DetailUiState.Loaded
+        assertEquals(listOf("/photo/1.jpg"), state.visits.single().photoPaths)
+    }
+
+    @Test
     fun `onFavoriteToggle toggles this restaurant's own id`() = runTest {
         observeState()
         repository.restaurants.value = listOf(restaurant("1"))

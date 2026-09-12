@@ -28,9 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AddAPhoto
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,9 +45,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -104,9 +99,6 @@ fun RestaurantEditScreen(
         onCityChange = viewModel::onCityChange,
         onRegionChange = viewModel::onRegionChange,
         onCountryChange = viewModel::onCountryChange,
-        onNotesChange = viewModel::onNotesChange,
-        onVisitedChange = viewModel::onVisitedChange,
-        onRatingChange = viewModel::onRatingChange,
         onPriceRangeChange = viewModel::onPriceRangeChange,
         onWebsiteChange = viewModel::onWebsiteChange,
         onInstagramChange = viewModel::onInstagramChange,
@@ -134,9 +126,6 @@ private fun RestaurantEditContent(
     onCityChange: (String) -> Unit,
     onRegionChange: (String) -> Unit,
     onCountryChange: (String) -> Unit,
-    onNotesChange: (String) -> Unit,
-    onVisitedChange: (Boolean) -> Unit,
-    onRatingChange: (Int) -> Unit,
     onPriceRangeChange: (Int) -> Unit,
     onWebsiteChange: (String) -> Unit,
     onInstagramChange: (String) -> Unit,
@@ -239,59 +228,13 @@ private fun RestaurantEditContent(
                     suggestions = countrySuggestions,
                     label = { Text(stringResource(R.string.edit_field_country)) }
                 )
-
-                OutlinedTextField(
-                    value = uiState.notes,
-                    onValueChange = onNotesChange,
-                    label = { Text(stringResource(R.string.edit_field_notes)) },
-                    minLines = 3,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
 
-            EditSectionCard(title = stringResource(R.string.edit_section_status_rating)) {
-                Column {
-                    Text(stringResource(R.string.edit_field_visit_status), style = MaterialTheme.typography.labelLarge)
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-                        SegmentedButton(
-                            selected = !uiState.visited,
-                            onClick = { onVisitedChange(false) },
-                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                            // The default checkmark eats into the segment's already-tight
-                            // half-width share and clips a longer translation (e.g. Catalan
-                            // "Per provar") — the fill colour already marks the selection.
-                            icon = {}
-                        ) {
-                            Text(stringResource(R.string.visit_status_want_to_try))
-                        }
-                        SegmentedButton(
-                            selected = uiState.visited,
-                            onClick = { onVisitedChange(true) },
-                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                            icon = {}
-                        ) {
-                            Text(stringResource(R.string.visit_status_visited))
-                        }
-                    }
-                }
-
-                Column {
-                    Text(stringResource(R.string.edit_field_rating), style = MaterialTheme.typography.labelLarge)
-                    RatingPicker(
-                        rating = uiState.rating,
-                        onRatingChange = onRatingChange,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-
-                Column {
-                    Text(stringResource(R.string.edit_field_price_range), style = MaterialTheme.typography.labelLarge)
-                    PriceRangePicker(
-                        priceRange = uiState.priceRange,
-                        onPriceRangeChange = onPriceRangeChange,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
+            EditSectionCard(title = stringResource(R.string.edit_field_price_range)) {
+                PriceRangePicker(
+                    priceRange = uiState.priceRange,
+                    onPriceRangeChange = onPriceRangeChange
+                )
             }
 
             EditSectionCard(title = stringResource(R.string.edit_section_links)) {
@@ -546,21 +489,6 @@ private fun CuisineDropdown(
 }
 
 @Composable
-private fun RatingPicker(rating: Int, onRatingChange: (Int) -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier = modifier) {
-        (1..5).forEach { star ->
-            IconButton(onClick = { onRatingChange(if (rating == star) star - 1 else star) }) {
-                Icon(
-                    imageVector = if (star <= rating) Icons.Filled.Star else Icons.Outlined.Star,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun PriceRangePicker(priceRange: Int, onPriceRangeChange: (Int) -> Unit, modifier: Modifier = Modifier) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         (1..4).forEach { level ->
@@ -594,7 +522,6 @@ private fun RestaurantEditScreenPreview() {
             uiState = RestaurantEditUiState(
                 name = "Cal Ferran",
                 cuisineType = "mediterranean",
-                rating = 4,
                 priceRange = 2,
                 tags = listOf("Terraza", "Para grupos")
             ),
@@ -610,9 +537,6 @@ private fun RestaurantEditScreenPreview() {
             onCityChange = {},
             onRegionChange = {},
             onCountryChange = {},
-            onNotesChange = {},
-            onVisitedChange = {},
-            onRatingChange = {},
             onPriceRangeChange = {},
             onWebsiteChange = {},
             onInstagramChange = {},

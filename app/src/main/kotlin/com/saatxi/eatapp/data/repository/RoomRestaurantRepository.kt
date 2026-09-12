@@ -159,6 +159,24 @@ class RoomRestaurantRepository @Inject constructor(
         writeBackup()
     }
 
+    override suspend fun addVisit(
+        restaurantId: String,
+        visitDate: Long,
+        rating: Int,
+        notes: String?,
+        photoPaths: List<String>
+    ): String {
+        val visitId = UUID.randomUUID().toString()
+        database.withTransaction {
+            visitDao.insert(Visit(id = visitId, restaurantId = restaurantId, visitDate = visitDate, rating = rating, notes = notes))
+            photoPaths.forEachIndexed { index, path ->
+                photoDao.insert(Photo(id = UUID.randomUUID().toString(), visitId = visitId, path = path, position = index))
+            }
+        }
+        writeBackup()
+        return visitId
+    }
+
     override suspend fun deleteVisit(id: String) {
         visitDao.delete(id)
         writeBackup()

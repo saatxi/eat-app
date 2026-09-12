@@ -8,6 +8,7 @@ import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.local.Visit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 /**
@@ -130,8 +131,19 @@ class FakeRestaurantRepository : RestaurantRepository {
 
     override suspend fun getRandomWantToTry(): Restaurant? = randomWantToTry
 
+    /**
+     * Full multi-visit history per restaurant, for tests that need a real
+     * timeline rather than just the single latest-visit summary
+     * [latestVisitByRestaurantId] tracks. Empty by default; when unset for a
+     * given id, [observeVisitsForRestaurant] falls back to that latest-visit
+     * map so existing single-visit tests don't need to change.
+     */
+    val visitsByRestaurantId = MutableStateFlow<Map<String, List<Visit>>>(emptyMap())
+
     override fun observeVisitsForRestaurant(restaurantId: String): Flow<List<Visit>> =
-        latestVisitByRestaurantId.map { listOfNotNull(it[restaurantId]) }
+        combine(visitsByRestaurantId, latestVisitByRestaurantId) { visitsMap, latestMap ->
+            visitsMap[restaurantId] ?: listOfNotNull(latestMap[restaurantId])
+        }
 
     override fun observeLatestVisitByRestaurantId(): Flow<Map<String, Visit>> = latestVisitByRestaurantId
 
@@ -151,6 +163,25 @@ class FakeRestaurantRepository : RestaurantRepository {
             (restaurantId to Visit(id = "fake-visit-$visitDate", restaurantId = restaurantId, visitDate = visitDate, rating = rating, notes = notes))
     }
 
+    var lastAddedVisit: Visit? = null
+        private set
+    var lastAddedVisitPhotoPaths: List<String>? = null
+        private set
+
+    override suspend fun addVisit(
+        restaurantId: String,
+        visitDate: Long,
+        rating: Int,
+        notes: String?,
+        photoPaths: List<String>
+    ): String {
+        val visit = Visit(id = "fake-visit-new-$visitDate", restaurantId = restaurantId, visitDate = visitDate, rating = rating, notes = notes)
+        lastAddedVisit = visit
+        lastAddedVisitPhotoPaths = photoPaths
+        latestVisitByRestaurantId.value = latestVisitByRestaurantId.value + (restaurantId to visit)
+        return visit.id
+    }
+
     override suspend fun deleteVisit(id: String) {
         latestVisitByRestaurantId.value = latestVisitByRestaurantId.value.filterValues { it.id != id }
     }
@@ -158,8 +189,11 @@ class FakeRestaurantRepository : RestaurantRepository {
     override fun observePhotosForRestaurant(restaurantId: String): Flow<List<Photo>> =
         throw NotImplementedError("Not used by these tests")
 
+    /** Empty by default; a test that cares about a visit's photos can push into [photosByVisitId]. */
+    val photosByVisitId = MutableStateFlow<Map<String, List<Photo>>>(emptyMap())
+
     override fun observePhotosForVisit(visitId: String): Flow<List<Photo>> =
-        throw NotImplementedError("Not used by these tests")
+        photosByVisitId.map { it[visitId].orEmpty() }
 
     override suspend fun getRestaurantPhotoPath(restaurantId: String): String? = lastPhotoPath
 

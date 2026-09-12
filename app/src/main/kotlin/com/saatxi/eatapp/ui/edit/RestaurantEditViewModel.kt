@@ -22,8 +22,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Widest rating/price scale a restaurant can hold; see [Restaurant]. */
-private const val MAX_RATING = 5
+/** Widest price scale a restaurant can hold; see [Restaurant]. */
 private const val MAX_PRICE_RANGE = 4
 
 data class RestaurantEditUiState(
@@ -35,9 +34,6 @@ data class RestaurantEditUiState(
     val city: String = "",
     val region: String = "",
     val country: String = "",
-    val notes: String = "",
-    val visited: Boolean = true,
-    val rating: Int = 0,
     val priceRange: Int = 0,
     val website: String = "",
     val instagram: String = "",
@@ -61,10 +57,11 @@ data class RestaurantEditUiState(
 /**
  * Backs both "add" (`restaurantId == null`) and "edit" (`restaurantId` set) —
  * the two only differ in whether a row is loaded to prefill the form and
- * whether saving inserts or updates. Rating/visited/notes are still surfaced
- * as one set of fields here — a single-visit-per-restaurant simplification of
- * the new Visit-backed data model, kept only for this form's fields; see
- * `RestaurantRepository.saveSingleVisit`.
+ * whether saving inserts or updates. This form is place-level data only
+ * (name, cuisine, address, price, links, tags, photo): rating/visited/notes
+ * moved to the Visit timeline (`ui/detail/`, `ui/logvisit/`) — a new
+ * restaurant starts with zero visits, which is exactly what "want to try"
+ * means, so there's nothing to ask for here.
  */
 @HiltViewModel
 class RestaurantEditViewModel @Inject constructor(
@@ -99,7 +96,6 @@ class RestaurantEditViewModel @Inject constructor(
                 val restaurant = repository.observeById(id).first()
                 if (restaurant != null) {
                     val tags = repository.observeTagNames(id).first()
-                    val latestVisit = repository.getLatestVisit(id)
                     val photoPath = repository.getRestaurantPhotoPath(id)
                     _uiState.update {
                         it.copy(
@@ -110,9 +106,6 @@ class RestaurantEditViewModel @Inject constructor(
                             city = restaurant.city.orEmpty(),
                             region = restaurant.region.orEmpty(),
                             country = restaurant.country.orEmpty(),
-                            notes = latestVisit?.notes.orEmpty(),
-                            visited = latestVisit != null,
-                            rating = latestVisit?.rating ?: 0,
                             priceRange = restaurant.priceRange,
                             website = restaurant.website.orEmpty(),
                             instagram = restaurant.instagram.orEmpty(),
@@ -149,18 +142,6 @@ class RestaurantEditViewModel @Inject constructor(
 
     fun onCountryChange(country: String) {
         _uiState.update { it.copy(country = country) }
-    }
-
-    fun onNotesChange(notes: String) {
-        _uiState.update { it.copy(notes = notes) }
-    }
-
-    fun onVisitedChange(visited: Boolean) {
-        _uiState.update { it.copy(visited = visited) }
-    }
-
-    fun onRatingChange(rating: Int) {
-        _uiState.update { it.copy(rating = rating.coerceIn(0, MAX_RATING)) }
     }
 
     fun onPriceRangeChange(priceRange: Int) {
@@ -257,12 +238,6 @@ class RestaurantEditViewModel @Inject constructor(
             } else {
                 repository.insert(restaurant, state.tags)
             }
-            repository.saveSingleVisit(
-                restaurantId = id,
-                visited = state.visited,
-                rating = state.rating,
-                notes = state.notes.trim().takeIf { it.isNotBlank() }
-            )
             repository.setRestaurantPhoto(id, photoPath)
             onSaved()
         }

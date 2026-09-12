@@ -127,7 +127,6 @@
     <string name="edit_title_edit">Edit restaurant</string>
     <string name="edit_action_save">Save</string>
     <string name="edit_section_basics">Basics</string>
-    <string name="edit_section_status_rating">Status and rating</string>
     <string name="edit_section_links">Links</string>
     <string name="edit_section_tags">Tags</string>
     <string name="edit_action_add_photo">Add photo</string>
@@ -140,9 +139,6 @@
     <string name="edit_field_city">Town / city (optional)</string>
     <string name="edit_field_region">Region (optional)</string>
     <string name="edit_field_country">Country (optional)</string>
-    <string name="edit_field_notes">Notes (optional)</string>
-    <string name="edit_field_visit_status">Status</string>
-    <string name="edit_field_rating">Rating</string>
     <string name="edit_field_price_range">Price range</string>
     <string name="edit_field_website">Website (optional)</string>
     <string name="edit_field_instagram">Instagram (optional)</string>
@@ -184,6 +180,25 @@
     <string name="detail_link_instagram">Instagram</string>
     <string name="detail_link_handle_format">\@%1$s</string>
     <string name="detail_link_failed">No app can open this link.</string>
+
+    <!-- Detail screen's visit timeline (the reverse-chronological Visit list). -->
+    <string name="detail_section_visits">Visits</string>
+    <string name="detail_visits_empty_title">Want to try, no visits yet</string>
+    <string name="detail_visits_empty_body">Log a visit once you\'ve been.</string>
+    <string name="detail_action_log_visit">Log a visit</string>
+    <string name="visit_card_photo_description">Photo from this visit</string>
+
+    <!-- Log-a-visit form, opened from the detail screen's FAB. -->
+    <string name="logvisit_title">Log a visit</string>
+    <string name="logvisit_action_save">Save</string>
+    <string name="logvisit_field_date">Date</string>
+    <string name="logvisit_field_rating">Rating</string>
+    <string name="logvisit_field_notes">Notes (optional)</string>
+    <string name="logvisit_action_add_photo">Add photo</string>
+    <string name="logvisit_action_remove_photo">Remove photo</string>
+    <string name="logvisit_photo_description">Visit photo</string>
+    <string name="logvisit_date_picker_confirm">OK</string>
+    <string name="logvisit_date_picker_cancel">Cancel</string>
 
     <!--
         Display labels for the closed cuisine vocabulary. `cuisineType` stores

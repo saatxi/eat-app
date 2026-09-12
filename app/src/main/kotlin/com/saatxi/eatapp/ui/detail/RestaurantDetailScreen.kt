@@ -8,6 +8,7 @@ import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.AlternateEmail
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -38,6 +40,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -96,6 +99,8 @@ import com.saatxi.eatapp.ui.common.shimmerPlaceholder
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
 import dagger.hilt.android.EntryPointAccessors
+import java.text.DateFormat
+import java.util.Date
 
 /** Size of the cuisine icon in the app bar, where the shared transition lands. */
 private val CUISINE_BADGE_SIZE = 32.dp
@@ -104,6 +109,7 @@ private val CUISINE_BADGE_SIZE = 32.dp
 fun RestaurantDetailScreen(
     onBack: () -> Unit,
     onEditRestaurant: (String) -> Unit,
+    onLogVisit: (String) -> Unit = {},
     // Non-null only when hosted inside a list-detail pane (EatAppNavHost's
     // ListDetailPaneHost): there the id comes from the pane navigator, not
     // from a nav-backstack entry, so the default SavedStateHandle-backed
@@ -142,7 +148,8 @@ fun RestaurantDetailScreen(
         onBack = onBack,
         onFavoriteToggle = viewModel::onFavoriteToggle,
         onEdit = onEditRestaurant,
-        onDelete = { viewModel.onDelete(onDeleted = onBack) }
+        onDelete = { viewModel.onDelete(onDeleted = onBack) },
+        onLogVisit = onLogVisit
     )
 }
 
@@ -158,7 +165,8 @@ private fun RestaurantDetailContent(
     onBack: () -> Unit,
     onFavoriteToggle: () -> Unit = {},
     onEdit: (String) -> Unit = {},
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
+    onLogVisit: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -194,6 +202,13 @@ private fun RestaurantDetailContent(
                 },
                 scrollBehavior = scrollBehavior
             )
+        },
+        floatingActionButton = {
+            if (uiState is DetailUiState.Loaded) {
+                FloatingActionButton(onClick = { onLogVisit(uiState.restaurant.id) }) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.detail_action_log_visit))
+                }
+            }
         }
     ) { padding ->
         when (val state = uiState) {
@@ -336,15 +351,112 @@ private fun RestaurantDetailContent(
                         )
                     }
 
-                    current.notes?.let { notes ->
-                        NotesCard(notes = notes, cuisineKey = current.cuisineKey)
-                    }
-
                     if (current.hasLinks) {
                         LinksCard(
                             website = current.website,
                             instagram = current.instagram,
                             onOpen = { url -> context.openUri(url) }
+                        )
+                    }
+
+                    VisitsSection(visits = state.visits, cuisineKey = current.cuisineKey)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The reverse-chronological visit timeline (this task's whole point): one
+ * [VisitCard] per [Visit][com.saatxi.eatapp.data.local.Visit], newest first —
+ * [RestaurantDetailViewModel] already orders [visits] that way. A restaurant
+ * with none yet gets a "want to try" empty state instead of an empty list,
+ * since a zero-visit restaurant is exactly what that status means.
+ */
+@Composable
+private fun VisitsSection(visits: List<VisitUiModel>, cuisineKey: String) {
+    Column {
+        Text(
+            text = stringResource(R.string.detail_section_visits),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .padding(bottom = 6.dp)
+                .semantics { heading() }
+        )
+        if (visits.isEmpty()) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)) {
+                Icon(
+                    Icons.Outlined.Schedule,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = stringResource(R.string.detail_visits_empty_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+                Text(
+                    text = stringResource(R.string.detail_visits_empty_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                visits.forEach { visit -> VisitCard(visit = visit, cuisineKey = cuisineKey) }
+            }
+        }
+    }
+}
+
+/** One visit's card: date, rating, an optional note excerpt, and a small photo strip. */
+@Composable
+private fun VisitCard(visit: VisitUiModel, cuisineKey: String) {
+    val tint = cuisineTint(cuisineKey)
+    val dateFormatter = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = tint.container,
+        contentColor = tint.onContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = dateFormatter.format(Date(visit.visitDate)),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                RatingAndPriceRow(rating = visit.rating, priceLabel = "", showRatingLabel = false, starSize = 16.dp)
+            }
+            visit.notes?.let { notes ->
+                Text(
+                    text = notes,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+            if (visit.photoPaths.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 10.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    visit.photoPaths.forEach { path ->
+                        AsyncImage(
+                            model = path,
+                            contentDescription = stringResource(R.string.visit_card_photo_description),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(MaterialTheme.shapes.small)
                         )
                     }
                 }
@@ -381,30 +493,6 @@ private fun RestaurantDetailSkeleton(modifier: Modifier = Modifier) {
             Box(modifier = Modifier.width(110.dp).height(18.dp).shimmerPlaceholder())
             Box(modifier = Modifier.width(36.dp).height(20.dp).shimmerPlaceholder())
         }
-    }
-}
-
-/**
- * The user's own free-text note — drawn only when there is one. Tinted with the
- * restaurant's own cuisine colour rather than a plain surface (F-77), so it reads
- * as a personal annotation rather than another data row of the same weight as
- * Overview/Rating above it — which is also why it carries no section title of
- * its own; the tint and the italic voice already say what it is.
- */
-@Composable
-private fun NotesCard(notes: String, cuisineKey: String) {
-    val tint = cuisineTint(cuisineKey)
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = tint.container,
-        contentColor = tint.onContainer,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = notes,
-            style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
-            modifier = Modifier.padding(16.dp)
-        )
     }
 }
 
@@ -646,7 +734,15 @@ private val previewRestaurant = RestaurantUiModel(
 @Composable
 private fun RestaurantDetailScreenPreview() {
     EatAppTheme {
-        RestaurantDetailContent(uiState = DetailUiState.Loaded(previewRestaurant), onBack = {})
+        RestaurantDetailContent(
+            uiState = DetailUiState.Loaded(
+                restaurant = previewRestaurant,
+                visits = listOf(
+                    VisitUiModel(id = "v1", visitDate = System.currentTimeMillis(), rating = 4, notes = "Ask for the burrata to start.", photoPaths = emptyList())
+                )
+            ),
+            onBack = {}
+        )
     }
 }
 

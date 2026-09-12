@@ -62,6 +62,14 @@ interface RestaurantRepository {
     suspend fun saveSingleVisit(restaurantId: String, visited: Boolean, rating: Int, notes: String?)
     /** Adds one more visit — used by import, which may carry a full visit history rather than just one. */
     suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?)
+
+    /**
+     * Adds one new visit together with any photos taken on it — the real,
+     * multi-visit-per-restaurant path used by the log-visit screen (unlike
+     * [addVisit] above, kept only for import's simpler restaurant-at-a-time
+     * replay). Returns the new visit's id.
+     */
+    suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?, photoPaths: List<String>): String
     suspend fun deleteVisit(id: String)
 
     // --- Photos --------------------------------------------------------

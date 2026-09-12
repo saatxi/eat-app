@@ -63,65 +63,6 @@ class RestaurantEditViewModelTest {
         assertFalse(state.isLoading)
         assertEquals("", state.name)
         assertNull(state.cuisineType)
-        assertTrue(state.visited)
-    }
-
-    @Test
-    fun `onVisitedChange updates the state`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
-        observeState(viewModel)
-
-        viewModel.onVisitedChange(false)
-
-        assertFalse(viewModel.uiState.value.visited)
-    }
-
-    @Test
-    fun `saving a want-to-try restaurant carries visited false through to the saved visit`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
-        observeState(viewModel)
-        viewModel.onNameChange("Cal Ferran")
-        viewModel.onCuisineChange("mediterranean")
-        viewModel.onVisitedChange(false)
-
-        viewModel.onSave(onSaved = {})
-
-        assertFalse(repository.lastSingleVisit?.second ?: true)
-    }
-
-    @Test
-    fun `onNotesChange updates the state`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
-        observeState(viewModel)
-
-        viewModel.onNotesChange("Ask for the burrata")
-
-        assertEquals("Ask for the burrata", viewModel.uiState.value.notes)
-    }
-
-    @Test
-    fun `saving trims notes and treats a blank note as none`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
-        observeState(viewModel)
-        viewModel.onNameChange("Cal Ferran")
-        viewModel.onCuisineChange("mediterranean")
-        viewModel.onNotesChange("  Ask for the burrata  ")
-
-        viewModel.onSave(onSaved = {})
-
-        assertEquals("Ask for the burrata", repository.lastSingleVisitNotes)
-    }
-
-    @Test
-    fun `saving without touching notes leaves them null`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
-        observeState(viewModel)
-        viewModel.onNameChange("Cal Ferran")
-        viewModel.onCuisineChange("mediterranean")
-
-        viewModel.onSave(onSaved = {})
-
-        assertNull(repository.lastSingleVisitNotes)
     }
 
     @Test
@@ -187,7 +128,6 @@ class RestaurantEditViewModelTest {
         viewModel.onNameChange("  Cal Ferran  ")
         viewModel.onCuisineChange("mediterranean")
         viewModel.onStreetAddressChange("Rambla 1")
-        viewModel.onRatingChange(4)
         viewModel.onPriceRangeChange(2)
         viewModel.onWebsiteChange("example.com")
         viewModel.onInstagramChange("@cal_ferran")
@@ -199,7 +139,6 @@ class RestaurantEditViewModelTest {
         val inserted = repository.lastInserted
         assertEquals("Cal Ferran", inserted?.name)
         assertEquals("mediterranean", inserted?.cuisineType)
-        assertEquals(4, repository.lastSingleVisit?.third)
         assertEquals(2, inserted?.priceRange)
         assertEquals("https://example.com", inserted?.website)
         assertEquals("cal_ferran", inserted?.instagram)
@@ -323,9 +262,6 @@ class RestaurantEditViewModelTest {
                 city = "Girona", region = "Girona (província)", country = "Spain", priceRange = 2
             )
         )
-        repository.latestVisitByRestaurantId.value = mapOf(
-            "1" to Visit(id = "v1", restaurantId = "1", visitDate = 0L, rating = 4, notes = "Ask for the burrata")
-        )
         val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
 
@@ -333,24 +269,10 @@ class RestaurantEditViewModelTest {
         assertFalse(state.isLoading)
         assertEquals("Cal Ferran", state.name)
         assertEquals("mediterranean", state.cuisineType)
-        assertEquals(4, state.rating)
-        assertTrue(state.visited)
-        assertEquals("Ask for the burrata", state.notes)
         assertEquals("Rambla 1", state.streetAddress)
         assertEquals("Girona", state.city)
         assertEquals("Girona (província)", state.region)
         assertEquals("Spain", state.country)
-    }
-
-    @Test
-    fun `edit mode loads a want-to-try restaurant with visited false`() = runTest {
-        repository.restaurants.value = listOf(
-            Restaurant(id = "1", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, priceRange = 2)
-        )
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
-        observeState(viewModel)
-
-        assertFalse(viewModel.uiState.value.visited)
     }
 
     @Test
@@ -557,6 +479,9 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     }
 
     override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?) =
+        throw NotImplementedError("Not used by RestaurantEditViewModel")
+
+    override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?, photoPaths: List<String>): String =
         throw NotImplementedError("Not used by RestaurantEditViewModel")
 
     override suspend fun deleteVisit(id: String) =

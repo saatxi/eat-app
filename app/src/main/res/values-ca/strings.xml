@@ -119,7 +119,6 @@
     <string name="edit_title_edit">Edita el restaurant</string>
     <string name="edit_action_save">Desa</string>
     <string name="edit_section_basics">Dades bàsiques</string>
-    <string name="edit_section_status_rating">Estat i puntuació</string>
     <string name="edit_section_links">Enllaços</string>
     <string name="edit_section_tags">Etiquetes</string>
     <string name="edit_action_add_photo">Afegeix una foto</string>
@@ -132,9 +131,6 @@
     <string name="edit_field_city">Poble / ciutat (opcional)</string>
     <string name="edit_field_region">Regió (opcional)</string>
     <string name="edit_field_country">País (opcional)</string>
-    <string name="edit_field_notes">Notes (opcional)</string>
-    <string name="edit_field_visit_status">Estat</string>
-    <string name="edit_field_rating">Puntuació</string>
     <string name="edit_field_price_range">Rang de preu</string>
     <string name="edit_field_website">Web (opcional)</string>
     <string name="edit_field_instagram">Instagram (opcional)</string>
@@ -176,6 +172,25 @@
     <string name="detail_link_instagram">Instagram</string>
     <string name="detail_link_handle_format">\@%1$s</string>
     <string name="detail_link_failed">Cap aplicació pot obrir aquest enllaç.</string>
+
+    <!-- Línia de temps de visites de la pantalla de detall. -->
+    <string name="detail_section_visits">Visites</string>
+    <string name="detail_visits_empty_title">Per provar, encara sense visites</string>
+    <string name="detail_visits_empty_body">Registra una visita quan hi hagis anat.</string>
+    <string name="detail_action_log_visit">Registrar visita</string>
+    <string name="visit_card_photo_description">Foto d\'aquesta visita</string>
+
+    <!-- Formulari per registrar una visita, obert des del botó flotant de la pantalla de detall. -->
+    <string name="logvisit_title">Registrar visita</string>
+    <string name="logvisit_action_save">Desar</string>
+    <string name="logvisit_field_date">Data</string>
+    <string name="logvisit_field_rating">Puntuació</string>
+    <string name="logvisit_field_notes">Notes (opcional)</string>
+    <string name="logvisit_action_add_photo">Afegir foto</string>
+    <string name="logvisit_action_remove_photo">Treure foto</string>
+    <string name="logvisit_photo_description">Foto de la visita</string>
+    <string name="logvisit_date_picker_confirm">D\'acord</string>
+    <string name="logvisit_date_picker_cancel">Cancel·la</string>
 
     <!--
         Display labels for the closed cuisine vocabulary. `cuisineType` stores

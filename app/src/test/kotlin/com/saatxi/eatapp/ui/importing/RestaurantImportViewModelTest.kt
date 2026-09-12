@@ -327,6 +327,9 @@ internal class FakeRestaurantRepository : RestaurantRepository {
         addedVisits += Triple(restaurantId, visitDate, rating)
     }
 
+    override suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?, photoPaths: List<String>): String =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
     override suspend fun deleteVisit(id: String) =
         throw NotImplementedError("Not used by RestaurantImportViewModel")
 
