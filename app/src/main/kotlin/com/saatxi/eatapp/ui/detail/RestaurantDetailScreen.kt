@@ -7,6 +7,7 @@ import android.content.res.Configuration
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +41,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -60,6 +61,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -205,9 +212,11 @@ private fun RestaurantDetailContent(
         },
         floatingActionButton = {
             if (uiState is DetailUiState.Loaded) {
-                FloatingActionButton(onClick = { onLogVisit(uiState.restaurant.id) }) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.detail_action_log_visit))
-                }
+                ExtendedFloatingActionButton(
+                    onClick = { onLogVisit(uiState.restaurant.id) },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text(stringResource(R.string.detail_action_log_visit)) }
+                )
             }
         }
     ) { padding ->
@@ -359,6 +368,10 @@ private fun RestaurantDetailContent(
                         )
                     }
 
+                    if (state.ratingTrend.isNotEmpty()) {
+                        RatingTrendSection(points = state.ratingTrend, cuisineKey = current.cuisineKey)
+                    }
+
                     VisitsSection(visits = state.visits, cuisineKey = current.cuisineKey)
                 }
             }
@@ -409,6 +422,83 @@ private fun VisitsSection(visits: List<VisitUiModel>, cuisineKey: String) {
                 visits.forEach { visit -> VisitCard(visit = visit, cuisineKey = cuisineKey) }
             }
         }
+    }
+}
+
+/** Chart canvas height for [RatingTrendSection] — the mockup's "Estadísticas" line-chart proportions, scaled down for an inline section. */
+private val RATING_TREND_HEIGHT = 100.dp
+private const val MAX_RATING_TREND = 5f
+
+/**
+ * This restaurant's own rating-over-time line, shown above the visit timeline
+ * once it has 2+ visits (a trend needs at least two points) — the mockup's
+ * "Casa Fuego · Stats" rating trend, scoped per-restaurant since a trend only
+ * makes sense for one place across its own visits (unlike the global
+ * Statistics screen's visits-per-month chart, which aggregates across every
+ * restaurant instead).
+ */
+@Composable
+private fun RatingTrendSection(points: List<RatingPoint>, cuisineKey: String) {
+    val tint = cuisineTint(cuisineKey)
+    Column {
+        Text(
+            text = stringResource(R.string.detail_section_rating_trend),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .padding(bottom = 6.dp)
+                .semantics { heading() }
+        )
+        Surface(shape = MaterialTheme.shapes.medium, color = tint.container, modifier = Modifier.fillMaxWidth()) {
+            RatingTrendChart(
+                points = points,
+                lineColor = tint.onContainer,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(RATING_TREND_HEIGHT)
+                    .padding(12.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Canvas-drawn line chart with a gradient fill under the line — this project
+ * has no charting library (see CLAUDE.md/the revamp plan), so the mockup's
+ * inline-SVG chart is translated directly to `drawScope` calls instead.
+ * [points] must have at least 2 entries; ratings are 0-5 (see
+ * [com.saatxi.eatapp.data.local.Visit.rating]).
+ */
+@Composable
+private fun RatingTrendChart(points: List<RatingPoint>, lineColor: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        if (points.size < 2 || size.width <= 0f || size.height <= 0f) return@Canvas
+
+        val stepX = size.width / (points.size - 1)
+        fun yFor(rating: Int) = size.height - (rating / MAX_RATING_TREND) * size.height
+        val offsets = points.mapIndexed { index, point -> Offset(index * stepX, yFor(point.rating)) }
+
+        val linePath = Path().apply {
+            moveTo(offsets.first().x, offsets.first().y)
+            offsets.drop(1).forEach { lineTo(it.x, it.y) }
+        }
+        val fillPath = Path().apply {
+            addPath(linePath)
+            lineTo(offsets.last().x, size.height)
+            lineTo(offsets.first().x, size.height)
+            close()
+        }
+
+        drawPath(
+            path = fillPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(lineColor.copy(alpha = 0.28f), lineColor.copy(alpha = 0f)),
+                startY = 0f,
+                endY = size.height
+            )
+        )
+        drawPath(path = linePath, color = lineColor, style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round))
+        offsets.forEach { offset -> drawCircle(color = lineColor, radius = 3.dp.toPx(), center = offset) }
     }
 }
 

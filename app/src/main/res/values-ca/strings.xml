@@ -175,6 +175,7 @@
 
     <!-- Línia de temps de visites de la pantalla de detall. -->
     <string name="detail_section_visits">Visites</string>
+    <string name="detail_section_rating_trend">Puntuació al llarg del temps</string>
     <string name="detail_visits_empty_title">Per provar, encara sense visites</string>
     <string name="detail_visits_empty_body">Registra una visita quan hi hagis anat.</string>
     <string name="detail_action_log_visit">Registrar visita</string>
@@ -231,6 +232,8 @@
     <string name="stats_average_rating_none">–</string>
     <string name="stats_section_cuisines">Cuines</string>
     <string name="stats_section_price">Rang de preu</string>
+    <string name="stats_section_visits_per_month">Visites per mes</string>
+    <string name="stats_section_top_tags">Etiquetes més usades</string>
     <string name="stats_price_not_set">Sense definir</string>
     <string name="stats_empty_title">Encara no hi ha res a mostrar</string>
     <string name="stats_empty_body">Afegeix un restaurant per veure aquí les teves estadístiques.</string>

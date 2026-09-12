@@ -183,6 +183,7 @@
 
     <!-- Detail screen's visit timeline (the reverse-chronological Visit list). -->
     <string name="detail_section_visits">Visits</string>
+    <string name="detail_section_rating_trend">Rating over time</string>
     <string name="detail_visits_empty_title">Want to try, no visits yet</string>
     <string name="detail_visits_empty_body">Log a visit once you\'ve been.</string>
     <string name="detail_action_log_visit">Log a visit</string>
@@ -239,6 +240,8 @@
     <string name="stats_average_rating_none">–</string>
     <string name="stats_section_cuisines">Cuisines</string>
     <string name="stats_section_price">Price range</string>
+    <string name="stats_section_visits_per_month">Visits per month</string>
+    <string name="stats_section_top_tags">Top tags</string>
     <string name="stats_price_not_set">Not set</string>
     <string name="stats_empty_title">Nothing to show yet</string>
     <string name="stats_empty_body">Add a restaurant to see your stats here.</string>

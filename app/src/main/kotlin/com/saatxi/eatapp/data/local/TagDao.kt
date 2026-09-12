@@ -56,6 +56,17 @@ abstract class TagDao {
     )
     abstract fun observeAllRestaurantTagLinks(): Flow<List<RestaurantTagName>>
 
+    /** Backs the global Statistics screen's "top tags" ranking (F-73), most-used first. */
+    @Query(
+        """
+        SELECT t.name AS name, COUNT(*) AS count FROM tags t
+        JOIN restaurant_tags rt ON t.id = rt.tagId
+        GROUP BY t.name
+        ORDER BY count DESC, t.name COLLATE NOCASE ASC
+        """
+    )
+    abstract fun observeTagCounts(): Flow<List<TagCount>>
+
     /**
      * Replaces every tag link for [restaurantId] with [tagNames], creating
      * any tag that doesn't already exist (case-insensitively — see [Tag.name]).

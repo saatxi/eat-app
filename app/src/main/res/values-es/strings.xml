@@ -178,6 +178,7 @@
 
     <!-- Línea de tiempo de visitas de la pantalla de detalle. -->
     <string name="detail_section_visits">Visitas</string>
+    <string name="detail_section_rating_trend">Puntuación a lo largo del tiempo</string>
     <string name="detail_visits_empty_title">Para probar, aún sin visitas</string>
     <string name="detail_visits_empty_body">Registra una visita cuando hayas ido.</string>
     <string name="detail_action_log_visit">Registrar visita</string>
@@ -234,6 +235,8 @@
     <string name="stats_average_rating_none">–</string>
     <string name="stats_section_cuisines">Cocinas</string>
     <string name="stats_section_price">Rango de precio</string>
+    <string name="stats_section_visits_per_month">Visitas por mes</string>
+    <string name="stats_section_top_tags">Etiquetas más usadas</string>
     <string name="stats_price_not_set">Sin definir</string>
     <string name="stats_empty_title">Todavía no hay nada que mostrar</string>
     <string name="stats_empty_body">Añade un restaurante para ver aquí tus estadísticas.</string>

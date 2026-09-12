@@ -49,4 +49,14 @@ interface VisitDao {
     /** Null when nothing has a real visit yet. */
     @Query("SELECT AVG(rating) FROM visits")
     fun observeAverageRating(): Flow<Double?>
+
+    /**
+     * Every visit's raw epoch-millis date, across every restaurant — bucketed
+     * into months by the caller (`StatisticsViewModel`) rather than in SQL,
+     * since month-of-epoch-millis isn't a portable single expression and this
+     * table is small enough that bucketing in Kotlin is simpler than a
+     * `strftime`-based GROUP BY.
+     */
+    @Query("SELECT visitDate FROM visits ORDER BY visitDate ASC")
+    fun observeAllVisitDates(): Flow<List<Long>>
 }

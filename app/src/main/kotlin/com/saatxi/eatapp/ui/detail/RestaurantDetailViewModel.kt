@@ -32,11 +32,27 @@ data class VisitUiModel(
     val photoPaths: List<String>
 )
 
+/** One point of a restaurant's own rating-over-time trend — see [DetailUiState.Loaded.ratingTrend]. */
+data class RatingPoint(val visitDate: Long, val rating: Int)
+
 sealed interface DetailUiState {
     data object Loading : DetailUiState
-    data class Loaded(val restaurant: RestaurantUiModel, val visits: List<VisitUiModel>) : DetailUiState
+    data class Loaded(
+        val restaurant: RestaurantUiModel,
+        val visits: List<VisitUiModel>,
+        /**
+         * The restaurant's own visits, oldest first, for the small rating-trend
+         * chart above the timeline (F-73's Statistics enrichment) — empty
+         * unless there are at least two visits, since a trend needs two points
+         * and the screen skips the chart entirely below that.
+         */
+        val ratingTrend: List<RatingPoint> = emptyList()
+    ) : DetailUiState
     data object NotFound : DetailUiState
 }
+
+/** Below this many visits, a trend line has nothing to show a slope with. */
+private const val MIN_VISITS_FOR_TREND = 2
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -78,6 +94,12 @@ class RestaurantDetailViewModel @Inject constructor(
                         notes = visit.notes?.takeIf { it.isNotBlank() },
                         photoPaths = photosByVisitId[visit.id].orEmpty().map { it.path }
                     )
+                },
+                ratingTrend = if (visits.size >= MIN_VISITS_FOR_TREND) {
+                    // visits comes newest-first; a trend line reads left-to-right chronologically.
+                    visits.sortedBy { it.visitDate }.map { RatingPoint(it.visitDate, it.rating) }
+                } else {
+                    emptyList()
                 }
             )
         }

@@ -5,3 +5,6 @@ data class CuisineCount(val cuisineType: String, val count: Int)
 
 /** One row of `RestaurantDao.observePriceRangeCounts()` — how many restaurants hold a given price range (0-4). */
 data class PriceRangeCount(val priceRange: Int, val count: Int)
+
+/** One row of `TagDao.observeTagCounts()` — how many restaurants carry a given tag. */
+data class TagCount(val name: String, val count: Int)

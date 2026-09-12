@@ -1,6 +1,7 @@
 package com.saatxi.eatapp.ui.stats
 
 import android.content.res.Configuration
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,10 +37,16 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -49,6 +56,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.CuisineCount
 import com.saatxi.eatapp.data.local.PriceRangeCount
+import com.saatxi.eatapp.data.local.TagCount
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
@@ -159,6 +167,24 @@ private fun StatisticsContent(uiState: StatisticsUiState, onBack: () -> Unit) {
                         StatsCard(title = stringResource(R.string.stats_section_price)) {
                             uiState.priceRangeCounts.sortedBy { it.priceRange }.forEach { priceRangeCount ->
                                 PriceBarRow(priceRangeCount = priceRangeCount, maxCount = maxCount)
+                            }
+                        }
+                    }
+
+                    if (uiState.monthlyVisitCounts.any { it.count > 0 }) {
+                        StatsCard(title = stringResource(R.string.stats_section_visits_per_month)) {
+                            VisitsPerMonthChart(
+                                counts = uiState.monthlyVisitCounts,
+                                modifier = Modifier.fillMaxWidth().height(120.dp)
+                            )
+                        }
+                    }
+
+                    if (uiState.tagCounts.isNotEmpty()) {
+                        val maxCount = uiState.tagCounts.maxOf { it.count }
+                        StatsCard(title = stringResource(R.string.stats_section_top_tags)) {
+                            uiState.tagCounts.forEach { tagCount ->
+                                TagBarRow(tagCount = tagCount, maxCount = maxCount)
                             }
                         }
                     }
@@ -290,6 +316,76 @@ private fun PriceBarRow(priceRangeCount: PriceRangeCount, maxCount: Int) {
     }
 }
 
+@Composable
+private fun TagBarRow(tagCount: TagCount, maxCount: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = tagCount.name,
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            modifier = Modifier.width(96.dp)
+        )
+        StatBar(
+            fraction = tagCount.count.toFloat() / maxCount,
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = tagCount.count.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+}
+
+/**
+ * Canvas-drawn bar chart of visits per month, last [MonthlyVisitCount]s
+ * oldest-to-newest — this project has no charting library, so bars are drawn
+ * directly with `drawScope.drawRoundRect`, matching the mockup's bar-chart
+ * treatment. A short "MMM" label sits under each bar.
+ */
+@Composable
+private fun VisitsPerMonthChart(counts: List<MonthlyVisitCount>, modifier: Modifier = Modifier) {
+    val barColor = MaterialTheme.colorScheme.primary
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val labelPaint = remember {
+        android.graphics.Paint().apply {
+            textAlign = android.graphics.Paint.Align.CENTER
+            textSize = 28f
+        }
+    }
+    val maxCount = (counts.maxOfOrNull { it.count } ?: 0).coerceAtLeast(1)
+
+    Canvas(modifier = modifier) {
+        if (counts.isEmpty() || size.width <= 0f || size.height <= 0f) return@Canvas
+        labelPaint.color = labelColor.toArgb()
+
+        val labelHeight = 32f
+        val chartHeight = size.height - labelHeight
+        val slotWidth = size.width / counts.size
+        val barWidth = slotWidth * 0.5f
+
+        counts.forEachIndexed { index, monthCount ->
+            val barHeight = chartHeight * (monthCount.count.toFloat() / maxCount)
+            val left = index * slotWidth + (slotWidth - barWidth) / 2
+            drawRoundRect(
+                color = barColor,
+                topLeft = Offset(left, chartHeight - barHeight),
+                size = Size(barWidth, barHeight.coerceAtLeast(2f)),
+                cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
+            )
+            drawContext.canvas.nativeCanvas.drawText(
+                monthCount.monthKey.takeLast(2),
+                index * slotWidth + slotWidth / 2,
+                size.height - 4f,
+                labelPaint
+            )
+        }
+    }
+}
+
 /** A plain horizontal bar — no charting library needed for something this simple. */
 @Composable
 private fun StatBar(fraction: Float, color: Color, modifier: Modifier = Modifier) {
@@ -322,6 +418,19 @@ private val previewUiState = StatisticsUiState(
         PriceRangeCount(2, 6),
         PriceRangeCount(3, 2),
         PriceRangeCount(4, 1)
+    ),
+    monthlyVisitCounts = listOf(
+        MonthlyVisitCount("2026-04", 1),
+        MonthlyVisitCount("2026-05", 3),
+        MonthlyVisitCount("2026-06", 2),
+        MonthlyVisitCount("2026-07", 4),
+        MonthlyVisitCount("2026-08", 0),
+        MonthlyVisitCount("2026-09", 2)
+    ),
+    tagCounts = listOf(
+        TagCount("Terraza", 6),
+        TagCount("Para grupos", 4),
+        TagCount("Brunch", 2)
     ),
     isInitialLoad = false
 )

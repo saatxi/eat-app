@@ -128,6 +128,35 @@ class RestaurantDetailViewModelTest {
     }
 
     @Test
+    fun `a restaurant with fewer than 2 visits has no rating trend`() = runTest {
+        observeState()
+        repository.visitsByRestaurantId.value = mapOf(
+            "1" to listOf(Visit(id = "v1", restaurantId = "1", visitDate = 100L, rating = 4))
+        )
+
+        repository.restaurants.value = listOf(restaurant("1"))
+
+        val state = viewModel.uiState.value as DetailUiState.Loaded
+        assertTrue(state.ratingTrend.isEmpty())
+    }
+
+    @Test
+    fun `a restaurant with 2+ visits exposes its rating trend oldest first`() = runTest {
+        observeState()
+        repository.visitsByRestaurantId.value = mapOf(
+            "1" to listOf(
+                Visit(id = "v2", restaurantId = "1", visitDate = 200L, rating = 5),
+                Visit(id = "v1", restaurantId = "1", visitDate = 100L, rating = 3)
+            )
+        )
+
+        repository.restaurants.value = listOf(restaurant("1"))
+
+        val state = viewModel.uiState.value as DetailUiState.Loaded
+        assertEquals(listOf(RatingPoint(100L, 3), RatingPoint(200L, 5)), state.ratingTrend)
+    }
+
+    @Test
     fun `a restaurant with zero visits exposes an empty visit list`() = runTest {
         observeState()
 
