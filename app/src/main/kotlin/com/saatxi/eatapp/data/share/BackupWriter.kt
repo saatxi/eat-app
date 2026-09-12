@@ -4,7 +4,7 @@ import android.content.Context
 import java.io.File
 import kotlinx.serialization.json.Json
 
-private val json = Json
+private val json = Json { encodeDefaults = true }
 private const val BACKUP_FILE_NAME = "backup.json"
 
 /**

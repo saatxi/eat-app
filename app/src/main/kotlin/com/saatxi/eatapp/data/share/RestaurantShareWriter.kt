@@ -6,7 +6,7 @@ import androidx.core.content.FileProvider
 import java.io.File
 import kotlinx.serialization.json.Json
 
-private val json = Json
+private val json = Json { encodeDefaults = true }
 private const val SHARE_SUBDIR = "shared"
 private const val SHARE_FILE_NAME = "restaurants.eatapp"
 
