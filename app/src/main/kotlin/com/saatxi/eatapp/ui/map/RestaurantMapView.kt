@@ -69,12 +69,20 @@ private const val BOUNDING_BOX_PADDING_PX = 48
 private const val PIN_DIAMETER_DP = 28
 
 /**
- * Draws a small filled, white-bordered circle in [colorArgb] — the same
- * per-cuisine colour used everywhere else in the app — as this restaurant's
- * pin, instead of osmdroid's default `marker_default` teardrop (a generic,
- * oversized pin never designed to be recoloured per-marker). Centered
- * anchoring (set on the [Marker] itself, not here) matches a plain dot
- * rather than a teardrop's bottom-tip anchoring.
+ * A solid, high-contrast red rather than the app's own pastel per-cuisine
+ * tints ([cuisineTint]): those read fine as badge/chip fills against a white
+ * card background, but wash out against CARTO Voyager's own light basemap —
+ * a pin needs to read as "a marker" at a glance over busy map imagery, which
+ * a strong, unambiguous colour does far better than a muted, theme-derived one.
+ */
+private val PIN_COLOR = AndroidColor.parseColor("#E53935")
+
+/**
+ * Draws a small filled, white-bordered circle in [colorArgb] as this
+ * restaurant's pin, instead of osmdroid's default `marker_default` teardrop
+ * (a generic, oversized pin never designed to be recoloured per-marker).
+ * Centered anchoring (set on the [Marker] itself, not here) matches a plain
+ * dot rather than a teardrop's bottom-tip anchoring.
  */
 private fun pinDrawable(context: android.content.Context, colorArgb: Int): BitmapDrawable {
     val density = context.resources.displayMetrics.density
@@ -98,8 +106,9 @@ private fun pinDrawable(context: android.content.Context, colorArgb: Int): Bitma
 /**
  * The Map screen's content (F-89): one pin per restaurant that has a
  * latitude/longitude set (most won't, until the user fills those in on the
- * edit form — see [RestaurantUiModel.latitude]), tinted the same per-cuisine
- * colour as everywhere else in the app ([cuisineTint]). Pans/zooms to fit
+ * edit form — see [RestaurantUiModel.latitude]), drawn as a solid red dot
+ * ([PIN_COLOR]) rather than the app's own pastel per-cuisine tints
+ * ([cuisineTint]) — see that constant's doc for why. Pans/zooms to fit
  * every pinned restaurant whenever the set of pins changes; a restaurant
  * with no coordinates simply never appears here — the empty state only
  * shows when *none* of [restaurants] have one, not for an empty
@@ -124,10 +133,6 @@ fun RestaurantMapView(
     }
 
     val context = LocalContext.current
-    // cuisineTint is @Composable (reads MaterialTheme), so every marker's colour
-    // is resolved here, up front, rather than from inside the AndroidView update
-    // block below, which runs outside composition.
-    val markerColors = pinned.associate { it.id to cuisineTint(it.cuisineKey).container.toArgb() }
     val lifecycleOwner = LocalLifecycleOwner.current
     val mapView = remember {
         MapView(context).apply {
@@ -175,7 +180,7 @@ fun RestaurantMapView(
                         position = point
                         title = restaurant.name
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                        icon = pinDrawable(context, markerColors[restaurant.id] ?: AndroidColor.GRAY)
+                        icon = pinDrawable(context, PIN_COLOR)
                         setOnMarkerClickListener { _, _ ->
                             onOpenRestaurant(restaurant.id)
                             true
