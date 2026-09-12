@@ -20,11 +20,16 @@ import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material.icons.automirrored.outlined.ViewList
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -48,8 +53,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.ui.common.DeleteConfirmDialog
+import com.saatxi.eatapp.ui.map.RestaurantMapView
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
+
+/** List/Map toggle (F-89) above the restaurant list — see [RestaurantListScreen]. */
+private enum class ListViewMode(val labelRes: Int, val icon: ImageVector) {
+    LIST(R.string.list_view_toggle_list, Icons.AutoMirrored.Outlined.ViewList),
+    MAP(R.string.list_view_toggle_map, Icons.Outlined.Map)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +75,7 @@ fun RestaurantListScreen(
     // Set by a row's swipe-to-delete gesture — see RestaurantRow's own
     // onDeleteRequest doc for why the row itself never deletes directly.
     var pendingDelete by remember { mutableStateOf<RestaurantUiModel?>(null) }
+    var viewMode by remember { mutableStateOf(ListViewMode.LIST) }
 
     pendingDelete?.let { restaurant ->
         DeleteConfirmDialog(
@@ -132,8 +145,28 @@ fun RestaurantListScreen(
                 onCountryChange = viewModel::onCountryChange
             )
 
+            if (!uiState.isInitialLoad && (uiState.restaurants.isNotEmpty() || uiState.hasActiveFilter)) {
+                SingleChoiceSegmentedButtonRow(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    ListViewMode.entries.forEachIndexed { index, mode ->
+                        SegmentedButton(
+                            selected = mode == viewMode,
+                            onClick = { viewMode = mode },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = ListViewMode.entries.size),
+                            icon = {}
+                        ) {
+                            Icon(mode.icon, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(stringResource(mode.labelRes), modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            }
+
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                if (uiState.isInitialLoad) {
+                if (viewMode == ListViewMode.MAP && !uiState.isInitialLoad) {
+                    RestaurantMapView(restaurants = uiState.restaurants, onOpenRestaurant = onOpenRestaurant)
+                } else if (uiState.isInitialLoad) {
                     // The database has not emitted yet, so an empty list here means
                     // "not loaded", not "nothing to show" — painting the empty state
                     // would flash it for a frame on every cold start. Shape-matching

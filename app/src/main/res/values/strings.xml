@@ -26,6 +26,10 @@
     <string name="list_action_add_restaurant">Add restaurant</string>
     <string name="list_action_share_all">Share all restaurants</string>
     <string name="list_action_clear_filters">Clear filters</string>
+    <string name="list_view_toggle_list">List</string>
+    <string name="list_view_toggle_map">Map</string>
+    <string name="map_empty_title">No restaurants on the map yet</string>
+    <string name="map_empty_body">Set a latitude and longitude on a restaurant to see it here.</string>
     <string name="list_sort_name">Name (A-Z)</string>
     <string name="list_sort_rating">Rating (highest first)</string>
     <!-- Short forms for the segmented sort control, whose two segments split a
@@ -139,6 +143,8 @@
     <string name="edit_field_city">Town / city (optional)</string>
     <string name="edit_field_region">Region (optional)</string>
     <string name="edit_field_country">Country (optional)</string>
+    <string name="edit_field_latitude">Latitude (optional)</string>
+    <string name="edit_field_longitude">Longitude (optional)</string>
     <string name="edit_field_price_range">Price range</string>
     <string name="edit_field_website">Website (optional)</string>
     <string name="edit_field_instagram">Instagram (optional)</string>
@@ -148,6 +154,8 @@
     <string name="edit_error_cuisine_required">Choose a cuisine</string>
     <string name="edit_error_website_invalid">Enter a valid http/https web address</string>
     <string name="edit_error_instagram_invalid">Enter a valid Instagram handle</string>
+    <string name="edit_error_latitude_invalid">Enter a latitude between -90 and 90</string>
+    <string name="edit_error_longitude_invalid">Enter a longitude between -180 and 180</string>
 
     <!-- Importing a restaurant file shared from another app. -->
     <string name="import_title">Import restaurants</string>

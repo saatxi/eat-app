@@ -70,6 +70,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -109,6 +110,8 @@ fun RestaurantEditScreen(
         onCityChange = viewModel::onCityChange,
         onRegionChange = viewModel::onRegionChange,
         onCountryChange = viewModel::onCountryChange,
+        onLatitudeChange = viewModel::onLatitudeChange,
+        onLongitudeChange = viewModel::onLongitudeChange,
         onPriceRangeChange = viewModel::onPriceRangeChange,
         onWebsiteChange = viewModel::onWebsiteChange,
         onInstagramChange = viewModel::onInstagramChange,
@@ -136,6 +139,8 @@ private fun RestaurantEditContent(
     onCityChange: (String) -> Unit,
     onRegionChange: (String) -> Unit,
     onCountryChange: (String) -> Unit,
+    onLatitudeChange: (String) -> Unit,
+    onLongitudeChange: (String) -> Unit,
     onPriceRangeChange: (Int) -> Unit,
     onWebsiteChange: (String) -> Unit,
     onInstagramChange: (String) -> Unit,
@@ -238,6 +243,33 @@ private fun RestaurantEditContent(
                     suggestions = countrySuggestions,
                     label = { Text(stringResource(R.string.edit_field_country)) }
                 )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = uiState.latitude,
+                        onValueChange = onLatitudeChange,
+                        label = { Text(stringResource(R.string.edit_field_latitude)) },
+                        isError = uiState.latitudeError,
+                        supportingText = {
+                            if (uiState.latitudeError) Text(stringResource(R.string.edit_error_latitude_invalid))
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = uiState.longitude,
+                        onValueChange = onLongitudeChange,
+                        label = { Text(stringResource(R.string.edit_field_longitude)) },
+                        isError = uiState.longitudeError,
+                        supportingText = {
+                            if (uiState.longitudeError) Text(stringResource(R.string.edit_error_longitude_invalid))
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
 
             EditSectionCard(title = stringResource(R.string.edit_field_price_range)) {
@@ -562,6 +594,8 @@ private fun RestaurantEditScreenPreview() {
             onCityChange = {},
             onRegionChange = {},
             onCountryChange = {},
+            onLatitudeChange = {},
+            onLongitudeChange = {},
             onPriceRangeChange = {},
             onWebsiteChange = {},
             onInstagramChange = {},

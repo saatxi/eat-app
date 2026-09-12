@@ -37,6 +37,8 @@ data class RestaurantExport(
     val city: String? = null,
     val region: String? = null,
     val country: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val visits: List<VisitExport> = emptyList()
 )
 
@@ -70,6 +72,8 @@ fun Restaurant.toExport(tags: List<String> = emptyList(), visits: List<Visit> = 
     city = city,
     region = region,
     country = country,
+    latitude = latitude,
+    longitude = longitude,
     visits = visits.map { VisitExport(visitDate = it.visitDate, rating = it.rating, notes = it.notes, priceRange = it.priceRange) }
 )
 
@@ -86,6 +90,8 @@ fun RestaurantExport.toRestaurantOrNull(id: String): Restaurant? {
     val trimmedCuisine = cuisineType.trim()
     if (trimmedName.isEmpty() || trimmedCuisine.isEmpty()) return null
     if (priceRange !in 0..4) return null
+    if (latitude != null && latitude !in -90.0..90.0) return null
+    if (longitude != null && longitude !in -180.0..180.0) return null
     if (visits.any { it.rating !in 0..5 || it.priceRange !in 0..4 }) return null
 
     return Restaurant(
@@ -98,7 +104,9 @@ fun RestaurantExport.toRestaurantOrNull(id: String): Restaurant? {
         instagram = instagram?.let(::normalizeInstagramHandle),
         city = city?.trim()?.takeIf { it.isNotBlank() },
         region = region?.trim()?.takeIf { it.isNotBlank() },
-        country = country?.trim()?.takeIf { it.isNotBlank() }
+        country = country?.trim()?.takeIf { it.isNotBlank() },
+        latitude = latitude,
+        longitude = longitude
     )
 }
 

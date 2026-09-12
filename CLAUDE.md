@@ -78,9 +78,14 @@ Optional detailed explanation
   needs a nav-supplied argument (`restaurantId`, the import screen's `uri`)
   reads it off an injected `SavedStateHandle` rather than an assisted-inject
   factory.
-- **Networking**: none. The app makes no network calls — every restaurant is
-  entered, edited and deleted on-device via Room. Don't add a networking
-  library or a remote/file-based data source without discussing it first.
+- **Networking**: essentially none. Every restaurant is entered, edited and
+  deleted on-device via Room, and there's no account/sync/remote data source.
+  The one deliberate exception is the Map screen (F-89, `ui/map/`), which
+  uses `osmdroid` to fetch OpenStreetMap tiles — the app's only real network
+  traffic, gated by the `INTERNET` permission in `AndroidManifest.xml` (see
+  that file's comment) and `EatApplication.onCreate()`'s osmdroid
+  configuration. Don't add any other networking library or a remote/file-based
+  data source without discussing it first.
 - **Build**: Gradle Kotlin DSL (`build.gradle.kts`), AGP + version catalog
   (`gradle/libs.versions.toml`) for dependency versions — add new
   dependencies there, not as inline coordinates.
@@ -213,12 +218,15 @@ app/src/main/kotlin/com/saatxi/eatapp/
 
 ## Security guidelines
 
-- The app makes no network calls at all — every restaurant is entered,
-  edited and deleted on-device. The only way data ever crosses into or out of
-  the app is the restaurant-sharing feature (`data/share/`), which is local
-  IPC (`Intent.ACTION_SEND`/`ACTION_VIEW` + a `FileProvider`), never a
-  network request. Don't add a networking dependency or a remote data source
-  without discussing it first.
+- Every restaurant is entered, edited and deleted on-device; the only way
+  data ever crosses into or out of the app otherwise is the
+  restaurant-sharing feature (`data/share/`), which is local IPC
+  (`Intent.ACTION_SEND`/`ACTION_VIEW` + a `FileProvider`), never a network
+  request. The Map screen (`ui/map/`, F-89) is the one deliberate exception
+  to "no network calls": it fetches OpenStreetMap tiles via `osmdroid`, an
+  unauthenticated, read-only, no-credentials request for public map imagery —
+  no restaurant data is ever sent out over it. Don't add any other networking
+  dependency or a remote data source without discussing it first.
 - A file received through the sharing intent-filter (`MainActivity`'s second
   `<intent-filter>`, matching `application/json`) is untrusted input, the
   same way the old synced `.db` was: capped at `MAX_IMPORT_BYTES` before
@@ -238,12 +246,12 @@ app/src/main/kotlin/com/saatxi/eatapp/
   is `android:exported="false"`: the system delivers `APPWIDGET_UPDATE` (a
   protected, system-only broadcast) directly, so the launcher never needs to
   call it. It reads from Room and needs no permission; keep it that way.
-- `AndroidManifest.xml` declares no permissions at all — `INTERNET` and
-  `ACCESS_NETWORK_STATE`, left over from the removed remote sync feature,
-  were removed along with it, and the sharing feature needs none either
-  (`FileProvider` grants are per-Intent, not a permission). Don't add any
-  permission (network, location, contacts, storage, etc.) without an
-  explicit, discussed reason.
+- `AndroidManifest.xml` declares exactly one permission, `INTERNET`, for the
+  Map screen's tile fetches (see above) — everything else about the app
+  needs none (the sharing feature's `FileProvider` grants are per-Intent, not
+  a permission). Don't add any other permission (location, contacts,
+  storage, etc.) without an explicit, discussed reason, and don't broaden
+  what `INTERNET` is used for beyond fetching map tiles.
 - The app stores no user credentials, no PII beyond what the user
   themselves enters for their own restaurants, and does no analytics or
   tracking — keep it that way unless the user asks for it explicitly.

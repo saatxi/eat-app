@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Map screen only (F-89): osmdroid needs this to fetch OpenStreetMap
+         tiles. This is the sole exception to the app being otherwise
+         entirely local-only, offline, no-network — see CLAUDE.md's
+         "Networking" note. Every other screen still works with zero
+         connectivity. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"

@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [Restaurant::class, Tag::class, RestaurantTag::class, Visit::class, Photo::class],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 abstract class EatAppDatabase : RoomDatabase() {

@@ -254,6 +254,10 @@ dependencies {
     // Home-screen widget (F-68).
     implementation(libs.androidx.glance.appwidget)
 
+    // Map screen (F-89): the one dependency in this app that makes real network
+    // requests (fetches OpenStreetMap tiles). See the version catalog comment.
+    implementation(libs.osmdroid.android)
+
     // Reads app/src/main/baseline-prof.txt (once generated) at install time and
     // hands it to ART, so a release install gets AOT-compiled hot paths without
     // waiting for on-device profiling to warm up first.
