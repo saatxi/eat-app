@@ -15,10 +15,13 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.saatxi.eatapp.BuildConfig
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.ui.common.cuisineTint
 import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
+import org.osmdroid.tileprovider.tilesource.ITileSource
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
@@ -29,26 +32,30 @@ import org.osmdroid.views.overlay.Marker
 private const val SINGLE_PIN_ZOOM = 15.0
 
 /**
- * CartoDB Positron: a light, low-saturation basemap (thin grey streets, muted
- * labels) — reads much better as a backdrop for the app's own coloured pins
- * than OSM's own default Mapnik style, which is busy and heavily saturated.
- * Same osmdroid tile-fetch machinery, just a different tile server; free for
- * non-commercial use with attribution, which the copyright string here covers.
+ * CARTO Voyager: a clean, low-saturation basemap — reads much better as a
+ * backdrop for the app's own coloured pins than OSM's own default Mapnik
+ * style, which is busy and heavily saturated. Requires a personal CARTO API
+ * key (free up to 5,000,000 tile requests/month) — see [BuildConfig.CARTO_API_KEY]
+ * and `app/build.gradle.kts`'s "Map tiles" section for where that key comes
+ * from and why it's never committed. Attribution (CARTO's key terms require
+ * it stay visible — see carto.com/attributions) lives in the copyright
+ * string below, which osmdroid is responsible for actually drawing.
  */
-private val CARTO_POSITRON_TILE_SOURCE = XYTileSource(
-    "CartoDBPositron",
+private fun cartoVoyagerTileSource(apiKey: String) = XYTileSource(
+    "CartoDBVoyager",
     0,
     20,
     256,
-    ".png",
-    arrayOf(
-        "https://a.basemaps.cartocdn.com/light_all/",
-        "https://b.basemaps.cartocdn.com/light_all/",
-        "https://c.basemaps.cartocdn.com/light_all/",
-        "https://d.basemaps.cartocdn.com/light_all/"
-    ),
+    ".png?key=$apiKey",
+    arrayOf("https://basemaps.cartocdn.com/rastertiles/voyager/"),
     "© OpenStreetMap contributors © CARTO"
 )
+
+/** No CARTO key configured (e.g. a fresh checkout without local.properties set up) — falls back to OSM's own tiles, which need none, over a broken/watermarked map. */
+private fun defaultTileSource(): ITileSource = TileSourceFactory.MAPNIK
+
+private fun mapTileSource(): ITileSource =
+    BuildConfig.CARTO_API_KEY.takeIf { it.isNotBlank() }?.let(::cartoVoyagerTileSource) ?: defaultTileSource()
 
 /** Extra room (px) left around the tightest bounding box that fits every pin, so edge markers aren't clipped by the view's border. */
 private const val BOUNDING_BOX_PADDING_PX = 48
@@ -87,7 +94,7 @@ fun RestaurantMapView(
     // block below, which runs outside composition.
     val markerColors = pinned.associate { it.id to cuisineTint(it.cuisineKey).container.toArgb() }
     val lifecycleOwner = LocalLifecycleOwner.current
-    val mapView = remember { MapView(context).apply { setTileSource(CARTO_POSITRON_TILE_SOURCE); setMultiTouchControls(true) } }
+    val mapView = remember { MapView(context).apply { setTileSource(mapTileSource()); setMultiTouchControls(true) } }
 
     // osmdroid's MapView owns background tile-fetch threads that must be paused
     // and resumed with the host lifecycle, or they keep running (and the tile

@@ -81,8 +81,9 @@ Optional detailed explanation
 - **Networking**: essentially none. Every restaurant is entered, edited and
   deleted on-device via Room, and there's no account/sync/remote data source.
   The one deliberate exception is the Map screen (F-89, `ui/map/`): `osmdroid`
-  fetches CartoDB Positron map tiles, and the edit form's "look up
-  coordinates" action (`data/geocoding/NominatimAddressGeocoder.kt`) calls
+  fetches CARTO Voyager map tiles (falling back to OSM's own unstyled Mapnik
+  tiles if no CARTO key is configured — see below), and the edit form's "look
+  up coordinates" action (`data/geocoding/NominatimAddressGeocoder.kt`) calls
   OpenStreetMap's own Nominatim geocoder — both gated by the `INTERNET`
   permission in `AndroidManifest.xml` (see that file's comment) and
   `EatApplication.onCreate()`'s osmdroid configuration. Nominatim's usage
@@ -91,6 +92,17 @@ Optional detailed explanation
   don't call it in a loop, on a timer, or for anything but that one button.
   Don't add any other networking library or a remote/file-based data source
   without discussing it first.
+- **CARTO API key**: the map tiles need a personal CARTO key (free up to
+  5,000,000 tile requests/month across the whole account) — set
+  `eatapp.carto.apikey` in `local.properties` or the `EATAPP_CARTO_API_KEY`
+  env var, read in `app/build.gradle.kts`'s "Map tiles" section into a
+  `BuildConfig.CARTO_API_KEY` field, same `localOrEnv` pattern as the
+  release-signing secrets. **Never commit the key itself** — not in a
+  tracked file, not in a code comment, not in a commit message. Keep the
+  CARTO/OpenStreetMap attribution visible on the map (already handled by
+  `RestaurantMapView.kt`'s tile source) per CARTO's key terms
+  (carto.com/attributions), and don't reuse this key for anything outside
+  this app.
 - **Build**: Gradle Kotlin DSL (`build.gradle.kts`), AGP + version catalog
   (`gradle/libs.versions.toml`) for dependency versions — add new
   dependencies there, not as inline coordinates.
