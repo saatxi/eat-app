@@ -154,10 +154,9 @@ fun RestaurantListScreen(
                             selected = mode == viewMode,
                             onClick = { viewMode = mode },
                             shape = SegmentedButtonDefaults.itemShape(index = index, count = ListViewMode.entries.size),
-                            icon = {}
+                            icon = { Icon(mode.icon, contentDescription = null, modifier = Modifier.size(SegmentedButtonDefaults.IconSize)) }
                         ) {
-                            Icon(mode.icon, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text(stringResource(mode.labelRes), modifier = Modifier.padding(start = 8.dp))
+                            Text(stringResource(mode.labelRes))
                         }
                     }
                 }
