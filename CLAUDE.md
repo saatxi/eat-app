@@ -67,6 +67,17 @@ Optional detailed explanation
   `import/{uri}`.
 - **Persistence**: Room (local cache) — entity/DAO/database live under
   `data/local/`.
+- **Dependency injection**: Hilt. `EatApplication` is `@HiltAndroidApp`;
+  `MainActivity` is `@AndroidEntryPoint`; every screen ViewModel is
+  `@HiltViewModel` with an `@Inject constructor` and obtained via
+  `hiltViewModel()` from Compose Nav (`androidx.hilt:hilt-navigation-compose`).
+  Modules live under `di/` (`AppModule` for `@Provides`, `BindsModule` for
+  `@Binds` interface bindings, `EntryPoints` for the few call sites — the
+  home-screen widget, and the two-pane list-detail layout's detail pane —
+  that aren't themselves Hilt injection points). A screen ViewModel that
+  needs a nav-supplied argument (`restaurantId`, the import screen's `uri`)
+  reads it off an injected `SavedStateHandle` rather than an assisted-inject
+  factory.
 - **Networking**: none. The app makes no network calls — every restaurant is
   entered, edited and deleted on-device via Room. Don't add a networking
   library or a remote/file-based data source without discussing it first.
