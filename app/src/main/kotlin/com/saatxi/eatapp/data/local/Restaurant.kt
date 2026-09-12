@@ -43,9 +43,6 @@ data class Restaurant(
     val region: String? = null,
     /** Country ("país"). Same free-text-with-autocomplete treatment as [city]. */
     val country: String? = null,
-    /** Optional pin position for the Map screen (F-89) — null until the user sets it manually on the edit form. */
-    val latitude: Double? = null,
-    val longitude: Double? = null,
     /**
      * Accent-stripped, lowercased concatenation of every searchable field.
      * Derived by default so it can never drift from the fields it mirrors; see

@@ -33,9 +33,6 @@ data class RestaurantUiModel(
     val city: String?,
     val region: String?,
     val country: String?,
-    /** Pin position for the Map screen (F-89); null when the user hasn't set one. */
-    val latitude: Double? = null,
-    val longitude: Double? = null,
     val rating: Int,
     /** For example "$$". Empty when the row has no price range. */
     val priceLabel: String,
@@ -82,8 +79,6 @@ fun Restaurant.toUiModel(
     city = city?.takeIf { it.isNotBlank() },
     region = region?.takeIf { it.isNotBlank() },
     country = country?.takeIf { it.isNotBlank() },
-    latitude = latitude,
-    longitude = longitude,
     rating = latestVisit?.rating ?: 0,
     // The reader already rejects out-of-range values, but clamping keeps a
     // hand-built entity from producing an absurdly long chip.

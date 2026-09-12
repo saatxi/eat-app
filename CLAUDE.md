@@ -78,31 +78,9 @@ Optional detailed explanation
   needs a nav-supplied argument (`restaurantId`, the import screen's `uri`)
   reads it off an injected `SavedStateHandle` rather than an assisted-inject
   factory.
-- **Networking**: essentially none. Every restaurant is entered, edited and
-  deleted on-device via Room, and there's no account/sync/remote data source.
-  The one deliberate exception is the Map screen (F-89, `ui/map/`): `osmdroid`
-  fetches CARTO Voyager map tiles (falling back to OSM's own unstyled Mapnik
-  tiles if no CARTO key is configured — see below), and the edit form's "look
-  up coordinates" action (`data/geocoding/NominatimAddressGeocoder.kt`) calls
-  OpenStreetMap's own Nominatim geocoder — both gated by the `INTERNET`
-  permission in `AndroidManifest.xml` (see that file's comment) and
-  `EatApplication.onCreate()`'s osmdroid configuration. Nominatim's usage
-  policy requires a distinct User-Agent (set on every request) and asks for
-  at most ~1 request/second — fine for a one-tap, user-triggered lookup, but
-  don't call it in a loop, on a timer, or for anything but that one button.
-  Don't add any other networking library or a remote/file-based data source
-  without discussing it first.
-- **CARTO API key**: the map tiles need a personal CARTO key (free up to
-  5,000,000 tile requests/month across the whole account) — set
-  `eatapp.carto.apikey` in `local.properties` or the `EATAPP_CARTO_API_KEY`
-  env var, read in `app/build.gradle.kts`'s "Map tiles" section into a
-  `BuildConfig.CARTO_API_KEY` field, same `localOrEnv` pattern as the
-  release-signing secrets. **Never commit the key itself** — not in a
-  tracked file, not in a code comment, not in a commit message. Keep the
-  CARTO/OpenStreetMap attribution visible on the map (already handled by
-  `RestaurantMapView.kt`'s tile source) per CARTO's key terms
-  (carto.com/attributions), and don't reuse this key for anything outside
-  this app.
+- **Networking**: none. The app makes no network calls — every restaurant is
+  entered, edited and deleted on-device via Room. Don't add a networking
+  library or a remote/file-based data source without discussing it first.
 - **Build**: Gradle Kotlin DSL (`build.gradle.kts`), AGP + version catalog
   (`gradle/libs.versions.toml`) for dependency versions — add new
   dependencies there, not as inline coordinates.
@@ -235,18 +213,12 @@ app/src/main/kotlin/com/saatxi/eatapp/
 
 ## Security guidelines
 
-- Every restaurant is entered, edited and deleted on-device; the only way
-  data ever crosses into or out of the app otherwise is the
-  restaurant-sharing feature (`data/share/`), which is local IPC
-  (`Intent.ACTION_SEND`/`ACTION_VIEW` + a `FileProvider`), never a network
-  request. The Map screen (`ui/map/`, F-89) is the one deliberate exception
-  to "no network calls": it fetches OpenStreetMap tiles via `osmdroid`, and
-  the edit form's "look up coordinates" action sends the restaurant's own
-  address text (street/city/region/country — never its name, notes, photos
-  or anything else) to OpenStreetMap's Nominatim geocoder. Both are
-  unauthenticated, no-credentials requests to a public OSM service; no
-  restaurant data is ever sent anywhere else. Don't add any other networking
-  dependency or a remote data source without discussing it first.
+- The app makes no network calls at all — every restaurant is entered,
+  edited and deleted on-device. The only way data ever crosses into or out of
+  the app is the restaurant-sharing feature (`data/share/`), which is local
+  IPC (`Intent.ACTION_SEND`/`ACTION_VIEW` + a `FileProvider`), never a
+  network request. Don't add a networking dependency or a remote data source
+  without discussing it first.
 - A file received through the sharing intent-filter (`MainActivity`'s second
   `<intent-filter>`, matching `application/json`) is untrusted input, the
   same way the old synced `.db` was: capped at `MAX_IMPORT_BYTES` before
@@ -266,12 +238,12 @@ app/src/main/kotlin/com/saatxi/eatapp/
   is `android:exported="false"`: the system delivers `APPWIDGET_UPDATE` (a
   protected, system-only broadcast) directly, so the launcher never needs to
   call it. It reads from Room and needs no permission; keep it that way.
-- `AndroidManifest.xml` declares exactly one permission, `INTERNET`, for the
-  Map screen's tile fetches (see above) — everything else about the app
-  needs none (the sharing feature's `FileProvider` grants are per-Intent, not
-  a permission). Don't add any other permission (location, contacts,
-  storage, etc.) without an explicit, discussed reason, and don't broaden
-  what `INTERNET` is used for beyond fetching map tiles.
+- `AndroidManifest.xml` declares no permissions at all — `INTERNET` and
+  `ACCESS_NETWORK_STATE`, left over from the removed remote sync feature,
+  were removed along with it, and the sharing feature needs none either
+  (`FileProvider` grants are per-Intent, not a permission). Don't add any
+  permission (network, location, contacts, storage, etc.) without an
+  explicit, discussed reason.
 - The app stores no user credentials, no PII beyond what the user
   themselves enters for their own restaurants, and does no analytics or
   tracking — keep it that way unless the user asks for it explicitly.

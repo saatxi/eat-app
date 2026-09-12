@@ -22,10 +22,6 @@
     <string name="list_action_add_restaurant">Añadir restaurante</string>
     <string name="list_action_share_all">Compartir todos los restaurantes</string>
     <string name="list_action_clear_filters">Borrar filtros</string>
-    <string name="list_view_toggle_list">Lista</string>
-    <string name="list_view_toggle_map">Mapa</string>
-    <string name="map_empty_title">Todavía no hay restaurantes en el mapa</string>
-    <string name="map_empty_body">Define una latitud y longitud en un restaurante para verlo aquí.</string>
     <string name="list_sort_name">Nombre (A-Z)</string>
     <string name="list_sort_rating">Puntuación (de mayor a menor)</string>
     <string name="list_sort_name_short">Nombre</string>
@@ -137,10 +133,6 @@
     <string name="edit_field_city">Ciudad (opcional)</string>
     <string name="edit_field_region">Región (opcional)</string>
     <string name="edit_field_country">País (opcional)</string>
-    <string name="edit_field_latitude">Latitud (opcional)</string>
-    <string name="edit_field_longitude">Longitud (opcional)</string>
-    <string name="edit_action_geocode">Buscar coordenadas a partir de la dirección</string>
-    <string name="edit_error_geocode_not_found">No se han encontrado coordenadas para esta dirección</string>
     <string name="edit_field_price_range">Rango de precio</string>
     <string name="edit_field_website">Web (opcional)</string>
     <string name="edit_field_instagram">Instagram (opcional)</string>
@@ -150,8 +142,6 @@
     <string name="edit_error_cuisine_required">Elige una cocina</string>
     <string name="edit_error_website_invalid">Introduce una dirección web http/https válida</string>
     <string name="edit_error_instagram_invalid">Introduce un usuario de Instagram válido</string>
-    <string name="edit_error_latitude_invalid">Introduce una latitud entre -90 y 90</string>
-    <string name="edit_error_longitude_invalid">Introduce una longitud entre -180 y 180</string>
 
     <!-- Importing a restaurant file shared from another app. -->
     <string name="import_title">Importar restaurantes</string>

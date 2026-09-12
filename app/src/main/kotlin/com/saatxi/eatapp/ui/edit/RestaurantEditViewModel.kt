@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.saatxi.eatapp.data.geocoding.AddressGeocoder
 import com.saatxi.eatapp.data.local.Photo
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.normalizeInstagramHandle
@@ -37,9 +36,6 @@ data class RestaurantEditUiState(
     val city: String = "",
     val region: String = "",
     val country: String = "",
-    /** Free-text so an incomplete/invalid entry can be shown back rather than silently dropped; parsed on [RestaurantEditViewModel.onSave]. */
-    val latitude: String = "",
-    val longitude: String = "",
     val priceRange: Int = 0,
     val website: String = "",
     val instagram: String = "",
@@ -59,11 +55,6 @@ data class RestaurantEditUiState(
     val cuisineError: Boolean = false,
     val websiteError: Boolean = false,
     val instagramError: Boolean = false,
-    val latitudeError: Boolean = false,
-    val longitudeError: Boolean = false,
-    val isGeocoding: Boolean = false,
-    /** Set when [RestaurantEditViewModel.onGeocodeAddress] finds no match — cleared as soon as the address or either coordinate field changes. */
-    val geocodeError: Boolean = false,
     val tags: List<String> = emptyList()
 ) {
     /** Every photo the carousel should show: surviving persisted ones first, then freshly added ones. */
@@ -84,7 +75,6 @@ data class RestaurantEditUiState(
 class RestaurantEditViewModel @Inject constructor(
     private val repository: RestaurantRepository,
     private val photoStorage: RestaurantPhotoStorage,
-    private val geocoder: AddressGeocoder,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -124,8 +114,6 @@ class RestaurantEditViewModel @Inject constructor(
                             city = restaurant.city.orEmpty(),
                             region = restaurant.region.orEmpty(),
                             country = restaurant.country.orEmpty(),
-                            latitude = restaurant.latitude?.toString().orEmpty(),
-                            longitude = restaurant.longitude?.toString().orEmpty(),
                             priceRange = restaurant.priceRange,
                             website = restaurant.website.orEmpty(),
                             instagram = restaurant.instagram.orEmpty(),
@@ -149,61 +137,19 @@ class RestaurantEditViewModel @Inject constructor(
     }
 
     fun onStreetAddressChange(streetAddress: String) {
-        _uiState.update { it.copy(streetAddress = streetAddress, geocodeError = false) }
+        _uiState.update { it.copy(streetAddress = streetAddress) }
     }
 
     fun onCityChange(city: String) {
-        _uiState.update { it.copy(city = city, geocodeError = false) }
+        _uiState.update { it.copy(city = city) }
     }
 
     fun onRegionChange(region: String) {
-        _uiState.update { it.copy(region = region, geocodeError = false) }
+        _uiState.update { it.copy(region = region) }
     }
 
     fun onCountryChange(country: String) {
-        _uiState.update { it.copy(country = country, geocodeError = false) }
-    }
-
-    fun onLatitudeChange(latitude: String) {
-        _uiState.update { it.copy(latitude = latitude, latitudeError = false, geocodeError = false) }
-    }
-
-    fun onLongitudeChange(longitude: String) {
-        _uiState.update { it.copy(longitude = longitude, longitudeError = false, geocodeError = false) }
-    }
-
-    /**
-     * Looks up lat/lng from the address fields already on the form (street,
-     * city, region, country — whichever are filled in) via [geocoder], so the
-     * user doesn't have to know or type coordinates by hand. A no-match or
-     * failed lookup sets [RestaurantEditUiState.geocodeError] rather than
-     * touching [RestaurantEditUiState.latitude]/[RestaurantEditUiState.longitude],
-     * so nothing already typed there is ever clobbered by a bad lookup.
-     */
-    fun onGeocodeAddress() {
-        val state = _uiState.value
-        val query = listOf(state.streetAddress, state.city, state.region, state.country)
-            .filter { it.isNotBlank() }
-            .joinToString(", ")
-        if (query.isBlank() || state.isGeocoding) return
-
-        _uiState.update { it.copy(isGeocoding = true, geocodeError = false) }
-        viewModelScope.launch {
-            val result = geocoder.geocode(query)
-            _uiState.update {
-                if (result != null) {
-                    it.copy(
-                        isGeocoding = false,
-                        latitude = result.latitude.toString(),
-                        longitude = result.longitude.toString(),
-                        latitudeError = false,
-                        longitudeError = false
-                    )
-                } else {
-                    it.copy(isGeocoding = false, geocodeError = true)
-                }
-            }
-        }
+        _uiState.update { it.copy(country = country) }
     }
 
     fun onPriceRangeChange(priceRange: Int) {
@@ -273,25 +219,18 @@ class RestaurantEditViewModel @Inject constructor(
         val website = state.website.takeIf { it.isNotBlank() }?.let(::normalizeWebsite)
         val instagram = state.instagram.takeIf { it.isNotBlank() }?.let(::normalizeInstagramHandle)
 
-        val latitude = state.latitude.trim().takeIf { it.isNotBlank() }?.toDoubleOrNull()?.takeIf { it in -90.0..90.0 }
-        val longitude = state.longitude.trim().takeIf { it.isNotBlank() }?.toDoubleOrNull()?.takeIf { it in -180.0..180.0 }
-
         val nameError = trimmedName.isEmpty()
         val cuisineError = state.cuisineType == null
         val websiteError = state.website.isNotBlank() && website == null
         val instagramError = state.instagram.isNotBlank() && instagram == null
-        val latitudeError = state.latitude.isNotBlank() && latitude == null
-        val longitudeError = state.longitude.isNotBlank() && longitude == null
 
-        if (nameError || cuisineError || websiteError || instagramError || latitudeError || longitudeError) {
+        if (nameError || cuisineError || websiteError || instagramError) {
             _uiState.update {
                 it.copy(
                     nameError = nameError,
                     cuisineError = cuisineError,
                     websiteError = websiteError,
-                    instagramError = instagramError,
-                    latitudeError = latitudeError,
-                    longitudeError = longitudeError
+                    instagramError = instagramError
                 )
             }
             return
@@ -307,8 +246,6 @@ class RestaurantEditViewModel @Inject constructor(
                 city = state.city.trim().takeIf { it.isNotBlank() },
                 region = state.region.trim().takeIf { it.isNotBlank() },
                 country = state.country.trim().takeIf { it.isNotBlank() },
-                latitude = latitude,
-                longitude = longitude,
                 priceRange = state.priceRange,
                 website = website,
                 instagram = instagram

@@ -1,7 +1,5 @@
 package com.saatxi.eatapp.di
 
-import com.saatxi.eatapp.data.geocoding.AddressGeocoder
-import com.saatxi.eatapp.data.geocoding.NominatimAddressGeocoder
 import com.saatxi.eatapp.data.photo.AndroidRestaurantPhotoStorage
 import com.saatxi.eatapp.data.photo.RestaurantPhotoStorage
 import com.saatxi.eatapp.data.prefs.DataStoreUserPreferencesRepository
@@ -29,7 +27,4 @@ abstract class BindsModule {
 
     @Binds
     abstract fun bindRestaurantPhotoStorage(impl: AndroidRestaurantPhotoStorage): RestaurantPhotoStorage
-
-    @Binds
-    abstract fun bindAddressGeocoder(impl: NominatimAddressGeocoder): AddressGeocoder
 }

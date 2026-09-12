@@ -58,17 +58,6 @@ fun localOrEnv(propertyKey: String, envKey: String): String? =
     (localProperties.getProperty(propertyKey) ?: System.getenv(envKey))?.takeIf { it.isNotBlank() }
 // ---------------------------------------------------------------------------
 
-// --- Map tiles (F-89) -------------------------------------------------------
-// CARTO's Voyager basemap now requires a personal API key even on its free
-// tier (5,000,000 tile requests/month, shared across every key on the
-// account). The key itself must never be committed — it lives only in
-// local.properties (gitignored) or the matching CI env var, same as the
-// release-signing secrets above. Empty when unset, which RestaurantMapView.kt
-// falls back on to keep the build/app working (with an unstyled/watermarked
-// map) for anyone who hasn't configured one.
-val cartoApiKey = localOrEnv("eatapp.carto.apikey", "EATAPP_CARTO_API_KEY") ?: ""
-// ---------------------------------------------------------------------------
-
 // --- Release signing -------------------------------------------------------
 // The keystore itself is never committed. When nothing is configured the release
 // build still runs, but stays unsigned and says so loudly at build time instead
@@ -108,7 +97,6 @@ android {
         versionCode = gitVersionCode
         versionName = gitVersionName
         buildConfigField("String", "GIT_COMMIT", "\"$gitCommitShort\"")
-        buildConfigField("String", "CARTO_API_KEY", "\"$cartoApiKey\"")
     }
 
     signingConfigs {
@@ -265,10 +253,6 @@ dependencies {
 
     // Home-screen widget (F-68).
     implementation(libs.androidx.glance.appwidget)
-
-    // Map screen (F-89): the one dependency in this app that makes real network
-    // requests (fetches OpenStreetMap tiles). See the version catalog comment.
-    implementation(libs.osmdroid.android)
 
     // Reads app/src/main/baseline-prof.txt (once generated) at install time and
     // hands it to ART, so a release install gets AOT-compiled hot paths without
