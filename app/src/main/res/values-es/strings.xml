@@ -110,11 +110,28 @@
     <string name="settings_action_delete_all_data">Eliminar todos los restaurantes</string>
     <string name="settings_delete_all_confirm_title">¿Eliminar todos los restaurantes?</string>
     <string name="settings_delete_all_confirm_body">Esto elimina todos los restaurantes de la aplicación. Esta acción no se puede deshacer.</string>
+    <string name="settings_action_help">Cómo usar EatApp</string>
     <string name="settings_section_about">Acerca de</string>
     <string name="settings_section_language">Idioma</string>
     <string name="language_english">Inglés</string>
     <string name="language_spanish">Español</string>
     <string name="language_catalan">Catalán</string>
+
+    <!-- Pantalla de ayuda. -->
+    <string name="help_title">Cómo usar EatApp</string>
+    <string name="help_intro">Una guía rápida de todo lo que puede hacer EatApp — toca un tema para abrirlo.</string>
+    <string name="help_topic_add_title">Añadir un restaurante</string>
+    <string name="help_topic_add_body">Toca el botón + en la pantalla de la lista. Rellena el nombre, la cocina y la dirección — el resto es opcional. Se guarda directamente en tu dispositivo, sin necesidad de cuenta.</string>
+    <string name="help_topic_favorites_title">Favoritos y quiero probar</string>
+    <string name="help_topic_favorites_body">Toca el corazón de un restaurante para marcarlo como favorito — un sitio que te encanta. Toca el marcador para añadirlo a quiero probar — un sitio que planeas visitar. Ambos aparecen en su propia pestaña en la parte inferior.</string>
+    <string name="help_topic_roulette_title">Ruleta: ¿no te decides?</string>
+    <string name="help_topic_roulette_body">Abre la pestaña Ruleta y gira — elige un restaurante al azar de tu lista de quiero probar. Filtra por cocina antes si buscas algo concreto.</string>
+    <string name="help_topic_sharing_title">Compartir un restaurante</string>
+    <string name="help_topic_sharing_body">Abre los detalles de un restaurante y toca Compartir para enviarlo a un amigo que también tenga EatApp. Cuando abra el archivo, verá una pantalla de revisión para comprobar los detalles antes de añadirlo a su propia lista.</string>
+    <string name="help_topic_widget_title">Widget de pantalla de inicio</string>
+    <string name="help_topic_widget_body">Añade el widget "Quiero probar" desde el selector de widgets de tu pantalla de inicio para ver una selección aleatoria de esa lista sin abrir la aplicación.</string>
+    <string name="help_topic_export_title">Exportar tus datos</string>
+    <string name="help_topic_export_body">En Ajustes → Datos → Exportar mis datos, puedes guardar una copia de todo lo que has introducido como archivo, para hacer una copia de seguridad o moverlo a otro dispositivo.</string>
 
     <!-- Add/edit restaurant form. -->
     <string name="edit_title_add">Añadir restaurante</string>

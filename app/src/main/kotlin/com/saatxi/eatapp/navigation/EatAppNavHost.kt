@@ -44,6 +44,7 @@ import com.saatxi.eatapp.ui.common.SCREEN_TRANSITION_DURATION_MS
 import com.saatxi.eatapp.ui.detail.RestaurantDetailScreen
 import com.saatxi.eatapp.ui.edit.RestaurantEditScreen
 import com.saatxi.eatapp.ui.favorites.FavoritesScreen
+import com.saatxi.eatapp.ui.help.HelpScreen
 import com.saatxi.eatapp.ui.importing.RestaurantImportScreen
 import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.logvisit.LogVisitScreen
@@ -62,6 +63,7 @@ private object Routes {
     const val EDIT = "edit/{restaurantId}"
     const val IMPORT = "import/{uri}"
     const val STATS = "stats"
+    const val HELP = "help"
     const val LOG_VISIT = "detail/{restaurantId}/log-visit"
 }
 
@@ -96,7 +98,7 @@ fun EatAppNavHost(
     // import screens — none of them has a tab of its own, they're reached by
     // tapping into one of the other four (or, for import, from outside the app).
     val isFullScreenRoute = currentDestination?.route in
-        setOf(Routes.DETAIL, Routes.ADD, Routes.EDIT, Routes.IMPORT, Routes.STATS, Routes.LOG_VISIT)
+        setOf(Routes.DETAIL, Routes.ADD, Routes.EDIT, Routes.IMPORT, Routes.STATS, Routes.HELP, Routes.LOG_VISIT)
 
     // Below this width, List/Favorites/Roulette keep pushing the full-screen
     // detail/{id} route exactly as before — shared-element transition, hidden
@@ -207,10 +209,16 @@ fun EatAppNavHost(
                         }
                     }
                     composable(TopLevelDestination.SETTINGS.route) {
-                        SettingsScreen(onOpenStatistics = { navController.navigate(Routes.STATS) })
+                        SettingsScreen(
+                            onOpenStatistics = { navController.navigate(Routes.STATS) },
+                            onOpenHelp = { navController.navigate(Routes.HELP) }
+                        )
                     }
                     composable(Routes.STATS) {
                         StatisticsScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable(Routes.HELP) {
+                        HelpScreen(onBack = { navController.popBackStack() })
                     }
                     composable(
                         route = Routes.DETAIL,

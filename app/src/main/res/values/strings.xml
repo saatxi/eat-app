@@ -116,11 +116,28 @@
     <string name="settings_action_delete_all_data">Delete all restaurants</string>
     <string name="settings_delete_all_confirm_title">Delete all restaurants?</string>
     <string name="settings_delete_all_confirm_body">This deletes every restaurant in the app. This can\'t be undone.</string>
+    <string name="settings_action_help">How to use EatApp</string>
     <string name="settings_section_about">About</string>
     <string name="settings_section_language">Language</string>
     <string name="language_english">English</string>
     <string name="language_spanish">Spanish</string>
     <string name="language_catalan">Catalan</string>
+
+    <!-- Help screen. -->
+    <string name="help_title">How to use EatApp</string>
+    <string name="help_intro">A quick guide to everything EatApp can do — tap a topic to open it.</string>
+    <string name="help_topic_add_title">Adding a restaurant</string>
+    <string name="help_topic_add_body">Tap the + button on the list screen. Fill in the name, cuisine and address — everything else is optional. It\'s saved straight to your device, no account needed.</string>
+    <string name="help_topic_favorites_title">Favorites &amp; want-to-try</string>
+    <string name="help_topic_favorites_body">Tap the heart on a restaurant to mark it a favorite — a place you love. Tap the bookmark to add it to want-to-try — somewhere you\'re planning to visit. Both show up in their own tab at the bottom.</string>
+    <string name="help_topic_roulette_title">Roulette: can\'t decide?</string>
+    <string name="help_topic_roulette_body">Open the Roulette tab and spin — it picks a random restaurant from your want-to-try list. Filter by cuisine first if you\'re after something specific.</string>
+    <string name="help_topic_sharing_title">Sharing a restaurant</string>
+    <string name="help_topic_sharing_body">Open a restaurant\'s details and tap Share to send it to a friend who also has EatApp. When they open the file, they\'ll get a review screen to check the details before it\'s added to their own list.</string>
+    <string name="help_topic_widget_title">Home-screen widget</string>
+    <string name="help_topic_widget_body">Add the "Want to try" widget from your home screen\'s widget picker to see a random pick from that list without opening the app.</string>
+    <string name="help_topic_export_title">Exporting your data</string>
+    <string name="help_topic_export_body">In Settings → Data → Export my data, you can save a copy of everything you\'ve entered as a file, to back it up or move it to another device.</string>
 
     <!-- Add/edit restaurant form. -->
     <string name="edit_title_add">Add restaurant</string>

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Language
@@ -74,6 +75,7 @@ import com.saatxi.eatapp.ui.theme.lightScheme
 @Composable
 fun SettingsScreen(
     onOpenStatistics: () -> Unit = {},
+    onOpenHelp: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -222,6 +224,12 @@ fun SettingsScreen(
                             showChevron = false,
                             tint = MaterialTheme.colorScheme.error,
                             onClick = { showDeleteAllConfirm = true }
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        SettingsRow(
+                            icon = Icons.AutoMirrored.Outlined.HelpOutline,
+                            label = stringResource(R.string.settings_action_help),
+                            onClick = onOpenHelp
                         )
                     }
                 }

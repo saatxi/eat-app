@@ -108,11 +108,28 @@
     <string name="settings_action_delete_all_data">Elimina tots els restaurants</string>
     <string name="settings_delete_all_confirm_title">Vols eliminar tots els restaurants?</string>
     <string name="settings_delete_all_confirm_body">Això elimina tots els restaurants de l\'aplicació. Aquesta acció no es pot desfer.</string>
+    <string name="settings_action_help">Com s\'utilitza EatApp</string>
     <string name="settings_section_about">Quant a</string>
     <string name="settings_section_language">Idioma</string>
     <string name="language_english">Anglès</string>
     <string name="language_spanish">Espanyol</string>
     <string name="language_catalan">Català</string>
+
+    <!-- Pantalla d'ajuda. -->
+    <string name="help_title">Com s\'utilitza EatApp</string>
+    <string name="help_intro">Una guia ràpida de tot el que pot fer EatApp — toca un tema per obrir-lo.</string>
+    <string name="help_topic_add_title">Afegir un restaurant</string>
+    <string name="help_topic_add_body">Toca el botó + a la pantalla de la llista. Omple el nom, la cuina i l\'adreça — la resta és opcional. Es desa directament al teu dispositiu, sense necessitat de compte.</string>
+    <string name="help_topic_favorites_title">Favorits i vull provar</string>
+    <string name="help_topic_favorites_body">Toca el cor d\'un restaurant per marcar-lo com a favorit — un lloc que t\'encanta. Toca el marcador per afegir-lo a vull provar — un lloc que planeges visitar. Tots dos apareixen a la seva pròpia pestanya a la part inferior.</string>
+    <string name="help_topic_roulette_title">Ruleta: no et decideixes?</string>
+    <string name="help_topic_roulette_body">Obre la pestanya Ruleta i gira — tria un restaurant a l\'atzar de la teva llista de vull provar. Filtra per cuina abans si busques alguna cosa concreta.</string>
+    <string name="help_topic_sharing_title">Compartir un restaurant</string>
+    <string name="help_topic_sharing_body">Obre els detalls d\'un restaurant i toca Comparteix per enviar-lo a un amic que també tingui EatApp. Quan obri el fitxer, veurà una pantalla de revisió per comprovar els detalls abans d\'afegir-lo a la seva pròpia llista.</string>
+    <string name="help_topic_widget_title">Widget de pantalla d\'inici</string>
+    <string name="help_topic_widget_body">Afegeix el widget "Vull provar" des del selector de widgets de la teva pantalla d\'inici per veure una selecció a l\'atzar d\'aquesta llista sense obrir l\'aplicació.</string>
+    <string name="help_topic_export_title">Exportar les teves dades</string>
+    <string name="help_topic_export_body">A Configuració → Dades → Exporta les meves dades, pots desar una còpia de tot el que has introduït com a fitxer, per fer-ne una còpia de seguretat o moure-la a un altre dispositiu.</string>
 
     <!-- Add/edit restaurant form. -->
     <string name="edit_title_add">Afegeix un restaurant</string>
