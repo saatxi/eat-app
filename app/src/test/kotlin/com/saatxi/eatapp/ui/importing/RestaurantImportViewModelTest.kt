@@ -129,6 +129,20 @@ class RestaurantImportViewModelTest {
     }
 
     @Test
+    fun `a candidate matching an existing restaurant by name alone still counts as a duplicate when only one side has an address`() = runTest {
+        repository.restaurants.value = listOf(
+            Restaurant(id = "5", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, priceRange = 2)
+        )
+        val uri = writeContentFile("duplicate-no-address.json", jsonOf(export("Cal Ferran", address = "Rambla 1")))
+        val viewModel = RestaurantImportViewModel(context, repository, SavedStateHandle(mapOf("uri" to uri.toString())))
+
+        val candidate = viewModel.loaded().candidates.single()
+
+        assertEquals(ImportDecision.SKIP, candidate.decision)
+        assertEquals("5", candidate.duplicateOf?.id)
+    }
+
+    @Test
     fun `a candidate with no matching existing restaurant defaults to add`() = runTest {
         repository.restaurants.value = listOf(
             Restaurant(id = "5", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = "Rambla 1", priceRange = 2)

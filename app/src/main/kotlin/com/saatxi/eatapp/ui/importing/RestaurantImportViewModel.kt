@@ -136,6 +136,13 @@ class RestaurantImportViewModel @Inject constructor(
 
 private fun Restaurant.isLikelyDuplicateOf(other: Restaurant): Boolean {
     val sameName = name.trim().equals(other.name.trim(), ignoreCase = true)
-    val sameAddress = streetAddress?.trim().orEmpty().equals(other.streetAddress?.trim().orEmpty(), ignoreCase = true)
+    val thisAddress = streetAddress?.trim().orEmpty()
+    val otherAddress = other.streetAddress?.trim().orEmpty()
+    // A missing address on either side (e.g. an imported row that never had
+    // one recorded) shouldn't block a match on name alone — only compare
+    // addresses when both rows actually have one, otherwise a same-name
+    // restaurant with no address on one side would wrongly import as a
+    // second copy instead of being flagged as a duplicate.
+    val sameAddress = thisAddress.isEmpty() || otherAddress.isEmpty() || thisAddress.equals(otherAddress, ignoreCase = true)
     return sameName && sameAddress
 }
