@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.Casino
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -57,6 +58,7 @@ import com.saatxi.eatapp.R
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
+import com.saatxi.eatapp.ui.common.FilterDropdownChip
 import com.saatxi.eatapp.ui.common.RatingAndPriceRow
 import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
@@ -96,7 +98,9 @@ fun RouletteScreen(
                 favoritesOnly = uiState.favoritesOnly,
                 onFavoritesOnlyChange = viewModel::onFavoritesOnlyChange,
                 visited = uiState.visited,
-                onVisitedChange = viewModel::onVisitedChange
+                onVisitedChange = viewModel::onVisitedChange,
+                priceRange = uiState.priceRange,
+                onPriceRangeChange = viewModel::onPriceRangeChange
             )
 
             Box(
@@ -172,6 +176,9 @@ fun RouletteScreen(
     }
 }
 
+/** The exact price tiers offered by [RouletteFilters]' price dropdown — same 1-4 scale as the add/edit form's price picker. */
+private const val MAX_PRICE_RANGE = 4
+
 @Composable
 private fun RouletteFilters(
     minRating: Int?,
@@ -179,7 +186,9 @@ private fun RouletteFilters(
     favoritesOnly: Boolean,
     onFavoritesOnlyChange: (Boolean) -> Unit,
     visited: Boolean?,
-    onVisitedChange: (Boolean?) -> Unit
+    onVisitedChange: (Boolean?) -> Unit,
+    priceRange: Int?,
+    onPriceRangeChange: (Int?) -> Unit
 ) {
     val chipColors = FilterChipDefaults.filterChipColors(
         containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -187,35 +196,74 @@ private fun RouletteFilters(
         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
         selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
     )
-    // FlowRow rather than a horizontally scrolling Row: this fixed, short set of
-    // chips doesn't need scrolling to fit, and unlike the list screen's filter
-    // rows, cropping the last chip against the screen edge here left no visible
-    // affordance that there was more to scroll to.
+    // FlowRow rather than a horizontally scrolling Row: collapsing each filter
+    // dimension into its own dropdown already shrank this to four chips, but a
+    // narrow phone can still run out of width (e.g. once a dropdown's selected
+    // label is longer than its placeholder) — wrapping the overflow onto a
+    // second line keeps every chip reachable, instead of scrolling one off the
+    // edge with no visible affordance that it's there.
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        (1..5).forEach { rating ->
-            FilterChip(
-                selected = minRating == rating,
-                onClick = { onMinRatingChange(if (minRating == rating) null else rating) },
-                label = { Text("$rating+") },
-                colors = chipColors
+        FilterDropdownChip(
+            selectedLabel = minRating?.let { "$it+" } ?: stringResource(R.string.roulette_filter_rating),
+            isActive = minRating != null,
+            colors = chipColors
+        ) { closeMenu ->
+            (1..5).forEach { rating ->
+                DropdownMenuItem(
+                    text = { Text("$rating+") },
+                    onClick = {
+                        onMinRatingChange(if (minRating == rating) null else rating)
+                        closeMenu()
+                    }
+                )
+            }
+        }
+
+        FilterDropdownChip(
+            selectedLabel = when (visited) {
+                false -> stringResource(R.string.visit_status_want_to_try)
+                true -> stringResource(R.string.visit_status_visited)
+                null -> stringResource(R.string.roulette_filter_status)
+            },
+            isActive = visited != null,
+            colors = chipColors
+        ) { closeMenu ->
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.visit_status_want_to_try)) },
+                onClick = {
+                    onVisitedChange(if (visited == false) null else false)
+                    closeMenu()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.visit_status_visited)) },
+                onClick = {
+                    onVisitedChange(if (visited == true) null else true)
+                    closeMenu()
+                }
             )
         }
-        FilterChip(
-            selected = visited == false,
-            onClick = { onVisitedChange(if (visited == false) null else false) },
-            label = { Text(stringResource(R.string.visit_status_want_to_try)) },
+
+        FilterDropdownChip(
+            selectedLabel = priceRange?.let { "$".repeat(it) } ?: stringResource(R.string.roulette_filter_price),
+            isActive = priceRange != null,
             colors = chipColors
-        )
-        FilterChip(
-            selected = visited == true,
-            onClick = { onVisitedChange(if (visited == true) null else true) },
-            label = { Text(stringResource(R.string.visit_status_visited)) },
-            colors = chipColors
-        )
+        ) { closeMenu ->
+            (1..MAX_PRICE_RANGE).forEach { price ->
+                DropdownMenuItem(
+                    text = { Text("$".repeat(price)) },
+                    onClick = {
+                        onPriceRangeChange(if (priceRange == price) null else price)
+                        closeMenu()
+                    }
+                )
+            }
+        }
+
         FilterChip(
             selected = favoritesOnly,
             onClick = { onFavoritesOnlyChange(!favoritesOnly) },

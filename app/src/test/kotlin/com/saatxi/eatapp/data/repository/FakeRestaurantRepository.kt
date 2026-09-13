@@ -56,6 +56,8 @@ class FakeRestaurantRepository : RestaurantRepository {
         private set
     var lastCountry: String? = null
         private set
+    var lastPriceRange: Int? = null
+        private set
     var lastDeletedId: String? = null
         private set
     var lastInserted: Restaurant? = null
@@ -79,7 +81,8 @@ class FakeRestaurantRepository : RestaurantRepository {
         visited: Boolean?,
         city: String?,
         region: String?,
-        country: String?
+        country: String?,
+        priceRange: Int?
     ): Flow<List<Restaurant>> {
         lastQuery = query
         lastMinRating = minRating
@@ -89,6 +92,7 @@ class FakeRestaurantRepository : RestaurantRepository {
         lastCity = city
         lastRegion = region
         lastCountry = country
+        lastPriceRange = priceRange
         return restaurants
     }
 

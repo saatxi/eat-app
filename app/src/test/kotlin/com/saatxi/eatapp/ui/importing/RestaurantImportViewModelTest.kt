@@ -267,7 +267,8 @@ internal class FakeRestaurantRepository : RestaurantRepository {
         visited: Boolean?,
         city: String?,
         region: String?,
-        country: String?
+        country: String?,
+        priceRange: Int?
     ): Flow<List<Restaurant>> = restaurants
 
     override fun observeCuisineTypes(): Flow<List<String>> =

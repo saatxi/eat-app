@@ -44,7 +44,8 @@ class RoomRestaurantRepository @Inject constructor(
         visited: Boolean?,
         city: String?,
         region: String?,
-        country: String?
+        country: String?,
+        priceRange: Int?
     ): Flow<List<Restaurant>> =
         dao.observeFiltered(
             query = query?.takeIf { it.isNotBlank() }?.let(::normalizeForSearch)?.let(::escapeLikeWildcards),
@@ -56,7 +57,8 @@ class RoomRestaurantRepository @Inject constructor(
             visited = visited,
             city = city?.takeIf { it.isNotBlank() },
             region = region?.takeIf { it.isNotBlank() },
-            country = country?.takeIf { it.isNotBlank() }
+            country = country?.takeIf { it.isNotBlank() },
+            priceRange = priceRange
         )
 
     override fun observeCuisineTypes(): Flow<List<String>> = dao.observeCuisineTypes()

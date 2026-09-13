@@ -6,7 +6,8 @@
     <string name="list_search_clear">Esborra la cerca</string>
     <string name="list_suggestions_title">Prova\'n una</string>
     <string name="list_suggestion_top_rated">Millor valorats</string>
-    <string name="list_filter_min_rating">Puntuació mínima</string>
+    <string name="list_filter_min_rating">Puntuació</string>
+    <string name="list_filter_price">Preu</string>
     <string name="list_filter_cuisine">Cuina</string>
     <string name="list_filter_visit_status">Estat</string>
     <string name="list_filter_location">Ubicació</string>
@@ -90,6 +91,9 @@
     <string name="roulette_action_pick">Tria\'n un</string>
     <string name="roulette_action_again">Torna-ho a provar</string>
     <string name="roulette_only_favorites">Només preferits</string>
+    <string name="roulette_filter_rating">Puntuació</string>
+    <string name="roulette_filter_status">Estat</string>
+    <string name="roulette_filter_price">Preu</string>
     <string name="roulette_empty_title">Res per triar</string>
     <string name="roulette_empty_body">Cap restaurant coincideix amb aquests filtres.</string>
 

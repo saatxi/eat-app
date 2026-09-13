@@ -7,7 +7,8 @@
     <string name="list_search_clear">Clear search</string>
     <string name="list_suggestions_title">Try one of these</string>
     <string name="list_suggestion_top_rated">Top rated</string>
-    <string name="list_filter_min_rating">Minimum rating</string>
+    <string name="list_filter_min_rating">Rating</string>
+    <string name="list_filter_price">Price</string>
     <string name="list_filter_cuisine">Cuisine</string>
     <string name="list_filter_visit_status">Status</string>
     <!-- The combined entry point for the city/region/country panel — not a filter dimension itself. -->
@@ -98,6 +99,9 @@
     <string name="roulette_action_pick">Pick one</string>
     <string name="roulette_action_again">Try again</string>
     <string name="roulette_only_favorites">Favorites only</string>
+    <string name="roulette_filter_rating">Rating</string>
+    <string name="roulette_filter_status">Status</string>
+    <string name="roulette_filter_price">Price</string>
     <string name="roulette_empty_title">Nothing to pick from</string>
     <string name="roulette_empty_body">No restaurant matches these filters.</string>
 

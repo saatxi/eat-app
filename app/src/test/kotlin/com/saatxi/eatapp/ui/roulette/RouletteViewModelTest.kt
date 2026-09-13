@@ -161,11 +161,23 @@ class RouletteViewModelTest {
         assertNull(viewModel.uiState.value.picked)
     }
 
-    private fun restaurant(id: String) = Restaurant(
+    @Test
+    fun `priceRange narrows the candidates to a matching price`() = runTest {
+        val viewModel = viewModel()
+        observeState(viewModel)
+        repository.restaurants.value = listOf(restaurant("1", priceRange = 1), restaurant("2", priceRange = 3))
+
+        viewModel.onPriceRangeChange(3)
+
+        assertEquals(listOf("2"), viewModel.uiState.value.candidates.map { it.id })
+        assertEquals(3, viewModel.uiState.value.priceRange)
+    }
+
+    private fun restaurant(id: String, priceRange: Int = 2) = Restaurant(
         id = id,
         name = "Restaurant $id",
         cuisineType = "mediterranean",
         streetAddress = null,
-        priceRange = 2
+        priceRange = priceRange
     )
 }

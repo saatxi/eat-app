@@ -8,6 +8,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -60,6 +62,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.RestaurantSort
+import com.saatxi.eatapp.ui.common.FilterDropdownChip
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
@@ -101,6 +104,8 @@ internal fun SearchAndFilterBar(
     country: String?,
     availableCountries: List<String>,
     onCountryChange: (String?) -> Unit,
+    priceRange: Int?,
+    onPriceRangeChange: (Int?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Survives rotation but not process death on purpose: which filters are
@@ -168,7 +173,8 @@ internal fun SearchAndFilterBar(
                 (if (visited != null) 1 else 0) +
                 (if (city != null) 1 else 0) +
                 (if (region != null) 1 else 0) +
-                (if (country != null) 1 else 0)
+                (if (country != null) 1 else 0) +
+                (if (priceRange != null) 1 else 0)
             val chevronRotation by animateFloatAsState(
                 targetValue = if (filtersExpanded) 180f else 0f,
                 label = "filters-chevron"
@@ -230,6 +236,8 @@ internal fun SearchAndFilterBar(
                     country = country,
                     availableCountries = availableCountries,
                     onCountryChange = onCountryChange,
+                    priceRange = priceRange,
+                    onPriceRangeChange = onPriceRangeChange,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
             }
@@ -250,6 +258,9 @@ private fun sortLabelShort(sort: RestaurantSort): String = when (sort) {
     RestaurantSort.RATING -> stringResource(R.string.list_sort_rating_short)
 }
 
+/** The exact price tiers offered by [FilterSection]'s price dropdown — same 1-4 scale as the add/edit form's price picker. */
+private const val MAX_PRICE_RANGE = 4
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilterSection(
@@ -269,6 +280,8 @@ private fun FilterSection(
     country: String?,
     availableCountries: List<String>,
     onCountryChange: (String?) -> Unit,
+    priceRange: Int?,
+    onPriceRangeChange: (Int?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val chipColors = FilterChipDefaults.filterChipColors(
@@ -277,128 +290,135 @@ private fun FilterSection(
         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
         selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
     )
+    val sortedCuisines = availableCuisines
+        .map { key -> key to cuisineLabel(key) }
+        .sortedBy { (_, label) -> label.lowercase() }
+    var locationSheetOpen by rememberSaveable { mutableStateOf(false) }
+    val activeLocationCount = (if (city != null) 1 else 0) +
+        (if (region != null) 1 else 0) +
+        (if (country != null) 1 else 0)
 
-    Column(modifier = modifier) {
-        Text(
-            text = stringResource(R.string.list_filter_visit_status),
-            style = MaterialTheme.typography.labelMedium
-        )
-        Row(
-            modifier = Modifier.padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                selected = visited == false,
-                onClick = { onVisitedChange(if (visited == false) null else false) },
-                label = { Text(stringResource(R.string.visit_status_want_to_try)) },
-                colors = chipColors
+    // FlowRow rather than a horizontally scrolling Row: collapsing each filter
+    // dimension into its own dropdown already shrank this to at most four
+    // chips, but a narrow phone can still run out of width (e.g. once a
+    // dropdown's selected label is longer than its placeholder) — wrapping the
+    // overflow onto a second line keeps every chip reachable, instead of
+    // scrolling one off the edge with no visible affordance that it's there.
+    FlowRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        FilterDropdownChip(
+            selectedLabel = when (visited) {
+                false -> stringResource(R.string.visit_status_want_to_try)
+                true -> stringResource(R.string.visit_status_visited)
+                null -> stringResource(R.string.list_filter_visit_status)
+            },
+            isActive = visited != null,
+            colors = chipColors
+        ) { closeMenu ->
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.visit_status_want_to_try)) },
+                onClick = {
+                    onVisitedChange(if (visited == false) null else false)
+                    closeMenu()
+                }
             )
-            FilterChip(
-                selected = visited == true,
-                onClick = { onVisitedChange(if (visited == true) null else true) },
-                label = { Text(stringResource(R.string.visit_status_visited)) },
-                colors = chipColors
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.visit_status_visited)) },
+                onClick = {
+                    onVisitedChange(if (visited == true) null else true)
+                    closeMenu()
+                }
             )
         }
 
-        Text(
-            text = stringResource(R.string.list_filter_min_rating),
-            style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        FilterDropdownChip(
+            selectedLabel = minRating?.let { "$it+" } ?: stringResource(R.string.list_filter_min_rating),
+            isActive = minRating != null,
+            colors = chipColors
+        ) { closeMenu ->
             (1..5).forEach { rating ->
-                FilterChip(
-                    selected = minRating == rating,
-                    onClick = { onMinRatingChange(if (minRating == rating) null else rating) },
-                    label = { Text("$rating+") },
-                    colors = chipColors
+                DropdownMenuItem(
+                    text = { Text("$rating+") },
+                    onClick = {
+                        onMinRatingChange(if (minRating == rating) null else rating)
+                        closeMenu()
+                    }
+                )
+            }
+        }
+
+        FilterDropdownChip(
+            selectedLabel = priceRange?.let { "$".repeat(it) } ?: stringResource(R.string.list_filter_price),
+            isActive = priceRange != null,
+            colors = chipColors
+        ) { closeMenu ->
+            (1..MAX_PRICE_RANGE).forEach { price ->
+                DropdownMenuItem(
+                    text = { Text("$".repeat(price)) },
+                    onClick = {
+                        onPriceRangeChange(if (priceRange == price) null else price)
+                        closeMenu()
+                    }
                 )
             }
         }
 
         // Only the cuisines actually present in the data are offered, so the
-        // row stays short instead of listing all 24 vocabulary entries.
-        if (availableCuisines.isNotEmpty()) {
-            val sortedCuisines = availableCuisines
-                .map { key -> key to cuisineLabel(key) }
-                .sortedBy { (_, label) -> label.lowercase() }
-
-            Text(
-                text = stringResource(R.string.list_filter_cuisine),
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+        // menu stays short instead of listing all 24 vocabulary entries.
+        if (sortedCuisines.isNotEmpty()) {
+            val selectedCuisineLabel = cuisineType?.let { key -> sortedCuisines.firstOrNull { it.first == key }?.second }
+            FilterDropdownChip(
+                selectedLabel = selectedCuisineLabel ?: stringResource(R.string.list_filter_cuisine),
+                isActive = cuisineType != null,
+                colors = chipColors,
+                leadingIcon = if (cuisineType != null) {
+                    { Icon(cuisineIcon(cuisineType), contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
+                } else {
+                    null
+                }
+            ) { closeMenu ->
                 sortedCuisines.forEach { (key, label) ->
-                    FilterChip(
-                        selected = cuisineType == key,
-                        onClick = { onCuisineChange(if (cuisineType == key) null else key) },
-                        label = { Text(label) },
-                        leadingIcon = {
-                            Icon(
-                                cuisineIcon(key),
-                                contentDescription = null,
-                                modifier = Modifier.size(FilterChipDefaults.IconSize)
-                            )
-                        },
-                        colors = chipColors
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        leadingIcon = { Icon(cuisineIcon(key), contentDescription = null) },
+                        onClick = {
+                            onCuisineChange(if (cuisineType == key) null else key)
+                            closeMenu()
+                        }
                     )
                 }
             }
         }
 
         // City/region/country are unbounded free text, unlike the closed cuisine
-        // vocabulary above — showing each as its own always-visible chip row
-        // would mean up to three horizontally-scrolling rows the moment the
-        // user's data spans more than a couple of places. One combined chip
-        // opens a sheet with all three instead.
+        // vocabulary above — a dropdown menu item per value could run to dozens
+        // of entries, so this one keeps opening a sheet with all three groups
+        // instead of listing them inline.
         if (availableCities.isNotEmpty() || availableRegions.isNotEmpty() || availableCountries.isNotEmpty()) {
-            var locationSheetOpen by rememberSaveable { mutableStateOf(false) }
-            val activeLocationCount = (if (city != null) 1 else 0) +
-                (if (region != null) 1 else 0) +
-                (if (country != null) 1 else 0)
-
-            Text(
-                text = stringResource(R.string.list_filter_location),
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(top = 8.dp)
+            FilterChip(
+                selected = activeLocationCount > 0,
+                onClick = { locationSheetOpen = true },
+                label = {
+                    Text(
+                        if (activeLocationCount > 0) {
+                            stringResource(R.string.list_filter_location_active, activeLocationCount)
+                        } else {
+                            stringResource(R.string.list_filter_location)
+                        }
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.LocationOn,
+                        contentDescription = null,
+                        modifier = Modifier.size(FilterChipDefaults.IconSize)
+                    )
+                },
+                colors = chipColors
             )
-            Row(modifier = Modifier.padding(vertical = 4.dp)) {
-                FilterChip(
-                    selected = activeLocationCount > 0,
-                    onClick = { locationSheetOpen = true },
-                    label = {
-                        Text(
-                            if (activeLocationCount > 0) {
-                                stringResource(R.string.list_filter_location_active, activeLocationCount)
-                            } else {
-                                stringResource(R.string.list_filter_location)
-                            }
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Outlined.LocationOn,
-                            contentDescription = null,
-                            modifier = Modifier.size(FilterChipDefaults.IconSize)
-                        )
-                    },
-                    colors = chipColors
-                )
-            }
 
             if (locationSheetOpen) {
                 val sheetState = rememberModalBottomSheetState()

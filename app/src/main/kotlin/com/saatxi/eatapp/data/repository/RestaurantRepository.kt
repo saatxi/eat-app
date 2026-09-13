@@ -19,7 +19,8 @@ interface RestaurantRepository {
         visited: Boolean? = null,
         city: String? = null,
         region: String? = null,
-        country: String? = null
+        country: String? = null,
+        priceRange: Int? = null
     ): Flow<List<Restaurant>>
 
     fun observeCuisineTypes(): Flow<List<String>>

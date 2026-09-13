@@ -202,6 +202,16 @@ class FavoritesViewModelTest {
     }
 
     @Test
+    fun `a price range lands in the state and in the query`() = runTest {
+        observeState()
+
+        viewModel.onPriceRangeChange(3)
+
+        assertEquals(3, viewModel.uiState.value.priceRange)
+        assertEquals(3, repository.lastPriceRange)
+    }
+
+    @Test
     fun `availableCities, availableRegions and availableCountries come from the repository`() = runTest {
         repository.cities.value = listOf("Girona", "Barcelona")
         repository.regions.value = listOf("Girona (província)")
@@ -224,6 +234,7 @@ class FavoritesViewModelTest {
         viewModel.onCityChange("Girona")
         viewModel.onRegionChange("Girona (província)")
         viewModel.onCountryChange("Spain")
+        viewModel.onPriceRangeChange(3)
 
         viewModel.clearFilters()
 
@@ -235,6 +246,7 @@ class FavoritesViewModelTest {
         assertNull(state.city)
         assertNull(state.region)
         assertNull(state.country)
+        assertNull(state.priceRange)
         assertEquals(RestaurantSort.RATING, state.sort)
         assertFalse(state.hasActiveFilter)
     }

@@ -285,6 +285,14 @@ class RestaurantDaoTest {
         assertEquals(listOf("Sakura"), names)
     }
 
+    @Test
+    fun `filters by price range on an exact match`() = runTest {
+        seed(restaurant("1", "Sakura", priceRange = 1), restaurant("2", "Alga", priceRange = 3))
+
+        val names = repository.observeFiltered(null, null, null, priceRange = 3).first().map { it.name }
+        assertEquals(listOf("Alga"), names)
+    }
+
     // --- location filters (poble/regió/país) --------------------------------
 
     @Test

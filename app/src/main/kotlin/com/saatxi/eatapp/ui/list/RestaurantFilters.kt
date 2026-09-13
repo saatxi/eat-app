@@ -28,7 +28,8 @@ internal data class RestaurantFilters(
     val sort: RestaurantSort = RestaurantSort.NAME,
     val city: String? = null,
     val region: String? = null,
-    val country: String? = null
+    val country: String? = null,
+    val priceRange: Int? = null
 )
 
 /**
@@ -55,8 +56,11 @@ internal fun Flow<RestaurantFilters>.debounced(): Flow<RestaurantFilters> {
         primary,
         map { it.city }.distinctUntilChanged(),
         map { it.region }.distinctUntilChanged(),
-        map { it.country }.distinctUntilChanged()
-    ) { base, city, region, country -> base.copy(city = city, region = region, country = country) }
+        map { it.country }.distinctUntilChanged(),
+        map { it.priceRange }.distinctUntilChanged()
+    ) { base, city, region, country, priceRange ->
+        base.copy(city = city, region = region, country = country, priceRange = priceRange)
+    }
 }
 
 /**

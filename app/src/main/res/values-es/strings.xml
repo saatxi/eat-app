@@ -6,7 +6,8 @@
     <string name="list_search_clear">Borrar búsqueda</string>
     <string name="list_suggestions_title">Prueba una de estas</string>
     <string name="list_suggestion_top_rated">Mejor valorados</string>
-    <string name="list_filter_min_rating">Puntuación mínima</string>
+    <string name="list_filter_min_rating">Puntuación</string>
+    <string name="list_filter_price">Precio</string>
     <string name="list_filter_cuisine">Cocina</string>
     <string name="list_filter_visit_status">Estado</string>
     <string name="list_filter_location">Ubicación</string>
@@ -92,6 +93,9 @@
     <string name="roulette_action_pick">Elegir uno</string>
     <string name="roulette_action_again">Otra vez</string>
     <string name="roulette_only_favorites">Solo favoritos</string>
+    <string name="roulette_filter_rating">Puntuación</string>
+    <string name="roulette_filter_status">Estado</string>
+    <string name="roulette_filter_price">Precio</string>
     <string name="roulette_empty_title">Nada que elegir</string>
     <string name="roulette_empty_body">Ningún restaurante coincide con estos filtros.</string>
 

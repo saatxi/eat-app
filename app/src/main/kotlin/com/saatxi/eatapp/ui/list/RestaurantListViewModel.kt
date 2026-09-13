@@ -34,6 +34,7 @@ data class RestaurantListUiState(
     val city: String? = null,
     val region: String? = null,
     val country: String? = null,
+    val priceRange: Int? = null,
     val availableCuisines: List<String> = emptyList(),
     val availableCities: List<String> = emptyList(),
     val availableRegions: List<String> = emptyList(),
@@ -47,7 +48,7 @@ data class RestaurantListUiState(
 ) {
     val hasActiveFilter: Boolean
         get() = searchQuery.isNotBlank() || minRating != null || cuisineType != null || visited != null ||
-            city != null || region != null || country != null
+            city != null || region != null || country != null || priceRange != null
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -65,7 +66,7 @@ class RestaurantListViewModel @Inject constructor(
     // vararg one.
     private val restaurantsWithFavorites: Flow<List<RestaurantUiModel>> = combine(
         queryFilters.flatMapLatest {
-            repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort, it.visited, it.city, it.region, it.country)
+            repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort, it.visited, it.city, it.region, it.country, it.priceRange)
         },
         preferencesRepository.preferences.map { it.favoriteIds },
         repository.observeTagsByRestaurantId(),
@@ -96,6 +97,7 @@ class RestaurantListViewModel @Inject constructor(
             city = activeFilters.city,
             region = activeFilters.region,
             country = activeFilters.country,
+            priceRange = activeFilters.priceRange,
             availableCuisines = available.cuisines,
             availableCities = available.cities,
             availableRegions = available.regions,
@@ -141,6 +143,10 @@ class RestaurantListViewModel @Inject constructor(
 
     fun onCountryChange(country: String?) {
         filters.update { it.copy(country = country) }
+    }
+
+    fun onPriceRangeChange(priceRange: Int?) {
+        filters.update { it.copy(priceRange = priceRange) }
     }
 
     fun onFavoriteToggle(restaurantId: String) {

@@ -204,6 +204,16 @@ class RestaurantListViewModelTest {
     }
 
     @Test
+    fun `a price range lands in the state and in the query`() = runTest {
+        observeState()
+
+        viewModel.onPriceRangeChange(3)
+
+        assertEquals(3, viewModel.uiState.value.priceRange)
+        assertEquals(3, repository.lastPriceRange)
+    }
+
+    @Test
     fun `available cities, regions and countries reach the state`() = runTest {
         observeState()
 
@@ -217,11 +227,12 @@ class RestaurantListViewModelTest {
     }
 
     @Test
-    fun `clearFilters also resets city, region and country`() = runTest {
+    fun `clearFilters also resets city, region, country and price range`() = runTest {
         observeState()
         viewModel.onCityChange("Girona")
         viewModel.onRegionChange("Girona (província)")
         viewModel.onCountryChange("Spain")
+        viewModel.onPriceRangeChange(3)
 
         viewModel.clearFilters()
 
@@ -229,6 +240,7 @@ class RestaurantListViewModelTest {
         assertNull(state.city)
         assertNull(state.region)
         assertNull(state.country)
+        assertNull(state.priceRange)
         assertFalse(state.hasActiveFilter)
     }
 

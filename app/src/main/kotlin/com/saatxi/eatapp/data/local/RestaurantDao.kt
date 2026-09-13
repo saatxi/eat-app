@@ -35,6 +35,7 @@ interface RestaurantDao {
           AND (:city IS NULL OR city = :city)
           AND (:region IS NULL OR region = :region)
           AND (:country IS NULL OR country = :country)
+          AND (:priceRange IS NULL OR priceRange = :priceRange)
         ORDER BY
           CASE WHEN :sortByRating THEN (SELECT MAX(v2.rating) FROM visits v2 WHERE v2.restaurantId = r.id) ELSE 0 END DESC,
           name COLLATE NOCASE ASC
@@ -48,7 +49,8 @@ interface RestaurantDao {
         visited: Boolean? = null,
         city: String? = null,
         region: String? = null,
-        country: String? = null
+        country: String? = null,
+        priceRange: Int? = null
     ): Flow<List<Restaurant>>
 
     /**

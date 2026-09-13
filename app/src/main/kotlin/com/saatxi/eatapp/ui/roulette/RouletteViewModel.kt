@@ -24,13 +24,15 @@ import kotlin.random.Random
 private data class RouletteFilters(
     val minRating: Int? = null,
     val favoritesOnly: Boolean = false,
-    val visited: Boolean? = null
+    val visited: Boolean? = null,
+    val priceRange: Int? = null
 )
 
 data class RouletteUiState(
     val minRating: Int? = null,
     val favoritesOnly: Boolean = false,
     val visited: Boolean? = null,
+    val priceRange: Int? = null,
     val candidates: List<RestaurantUiModel> = emptyList(),
     val picked: RestaurantUiModel? = null,
     // Bumped on every pick(), so the UI can retrigger its shuffle animation even
@@ -68,6 +70,7 @@ class RouletteViewModel @Inject constructor(
     ) { restaurants, favoriteIds, f, latestVisitByRestaurantId ->
         restaurants
             .filter { !f.favoritesOnly || it.id in favoriteIds }
+            .filter { f.priceRange == null || it.priceRange == f.priceRange }
             .map { it.toUiModel(isFavorite = it.id in favoriteIds, latestVisit = latestVisitByRestaurantId[it.id]) }
     }
 
@@ -81,6 +84,7 @@ class RouletteViewModel @Inject constructor(
             minRating = f.minRating,
             favoritesOnly = f.favoritesOnly,
             visited = f.visited,
+            priceRange = f.priceRange,
             candidates = candidateList,
             // Cleared once the filters move it out of the candidate pool, so the
             // screen falls back to the "pick one" prompt instead of showing a
@@ -105,6 +109,10 @@ class RouletteViewModel @Inject constructor(
 
     fun onVisitedChange(visited: Boolean?) {
         filters.update { it.copy(visited = visited) }
+    }
+
+    fun onPriceRangeChange(priceRange: Int?) {
+        filters.update { it.copy(priceRange = priceRange) }
     }
 
     fun pick() {

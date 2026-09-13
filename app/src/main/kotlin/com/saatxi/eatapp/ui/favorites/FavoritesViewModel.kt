@@ -39,6 +39,7 @@ data class FavoritesUiState(
     val city: String? = null,
     val region: String? = null,
     val country: String? = null,
+    val priceRange: Int? = null,
     val availableCuisines: List<String> = emptyList(),
     val availableCities: List<String> = emptyList(),
     val availableRegions: List<String> = emptyList(),
@@ -51,7 +52,7 @@ data class FavoritesUiState(
 ) {
     val hasActiveFilter: Boolean
         get() = searchQuery.isNotBlank() || minRating != null || cuisineType != null || visited != null ||
-            city != null || region != null || country != null
+            city != null || region != null || country != null || priceRange != null
 }
 
 /**
@@ -76,7 +77,7 @@ class FavoritesViewModel @Inject constructor(
     // outer combine() within kotlinx.coroutines' typed 5-flow overload.
     private val favoriteRestaurants: Flow<List<RestaurantUiModel>> = combine(
         queryFilters.flatMapLatest {
-            repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort, it.visited, it.city, it.region, it.country)
+            repository.observeFiltered(it.query, it.minRating, it.cuisineType, it.sort, it.visited, it.city, it.region, it.country, it.priceRange)
         },
         preferencesRepository.preferences.map { it.favoriteIds },
         repository.observeTagsByRestaurantId(),
@@ -109,6 +110,7 @@ class FavoritesViewModel @Inject constructor(
             city = activeFilters.city,
             region = activeFilters.region,
             country = activeFilters.country,
+            priceRange = activeFilters.priceRange,
             availableCuisines = available.cuisines,
             availableCities = available.cities,
             availableRegions = available.regions,
@@ -152,6 +154,10 @@ class FavoritesViewModel @Inject constructor(
 
     fun onCountryChange(country: String?) {
         filters.update { it.copy(country = country) }
+    }
+
+    fun onPriceRangeChange(priceRange: Int?) {
+        filters.update { it.copy(priceRange = priceRange) }
     }
 
     fun onFavoriteToggle(restaurantId: String) {
