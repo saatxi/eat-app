@@ -1,15 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- The one exception to this app's "no network calls" design (see
-         CLAUDE.md's "Networking" section): resolving a share.google /
-         maps.app.goo.gl link's redirect chain so its Maps place name can
-         prefill the add-restaurant form, in data/mapslink/MapsLinkResolver.kt.
-         Only ever contacts a host on that file's own Google Maps allowlist,
-         only in response to the user explicitly sharing or pasting a link,
-         and sends nothing but that link itself. -->
-    <uses-permission android:name="android.permission.INTERNET" />
-
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -71,17 +62,6 @@
                     android:host="*"
                     android:mimeType="*/*"
                     android:pathPattern=".*\\.eatapp" />
-            </intent-filter>
-            <!-- Lets EatApp appear in the system share sheet when the user
-                 taps "Share" on a place in Google Maps, so a share.google
-                 link can be resolved straight into the add-restaurant form
-                 (see data/mapslink/MapsLinkResolver.kt). Distinct from the
-                 ACTION_VIEW filters above, which are for reopening a
-                 restaurant file shared as an attachment, not link text. -->
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
 

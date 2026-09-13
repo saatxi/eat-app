@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import com.saatxi.eatapp.data.local.Photo
 import com.saatxi.eatapp.data.local.Restaurant
-import com.saatxi.eatapp.data.mapslink.MapsLinkResolver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -58,7 +57,7 @@ class RestaurantEditViewModelPhotoTest {
     fun `onPhotoPicked copies the pick right away and adds it to the carousel`() = runTest {
         val pickedUri = Uri.parse("content://media/picker/0/1")
         photoStorage.nextCopyResult = "/internal/photos/new.jpg"
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
         observeState(viewModel)
 
         viewModel.onPhotoPicked(pickedUri)
@@ -70,7 +69,7 @@ class RestaurantEditViewModelPhotoTest {
     @Test
     fun `saving with a freshly added photo persists its copied path`() = runTest {
         val pickedUri = Uri.parse("content://media/picker/0/1")
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
         observeState(viewModel)
         viewModel.onNameChange("Cal Ferran")
         viewModel.onCuisineChange("mediterranean")
@@ -90,7 +89,7 @@ class RestaurantEditViewModelPhotoTest {
         )
         repository.photosByRestaurantId["1"] =
             listOf(Photo(id = "p1", restaurantId = "1", path = "/existing/photo.jpg", position = 0))
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle(mapOf("restaurantId" to "1")))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
         photoStorage.nextCopyResult = null // simulates an unreadable/corrupt pick
 

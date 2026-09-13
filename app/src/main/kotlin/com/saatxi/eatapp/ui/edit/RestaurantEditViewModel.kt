@@ -9,7 +9,6 @@ import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.normalizeInstagramHandle
 import com.saatxi.eatapp.data.local.normalizeTagName
 import com.saatxi.eatapp.data.local.normalizeWebsite
-import com.saatxi.eatapp.data.mapslink.MapsLinkResolver
 import com.saatxi.eatapp.data.photo.RestaurantPhotoStorage
 import com.saatxi.eatapp.data.photo.deleteRestaurantPhotoFile
 import com.saatxi.eatapp.data.repository.RestaurantRepository
@@ -56,9 +55,7 @@ data class RestaurantEditUiState(
     val cuisineError: Boolean = false,
     val websiteError: Boolean = false,
     val instagramError: Boolean = false,
-    val tags: List<String> = emptyList(),
-    /** True while [RestaurantEditViewModel.onImportFromLink] (or a shared-link cold start) is resolving a Google Maps link. */
-    val isResolvingLink: Boolean = false
+    val tags: List<String> = emptyList()
 ) {
     /** Every photo the carousel should show: surviving persisted ones first, then freshly added ones. */
     val photoPaths: List<String>
@@ -78,14 +75,10 @@ data class RestaurantEditUiState(
 class RestaurantEditViewModel @Inject constructor(
     private val repository: RestaurantRepository,
     private val photoStorage: RestaurantPhotoStorage,
-    private val mapsLinkResolver: MapsLinkResolver,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val restaurantId: String? = savedStateHandle["restaurantId"]
-    // Non-null only when reached via Routes.IMPORT_LINK (the share-sheet cold
-    // start) — see EatAppNavHost's importLinkRoute()/ARG_LINK_URL.
-    private val sharedLinkUrl: String? = savedStateHandle.get<String>("linkUrl")?.let(Uri::decode)
 
     private val _uiState = MutableStateFlow(RestaurantEditUiState(isLoading = restaurantId != null))
     val uiState: StateFlow<RestaurantEditUiState> = _uiState.asStateFlow()
@@ -133,7 +126,6 @@ class RestaurantEditViewModel @Inject constructor(
                 }
             }
         }
-        sharedLinkUrl?.let(::onImportFromLink)
     }
 
     fun onNameChange(name: String) {
@@ -170,32 +162,6 @@ class RestaurantEditViewModel @Inject constructor(
 
     fun onInstagramChange(instagram: String) {
         _uiState.update { it.copy(instagram = instagram, instagramError = false) }
-    }
-
-    /**
-     * Resolves a Google Maps share link (`share.google`, `maps.app.goo.gl`...)
-     * and, if it recognises the link, prefills the name (only when still
-     * blank, so this never overwrites something the user already typed) and
-     * the website field with the resolved URL. The raw link is written to
-     * Website immediately so the field isn't left empty while resolving, and
-     * the resolution itself can never block or fail loudly — an unreachable
-     * or unrecognised link just leaves the raw link there for the user to
-     * complete the rest of the form manually.
-     */
-    fun onImportFromLink(url: String) {
-        val trimmed = url.trim()
-        if (trimmed.isEmpty()) return
-        _uiState.update { it.copy(website = trimmed, isResolvingLink = true) }
-        viewModelScope.launch {
-            val place = mapsLinkResolver.resolve(trimmed)
-            _uiState.update { state ->
-                state.copy(
-                    isResolvingLink = false,
-                    name = if (state.name.isBlank()) place?.name ?: state.name else state.name,
-                    website = place?.resolvedUrl ?: state.website
-                )
-            }
-        }
     }
 
     /**

@@ -78,19 +78,9 @@ Optional detailed explanation
   needs a nav-supplied argument (`restaurantId`, the import screen's `uri`)
   reads it off an injected `SavedStateHandle` rather than an assisted-inject
   factory.
-- **Networking**: essentially none. Every restaurant is entered, edited and
-  deleted on-device via Room, and there's no remote/file-based data source.
-  The one exception, discussed and scoped deliberately: importing a
-  restaurant from a Google Maps share link (`share.google`,
-  `maps.app.goo.gl`) follows that link's own HTTP redirect chain to recover
-  the place name — `data/mapslink/MapsLinkResolver.kt`, using
-  `HttpURLConnection` directly rather than a new dependency. It only ever
-  contacts a host on that file's own Google Maps allowlist, only in
-  response to the user explicitly sharing or pasting a link (never
-  automatically), sends nothing but the link itself, and degrades to a
-  no-op (the user fills the form in by hand) on any failure. No API key, no
-  paid API, no other outbound data. Don't add a networking library or a
-  remote/file-based data source beyond this without discussing it first.
+- **Networking**: none. The app makes no network calls — every restaurant is
+  entered, edited and deleted on-device via Room. Don't add a networking
+  library or a remote/file-based data source without discussing it first.
 - **Build**: Gradle Kotlin DSL (`build.gradle.kts`), AGP + version catalog
   (`gradle/libs.versions.toml`) for dependency versions — add new
   dependencies there, not as inline coordinates.
@@ -240,17 +230,12 @@ app/src/main/kotlin/com/saatxi/eatapp/
 
 ## Security guidelines
 
-- The app makes essentially no network calls — every restaurant is entered,
-  edited and deleted on-device. The restaurant-sharing feature (`data/share/`)
-  is local IPC (`Intent.ACTION_SEND`/`ACTION_VIEW` + a `FileProvider`), never
-  a network request. The one deliberate exception is
-  `data/mapslink/MapsLinkResolver.kt`, which follows the redirect chain of a
-  Google Maps share link the user shared or pasted in, to recover the place
-  name for the add-restaurant form — see the "Networking" entry under "Tech
-  stack & tools" for its exact scope (allowlisted hosts only, no API key, no
-  outbound data beyond the link itself, fails silently). Don't add a
-  networking dependency or a remote data source beyond this without
-  discussing it first.
+- The app makes no network calls at all — every restaurant is entered,
+  edited and deleted on-device. The only way data ever crosses into or out of
+  the app is the restaurant-sharing feature (`data/share/`), which is local
+  IPC (`Intent.ACTION_SEND`/`ACTION_VIEW` + a `FileProvider`), never a
+  network request. Don't add a networking dependency or a remote data source
+  without discussing it first.
 - A file received through the sharing intent-filter (`MainActivity`'s second
   `<intent-filter>`, matching `application/json`) is untrusted input, the
   same way the old synced `.db` was: capped at `MAX_IMPORT_BYTES` before
@@ -270,13 +255,12 @@ app/src/main/kotlin/com/saatxi/eatapp/
   is `android:exported="false"`: the system delivers `APPWIDGET_UPDATE` (a
   protected, system-only broadcast) directly, so the launcher never needs to
   call it. It reads from Room and needs no permission; keep it that way.
-- `AndroidManifest.xml` declares exactly one permission, `INTERNET`, for the
-  Maps-link resolver above — narrower than the `INTERNET` +
-  `ACCESS_NETWORK_STATE` pair the old remote sync feature used to need,
-  since there's no need to check connectivity before a single best-effort
-  request. The sharing feature itself still needs no permission
-  (`FileProvider` grants are per-Intent). Don't add any other permission
-  (location, contacts, storage, etc.) without an explicit, discussed reason.
+- `AndroidManifest.xml` declares no permissions at all — `INTERNET` and
+  `ACCESS_NETWORK_STATE`, left over from the removed remote sync feature,
+  were removed along with it, and the sharing feature needs none either
+  (`FileProvider` grants are per-Intent, not a permission). Don't add any
+  permission (network, location, contacts, storage, etc.) without an
+  explicit, discussed reason.
 - The app stores no user credentials, no PII beyond what the user
   themselves enters for their own restaurants, and does no analytics or
   tracking — keep it that way unless the user asks for it explicitly.

@@ -157,10 +157,6 @@
     <string name="edit_error_cuisine_required">Tria una cuina</string>
     <string name="edit_error_website_invalid">Introdueix una adreça web http/https vàlida</string>
     <string name="edit_error_instagram_invalid">Introdueix un usuari d\'Instagram vàlid</string>
-    <string name="edit_action_import_link">Importa des d\'un enllaç</string>
-    <string name="edit_import_link_dialog_title">Importa des d\'un enllaç de Google Maps</string>
-    <string name="edit_import_link_dialog_hint">Enganxa aquí l\'enllaç</string>
-    <string name="edit_import_link_dialog_confirm">Importa</string>
 
     <!-- Importing a restaurant file shared from another app. -->
     <string name="import_title">Importa restaurants</string>

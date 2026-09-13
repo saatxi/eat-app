@@ -56,14 +56,12 @@ import kotlinx.coroutines.launch
 
 private const val ARG_RESTAURANT_ID = "restaurantId"
 private const val ARG_URI = "uri"
-private const val ARG_LINK_URL = "linkUrl"
 
 private object Routes {
     const val DETAIL = "detail/{restaurantId}"
     const val ADD = "add"
     const val EDIT = "edit/{restaurantId}"
     const val IMPORT = "import/{uri}"
-    const val IMPORT_LINK = "import-link/{linkUrl}"
     const val STATS = "stats"
     const val HELP = "help"
     const val LOG_VISIT = "detail/{restaurantId}/log-visit"
@@ -72,7 +70,6 @@ private object Routes {
 private fun detailRoute(restaurantId: String) = "detail/$restaurantId"
 private fun editRoute(restaurantId: String) = "edit/$restaurantId"
 private fun importRoute(uri: Uri) = "import/${Uri.encode(uri.toString())}"
-private fun importLinkRoute(url: String) = "import-link/${Uri.encode(url)}"
 private fun logVisitRoute(restaurantId: String) = "detail/$restaurantId/log-visit"
 
 private fun NavDestination?.isTopLevelDestinationInHierarchy(destination: TopLevelDestination): Boolean =
@@ -87,10 +84,7 @@ fun EatAppNavHost(
     startImportUri: Uri? = null,
     // Non-null only on the cold start that opened the app by tapping a
     // restaurant on the home-screen widget (F-68).
-    startRestaurantId: String? = null,
-    // Non-null only on the cold start that opened the app via the system
-    // share sheet with a shared link (e.g. "Share" on a Google Maps place).
-    startImportLinkUrl: String? = null
+    startRestaurantId: String? = null
 ) {
     LaunchedEffect(startImportUri) {
         startImportUri?.let { navController.navigate(importRoute(it)) }
@@ -98,19 +92,13 @@ fun EatAppNavHost(
     LaunchedEffect(startRestaurantId) {
         startRestaurantId?.let { navController.navigate(detailRoute(it)) }
     }
-    LaunchedEffect(startImportLinkUrl) {
-        startImportLinkUrl?.let { navController.navigate(importLinkRoute(it)) }
-    }
 
     val currentDestination = navController.currentBackStackEntryAsState().value?.destination
     // The bottom bar / rail has nowhere to live on the detail, add, edit or
     // import screens — none of them has a tab of its own, they're reached by
     // tapping into one of the other four (or, for import, from outside the app).
     val isFullScreenRoute = currentDestination?.route in
-        setOf(
-            Routes.DETAIL, Routes.ADD, Routes.EDIT, Routes.IMPORT, Routes.IMPORT_LINK,
-            Routes.STATS, Routes.HELP, Routes.LOG_VISIT
-        )
+        setOf(Routes.DETAIL, Routes.ADD, Routes.EDIT, Routes.IMPORT, Routes.STATS, Routes.HELP, Routes.LOG_VISIT)
 
     // Below this width, List/Favorites/Roulette keep pushing the full-screen
     // detail/{id} route exactly as before — shared-element transition, hidden
@@ -279,18 +267,6 @@ fun EatAppNavHost(
                                 onDone = { navController.popBackStack() }
                             )
                         }
-                    }
-                    composable(
-                        route = Routes.IMPORT_LINK,
-                        arguments = listOf(navArgument(ARG_LINK_URL) { type = NavType.StringType })
-                    ) {
-                        // The shared link itself reaches RestaurantEditViewModel through its
-                        // SavedStateHandle (this destination's nav argument), not as a parameter
-                        // here — same as restaurantId does for Routes.EDIT above.
-                        RestaurantEditScreen(
-                            onBack = { navController.popBackStack() },
-                            restaurantId = null
-                        )
                     }
                 }
             }

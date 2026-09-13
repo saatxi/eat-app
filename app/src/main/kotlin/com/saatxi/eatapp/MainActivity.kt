@@ -58,22 +58,13 @@ class MainActivity : AppCompatActivity() {
         // this activity directly, so it never touches the ACTION_VIEW filters
         // the import flow above uses.
         val startRestaurantId = intent?.getStringExtra(EXTRA_RESTAURANT_ID)
-        // Non-null only when opened via the system share sheet (e.g. "Share"
-        // on a place in Google Maps) — see MapsLinkResolver.kt.
-        val importLinkUrl = intent
-            ?.takeIf { it.action == Intent.ACTION_SEND && it.type == "text/plain" }
-            ?.getStringExtra(Intent.EXTRA_TEXT)
 
         enableEdgeToEdge()
         setContent {
             val currentPreferences = preferences ?: UserPreferences.Defaults
             EatAppTheme(palette = currentPreferences.palette, themeMode = currentPreferences.themeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    EatAppNavHost(
-                        startImportUri = importUri,
-                        startRestaurantId = startRestaurantId,
-                        startImportLinkUrl = importLinkUrl
-                    )
+                    EatAppNavHost(startImportUri = importUri, startRestaurantId = startRestaurantId)
                 }
             }
         }
