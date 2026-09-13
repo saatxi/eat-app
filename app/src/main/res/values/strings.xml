@@ -183,6 +183,10 @@
         <item quantity="one">%1$d restaurant had invalid data and was skipped</item>
         <item quantity="other">%1$d restaurants had invalid data and were skipped</item>
     </plurals>
+    <plurals name="import_duplicates_header">
+        <item quantity="one">%1$d already in your list</item>
+        <item quantity="other">%1$d already in your list</item>
+    </plurals>
 
     <!-- Quiet section labels for Detail's Overview and Rating content (F-82):
          no card weight of their own, but give TalkBack's "next heading"

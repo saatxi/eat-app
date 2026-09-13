@@ -178,6 +178,11 @@
         <item quantity="many">%1$d restaurantes tenían datos no válidos y se han omitido</item>
         <item quantity="other">%1$d restaurantes tenían datos no válidos y se han omitido</item>
     </plurals>
+    <plurals name="import_duplicates_header">
+        <item quantity="one">%1$d ya está en tu lista</item>
+        <item quantity="many">%1$d ya están en tu lista</item>
+        <item quantity="other">%1$d ya están en tu lista</item>
+    </plurals>
 
     <!-- Quiet section labels for Detail's Overview and Rating content (F-82):
          no card weight of their own, but give TalkBack's "next heading"

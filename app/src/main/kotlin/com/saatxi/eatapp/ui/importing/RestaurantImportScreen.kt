@@ -3,6 +3,7 @@ package com.saatxi.eatapp.ui.importing
 import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,10 +14,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.RestaurantMenu
 import androidx.compose.material3.Button
@@ -36,6 +39,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -130,16 +136,38 @@ private fun RestaurantImportContent(
                         modifier = Modifier.padding(16.dp)
                     )
                 }
+                val indexedCandidates = uiState.candidates.withIndex().toList()
+                val newCandidates = indexedCandidates.filter { it.value.duplicateOf == null }
+                val duplicateCandidates = indexedCandidates.filter { it.value.duplicateOf != null }
+                var duplicatesExpanded by rememberSaveable { mutableStateOf(false) }
+
                 LazyColumn(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    itemsIndexed(uiState.candidates) { index, candidate ->
+                    items(newCandidates, key = { it.value.restaurant.id }) { (index, candidate) ->
                         ImportCandidateRow(
                             candidate = candidate,
                             onDecisionChange = { decision -> onDecisionChange(index, decision) }
                         )
+                    }
+                    if (duplicateCandidates.isNotEmpty()) {
+                        item(key = "duplicates-header") {
+                            DuplicatesHeader(
+                                count = duplicateCandidates.size,
+                                expanded = duplicatesExpanded,
+                                onClick = { duplicatesExpanded = !duplicatesExpanded }
+                            )
+                        }
+                        if (duplicatesExpanded) {
+                            items(duplicateCandidates, key = { it.value.restaurant.id }) { (index, candidate) ->
+                                ImportCandidateRow(
+                                    candidate = candidate,
+                                    onDecisionChange = { decision -> onDecisionChange(index, decision) }
+                                )
+                            }
+                        }
                     }
                 }
                 Button(
@@ -151,6 +179,34 @@ private fun RestaurantImportContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DuplicatesHeader(
+    count: Int,
+    expanded: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = pluralStringResource(R.plurals.import_duplicates_header, count, count),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Icon(
+            imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

@@ -175,6 +175,10 @@
         <item quantity="one">%1$d restaurant tenia dades no vàlides i s\'ha omès</item>
         <item quantity="other">%1$d restaurants tenien dades no vàlides i s\'han omès</item>
     </plurals>
+    <plurals name="import_duplicates_header">
+        <item quantity="one">%1$d ja hi és a la teva llista</item>
+        <item quantity="other">%1$d ja hi són a la teva llista</item>
+    </plurals>
 
     <!-- Quiet section labels for Detail's Overview and Rating content (F-82):
          no card weight of their own, but give TalkBack's "next heading"
