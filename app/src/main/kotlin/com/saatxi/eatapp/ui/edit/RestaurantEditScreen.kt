@@ -31,6 +31,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.AddAPhoto
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,10 +47,12 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -116,6 +120,7 @@ fun RestaurantEditScreen(
         onRemovePhoto = viewModel::onRemovePhoto,
         onAddTag = viewModel::onAddTag,
         onRemoveTag = viewModel::onRemoveTag,
+        onImportFromLink = viewModel::onImportFromLink,
         onSave = { viewModel.onSave(onSaved = onBack) }
     )
 }
@@ -143,8 +148,20 @@ private fun RestaurantEditContent(
     onRemovePhoto: (String) -> Unit,
     onAddTag: (String) -> Unit,
     onRemoveTag: (String) -> Unit,
+    onImportFromLink: (String) -> Unit,
     onSave: () -> Unit
 ) {
+    var showImportLinkDialog by remember { mutableStateOf(false) }
+    if (showImportLinkDialog) {
+        ImportFromLinkDialog(
+            onConfirm = { url ->
+                onImportFromLink(url)
+                showImportLinkDialog = false
+            },
+            onDismiss = { showImportLinkDialog = false }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -188,6 +205,17 @@ private fun RestaurantEditContent(
                 onPhotoPicked = onPhotoPicked,
                 onRemovePhoto = onRemovePhoto
             )
+
+            // Only offered when adding: importing into an existing restaurant
+            // would overwrite fields the user has already reviewed, which
+            // onImportFromLink's "don't overwrite a non-blank name" guard
+            // only partially protects against.
+            if (!isEditingExisting) {
+                ImportFromLinkButton(
+                    isResolving = uiState.isResolvingLink,
+                    onClick = { showImportLinkDialog = true }
+                )
+            }
 
             EditSectionCard(title = stringResource(R.string.edit_section_basics)) {
                 OutlinedTextField(
@@ -388,6 +416,55 @@ private fun EditSectionCard(title: String, content: @Composable ColumnScope.() -
     }
 }
 
+/**
+ * Opens [ImportFromLinkDialog] to paste a Google Maps share link (e.g.
+ * `share.google/...`), which [RestaurantEditViewModel.onImportFromLink]
+ * resolves into a name/website prefill. Shows a small spinner in
+ * place of the icon while that resolution is in flight.
+ */
+@Composable
+private fun ImportFromLinkButton(isResolving: Boolean, onClick: () -> Unit) {
+    OutlinedButton(onClick = onClick, enabled = !isResolving, modifier = Modifier.fillMaxWidth()) {
+        if (isResolving) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+        } else {
+            Icon(Icons.Outlined.Link, contentDescription = null, modifier = Modifier.size(18.dp))
+        }
+        Text(
+            text = stringResource(R.string.edit_action_import_link),
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun ImportFromLinkDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+    var url by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.edit_import_link_dialog_title)) },
+        text = {
+            OutlinedTextField(
+                value = url,
+                onValueChange = { url = it },
+                label = { Text(stringResource(R.string.edit_import_link_dialog_hint)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(url) }, enabled = url.isNotBlank()) {
+                Text(stringResource(R.string.edit_import_link_dialog_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        }
+    )
+}
+
 /** Size of one square photo tile in [PhotoCarousel] — both the filled and the dashed "add" tile. */
 private val PHOTO_TILE_SIZE = 96.dp
 
@@ -569,6 +646,7 @@ private fun RestaurantEditScreenPreview() {
             onRemovePhoto = {},
             onAddTag = {},
             onRemoveTag = {},
+            onImportFromLink = {},
             onSave = {}
         )
     }

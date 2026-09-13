@@ -8,6 +8,7 @@ import com.saatxi.eatapp.data.local.PriceRangeCount
 import com.saatxi.eatapp.data.local.Restaurant
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.local.Visit
+import com.saatxi.eatapp.data.mapslink.MapsLinkResolver
 import com.saatxi.eatapp.data.photo.RestaurantPhotoStorage
 import com.saatxi.eatapp.data.repository.RestaurantRepository
 import kotlinx.coroutines.Dispatchers
@@ -56,7 +57,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `add mode starts blank and not loading`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
 
         val state = viewModel.uiState.value
@@ -67,7 +68,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `saving without a name flags the name field and does not insert`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
         viewModel.onCuisineChange("mediterranean")
         var saved = false
@@ -81,7 +82,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `saving without a cuisine flags the cuisine field and does not insert`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
         viewModel.onNameChange("Cal Ferran")
         var saved = false
@@ -95,7 +96,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `an invalid website is flagged instead of silently dropped`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
         viewModel.onNameChange("Cal Ferran")
         viewModel.onCuisineChange("mediterranean")
@@ -109,7 +110,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `an invalid instagram handle is flagged instead of silently dropped`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
         viewModel.onNameChange("Cal Ferran")
         viewModel.onCuisineChange("mediterranean")
@@ -123,7 +124,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `saving valid data inserts a new restaurant and calls back`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
         viewModel.onNameChange("  Cal Ferran  ")
         viewModel.onCuisineChange("mediterranean")
@@ -146,7 +147,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `saving passes trimmed city, region and country through, and leaves them null when blank`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
         viewModel.onNameChange("Cal Ferran")
         viewModel.onCuisineChange("mediterranean")
@@ -164,7 +165,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `saving with city, region and country left blank saves without error`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
         viewModel.onNameChange("Cal Ferran")
         viewModel.onCuisineChange("mediterranean")
@@ -183,7 +184,7 @@ class RestaurantEditViewModelTest {
         repository.cities.value = listOf("Girona", "Barcelona")
         repository.regions.value = listOf("Girona (província)")
         repository.countries.value = listOf("Spain", "France")
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
         backgroundScope.launch(dispatcher) { viewModel.citySuggestions.collect {} }
         backgroundScope.launch(dispatcher) { viewModel.regionSuggestions.collect {} }
@@ -198,7 +199,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `onAddTag appends a trimmed tag`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
 
         viewModel.onAddTag("  Terraza  ")
@@ -208,7 +209,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `onAddTag ignores a tag that fails validation`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
 
         viewModel.onAddTag("has,a,comma")
@@ -218,7 +219,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `onAddTag is a no-op for a tag already added, case-insensitively`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
         viewModel.onAddTag("Terraza")
 
@@ -229,7 +230,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `onRemoveTag removes just the matching tag`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
         viewModel.onAddTag("Terraza")
         viewModel.onAddTag("Brunch")
@@ -241,7 +242,7 @@ class RestaurantEditViewModelTest {
 
     @Test
     fun `saving passes the current tags to insert`() = runTest {
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle())
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle())
         observeState(viewModel)
         viewModel.onNameChange("Cal Ferran")
         viewModel.onCuisineChange("mediterranean")
@@ -262,7 +263,7 @@ class RestaurantEditViewModelTest {
                 city = "Girona", region = "Girona (província)", country = "Spain", priceRange = 2
             )
         )
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
 
         val state = viewModel.uiState.value
@@ -281,7 +282,7 @@ class RestaurantEditViewModelTest {
             Restaurant(id = "1", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, priceRange = 2)
         )
         repository.tagsByRestaurantId.value = mapOf("1" to listOf("Terraza", "Brunch"))
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
 
         assertEquals(listOf("Terraza", "Brunch"), viewModel.uiState.value.tags)
@@ -292,7 +293,7 @@ class RestaurantEditViewModelTest {
         repository.restaurants.value = listOf(
             Restaurant(id = "1", name = "Old Name", cuisineType = "mediterranean", streetAddress = null, priceRange = 1)
         )
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
         viewModel.onNameChange("New Name")
         var saved = false
@@ -311,7 +312,7 @@ class RestaurantEditViewModelTest {
             Restaurant(id = "1", name = "Cal Ferran", cuisineType = "mediterranean", streetAddress = null, priceRange = 1)
         )
         repository.tagsByRestaurantId.value = mapOf("1" to listOf("Terraza"))
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
         viewModel.onRemoveTag("Terraza")
         viewModel.onAddTag("Brunch")
@@ -335,7 +336,7 @@ class RestaurantEditViewModelTest {
         )
         repository.photosByRestaurantId["1"] =
             listOf(Photo(id = "p1", restaurantId = "1", path = "/existing/photo.jpg", position = 0))
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
 
         assertEquals(listOf("/existing/photo.jpg"), viewModel.uiState.value.photoPaths)
@@ -348,7 +349,7 @@ class RestaurantEditViewModelTest {
         )
         repository.photosByRestaurantId["1"] =
             listOf(Photo(id = "p1", restaurantId = "1", path = "/existing/photo.jpg", position = 0))
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
 
         viewModel.onRemovePhoto("/existing/photo.jpg")
@@ -364,7 +365,7 @@ class RestaurantEditViewModelTest {
         )
         repository.photosByRestaurantId["1"] =
             listOf(Photo(id = "p1", restaurantId = "1", path = "/existing/photo.jpg", position = 0))
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
         viewModel.onRemovePhoto("/existing/photo.jpg")
 
@@ -380,7 +381,7 @@ class RestaurantEditViewModelTest {
         )
         repository.photosByRestaurantId["1"] =
             listOf(Photo(id = "p1", restaurantId = "1", path = "/existing/photo.jpg", position = 0))
-        val viewModel = RestaurantEditViewModel(repository, photoStorage, SavedStateHandle(mapOf("restaurantId" to "1")))
+        val viewModel = RestaurantEditViewModel(repository, photoStorage, MapsLinkResolver(), SavedStateHandle(mapOf("restaurantId" to "1")))
         observeState(viewModel)
         viewModel.onNameChange("New Name")
 

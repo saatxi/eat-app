@@ -165,6 +165,10 @@
     <string name="edit_error_cuisine_required">Choose a cuisine</string>
     <string name="edit_error_website_invalid">Enter a valid http/https web address</string>
     <string name="edit_error_instagram_invalid">Enter a valid Instagram handle</string>
+    <string name="edit_action_import_link">Import from a link</string>
+    <string name="edit_import_link_dialog_title">Import from a Google Maps link</string>
+    <string name="edit_import_link_dialog_hint">Paste the link here</string>
+    <string name="edit_import_link_dialog_confirm">Import</string>
 
     <!-- Importing a restaurant file shared from another app. -->
     <string name="import_title">Import restaurants</string>
