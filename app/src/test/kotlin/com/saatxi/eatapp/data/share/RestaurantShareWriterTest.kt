@@ -84,11 +84,12 @@ class RestaurantShareWriterTest {
     )
 
     @Test
-    fun `writes the file under cacheDir shared`() {
+    fun `writes a timestamped file under cacheDir shared`() {
         writeRestaurantShareFile(context, listOf(export("Cal Ferran")))
 
-        val file = File(context.cacheDir, "shared/restaurants.eatapp")
-        assertTrue(file.exists())
+        val files = File(context.cacheDir, "shared").listFiles().orEmpty()
+        assertEquals(1, files.size)
+        assertTrue(files.single().name.matches(Regex("""restaurants-\d{8}_\d{4}\.eatapp""")))
     }
 
     @Test
@@ -99,27 +100,23 @@ class RestaurantShareWriterTest {
         assertEquals("${context.packageName}.fileprovider", uri.authority)
     }
 
+    private fun soleSharedFile(): File = File(context.cacheDir, "shared").listFiles().orEmpty().single()
+
     @Test
     fun `writes every restaurant passed in`() {
         writeRestaurantShareFile(context, listOf(export("Cal Ferran"), export("Bar Nil")))
 
-        val shareFile = Json.decodeFromString(
-            RestaurantShareFile.serializer(),
-            File(context.cacheDir, "shared/restaurants.eatapp").readText()
-        )
+        val shareFile = Json.decodeFromString(RestaurantShareFile.serializer(), soleSharedFile().readText())
         assertEquals(listOf("Cal Ferran", "Bar Nil"), shareFile.restaurants.map { it.name })
     }
 
     @Test
-    fun `each write fully replaces the previous content rather than appending`() {
+    fun `each write fully replaces the previous file rather than accumulating one per share`() {
         writeRestaurantShareFile(context, listOf(export("Old One")))
 
         writeRestaurantShareFile(context, listOf(export("New One")))
 
-        val shareFile = Json.decodeFromString(
-            RestaurantShareFile.serializer(),
-            File(context.cacheDir, "shared/restaurants.eatapp").readText()
-        )
+        val shareFile = Json.decodeFromString(RestaurantShareFile.serializer(), soleSharedFile().readText())
         assertEquals(listOf("New One"), shareFile.restaurants.map { it.name })
     }
 
@@ -128,10 +125,7 @@ class RestaurantShareWriterTest {
         val uri = writeRestaurantShareFile(context, emptyList())
 
         assertNotEquals(null, uri)
-        val shareFile = Json.decodeFromString(
-            RestaurantShareFile.serializer(),
-            File(context.cacheDir, "shared/restaurants.eatapp").readText()
-        )
+        val shareFile = Json.decodeFromString(RestaurantShareFile.serializer(), soleSharedFile().readText())
         assertTrue(shareFile.restaurants.isEmpty())
     }
 }
