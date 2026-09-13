@@ -148,7 +148,7 @@
     <string name="import_error_title">No es pot obrir aquest fitxer</string>
     <string name="import_error_too_large">Aquest fitxer és massa gran.</string>
     <string name="import_error_invalid">Això no sembla un fitxer de restaurants d\'EatApp.</string>
-    <string name="import_error_io">No s\'ha pogut llegir aquest fitxer.</string>
+    <string name="import_error_io">No s\'ha pogut llegir aquest fitxer. Si l\'has obert directament des d\'un adjunt de correu, prova de descarregar-lo primer i obrir-lo després des de les descàrregues.</string>
     <string name="import_action_confirm">Importa</string>
     <string name="import_duplicate_label">Ja hi és a la teva llista</string>
     <string name="import_decision_add">Afegeix</string>

@@ -150,7 +150,7 @@
     <string name="import_error_title">No se puede abrir este archivo</string>
     <string name="import_error_too_large">Este archivo es demasiado grande.</string>
     <string name="import_error_invalid">Esto no parece un archivo de restaurantes de EatApp.</string>
-    <string name="import_error_io">No se ha podido leer este archivo.</string>
+    <string name="import_error_io">No se ha podido leer este archivo. Si lo has abierto directamente desde un adjunto de correo, prueba a descargarlo primero y ábrelo después desde las descargas.</string>
     <string name="import_action_confirm">Importar</string>
     <string name="import_duplicate_label">Ya está en tu lista</string>
     <string name="import_decision_add">Añadir</string>

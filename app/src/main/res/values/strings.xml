@@ -156,7 +156,7 @@
     <string name="import_error_title">Can\'t open this file</string>
     <string name="import_error_too_large">This file is too large.</string>
     <string name="import_error_invalid">This doesn\'t look like an EatApp restaurant file.</string>
-    <string name="import_error_io">Couldn\'t read this file.</string>
+    <string name="import_error_io">Couldn\'t read this file. If you opened it straight from an email attachment, try downloading it first, then open it from your downloads.</string>
     <string name="import_action_confirm">Import</string>
     <string name="import_duplicate_label">Already in your list</string>
     <string name="import_decision_add">Add</string>
