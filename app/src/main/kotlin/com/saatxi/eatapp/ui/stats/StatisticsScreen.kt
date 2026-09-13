@@ -128,10 +128,11 @@ private fun StatisticsContent(uiState: StatisticsUiState, onBack: () -> Unit) {
                         labelTopPadding = 4.dp
                     )
                     // height(IntrinsicSize.Max) plus fillMaxHeight on each tile keeps the row
-                    // level when one label wraps onto two lines and the others don't — on a
-                    // narrow phone "Puntuació mitjana"/"Average rating" wraps while "Visitats"/
-                    // "Visited" stays on one line, and without this the wrapped tile's card
-                    // would grow taller than its neighbours instead of them all matching it.
+                    // level when one label wraps onto two lines and the others don't — at a
+                    // large system font scale "Want to try"/"Per provar" can wrap while
+                    // "Visitats"/"Visited" stays on one line, and without this the wrapped
+                    // tile's card would grow taller than its neighbours instead of them all
+                    // matching it.
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max)

@@ -262,7 +262,7 @@
     <string name="stats_tile_total">Restaurants</string>
     <string name="stats_tile_visited">Visitats</string>
     <string name="stats_tile_want_to_try">Per provar</string>
-    <string name="stats_tile_average_rating">Punt. mitjana</string>
+    <string name="stats_tile_average_rating">Puntuació</string>
     <string name="stats_average_rating_value">%1$.1f</string>
     <string name="stats_average_rating_none">–</string>
     <string name="stats_section_cuisines">Cuines</string>
