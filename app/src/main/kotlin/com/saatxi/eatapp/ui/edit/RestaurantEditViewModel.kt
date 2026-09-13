@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Widest price scale a restaurant can hold; see [Restaurant]. */
-private const val MAX_PRICE_RANGE = 4
+private const val MAX_PRICE_RANGE = 6
 
 data class RestaurantEditUiState(
     /** Null while an existing restaurant is still loading in edit mode. */

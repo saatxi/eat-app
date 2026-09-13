@@ -59,7 +59,9 @@ import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
 import com.saatxi.eatapp.ui.common.FilterDropdownChip
+import com.saatxi.eatapp.ui.common.MAX_PRICE_RANGE
 import com.saatxi.eatapp.ui.common.RatingAndPriceRow
+import com.saatxi.eatapp.ui.common.priceRangeLabel
 import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
@@ -176,9 +178,6 @@ fun RouletteScreen(
     }
 }
 
-/** The exact price tiers offered by [RouletteFilters]' price dropdown — same 1-4 scale as the add/edit form's price picker. */
-private const val MAX_PRICE_RANGE = 4
-
 @Composable
 private fun RouletteFilters(
     minRating: Int?,
@@ -249,13 +248,13 @@ private fun RouletteFilters(
         }
 
         FilterDropdownChip(
-            selectedLabel = priceRange?.let { "$".repeat(it) } ?: stringResource(R.string.roulette_filter_price),
+            selectedLabel = priceRange?.let { priceRangeLabel(it) } ?: stringResource(R.string.roulette_filter_price),
             isActive = priceRange != null,
             colors = chipColors
         ) { closeMenu ->
             (1..MAX_PRICE_RANGE).forEach { price ->
                 DropdownMenuItem(
-                    text = { Text("$".repeat(price)) },
+                    text = { Text(priceRangeLabel(price)) },
                     onClick = {
                         onPriceRangeChange(if (priceRange == price) null else price)
                         closeMenu()
@@ -338,7 +337,7 @@ private fun RouletteResultCard(restaurant: RestaurantUiModel, onClick: () -> Uni
             )
             RatingAndPriceRow(
                 rating = restaurant.rating,
-                priceLabel = restaurant.priceLabel,
+                priceLabel = priceRangeLabel(restaurant.priceRange),
                 modifier = Modifier.padding(top = 12.dp),
                 starSize = 20.dp,
                 showRatingLabel = false,
@@ -367,7 +366,7 @@ private val previewPick = RestaurantUiModel(
     region = null,
     country = null,
     rating = 4,
-    priceLabel = "$$",
+    priceRange = 2,
     visited = true,
     website = null,
     instagram = null,

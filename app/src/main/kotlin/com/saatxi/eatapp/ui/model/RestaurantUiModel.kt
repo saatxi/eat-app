@@ -7,8 +7,8 @@ import com.saatxi.eatapp.data.local.formatAddress
 /** Stars the rating scale is drawn on. */
 const val MAX_RATING = 5
 
-/** Widest price range the source data can hold, so "$$$$" is the longest label. */
-private const val MAX_PRICE_RANGE = 4
+/** Widest price range the source data can hold; see [com.saatxi.eatapp.ui.common.MAX_PRICE_RANGE]. */
+private const val MAX_PRICE_RANGE = 6
 
 /**
  * What the screens draw, kept separate from the Room [Restaurant] entity so the
@@ -34,8 +34,8 @@ data class RestaurantUiModel(
     val region: String?,
     val country: String?,
     val rating: Int,
-    /** For example "$$". Empty when the row has no price range. */
-    val priceLabel: String,
+    /** 0-6, 0 meaning "not set" — resolved to display text at draw time via `priceRangeLabel`. */
+    val priceRange: Int,
     /** False marks a place the user still wants to try, not one they've been to. */
     val visited: Boolean,
     /** Validated on import; null when absent or not safe to open. */
@@ -81,8 +81,8 @@ fun Restaurant.toUiModel(
     country = country?.takeIf { it.isNotBlank() },
     rating = latestVisit?.rating ?: 0,
     // The reader already rejects out-of-range values, but clamping keeps a
-    // hand-built entity from producing an absurdly long chip.
-    priceLabel = "$".repeat(priceRange.coerceIn(0, MAX_PRICE_RANGE)),
+    // hand-built entity from producing a band outside the picker's scale.
+    priceRange = priceRange.coerceIn(0, MAX_PRICE_RANGE),
     visited = latestVisit != null,
     website = website,
     instagram = instagram,

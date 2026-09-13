@@ -26,7 +26,7 @@ data class Restaurant(
      */
     @ColumnInfo(name = "address")
     val streetAddress: String? = null,
-    /** General price level of the place (0-4) — not per-visit. */
+    /** General price band of the place (0-6, euro tiers — see `priceRangeLabel`) — not per-visit. */
     val priceRange: Int,
     /**
      * Optional links. Both are validated on import (see `LinkValidation.kt`) and

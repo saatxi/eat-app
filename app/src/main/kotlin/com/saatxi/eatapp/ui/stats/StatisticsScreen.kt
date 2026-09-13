@@ -60,6 +60,7 @@ import com.saatxi.eatapp.data.local.TagCount
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
+import com.saatxi.eatapp.ui.common.priceRangeLabel
 import com.saatxi.eatapp.ui.list.EmptyState
 import com.saatxi.eatapp.ui.theme.EatAppTheme
 
@@ -306,10 +307,10 @@ private fun PriceBarRow(priceRangeCount: PriceRangeCount, maxCount: Int) {
             text = if (priceRangeCount.priceRange == 0) {
                 stringResource(R.string.stats_price_not_set)
             } else {
-                "$".repeat(priceRangeCount.priceRange)
+                priceRangeLabel(priceRangeCount.priceRange)
             },
             style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.width(64.dp)
+            modifier = Modifier.width(84.dp)
         )
         StatBar(
             fraction = priceRangeCount.count.toFloat() / maxCount,

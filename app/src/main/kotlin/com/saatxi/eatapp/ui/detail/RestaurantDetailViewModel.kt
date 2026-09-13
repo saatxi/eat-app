@@ -29,7 +29,7 @@ data class VisitUiModel(
     val visitDate: Long,
     val rating: Int,
     val notes: String?,
-    /** 0-4, 0 meaning "not set" — see [com.saatxi.eatapp.data.local.Visit.priceRange]. */
+    /** 0-6, 0 meaning "not set" — see [com.saatxi.eatapp.data.local.Visit.priceRange]. */
     val priceRange: Int,
     val photoPaths: List<String>
 )

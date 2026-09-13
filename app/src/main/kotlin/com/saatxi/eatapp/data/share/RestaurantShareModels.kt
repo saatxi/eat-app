@@ -14,7 +14,7 @@ data class VisitExport(
     val visitDate: Long,
     val rating: Int,
     val notes: String? = null,
-    /** 0-4, same scale as [RestaurantExport.priceRange]; 0 means "not set". Defaults to 0 so a v2-era file written before this field existed still imports cleanly. */
+    /** 0-6, same scale as [RestaurantExport.priceRange]; 0 means "not set". Defaults to 0 so a v2-era file written before this field existed still imports cleanly. */
     val priceRange: Int = 0
 )
 
@@ -85,8 +85,8 @@ fun RestaurantExport.toRestaurantOrNull(id: String): Restaurant? {
     val trimmedName = name.trim()
     val trimmedCuisine = cuisineType.trim()
     if (trimmedName.isEmpty() || trimmedCuisine.isEmpty()) return null
-    if (priceRange !in 0..4) return null
-    if (visits.any { it.rating !in 0..5 || it.priceRange !in 0..4 }) return null
+    if (priceRange !in 0..6) return null
+    if (visits.any { it.rating !in 0..5 || it.priceRange !in 0..6 }) return null
 
     return Restaurant(
         id = id,
@@ -103,7 +103,7 @@ fun RestaurantExport.toRestaurantOrNull(id: String): Restaurant? {
 }
 
 /** The row's visits, dropping any that individually fail validation rather than failing the whole row. */
-fun RestaurantExport.toValidatedVisits(): List<VisitExport> = visits.filter { it.rating in 0..5 && it.priceRange in 0..4 }
+fun RestaurantExport.toValidatedVisits(): List<VisitExport> = visits.filter { it.rating in 0..5 && it.priceRange in 0..6 }
 
 /**
  * Validates the raw [RestaurantExport.tags] list the same per-item-lenient

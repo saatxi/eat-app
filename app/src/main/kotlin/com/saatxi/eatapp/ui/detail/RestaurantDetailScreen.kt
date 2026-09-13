@@ -101,6 +101,7 @@ import com.saatxi.eatapp.ui.common.cuisineTint
 import com.saatxi.eatapp.ui.common.DeleteConfirmDialog
 import com.saatxi.eatapp.ui.common.RatingAndPriceRow
 import com.saatxi.eatapp.ui.common.TagPillRow
+import com.saatxi.eatapp.ui.common.priceRangeLabel
 import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.common.shimmerPlaceholder
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
@@ -334,7 +335,7 @@ private fun RestaurantDetailContent(
                     // (F-77) — the star icons are decorative (contentDescription = null) and
                     // the "3/5" text next to them isn't natural speech, so each half of the
                     // row gets its own merged description instead of announcing as silent
-                    // stars followed by "3 slash 5", or "$$" as "dollar dollar". The label
+                    // stars followed by "3 slash 5", or the euro band read digit by digit. The label
                     // above it is a separate node, not merged into either half, so it
                     // doesn't disturb that split (F-82).
                     Column {
@@ -346,15 +347,16 @@ private fun RestaurantDetailContent(
                                 .padding(bottom = 6.dp)
                                 .semantics { heading() }
                         )
+                        val priceLabelText = priceRangeLabel(current.priceRange)
                         RatingAndPriceRow(
                             rating = current.rating,
-                            priceLabel = current.priceLabel,
+                            priceLabel = priceLabelText,
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             pricePaddingHorizontal = 10.dp,
                             pricePaddingVertical = 4.dp,
                             ratingContentDescription = stringResource(R.string.restaurant_rating_description, current.rating),
-                            priceContentDescription = stringResource(R.string.restaurant_price_description, current.priceLabel.length),
+                            priceContentDescription = stringResource(R.string.restaurant_price_description, priceLabelText),
                             priceContainerColor = MaterialTheme.colorScheme.primaryContainer,
                             priceContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -525,7 +527,7 @@ private fun VisitCard(visit: VisitUiModel, cuisineKey: String) {
                 )
                 RatingAndPriceRow(
                     rating = visit.rating,
-                    priceLabel = if (visit.priceRange > 0) "$".repeat(visit.priceRange) else "",
+                    priceLabel = priceRangeLabel(visit.priceRange),
                     showRatingLabel = false,
                     starSize = 16.dp
                 )
@@ -643,16 +645,11 @@ private fun LinksCard(
  * that app is installed, which is why no `instagram://` scheme is needed here
  * and no `<queries>` entry in the manifest.
  */
-/**
- * [RestaurantUiModel] only carries the formatted "$$" [RestaurantUiModel.priceLabel],
- * not the raw price range — its length recovers the original number, the same
- * trick the price content description already relies on above.
- */
 private fun RestaurantUiModel.toExport() = RestaurantExport(
     name = name,
     cuisineType = cuisineKey,
     streetAddress = streetAddress,
-    priceRange = priceLabel.length,
+    priceRange = priceRange,
     website = website,
     instagram = instagram,
     tags = tagsLabel.split(", ").filter { it.isNotBlank() },
@@ -816,7 +813,7 @@ private val previewRestaurant = RestaurantUiModel(
     region = null,
     country = null,
     rating = 4,
-    priceLabel = "$$",
+    priceRange = 2,
     visited = true,
     website = "https://calferran.example",
     instagram = "calferran",

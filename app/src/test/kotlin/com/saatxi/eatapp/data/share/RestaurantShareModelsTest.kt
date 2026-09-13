@@ -116,7 +116,7 @@ class RestaurantShareModelsTest {
 
     @Test
     fun `toRestaurantOrNull rejects an out-of-range price`() {
-        assertNull(RestaurantExport(name = "A", cuisineType = "bar", priceRange = 5).toRestaurantOrNull(id = "x"))
+        assertNull(RestaurantExport(name = "A", cuisineType = "bar", priceRange = 7).toRestaurantOrNull(id = "x"))
         assertNull(RestaurantExport(name = "A", cuisineType = "bar", priceRange = -1).toRestaurantOrNull(id = "x"))
     }
 

@@ -70,9 +70,18 @@
     <string name="visit_status_visited">Visitat</string>
     <string name="visit_status_want_to_try">Per provar</string>
 
-    <!-- Screen-reader phrasing for the rating/price marks, which are drawn as stars and "$" symbols. -->
+    <!-- Screen-reader phrasing for the rating/price marks, which are drawn as stars and a euro-range pill. -->
     <string name="restaurant_rating_description">Puntuat amb %1$d de 5</string>
-    <string name="restaurant_price_description">Rang de preu %1$d de 4</string>
+    <string name="restaurant_price_description">Rang de preu: %1$s</string>
+
+    <!-- The six price-range tiers, shared by the edit/log-visit pickers, the list/roulette
+         filters and the statistics screen — five closed bands plus one open-ended top tier. -->
+    <string name="price_range_1">1-10 €</string>
+    <string name="price_range_2">10-20 €</string>
+    <string name="price_range_3">20-30 €</string>
+    <string name="price_range_4">30-40 €</string>
+    <string name="price_range_5">40-50 €</string>
+    <string name="price_range_6">50 € o més</string>
 
     <!-- Bottom navigation / navigation rail. -->
     <string name="nav_restaurants">Restaurants</string>

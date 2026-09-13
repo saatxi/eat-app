@@ -142,11 +142,11 @@ private fun RatingAndPriceRowPreview() {
         Surface {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 // The list row's compact form.
-                RatingAndPriceRow(rating = 4, priceLabel = "$$", starCount = 1, starSize = 16.dp, stacked = true)
+                RatingAndPriceRow(rating = 4, priceLabel = "10-20 €", starCount = 1, starSize = 16.dp, stacked = true)
                 // The detail screen's form: full width, spread out.
                 RatingAndPriceRow(
                     rating = 4,
-                    priceLabel = "$$",
+                    priceLabel = "10-20 €",
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     pricePaddingHorizontal = 10.dp,
@@ -155,7 +155,7 @@ private fun RatingAndPriceRowPreview() {
                 // The roulette result card's form: stars only, no "N/5" label.
                 RatingAndPriceRow(
                     rating = 4,
-                    priceLabel = "$$",
+                    priceLabel = "10-20 €",
                     starSize = 20.dp,
                     showRatingLabel = false,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)

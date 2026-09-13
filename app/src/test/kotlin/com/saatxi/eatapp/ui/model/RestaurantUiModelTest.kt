@@ -53,17 +53,17 @@ class RestaurantUiModelTest {
     }
 
     @Test
-    fun `the price range becomes one dollar sign per unit`() {
-        assertEquals("", entity(priceRange = 0).toUiModel().priceLabel)
-        assertEquals("$", entity(priceRange = 1).toUiModel().priceLabel)
-        assertEquals("$$$$", entity(priceRange = 4).toUiModel().priceLabel)
+    fun `the price range passes through unchanged`() {
+        assertEquals(0, entity(priceRange = 0).toUiModel().priceRange)
+        assertEquals(1, entity(priceRange = 1).toUiModel().priceRange)
+        assertEquals(6, entity(priceRange = 6).toUiModel().priceRange)
     }
 
-    /** Nothing valid can get here out of range, but the label stays sane if it does. */
+    /** Nothing valid can get here out of range, but the value stays sane if it does. */
     @Test
-    fun `an out-of-range price range is clamped instead of drawn`() {
-        assertEquals("$$$$", entity(priceRange = 99).toUiModel().priceLabel)
-        assertEquals("", entity(priceRange = -1).toUiModel().priceLabel)
+    fun `an out-of-range price range is clamped`() {
+        assertEquals(6, entity(priceRange = 99).toUiModel().priceRange)
+        assertEquals(0, entity(priceRange = -1).toUiModel().priceRange)
     }
 
     @Test

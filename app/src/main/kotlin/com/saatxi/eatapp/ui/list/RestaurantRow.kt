@@ -53,6 +53,7 @@ import com.saatxi.eatapp.ui.common.cuisineBadgeTransition
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
+import com.saatxi.eatapp.ui.common.priceRangeLabel
 import com.saatxi.eatapp.ui.common.shimmerCircle
 import com.saatxi.eatapp.ui.common.shimmerPlaceholder
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
@@ -81,8 +82,9 @@ internal fun RestaurantRow(
     // same node) is untouched.
     val cuisineLabelText = cuisineLabel(restaurant.cuisineKey)
     val ratingDescription = stringResource(R.string.restaurant_rating_description, restaurant.rating)
-    val priceDescription = restaurant.priceLabel.takeIf { it.isNotEmpty() }?.let {
-        stringResource(R.string.restaurant_price_description, it.length)
+    val priceLabelText = priceRangeLabel(restaurant.priceRange)
+    val priceDescription = priceLabelText.takeIf { it.isNotEmpty() }?.let {
+        stringResource(R.string.restaurant_price_description, it)
     }
     val visitStatusText = stringResource(
         if (restaurant.visited) R.string.visit_status_visited else R.string.visit_status_want_to_try
@@ -181,7 +183,7 @@ internal fun RestaurantRow(
                     trailing = {
                         RatingAndPriceRow(
                             rating = restaurant.rating,
-                            priceLabel = restaurant.priceLabel,
+                            priceLabel = priceLabelText,
                             starCount = 1,
                             starSize = 16.dp,
                             stacked = true,
@@ -337,7 +339,7 @@ private val previewRestaurant = RestaurantUiModel(
     region = null,
     country = null,
     rating = 4,
-    priceLabel = "$$",
+    priceRange = 2,
     visited = true,
     website = "https://calferran.example",
     instagram = "calferran",
@@ -349,7 +351,7 @@ private val previewWantToTryRestaurant = previewRestaurant.copy(
     name = "Ramen Ko",
     cuisineKey = "japanese",
     rating = 0,
-    priceLabel = "",
+    priceRange = 0,
     visited = false,
     isFavorite = false
 )

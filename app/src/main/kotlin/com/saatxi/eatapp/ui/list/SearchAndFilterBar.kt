@@ -63,8 +63,10 @@ import androidx.compose.ui.unit.dp
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.ui.common.FilterDropdownChip
+import com.saatxi.eatapp.ui.common.MAX_PRICE_RANGE
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
+import com.saatxi.eatapp.ui.common.priceRangeLabel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
 
 /**
@@ -258,9 +260,6 @@ private fun sortLabelShort(sort: RestaurantSort): String = when (sort) {
     RestaurantSort.RATING -> stringResource(R.string.list_sort_rating_short)
 }
 
-/** The exact price tiers offered by [FilterSection]'s price dropdown — same 1-4 scale as the add/edit form's price picker. */
-private const val MAX_PRICE_RANGE = 4
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilterSection(
@@ -351,13 +350,13 @@ private fun FilterSection(
         }
 
         FilterDropdownChip(
-            selectedLabel = priceRange?.let { "$".repeat(it) } ?: stringResource(R.string.list_filter_price),
+            selectedLabel = priceRange?.let { priceRangeLabel(it) } ?: stringResource(R.string.list_filter_price),
             isActive = priceRange != null,
             colors = chipColors
         ) { closeMenu ->
             (1..MAX_PRICE_RANGE).forEach { price ->
                 DropdownMenuItem(
-                    text = { Text("$".repeat(price)) },
+                    text = { Text(priceRangeLabel(price)) },
                     onClick = {
                         onPriceRangeChange(if (priceRange == price) null else price)
                         closeMenu()

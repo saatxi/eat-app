@@ -18,13 +18,13 @@ import kotlinx.coroutines.launch
 private const val MAX_RATING = 5
 
 /** Widest price-range level a visit can hold; see [com.saatxi.eatapp.data.local.Visit.priceRange]. */
-private const val MAX_PRICE_RANGE = 4
+private const val MAX_PRICE_RANGE = 6
 
 data class LogVisitUiState(
     /** Epoch millis; defaults to "now" and is only ever changed through the date picker. */
     val visitDate: Long = System.currentTimeMillis(),
     val rating: Int = 0,
-    /** 0-4, same scale as [com.saatxi.eatapp.data.local.Restaurant.priceRange]; 0 means "not set". */
+    /** 0-6, same scale as [com.saatxi.eatapp.data.local.Restaurant.priceRange]; 0 means "not set". */
     val priceRange: Int = 0,
     val notes: String = "",
     /** Already-copied photos for this visit, in the order they'll be saved. */

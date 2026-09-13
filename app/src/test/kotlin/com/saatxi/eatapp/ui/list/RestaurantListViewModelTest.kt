@@ -356,7 +356,7 @@ class RestaurantListViewModelTest {
         val item = viewModel.uiState.value.restaurants.single()
         assertEquals("1", item.id)
         assertEquals("mediterranean", item.cuisineKey)
-        assertEquals("$$", item.priceLabel)
+        assertEquals(2, item.priceRange)
     }
 
     @Test
