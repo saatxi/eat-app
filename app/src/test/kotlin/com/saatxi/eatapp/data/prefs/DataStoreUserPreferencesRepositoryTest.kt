@@ -31,7 +31,12 @@ class DataStoreUserPreferencesRepositoryTest {
 
     @Before
     fun setUp() {
-        file = File.createTempFile("test", ".preferences_pb")
+        // createTempFile() creates an empty file at the path, but DataStore writes
+        // a `<file>.tmp` scratch file and atomically renames it over the target.
+        // Renaming over an *existing* file only works on POSIX (Linux/macOS, i.e.
+        // CI) — on Windows it fails with "Unable to rename ... .tmp", so delete the
+        // pre-created file and let DataStore create it on first write instead.
+        file = File.createTempFile("test", ".preferences_pb").apply { delete() }
         dataStore = PreferenceDataStoreFactory.create(produceFile = { file })
         repository = DataStoreUserPreferencesRepository(dataStore)
     }
@@ -39,6 +44,7 @@ class DataStoreUserPreferencesRepositoryTest {
     @After
     fun tearDown() {
         file.delete()
+        File("${file.absolutePath}.tmp").delete()
     }
 
     @Test

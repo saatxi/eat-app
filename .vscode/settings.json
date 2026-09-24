@@ -1,3 +1,17 @@
 {
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    // Android Studio's bundled JBR is OpenJDK 25, and Gradle's Groovy compiler
+    // cannot evaluate the Kotlin/Groovy buildscript on that class-file version
+    // ("Unsupported class file major version 69" = Java 25). Same root cause and
+    // workaround as gradle.properties' org.gradle.java.home: pin every Java/Gradle
+    // task the extension runs to the installed Temurin 21.
+    "java.jdt.ls.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot",
+    "java.import.gradle.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot",
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-21",
+            "path": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot",
+            "default": true
+        }
+    ]
 }

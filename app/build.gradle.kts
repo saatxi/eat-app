@@ -181,6 +181,17 @@ kotlin {
     }
 }
 
+// Robolectric's FileDescriptorInterceptor reflects into jdk.internal.access, which
+// modular JDKs (17+) do not export to the unnamed module by default, so the
+// Robolectric-backed unit tests abort with
+// "cannot access class jdk.internal.access.SharedSecrets" (IllegalAccessException).
+// CI happens to run on JDK 17 where Robolectric takes a path that doesn't trip this,
+// but the local toolchain is pinned to JDK 21, so open the package explicitly to
+// keep ./gradlew test green on both.
+tasks.withType<Test>().configureEach {
+    jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
+}
+
 // Compose compiler stability/skippability reports, opt-in only: they're one .txt/.csv
 // per module dumped into build/, not something every dev needs on every build.
 // Usage: gradlew.bat assembleDebug -Peatapp.composeMetrics=true, then inspect
