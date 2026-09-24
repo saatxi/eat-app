@@ -8,6 +8,7 @@ import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.local.TagCount
 import com.saatxi.eatapp.data.local.Visit
 import com.saatxi.eatapp.data.local.VisitDateRating
+import com.saatxi.eatapp.data.share.RestaurantExport
 import kotlinx.coroutines.flow.Flow
 
 interface RestaurantRepository {
@@ -79,6 +80,16 @@ interface RestaurantRepository {
      */
     suspend fun addVisit(restaurantId: String, visitDate: Long, rating: Int, notes: String?, priceRange: Int, photoPaths: List<String>): String
     suspend fun deleteVisit(id: String)
+
+    // --- Sharing / backup ------------------------------------------------
+    /**
+     * Builds the on-the-wire rows for a share or backup: tags always, and —
+     * when [includeVisits] — each restaurant's full visit history. [restaurantIds]
+     * limits the export to those rows (a single restaurant's share); null means
+     * every restaurant (a bulk export or the automatic backup). Order follows
+     * the underlying table's, not the caller's id list.
+     */
+    suspend fun exportRestaurants(restaurantIds: List<String>? = null, includeVisits: Boolean = true): List<RestaurantExport>
 
     // --- Photos --------------------------------------------------------
     fun observePhotosForRestaurant(restaurantId: String): Flow<List<Photo>>

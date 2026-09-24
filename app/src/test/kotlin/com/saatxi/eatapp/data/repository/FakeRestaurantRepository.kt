@@ -8,6 +8,8 @@ import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.local.TagCount
 import com.saatxi.eatapp.data.local.Visit
 import com.saatxi.eatapp.data.local.VisitDateRating
+import com.saatxi.eatapp.data.share.RestaurantExport
+import com.saatxi.eatapp.data.share.toExport
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -197,6 +199,31 @@ class FakeRestaurantRepository : RestaurantRepository {
 
     override suspend fun deleteVisit(id: String) {
         latestVisitByRestaurantId.value = latestVisitByRestaurantId.value.filterValues { it.id != id }
+    }
+
+    /** Records the [includeVisits] flag the last [exportRestaurants] call received, for assertions. */
+    var lastExportIncludeVisits: Boolean? = null
+        private set
+
+    /**
+     * Rebuilds export rows from the same flows the UI reads, mirroring
+     * `RoomRestaurantRepository.exportRestaurants`: the full multi-visit map
+     * when present, otherwise the single latest-visit fallback, and never any
+     * visits when [includeVisits] is false.
+     */
+    override suspend fun exportRestaurants(restaurantIds: List<String>?, includeVisits: Boolean): List<RestaurantExport> {
+        lastExportIncludeVisits = includeVisits
+        val tags = tagsByRestaurantId.value
+        val selected = restaurantIds?.let { ids -> restaurants.value.filter { it.id in ids } } ?: restaurants.value
+        return selected.map { restaurant ->
+            val visits = if (!includeVisits) {
+                emptyList()
+            } else {
+                visitsByRestaurantId.value[restaurant.id]
+                    ?: listOfNotNull(latestVisitByRestaurantId.value[restaurant.id])
+            }
+            restaurant.toExport(tags[restaurant.id].orEmpty(), visits)
+        }
     }
 
     /** Empty by default; a test that cares about a restaurant's photos can push into this. */

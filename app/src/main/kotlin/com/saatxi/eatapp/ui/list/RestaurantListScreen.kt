@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.ui.common.DeleteConfirmDialog
+import com.saatxi.eatapp.ui.common.ExportOptionsDialog
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
 
@@ -63,6 +64,7 @@ fun RestaurantListScreen(
     // Set by a row's swipe-to-delete gesture — see RestaurantRow's own
     // onDeleteRequest doc for why the row itself never deletes directly.
     var pendingDelete by remember { mutableStateOf<RestaurantUiModel?>(null) }
+    var showExportDialog by remember { mutableStateOf(false) }
 
     pendingDelete?.let { restaurant ->
         DeleteConfirmDialog(
@@ -71,6 +73,16 @@ fun RestaurantListScreen(
                 pendingDelete = null
             },
             onDismiss = { pendingDelete = null }
+        )
+    }
+
+    if (showExportDialog) {
+        ExportOptionsDialog(
+            onConfirm = { includeVisits ->
+                showExportDialog = false
+                viewModel.onShareAll(context, includeVisits)
+            },
+            onDismiss = { showExportDialog = false }
         )
     }
 
@@ -89,7 +101,7 @@ fun RestaurantListScreen(
                 TopAppBar(
                     title = { Text(stringResource(R.string.list_title)) },
                     actions = {
-                        IconButton(onClick = { viewModel.onShareAll(context) }) {
+                        IconButton(onClick = { showExportDialog = true }) {
                             Icon(Icons.Default.Share, contentDescription = stringResource(R.string.list_action_share_all))
                         }
                     },

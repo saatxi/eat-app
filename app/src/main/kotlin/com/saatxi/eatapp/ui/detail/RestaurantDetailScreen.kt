@@ -91,18 +91,16 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import coil3.compose.AsyncImage
 import com.saatxi.eatapp.R
 import com.saatxi.eatapp.data.local.instagramUrl
-import com.saatxi.eatapp.data.share.RestaurantExport
-import com.saatxi.eatapp.data.share.VisitExport
 import com.saatxi.eatapp.di.RestaurantRepositoryEntryPoint
 import com.saatxi.eatapp.ui.common.cuisineBadgeTransition
 import com.saatxi.eatapp.ui.common.cuisineIcon
 import com.saatxi.eatapp.ui.common.cuisineLabel
 import com.saatxi.eatapp.ui.common.cuisineTint
 import com.saatxi.eatapp.ui.common.DeleteConfirmDialog
+import com.saatxi.eatapp.ui.common.ExportOptionsDialog
 import com.saatxi.eatapp.ui.common.RatingAndPriceRow
 import com.saatxi.eatapp.ui.common.TagPillRow
 import com.saatxi.eatapp.ui.common.priceRangeLabel
-import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.common.shimmerPlaceholder
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.theme.EatAppTheme
@@ -157,7 +155,8 @@ fun RestaurantDetailScreen(
         onFavoriteToggle = viewModel::onFavoriteToggle,
         onEdit = onEditRestaurant,
         onDelete = { viewModel.onDelete(onDeleted = onBack) },
-        onLogVisit = onLogVisit
+        onLogVisit = onLogVisit,
+        onExport = viewModel::onExport
     )
 }
 
@@ -174,11 +173,15 @@ private fun RestaurantDetailContent(
     onFavoriteToggle: () -> Unit = {},
     onEdit: (String) -> Unit = {},
     onDelete: () -> Unit = {},
-    onLogVisit: (String) -> Unit = {}
+    onLogVisit: (String) -> Unit = {},
+    // Takes the Context because the share itself is started from here (the
+    // dialog lives on this screen); the ViewModel builds the export.
+    onExport: (Context, Boolean) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(false) }
     // Guarded rather than the default `{ true }`: on a detail page short enough to
     // fit, an unguarded fling would still collapse the bar and leave a blank strip
     // under it, because there is no content to scroll up into the freed space.
@@ -196,6 +199,16 @@ private fun RestaurantDetailContent(
         )
     }
 
+    if (showExportDialog) {
+        ExportOptionsDialog(
+            onConfirm = { includeVisits ->
+                showExportDialog = false
+                onExport(context, includeVisits)
+            },
+            onDismiss = { showExportDialog = false }
+        )
+    }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -205,9 +218,7 @@ private fun RestaurantDetailContent(
                 onFavoriteToggle = onFavoriteToggle,
                 onEdit = onEdit,
                 onDeleteRequest = { showDeleteConfirm = true },
-                onShare = {
-                    (uiState as? DetailUiState.Loaded)?.restaurant?.let { context.shareRestaurants(listOf(it.toExport())) }
-                },
+                onShare = { showExportDialog = true },
                 scrollBehavior = scrollBehavior
             )
         },
@@ -645,24 +656,6 @@ private fun LinksCard(
  * that app is installed, which is why no `instagram://` scheme is needed here
  * and no `<queries>` entry in the manifest.
  */
-private fun RestaurantUiModel.toExport() = RestaurantExport(
-    name = name,
-    cuisineType = cuisineKey,
-    streetAddress = streetAddress,
-    priceRange = priceRange,
-    website = website,
-    instagram = instagram,
-    tags = tagsLabel.split(", ").filter { it.isNotBlank() },
-    city = city,
-    region = region,
-    country = country,
-    visits = if (visited) {
-        listOf(VisitExport(visitDate = System.currentTimeMillis(), rating = rating, notes = notes))
-    } else {
-        emptyList()
-    }
-)
-
 private fun Context.openUri(uri: String) {
     try {
         startActivity(Intent(Intent.ACTION_VIEW, uri.toUri()))

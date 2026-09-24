@@ -259,6 +259,10 @@ internal class FakeRestaurantRepository : RestaurantRepository {
     /** (restaurantId, visitDate, rating) recorded from every [addVisit] call. */
     val addedVisits = mutableListOf<Triple<String, Long, Int>>()
 
+    /** Not used by RestaurantImportViewModel — import never builds an export. */
+    override suspend fun exportRestaurants(restaurantIds: List<String>?, includeVisits: Boolean): List<RestaurantExport> =
+        throw NotImplementedError("Not used by RestaurantImportViewModel")
+
     override fun observeFiltered(
         query: String?,
         minRating: Int?,

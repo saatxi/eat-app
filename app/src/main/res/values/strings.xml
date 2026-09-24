@@ -51,6 +51,7 @@
     <string name="action_retry">Retry</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_delete">Delete</string>
+    <string name="action_export">Export</string>
     <string name="action_done">Done</string>
 
     <string name="detail_not_found_title">Restaurant not found</string>
@@ -126,6 +127,10 @@
     <string name="settings_section_data">Data</string>
     <string name="settings_action_view_statistics">View statistics</string>
     <string name="settings_action_export_data">Export my data</string>
+    <!-- The shared "what goes in the file?" step shown before any share/export. -->
+    <string name="export_dialog_title">Export restaurants</string>
+    <string name="export_dialog_body">Choose what to include in the exported file.</string>
+    <string name="export_dialog_include_visits">Include visits</string>
     <string name="settings_action_delete_all_data">Delete all restaurants</string>
     <string name="settings_delete_all_confirm_title">Delete all restaurants?</string>
     <string name="settings_delete_all_confirm_body">This deletes every restaurant in the app. This can\'t be undone.</string>

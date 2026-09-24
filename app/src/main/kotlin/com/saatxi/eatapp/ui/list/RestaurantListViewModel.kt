@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
 import com.saatxi.eatapp.data.repository.RestaurantRepository
-import com.saatxi.eatapp.data.share.toExport
 import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.model.toUiModel
@@ -18,7 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -160,18 +158,13 @@ class RestaurantListViewModel @Inject constructor(
 
     /**
      * Shares every restaurant, ignoring the active filters — "share all"
-     * means all, not just what's currently visible.
+     * means all, not just what's currently visible. [includeVisits] comes from
+     * the export-options dialog; when false the file carries restaurants and
+     * tags only.
      */
-    fun onShareAll(context: Context) {
+    fun onShareAll(context: Context, includeVisits: Boolean) {
         viewModelScope.launch {
-            val all = repository.observeFiltered(query = null, minRating = null, cuisineType = null).first()
-            val tagsByRestaurantId = repository.observeTagsByRestaurantId().first()
-            context.shareRestaurants(
-                all.map { restaurant ->
-                    val visits = repository.observeVisitsForRestaurant(restaurant.id).first()
-                    restaurant.toExport(tagsByRestaurantId[restaurant.id].orEmpty(), visits)
-                }
-            )
+            context.shareRestaurants(repository.exportRestaurants(includeVisits = includeVisits))
         }
     }
 

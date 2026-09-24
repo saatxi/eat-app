@@ -5,7 +5,7 @@ design-history record of the two redesign passes that shaped it, so none of
 it gets lost between sessions. The backlog below is a menu, not a plan —
 nothing in it is committed to, and items can be picked off in any order.
 
-Every backlog entry has a stable ID (`F-01`…`F-92`). Use those in commit
+Every backlog entry has a stable ID (`F-01`…`F-93`). Use those in commit
 messages and when asking for something to be worked on; they never get
 renumbered, and items that get done stay in the list marked **Done** rather
 than being deleted, so the file keeps a record of what changed and why.
@@ -87,6 +87,40 @@ piece to cover once a runner is chosen.
 ## Done
 
 Recorded here rather than deleted, so the numbering stays stable.
+
+### F-93 · Exports dropped visits, and a single-restaurant share had a generic filename — Done
+
+Requested by the user: "quan exportem un o tots els restaurants
+s'haurien d'exportar també les visites fetes o almenys preguntar si es
+volen exportar abans" and "quan exportem un sol restaurant posar-ho al
+nom del fitxer resultant". Three export entry points disagreed with each
+other: the list's "share all" carried real visits, Settings' "export my
+data" carried none, and the detail screen's single share fabricated a
+single visit dated *now* from the UI model's latest-visit summary —
+losing the real multi-visit history the detail screen had already loaded.
+
+- **Repository**: new
+  `RestaurantRepository.exportRestaurants(restaurantIds, includeVisits)`,
+  implemented in `RoomRestaurantRepository` by sharing the assembly the
+  automatic `backup.json` writer already used (tags always, visits only
+  when asked, `restaurantIds` limiting to one id or null for all), so the
+  three callers now agree on what a file contains.
+- **UI**: new shared `ExportOptionsDialog` (switch "Include visits",
+  default on) shown before detail's share, the list's "share all" and
+  Settings' export — the user is asked, and the safe default keeps visits.
+- **Filename**: `RestaurantShareWriter` now slags a single restaurant's
+  name into the filename (`cal-ferran-20260924_1246.eatapp`) versus the
+  generic `restaurants-…` for a bulk export, via `restaurantNameSlug`
+  (lowercased with `Locale.ROOT`, non-alphanumerics folded to `-`,
+  capped at 60 chars, `restaurant` fallback when nothing survives).
+- **Detail**: the fabricated `RestaurantUiModel.toExport()` helper is
+  gone; the detail ViewModel builds the export from the repository, so a
+  shared restaurant carries its full visit history.
+- Tests: new `restaurantNameSlug`/filename cases in
+  `RestaurantShareWriterTest`, and `exportRestaurants` include/exclude
+  visit and id-filter cases in `RestaurantDaoTest`.
+- Wire format (`eatapp.restaurants.v2`) was already visit-aware on
+  import, so no format bump was needed.
 
 ### F-92 · About row always showed the full dev-build version string, even for a clean build — Done
 

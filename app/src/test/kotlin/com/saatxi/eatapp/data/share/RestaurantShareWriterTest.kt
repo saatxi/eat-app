@@ -128,4 +128,34 @@ class RestaurantShareWriterTest {
         val shareFile = Json.decodeFromString(RestaurantShareFile.serializer(), soleSharedFile().readText())
         assertTrue(shareFile.restaurants.isEmpty())
     }
+
+    @Test
+    fun `a single named restaurant lands in the filename`() {
+        writeRestaurantShareFile(context, listOf(export("Cal Ferran")), singleName = "Cal Ferran")
+
+        assertTrue(soleSharedFile().name.matches(Regex("""cal-ferran-\d{8}_\d{4}\.eatapp""")))
+    }
+
+    @Test
+    fun `a bulk export keeps the generic filename`() {
+        writeRestaurantShareFile(context, listOf(export("Cal Ferran"), export("Bar Nil")))
+
+        assertTrue(soleSharedFile().name.matches(Regex("""restaurants-\d{8}_\d{4}\.eatapp""")))
+    }
+
+    @Test
+    fun `a slug strips punctuation and collapses separators`() {
+        assertEquals("cafe-bar", restaurantNameSlug("  Cafè / Bar!!  "))
+    }
+
+    @Test
+    fun `a slug falls back to a generic name when nothing survives`() {
+        assertEquals("restaurant", restaurantNameSlug("   "))
+        assertEquals("restaurant", restaurantNameSlug("///"))
+    }
+
+    @Test
+    fun `a slug is capped so one long name can't produce an unwieldy filename`() {
+        assertEquals(60, restaurantNameSlug("a".repeat(200)).length)
+    }
 }

@@ -17,9 +17,15 @@ import com.saatxi.eatapp.data.share.writeRestaurantShareFile
  */
 const val RESTAURANT_SHARE_MIME_TYPE = "application/json"
 
-/** Opens the system share sheet with [restaurants] as a small JSON attachment. */
-fun Context.shareRestaurants(restaurants: List<RestaurantExport>) {
-    val uri = writeRestaurantShareFile(this, restaurants)
+/**
+ * Opens the system share sheet with [restaurants] as a small JSON attachment.
+ *
+ * [singleName] is the one restaurant's name when sharing exactly one — it's
+ * folded into the attachment's filename (see [writeRestaurantShareFile]); null
+ * for a bulk share, which keeps the generic "restaurants" name.
+ */
+fun Context.shareRestaurants(restaurants: List<RestaurantExport>, singleName: String? = null) {
+    val uri = writeRestaurantShareFile(this, restaurants, singleName)
     val sendIntent = Intent(Intent.ACTION_SEND).apply {
         type = RESTAURANT_SHARE_MIME_TYPE
         putExtra(Intent.EXTRA_STREAM, uri)

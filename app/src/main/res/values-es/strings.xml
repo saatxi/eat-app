@@ -46,6 +46,7 @@
     <string name="action_retry">Reintentar</string>
     <string name="action_cancel">Cancelar</string>
     <string name="action_delete">Eliminar</string>
+    <string name="action_export">Exportar</string>
     <string name="action_done">Hecho</string>
 
     <string name="detail_not_found_title">Restaurante no encontrado</string>
@@ -120,6 +121,9 @@
     <string name="settings_section_data">Datos</string>
     <string name="settings_action_view_statistics">Ver estadísticas</string>
     <string name="settings_action_export_data">Exportar mis datos</string>
+    <string name="export_dialog_title">Exportar restaurantes</string>
+    <string name="export_dialog_body">Elige qué incluir en el archivo exportado.</string>
+    <string name="export_dialog_include_visits">Incluir las visitas</string>
     <string name="settings_action_delete_all_data">Eliminar todos los restaurantes</string>
     <string name="settings_delete_all_confirm_title">¿Eliminar todos los restaurantes?</string>
     <string name="settings_delete_all_confirm_body">Esto elimina todos los restaurantes de la aplicación. Esta acción no se puede deshacer.</string>

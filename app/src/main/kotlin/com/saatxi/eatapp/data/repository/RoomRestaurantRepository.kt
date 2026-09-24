@@ -15,6 +15,7 @@ import com.saatxi.eatapp.data.local.escapeLikeWildcards
 import com.saatxi.eatapp.data.local.normalizeForSearch
 import com.saatxi.eatapp.data.photo.deleteAllRestaurantPhotoFiles
 import com.saatxi.eatapp.data.photo.deleteRestaurantPhotoFile
+import com.saatxi.eatapp.data.share.RestaurantExport
 import com.saatxi.eatapp.data.share.toExport
 import com.saatxi.eatapp.data.share.writeBackupFile
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -105,17 +106,27 @@ class RoomRestaurantRepository @Inject constructor(
         writeBackup()
     }
 
-    /** Keeps `backup.json` a full, current snapshot after every write — see [writeBackupFile]. */
-    private suspend fun writeBackup() {
+    override suspend fun exportRestaurants(restaurantIds: List<String>?, includeVisits: Boolean): List<RestaurantExport> {
         val tagsByRestaurantId = tagDao.observeAllRestaurantTagLinks().first()
             .groupBy({ it.restaurantId }, { it.name })
-        val visitsByRestaurantId = visitDao.getAll().groupBy { it.restaurantId }
-        writeBackupFile(
-            context,
-            dao.getAll().map {
-                it.toExport(tagsByRestaurantId[it.id].orEmpty(), visitsByRestaurantId[it.id].orEmpty())
-            }
-        )
+        val visitsByRestaurantId = if (includeVisits) {
+            visitDao.getAll().groupBy { it.restaurantId }
+        } else {
+            emptyMap()
+        }
+        val all = dao.getAll()
+        val selected = if (restaurantIds == null) all else {
+            val wanted = restaurantIds.toSet()
+            all.filter { it.id in wanted }
+        }
+        return selected.map {
+            it.toExport(tagsByRestaurantId[it.id].orEmpty(), visitsByRestaurantId[it.id].orEmpty())
+        }
+    }
+
+    /** Keeps `backup.json` a full, current snapshot after every write — see [writeBackupFile]. Always includes visits. */
+    private suspend fun writeBackup() {
+        writeBackupFile(context, exportRestaurants())
     }
 
     override fun observeAllTagNames(): Flow<List<String>> = tagDao.observeAllTagNames()

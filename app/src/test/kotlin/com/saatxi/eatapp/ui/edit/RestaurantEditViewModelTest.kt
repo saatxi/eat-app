@@ -10,6 +10,7 @@ import com.saatxi.eatapp.data.local.RestaurantSort
 import com.saatxi.eatapp.data.local.Visit
 import com.saatxi.eatapp.data.photo.RestaurantPhotoStorage
 import com.saatxi.eatapp.data.repository.RestaurantRepository
+import com.saatxi.eatapp.data.share.RestaurantExport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -417,6 +418,10 @@ internal class FakeRestaurantRepository : RestaurantRepository {
         private set
     var lastDeletedPhotoId: String? = null
         private set
+
+    /** Not used by RestaurantEditViewModel — the export path belongs to the share entry points. */
+    override suspend fun exportRestaurants(restaurantIds: List<String>?, includeVisits: Boolean): List<RestaurantExport> =
+        throw NotImplementedError("Not used by RestaurantEditViewModel")
 
     override fun observeFiltered(
         query: String?,

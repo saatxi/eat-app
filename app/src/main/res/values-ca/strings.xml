@@ -44,6 +44,7 @@
     <string name="action_retry">Torna-ho a provar</string>
     <string name="action_cancel">Cancel·la</string>
     <string name="action_delete">Elimina</string>
+    <string name="action_export">Exporta</string>
     <string name="action_done">Fet</string>
 
     <string name="detail_not_found_title">Restaurant no trobat</string>
@@ -118,6 +119,9 @@
     <string name="settings_section_data">Dades</string>
     <string name="settings_action_view_statistics">Veure estadístiques</string>
     <string name="settings_action_export_data">Exporta les meves dades</string>
+    <string name="export_dialog_title">Exporta restaurants</string>
+    <string name="export_dialog_body">Tria què vols incloure al fitxer exportat.</string>
+    <string name="export_dialog_include_visits">Inclou les visites</string>
     <string name="settings_action_delete_all_data">Elimina tots els restaurants</string>
     <string name="settings_delete_all_confirm_title">Vols eliminar tots els restaurants?</string>
     <string name="settings_delete_all_confirm_body">Això elimina tots els restaurants de l\'aplicació. Aquesta acció no es pot desfer.</string>

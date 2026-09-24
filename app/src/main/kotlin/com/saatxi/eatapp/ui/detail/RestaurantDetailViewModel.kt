@@ -1,5 +1,6 @@
 package com.saatxi.eatapp.ui.detail
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,6 +8,7 @@ import com.saatxi.eatapp.data.local.Photo
 import com.saatxi.eatapp.data.local.Visit
 import com.saatxi.eatapp.data.prefs.UserPreferencesRepository
 import com.saatxi.eatapp.data.repository.RestaurantRepository
+import com.saatxi.eatapp.ui.common.shareRestaurants
 import com.saatxi.eatapp.ui.model.RestaurantUiModel
 import com.saatxi.eatapp.ui.model.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -121,6 +123,20 @@ class RestaurantDetailViewModel @Inject constructor(
         viewModelScope.launch {
             repository.delete(restaurantId)
             onDeleted()
+        }
+    }
+
+    /**
+     * Shares just this restaurant. [includeVisits] comes from the
+     * export-options dialog; when false the file carries the restaurant and
+     * its tags only. The repository is the source of the export so the file
+     * carries the real visit history — the screen's own model only knows the
+     * latest visit's summary, which would otherwise be all that survived.
+     */
+    fun onExport(context: Context, includeVisits: Boolean) {
+        viewModelScope.launch {
+            val exports = repository.exportRestaurants(listOf(restaurantId), includeVisits)
+            context.shareRestaurants(exports, singleName = exports.firstOrNull()?.name)
         }
     }
 }

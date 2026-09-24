@@ -733,6 +733,46 @@ class RestaurantDaoTest {
         assertEquals(listOf("Terraza"), shareFile.restaurants.single().tags)
     }
 
+    // --- Part 4: exportRestaurants, the share path ---------------------------
+
+    @Test
+    fun `exportRestaurants includes each restaurant's visits by default`() = runTest {
+        repository.insert(restaurant("1", "Cal Ferran"))
+        visit("1", rating = 4, visitDate = 100L)
+        visit("1", rating = 5, visitDate = 200L)
+
+        val export = repository.exportRestaurants().single()
+
+        assertEquals(listOf(100L, 200L), export.visits.map { it.visitDate }.sorted())
+    }
+
+    @Test
+    fun `exportRestaurants omits visits when includeVisits is false`() = runTest {
+        repository.insert(restaurant("1", "Cal Ferran"))
+        visit("1", rating = 4)
+
+        val export = repository.exportRestaurants(includeVisits = false).single()
+
+        assertTrue(export.visits.isEmpty())
+    }
+
+    @Test
+    fun `exportRestaurants limits itself to the given ids`() = runTest {
+        repository.insert(restaurant("1", "Cal Ferran"))
+        repository.insert(restaurant("2", "Bar Nil"))
+
+        val export = repository.exportRestaurants(listOf("2"))
+
+        assertEquals(listOf("Bar Nil"), export.map { it.name })
+    }
+
+    @Test
+    fun `exportRestaurants carries each restaurant's tags`() = runTest {
+        repository.insert(restaurant("1", "Cal Ferran"), listOf("Terraza"))
+
+        assertEquals(listOf("Terraza"), repository.exportRestaurants().single().tags)
+    }
+
     // --- LIKE metacharacters, which is F-15 ---------------------------------
 
     @Test

@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.saatxi.eatapp.BuildConfig
 import com.saatxi.eatapp.R
+import com.saatxi.eatapp.ui.common.ExportOptionsDialog
 import com.saatxi.eatapp.ui.common.IconLabelRow
 import com.saatxi.eatapp.ui.common.findActivity
 import com.saatxi.eatapp.ui.theme.AppPalette
@@ -82,6 +83,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
     var showDeleteAllConfirm by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(false) }
 
     if (showDeleteAllConfirm) {
         AlertDialog(
@@ -101,6 +103,16 @@ fun SettingsScreen(
                     Text(stringResource(R.string.action_cancel))
                 }
             }
+        )
+    }
+
+    if (showExportDialog) {
+        ExportOptionsDialog(
+            onConfirm = { includeVisits ->
+                showExportDialog = false
+                viewModel.onExportData(context, includeVisits)
+            },
+            onDismiss = { showExportDialog = false }
         )
     }
 
@@ -215,7 +227,7 @@ fun SettingsScreen(
                             icon = Icons.Filled.Share,
                             label = stringResource(R.string.settings_action_export_data),
                             showChevron = false,
-                            onClick = { viewModel.onExportData(context) }
+                            onClick = { showExportDialog = true }
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         SettingsRow(
