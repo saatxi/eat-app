@@ -393,7 +393,13 @@ function ConvertTo-Csv-Visits {
 function Convert-EatAppToCsv {
     param([string] $EatAppPath, [string] $OutPath)
 
-    $rawJson = Get-Content -LiteralPath $EatAppPath -Raw
+    # Read as UTF-8 explicitly: .eatapp files are written BOM-less UTF-8 (see
+    # Convert-CsvToEatApp), and Get-Content -Raw on Windows PowerShell 5.1
+    # falls back to the system ANSI codepage for BOM-less files, which turns
+    # accented characters into mojibake (e.g. "Genís" -> "GenÃ­s").
+    $rawJson = [System.IO.File]::ReadAllText(
+        ([System.IO.Path]::GetFullPath($EatAppPath)),
+        (New-Object System.Text.UTF8Encoding($false)))
     try {
         $shareFile = $rawJson | ConvertFrom-Json
     } catch {
