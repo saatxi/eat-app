@@ -6,7 +6,7 @@
 .DESCRIPTION
     Automates steps 3-5 of the README's "Releasing a new version" section:
     verifies release signing is configured (see README "Signing releases"),
-    runs `gradlew bundleRelease`, reports the resolved version, and copies
+    runs `flutter build appbundle --release`, reports the resolved version, and copies
     mapping.txt and native-debug-symbols.zip next to the .aab so they survive
     the next build (which otherwise overwrites them). Warns (with a confirm
     prompt) if the working tree is dirty or HEAD isn't exactly on a vX.Y.Z
@@ -132,31 +132,33 @@ if (-not $hasSigning) {
 }
 
 # --- version ------------------------------------------------------------------
+# Mirrors the git-derived versioning in android/app/build.gradle.kts, so the
+# mapping/symbol archives below are stamped with exactly what the bundle carries.
 
 Write-Step 'Resolving version...'
-$versionInfo = & .\gradlew.bat --quiet ':app:printVersionInfo'
-if ($LASTEXITCODE -ne 0) {
-    Fail 'Could not resolve version info.'
+try {
+    $versionName = git describe --tags --always --dirty 2>$null
+    $versionCode = git rev-list --count HEAD 2>$null
+} catch {
+    $versionName = $null
+    $versionCode = $null
 }
-$versionInfo | ForEach-Object { Write-Host "    $_" }
-
-$versionName = 'unknown'
-foreach ($line in $versionInfo) {
-    if ($line -match '^versionName=(.+)$') {
-        $versionName = $Matches[1]
-        break
-    }
+if ($LASTEXITCODE -ne 0 -or -not $versionName) {
+    Fail 'Could not resolve version info from git.'
 }
+$versionName = $versionName -replace '^v', ''
+Write-Host "    versionName=$versionName"
+if ($versionCode) { Write-Host "    versionCode=$versionCode" }
 
 # --- build ----------------------------------------------------------------
 
-Write-Step 'Building release App Bundle (./gradlew bundleRelease)...'
-& .\gradlew.bat bundleRelease
+Write-Step 'Building release App Bundle (flutter build appbundle --release)...'
+& flutter build appbundle --release
 if ($LASTEXITCODE -ne 0) {
-    Fail 'bundleRelease failed.'
+    Fail 'flutter build appbundle failed.'
 }
 
-$aabPath = Join-Path $repoRoot 'app\build\outputs\bundle\release\app-release.aab'
+$aabPath = Join-Path $repoRoot 'build\app\outputs\bundle\release\app-release.aab'
 if (-not (Test-Path -LiteralPath $aabPath)) {
     Fail "Expected bundle not found at $aabPath."
 }
@@ -169,9 +171,9 @@ Write-Step "Bundle built: $aabPath ($aabSizeMb MB)"
 # version-stamped name so the next build's mapping/release/mapping.txt
 # overwrite doesn't destroy it before you've moved it somewhere durable.
 
-$mappingSrc = Join-Path $repoRoot 'app\build\outputs\mapping\release\mapping.txt'
+$mappingSrc = Join-Path $repoRoot 'build\app\outputs\mapping\release\mapping.txt'
 if (Test-Path -LiteralPath $mappingSrc) {
-    $mappingDest = Join-Path $repoRoot "app\build\outputs\bundle\release\mapping-$versionName.txt"
+    $mappingDest = Join-Path $repoRoot "build\app\outputs\bundle\release\mapping-$versionName.txt"
     Copy-Item -LiteralPath $mappingSrc -Destination $mappingDest -Force
     Write-Step "Mapping file archived to $mappingDest -- move it somewhere durable before your next clean build."
 } else {
@@ -181,12 +183,12 @@ if (Test-Path -LiteralPath $mappingSrc) {
 # --- native debug symbols archive --------------------------------------------
 # Same rationale as the mapping file above: copied out from under build/ before
 # the next build overwrites it. Produced by the release buildType's `ndk {
-# debugSymbolLevel = "FULL" }` in app/build.gradle.kts; upload it alongside the
-# .aab on Play Console so native crashes/ANRs get symbolicated.
+# debugSymbolLevel = "FULL" }` in android/app/build.gradle.kts (when enabled);
+# upload it alongside the .aab on Play Console so native crashes/ANRs get symbolicated.
 
-$symbolsSrc = Join-Path $repoRoot 'app\build\outputs\native-debug-symbols\release\native-debug-symbols.zip'
+$symbolsSrc = Join-Path $repoRoot 'build\app\outputs\native-debug-symbols\release\native-debug-symbols.zip'
 if (Test-Path -LiteralPath $symbolsSrc) {
-    $symbolsDest = Join-Path $repoRoot "app\build\outputs\bundle\release\native-debug-symbols-$versionName.zip"
+    $symbolsDest = Join-Path $repoRoot "build\app\outputs\bundle\release\native-debug-symbols-$versionName.zip"
     Copy-Item -LiteralPath $symbolsSrc -Destination $symbolsDest -Force
     Write-Step "Native debug symbols archived to $symbolsDest -- move it somewhere durable before your next clean build."
 } else {
