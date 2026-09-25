@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_language.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'app_palette.dart';
 import 'app_theme_mode.dart';
 import 'tokens/app_radius.dart';
@@ -7,41 +9,57 @@ import 'tokens/app_spacing.dart';
 import 'tokens/cuisine_accents.dart';
 
 /// A development-only screen that renders every design token the theme
-/// defines, with in-place palette and light/dark switchers.
+/// defines, with in-place palette, language and light/dark switchers.
 ///
 /// This exists to make the token system visible and manually verifiable before
 /// any real screen is built; it is replaced by the actual screens in a later
 /// block and is not reachable from the app's navigation.
 ///
-/// Its labels are the token identifiers themselves (colour-role names, text
-/// style names), not user-facing copy, so they are intentionally not routed
-/// through localization.
+/// The token labels (colour-role names, text style names, spacing/radius step
+/// names) are the identifiers themselves and are intentionally not routed
+/// through localization. The pickers are: palette, theme-mode and language
+/// names are real user-facing copy, so they come from `AppLocalizations` — and
+/// they double as the app's first end-to-end check that the generated
+/// localizations are wired up.
 class ThemeGallery extends StatelessWidget {
   const ThemeGallery({
     super.key,
     required this.palette,
     required this.mode,
+    required this.language,
     required this.onPaletteChanged,
     required this.onModeChanged,
+    required this.onLanguageChanged,
   });
 
   final AppPalette palette;
   final AppThemeMode mode;
+
+  /// The user's explicit override, or null while following the device.
+  final AppLanguage? language;
+
   final ValueChanged<AppPalette> onPaletteChanged;
   final ValueChanged<AppThemeMode> onModeChanged;
+  final ValueChanged<AppLanguage?> onLanguageChanged;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final TextTheme text = Theme.of(context).textTheme;
     final CuisineAccents accents = CuisineAccents.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    // What the app is actually rendering with, whether that came from the
+    // device or from an explicit choice.
+    final AppLanguage effectiveLanguage = language ??
+        AppLanguage.resolveDeviceLocale(Localizations.localeOf(context)) ??
+        AppLanguage.fallback;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('EatApp'),
+        title: Text(l10n.appName),
         actions: <Widget>[
           IconButton(
-            tooltip: 'Theme mode',
+            tooltip: l10n.settingsThemeMode,
             icon: Icon(
               mode == AppThemeMode.dark ? Icons.dark_mode : Icons.light_mode,
             ),
@@ -64,12 +82,28 @@ class ThemeGallery extends StatelessWidget {
                 for (final AppPalette value in AppPalette.values)
                   ButtonSegment<AppPalette>(
                     value: value,
-                    label: Text(value.tones.name),
+                    label: Text(_paletteLabel(l10n, value)),
                   ),
               ],
               selected: <AppPalette>{palette},
               onSelectionChanged: (Set<AppPalette> selection) =>
                   onPaletteChanged(selection.first),
+            ),
+          ),
+          _Section(
+            title: 'Language',
+            child: SegmentedButton<AppLanguage>(
+              showSelectedIcon: false,
+              segments: <ButtonSegment<AppLanguage>>[
+                for (final AppLanguage value in AppLanguage.selectable)
+                  ButtonSegment<AppLanguage>(
+                    value: value,
+                    label: Text(_languageLabel(l10n, value)),
+                  ),
+              ],
+              selected: <AppLanguage>{effectiveLanguage},
+              onSelectionChanged: (Set<AppLanguage> selection) =>
+                  onLanguageChanged(selection.first),
             ),
           ),
           _Section(
@@ -224,6 +258,24 @@ class ThemeGallery extends StatelessWidget {
     );
   }
 }
+
+/// The user-facing name of [palette], the same wording the Android app's
+/// `palette_*` strings carry.
+String _paletteLabel(AppLocalizations l10n, AppPalette palette) =>
+    switch (palette) {
+      AppPalette.mercadoFresco => l10n.paletteMercadoFresco,
+      AppPalette.garden => l10n.paletteGarden,
+      AppPalette.indigo => l10n.paletteIndigo,
+    };
+
+/// The user-facing name of [language], shown in the language's own locale
+/// (so "English" reads as "Anglès" while the picker is in Catalan).
+String _languageLabel(AppLocalizations l10n, AppLanguage language) =>
+    switch (language) {
+      AppLanguage.english => l10n.languageEnglish,
+      AppLanguage.spanish => l10n.languageSpanish,
+      AppLanguage.catalan => l10n.languageCatalan,
+    };
 
 class _Section extends StatelessWidget {
   const _Section({required this.title, required this.child});

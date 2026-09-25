@@ -1,0 +1,15 @@
+# Configuration for `flutter gen-l10n` (see `lib/core/l10n/`).
+#
+# Synthetic package generation is no longer supported by Flutter, so the
+# generated classes are written into the source tree at `output-dir` and are
+# imported directly (`core/l10n/generated/app_localizations.dart`). They are
+# regenerated on every build because `pubspec.yaml` sets `generate: true`.
+arb-dir: lib/core/l10n
+template-arb-file: app_en.arb
+output-dir: lib/core/l10n/generated
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+# `AppLocalizations.of(context)` is non-null, matching how the rest of the app
+# looks up theme extensions (`CuisineAccents.of`).
+nullable-getter: false
+format: true

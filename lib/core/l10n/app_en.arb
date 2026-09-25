@@ -1,0 +1,363 @@
+{
+  "@@locale": "en",
+
+  "appName": "EatApp",
+  "@appName": {
+    "description": "Brand name. Deliberately identical in every locale, the same way values/strings.xml marks it translatable=\"false\"."
+  },
+
+  "listTitle": "My Restaurants",
+  "listSearchPlaceholder": "Search restaurants",
+  "listSearchClear": "Clear search",
+  "listSuggestionsTitle": "Try one of these",
+  "listSuggestionTopRated": "Top rated",
+  "listFilterMinRating": "Rating",
+  "listFilterPrice": "Price",
+  "listFilterCuisine": "Cuisine",
+  "listFilterVisitStatus": "Status",
+  "listFilterLocation": "Location",
+  "listFilterCity": "City",
+  "listFilterRegion": "Region",
+  "listFilterCountry": "Country",
+  "listFilterAll": "All",
+  "listFilterLocationActive": "Location · {count}",
+  "@listFilterLocationActive": {
+    "description": "The Location chip's label once at least one of city/region/country is set; count is how many of the three.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listEmptyTitle": "No restaurants yet",
+  "listEmptyBody": "Add your first restaurant to get started.",
+  "listEmptyNoResultsTitle": "No matches",
+  "listEmptyNoResultsBody": "Try a different search or filter.",
+  "listActionAddRestaurant": "Add restaurant",
+  "listActionShareAll": "Share all restaurants",
+  "listActionClearFilters": "Clear filters",
+  "listSortName": "Name (A-Z)",
+  "listSortRating": "Rating (highest first)",
+  "listSortNameShort": "Name",
+  "listSortRatingShort": "Rating",
+  "listFiltersTitle": "Filters",
+  "listFiltersExpand": "Expand filters",
+  "listFiltersCollapse": "Collapse filters",
+  "listFiltersActiveCount": "{count, plural, =1{{count} active filter} other{{count} active filters}}",
+  "@listFiltersActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listResultCount": "{count, plural, =1{{count} restaurant} other{{count} restaurants}}",
+  "@listResultCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "actionBack": "Back",
+  "actionGoBack": "Go back",
+  "actionRetry": "Retry",
+  "actionCancel": "Cancel",
+  "actionDelete": "Delete",
+  "actionExport": "Export",
+  "actionDone": "Done",
+  "actionOk": "OK",
+
+  "detailNotFoundTitle": "Restaurant not found",
+  "detailNotFoundBody": "This restaurant was removed.",
+  "detailActionEdit": "Edit",
+  "detailActionShare": "Share",
+  "detailActionDelete": "Delete",
+  "detailActionMore": "More options",
+  "detailDeleteConfirmTitle": "Delete this restaurant?",
+  "detailDeleteConfirmBody": "This can't be undone.",
+  "detailPlaceholderTitle": "Select a restaurant",
+  "detailPlaceholderBody": "Choose one from the list to see its details here.",
+
+  "aboutVersionTemplate": "Version {version} (build {build}, {revision})",
+  "@aboutVersionTemplate": {
+    "description": "Shown for a dirty dev build, where the git revision is worth seeing.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "int"
+      },
+      "revision": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutVersionTemplateClean": "Version {version}",
+  "@aboutVersionTemplateClean": {
+    "description": "Shown for a clean build instead of aboutVersionTemplate; just the bare semantic version.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+
+  "ratingFormat": "{rating}/5",
+  "@ratingFormat": {
+    "placeholders": {
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+
+  "visitStatusVisited": "Visited",
+  "visitStatusWantToTry": "Want to try",
+
+  "restaurantRatingDescription": "Rated {rating} of 5",
+  "@restaurantRatingDescription": {
+    "description": "Screen-reader phrasing for the star rating, which is drawn as stars.",
+    "placeholders": {
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+  "restaurantPriceDescription": "Price range: {price}",
+  "@restaurantPriceDescription": {
+    "description": "Screen-reader phrasing for the price pill, which is drawn as a euro-range label.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+
+  "priceRange1": "1-10 €",
+  "priceRange2": "10-20 €",
+  "priceRange3": "20-30 €",
+  "priceRange4": "30-40 €",
+  "priceRange5": "40-50 €",
+  "priceRange6": "50 € or more",
+
+  "navRestaurants": "Restaurants",
+  "navFavorites": "Favorites",
+  "navRoulette": "Roulette",
+  "navSettings": "Settings",
+
+  "favoritesTitle": "Favorites",
+  "favoritesEmptyTitle": "No favorites yet",
+  "favoritesEmptyBody": "Tap the heart on a restaurant to keep it here.",
+  "actionAddFavorite": "Add to favorites",
+  "actionRemoveFavorite": "Remove from favorites",
+
+  "rouletteTitle": "What to eat",
+  "roulettePrompt": "Can't decide? Let the app pick.",
+  "rouletteActionPick": "Pick one",
+  "rouletteActionAgain": "Try again",
+  "rouletteOnlyFavorites": "Favorites only",
+  "rouletteFilterRating": "Rating",
+  "rouletteFilterStatus": "Status",
+  "rouletteFilterPrice": "Price",
+  "rouletteEmptyTitle": "Nothing to pick from",
+  "rouletteEmptyBody": "No restaurant matches these filters.",
+
+  "settingsTitle": "Settings",
+  "settingsSectionAppearance": "Appearance",
+  "settingsPalette": "Color scheme",
+  "settingsThemeMode": "Theme",
+  "themeModeLight": "Light",
+  "themeModeDark": "Dark",
+  "paletteMercadoFresco": "Fresh Market",
+  "paletteGarden": "Garden",
+  "paletteIndigo": "Indigo",
+  "settingsSectionData": "Data",
+  "settingsActionViewStatistics": "View statistics",
+  "settingsActionExportData": "Export my data",
+  "exportDialogTitle": "Export restaurants",
+  "exportDialogBody": "Choose what to include in the exported file.",
+  "exportDialogIncludeVisits": "Include visits",
+  "settingsActionDeleteAllData": "Delete all restaurants",
+  "settingsDeleteAllConfirmTitle": "Delete all restaurants?",
+  "settingsDeleteAllConfirmBody": "This deletes every restaurant in the app. This can't be undone.",
+  "settingsActionHelp": "How to use EatApp",
+  "settingsSectionAbout": "About",
+  "settingsSectionLanguage": "Language",
+  "languageEnglish": "English",
+  "languageSpanish": "Spanish",
+  "languageCatalan": "Catalan",
+
+  "helpTitle": "How to use EatApp",
+  "helpIntro": "A quick guide to everything EatApp can do — tap a topic to open it.",
+  "helpTopicAddTitle": "Adding a restaurant",
+  "helpTopicAddBody": "Tap the + button on the list screen. Fill in the name, cuisine and address — everything else is optional. It's saved straight to your device, no account needed.",
+  "helpTopicFavoritesTitle": "Favorites & want-to-try",
+  "helpTopicFavoritesBody": "Tap the heart on a restaurant to mark it a favorite — a place you love. Tap the bookmark to add it to want-to-try — somewhere you're planning to visit. Both show up in their own tab at the bottom.",
+  "helpTopicRouletteTitle": "Roulette: can't decide?",
+  "helpTopicRouletteBody": "Open the Roulette tab and spin — it picks a random restaurant from your want-to-try list. Filter by cuisine first if you're after something specific.",
+  "helpTopicSharingTitle": "Sharing a restaurant",
+  "helpTopicSharingBody": "Open a restaurant's details and tap Share to send it to a friend who also has EatApp. When they open the file, they'll get a review screen to check the details before it's added to their own list.",
+  "helpTopicWidgetTitle": "Home-screen widget",
+  "helpTopicWidgetBody": "Add the \"Want to try\" widget from your home screen's widget picker to see a random pick from that list without opening the app.",
+  "helpTopicExportTitle": "Exporting your data",
+  "helpTopicExportBody": "In Settings → Data → Export my data, you can save a copy of everything you've entered as a file, to back it up or move it to another device.",
+
+  "editTitleAdd": "Add restaurant",
+  "editTitleEdit": "Edit restaurant",
+  "editActionSave": "Save",
+  "editSectionBasics": "Basics",
+  "editSectionLinks": "Links",
+  "editSectionTags": "Tags",
+  "editActionAddPhoto": "Add photo",
+  "editActionRemovePhoto": "Remove photo",
+  "editPhotoPreviewDescription": "Restaurant photo preview",
+  "editFieldName": "Name",
+  "editFieldCuisine": "Cuisine",
+  "editCuisinePlaceholder": "Select a cuisine",
+  "editFieldAddress": "Street address (optional)",
+  "editFieldCity": "Town / city (optional)",
+  "editFieldRegion": "Region (optional)",
+  "editFieldCountry": "Country (optional)",
+  "editFieldPriceRange": "Price range",
+  "editFieldWebsite": "Website (optional)",
+  "editFieldInstagram": "Instagram (optional)",
+  "editFieldTags": "Add a tag",
+  "editActionRemoveTag": "Remove tag {tag}",
+  "@editActionRemoveTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "editErrorNameRequired": "Name is required",
+  "editErrorCuisineRequired": "Choose a cuisine",
+  "editErrorWebsiteInvalid": "Enter a valid http/https web address",
+  "editErrorInstagramInvalid": "Enter a valid Instagram handle",
+
+  "importTitle": "Import restaurants",
+  "importEmptyTitle": "Nothing to import",
+  "importEmptyBody": "This file doesn't contain any restaurants.",
+  "importErrorTitle": "Can't open this file",
+  "importErrorTooLarge": "This file is too large.",
+  "importErrorInvalid": "This doesn't look like an EatApp restaurant file.",
+  "importErrorIo": "Couldn't read this file. If you opened it straight from an email attachment, try downloading it first, then open it from your downloads.",
+  "importActionConfirm": "Import",
+  "importDuplicateLabel": "Already in your list",
+  "importDecisionAdd": "Add",
+  "importDecisionSkip": "Skip",
+  "importDecisionReplace": "Replace",
+  "importSkippedInvalid": "{count, plural, =1{{count} restaurant had invalid data and was skipped} other{{count} restaurants had invalid data and were skipped}}",
+  "@importSkippedInvalid": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importDuplicatesHeader": "{count, plural, =1{{count} already in your list} other{{count} already in your list}}",
+  "@importDuplicatesHeader": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "detailSectionOverview": "Overview",
+  "detailSectionRating": "Rating and price",
+  "detailSectionLinks": "Links",
+  "detailPhotoDescription": "Restaurant photo",
+  "detailLinkWebsite": "Website",
+  "detailLinkInstagram": "Instagram",
+  "detailLinkHandleFormat": "@{handle}",
+  "@detailLinkHandleFormat": {
+    "description": "An Instagram handle rendered with its leading @.",
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      }
+    }
+  },
+  "detailLinkFailed": "No app can open this link.",
+
+  "detailSectionVisits": "Visits",
+  "detailSectionRatingTrend": "Rating over time",
+  "detailVisitsEmptyTitle": "Want to try, no visits yet",
+  "detailVisitsEmptyBody": "Log a visit once you've been.",
+  "detailActionLogVisit": "Log a visit",
+  "visitCardPhotoDescription": "Photo from this visit",
+
+  "logvisitTitle": "Log a visit",
+  "logvisitActionSave": "Save",
+  "logvisitFieldDate": "Date",
+  "logvisitFieldRating": "Rating",
+  "logvisitFieldPrice": "Price range",
+  "logvisitFieldNotes": "Notes (optional)",
+  "logvisitActionAddPhoto": "Add photo",
+  "logvisitActionRemovePhoto": "Remove photo",
+  "logvisitPhotoDescription": "Visit photo",
+  "logvisitDatePickerConfirm": "OK",
+  "logvisitDatePickerCancel": "Cancel",
+
+  "cuisineMediterranean": "Mediterranean",
+  "cuisineSpanish": "Spanish",
+  "cuisineCatalan": "Catalan",
+  "cuisineBasque": "Basque",
+  "cuisineItalian": "Italian",
+  "cuisineJapanese": "Japanese",
+  "cuisineChinese": "Chinese",
+  "cuisineAsian": "Asian",
+  "cuisineIndian": "Indian",
+  "cuisineMiddleEastern": "Middle Eastern",
+  "cuisineAmerican": "American",
+  "cuisineSeafood": "Seafood",
+  "cuisineBar": "Bar",
+  "cuisineBeerBar": "Beer bar",
+  "cuisineWineBar": "Wine bar",
+  "cuisineCafe": "Cafe",
+  "cuisineBakery": "Bakery",
+  "cuisineDessert": "Dessert",
+  "cuisineBreakfast": "Breakfast",
+  "cuisineBrunch": "Brunch",
+  "cuisineGrill": "Grill",
+  "cuisineFastFood": "Fast food",
+  "cuisineFineDining": "Fine dining",
+  "cuisineVegetarian": "Vegetarian",
+
+  "statsTitle": "Statistics",
+  "statsTileTotal": "Restaurants",
+  "statsTileVisited": "Visited",
+  "statsTileWantToTry": "Want to try",
+  "statsTileAverageRating": "Avg. rating",
+  "statsAverageRatingValue": "{value}",
+  "@statsAverageRatingValue": {
+    "description": "An average rating shown to one decimal place.",
+    "placeholders": {
+      "value": {
+        "type": "double",
+        "format": "decimalPatternDigits",
+        "optionalParameters": {
+          "decimalDigits": 1
+        }
+      }
+    }
+  },
+  "statsAverageRatingNone": "–",
+  "statsSectionCuisines": "Cuisines",
+  "statsSectionPrice": "Price range",
+  "statsSectionVisitsPerMonth": "Visits per month",
+  "statsSectionRatingTrend": "Average rating over time",
+  "statsSectionTopTags": "Top tags",
+  "statsPriceNotSet": "Not set",
+  "statsEmptyTitle": "Nothing to show yet",
+  "statsEmptyBody": "Add a restaurant to see your stats here.",
+
+  "widgetLabel": "EatApp · Want to try",
+  "widgetDescription": "Shows a random restaurant you want to try, right on your home screen.",
+  "widgetEmptyBody": "Mark a restaurant \"want to try\" to see it here.",
+  "widgetActionShuffle": "Shuffle"
+}
