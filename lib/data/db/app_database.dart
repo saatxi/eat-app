@@ -53,10 +53,12 @@ class AppDatabase extends _$AppDatabase {
 
 /// Opens the app's database file.
 ///
-/// The file is named `eatapp.db` after Room's own, so the Room→drift import
-/// (next block) can point this at the very file an existing Android install
-/// already has and keep its rows. Until that import exists, this is simply a
-/// fresh drift-owned file in the app's support directory.
+/// This is deliberately *not* Room's file. Room's database lives in the private
+/// `databases/` directory, and this one is a drift-owned file in the app's
+/// support directory that the Room→drift import fills in from it once, on first
+/// launch. Leaving the original untouched is what makes the import safe to
+/// attempt: a failure part-way through has a `.bak` next to it and a flag that
+/// was never set, so the next launch simply tries again.
 QueryExecutor openAppDatabase() => driftDatabase(
   name: 'eatapp',
   native: DriftNativeOptions(

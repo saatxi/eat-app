@@ -33,13 +33,19 @@ enum AppLanguage {
 
   /// Resolves a persisted [languageCode], falling back rather than throwing so
   /// stale preference data can never crash startup.
-  static AppLanguage fromLanguageCode(String? languageCode) {
+  static AppLanguage fromLanguageCode(String? languageCode) =>
+      tryFromLanguageCode(languageCode) ?? fallback;
+
+  /// Like [fromLanguageCode], but null when nothing matches — which the
+  /// preferences layer needs, because for it an absent value means "follow the
+  /// device" rather than "fall back to English".
+  static AppLanguage? tryFromLanguageCode(String? languageCode) {
     for (final AppLanguage language in values) {
       if (language.languageCode == languageCode) {
         return language;
       }
     }
-    return fallback;
+    return null;
   }
 
   /// Resolves the best shipped language for a device [deviceLocale], matching
