@@ -36,3 +36,5 @@ app.*.map.json
 
 # --- Migration planning docs (temporary, deleted at the end) ---
 plans/
+# Widget Preview related
+.widget_preview/
