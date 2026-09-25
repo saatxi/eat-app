@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/l10n/generated/app_localizations.dart';
+import '../detail/restaurant_detail_screen.dart';
 import '../list/restaurant_list_screen.dart';
 import '../list/restaurant_ui_model.dart';
 import 'placeholder_screen.dart';
@@ -30,6 +31,21 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
+  void _pushDetail(RestaurantUiModel restaurant) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => RestaurantDetailScreen(
+          restaurantId: restaurant.id,
+          // Editing and logging a visit are their own blocks; until they land
+          // each opens the placeholder rather than doing nothing.
+          onEdit: (String id) => _push(l10n.editTitleEdit),
+          onLogVisit: (String id) => _push(l10n.logvisitTitle),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -38,8 +54,7 @@ class _HomeShellState extends State<HomeShell> {
         index: _index,
         children: <Widget>[
           RestaurantListScreen(
-            onOpenRestaurant: (RestaurantUiModel restaurant) =>
-                _push(restaurant.name),
+            onOpenRestaurant: _pushDetail,
             onAddRestaurant: () => _push(l10n.editTitleAdd),
           ),
           PlaceholderScreen(title: l10n.navFavorites),
