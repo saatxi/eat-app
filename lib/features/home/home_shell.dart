@@ -4,8 +4,9 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../detail/restaurant_detail_screen.dart';
 import '../edit/restaurant_edit_screen.dart';
 import '../list/restaurant_list_screen.dart';
-import '../log_visit/log_visit_screen.dart';
 import '../list/restaurant_ui_model.dart';
+import '../log_visit/log_visit_screen.dart';
+import '../roulette/roulette_screen.dart';
 import 'placeholder_screen.dart';
 
 /// The app's root: a bottom navigation bar over the four top-level sections.
@@ -70,7 +71,7 @@ class _HomeShellState extends State<HomeShell> {
             favouritesOnly: true,
             onOpenRestaurant: _pushDetail,
           ),
-          PlaceholderScreen(title: l10n.navRoulette),
+          RouletteScreen(onOpenRestaurant: _pushDetail),
           PlaceholderScreen(title: l10n.navSettings),
         ],
       ),
