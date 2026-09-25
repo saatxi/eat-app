@@ -116,6 +116,7 @@ class RestaurantListController extends ChangeNotifier {
     required this.repository,
     required this.preferences,
     this.searchDebounce = const Duration(milliseconds: 250),
+    this.favouritesOnly = false,
   }) {
     _favoriteIds = preferences.current.favoriteIds;
     preferences.listenable.addListener(_onPreferencesChanged);
@@ -166,6 +167,12 @@ class RestaurantListController extends ChangeNotifier {
 
   /// How long a typed query waits before it reaches the database.
   final Duration searchDebounce;
+
+  /// Narrows the published list to favourites, after the query rather than in
+  /// it: the favourites screen is the same list — same search, sort and filters
+  /// — just cut down to the ids the preferences hold, exactly as the Android
+  /// app's `FavoritesViewModel` does.
+  final bool favouritesOnly;
 
   final List<StreamSubscription<Object>> _dataSubscriptions =
       <StreamSubscription<Object>>[];
@@ -322,11 +329,12 @@ class RestaurantListController extends ChangeNotifier {
       availableCountries: _availableCountries,
       restaurants: <RestaurantUiModel>[
         for (final Restaurant restaurant in _restaurants)
-          restaurant.toUiModel(
-            isFavorite: _favoriteIds.contains(restaurant.id),
-            tags: _tagsByRestaurantId[restaurant.id] ?? const <String>[],
-            latestVisit: _latestVisitByRestaurantId[restaurant.id],
-          ),
+          if (!favouritesOnly || _favoriteIds.contains(restaurant.id))
+            restaurant.toUiModel(
+              isFavorite: _favoriteIds.contains(restaurant.id),
+              tags: _tagsByRestaurantId[restaurant.id] ?? const <String>[],
+              latestVisit: _latestVisitByRestaurantId[restaurant.id],
+            ),
       ],
       isInitialLoad: !_loaded,
     );

@@ -67,7 +67,10 @@ class _HomeShellState extends State<HomeShell> {
             onOpenRestaurant: _pushDetail,
             onAddRestaurant: _pushEdit,
           ),
-          PlaceholderScreen(title: l10n.navFavorites),
+          RestaurantListScreen(
+            favouritesOnly: true,
+            onOpenRestaurant: _pushDetail,
+          ),
           PlaceholderScreen(title: l10n.navRoulette),
           PlaceholderScreen(title: l10n.navSettings),
         ],

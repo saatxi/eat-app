@@ -24,11 +24,17 @@ class RestaurantListScreen extends StatefulWidget {
     super.key,
     this.onOpenRestaurant,
     this.onAddRestaurant,
+    this.favouritesOnly = false,
   });
 
   /// Null leaves the rows untappable — the case in a bare widget test.
   final ValueChanged<RestaurantUiModel>? onOpenRestaurant;
   final VoidCallback? onAddRestaurant;
+
+  /// Narrows the screen to favourites, which is what the favourites tab shows:
+  /// the same search, sort, filters and rows, cut down to the hearted places and
+  /// with nothing to add or suggest.
+  final bool favouritesOnly;
 
   @override
   State<RestaurantListScreen> createState() => _RestaurantListScreenState();
@@ -48,6 +54,7 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
     _controller ??= RestaurantListController(
       repository: scope.restaurants,
       preferences: scope.preferences,
+      favouritesOnly: widget.favouritesOnly,
     );
   }
 
@@ -75,10 +82,13 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.listTitle),
+        title: Text(
+          widget.favouritesOnly ? l10n.favoritesTitle : l10n.listTitle,
+        ),
         // A two-stop tonal wash rather than a flat container colour: a sense of
         // place above the list without touching the app bar's scroll behaviour.
-        flexibleSpace: const _TopGradient(),
+        flexibleSpace:
+            widget.favouritesOnly ? null : const _TopGradient(),
       ),
       floatingActionButton: widget.onAddRestaurant == null
           ? null
@@ -159,43 +169,58 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
       );
     }
 
-    if (state.restaurants.isEmpty && !state.hasActiveFilter) {
-      // Nothing has ever been added: there are no filters to offer yet.
+    final bool noResults = state.restaurants.isEmpty;
+
+    if (noResults && !state.hasActiveFilter) {
+      // There is nothing to narrow down yet — either no restaurant has been
+      // added, or none has been hearted.
       return EmptyState(
-        icon: Icons.restaurant_menu,
-        title: l10n.listEmptyTitle,
-        body: l10n.listEmptyBody,
+        icon: widget.favouritesOnly
+            ? Icons.favorite_border
+            : Icons.restaurant_menu,
+        title: widget.favouritesOnly
+            ? l10n.favoritesEmptyTitle
+            : l10n.listEmptyTitle,
+        body: widget.favouritesOnly
+            ? l10n.favoritesEmptyBody
+            : l10n.listEmptyBody,
         actionLabel:
-            widget.onAddRestaurant == null ? null : l10n.listActionAddRestaurant,
+            !widget.favouritesOnly && widget.onAddRestaurant != null
+                ? l10n.listActionAddRestaurant
+                : null,
         onAction: widget.onAddRestaurant,
       );
     }
 
-    final bool noResults = state.restaurants.isEmpty;
+    // A result count is most useful precisely when a filter has narrowed the
+    // list down; browsing everything instead, that same spot offers a starting
+    // point rather than sitting blank. Favourites has nothing to suggest.
+    final Widget? header = state.hasActiveFilter
+        ? Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              l10n.listResultCount(state.restaurants.length),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          )
+        : widget.favouritesOnly
+            ? null
+            : SearchSuggestionsRow(
+                onMinRatingChange: controller.onMinRatingChange,
+                onVisitedChange: controller.onVisitedChange,
+              );
+    final int headerCount = header == null ? 0 : 1;
+
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      itemCount: 1 + (noResults ? 1 : state.restaurants.length),
+      itemCount: headerCount + (noResults ? 1 : state.restaurants.length),
       separatorBuilder: (BuildContext context, int index) =>
           const SizedBox(height: AppSpacing.sm),
       itemBuilder: (BuildContext context, int index) {
-        if (index == 0) {
-          // A result count is most useful precisely when a filter has narrowed
-          // the list down; browsing everything instead, that same spot offers a
-          // starting point rather than sitting blank.
-          return state.hasActiveFilter
-              ? Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    l10n.listResultCount(state.restaurants.length),
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                )
-              : SearchSuggestionsRow(
-                  onMinRatingChange: controller.onMinRatingChange,
-                  onVisitedChange: controller.onVisitedChange,
-                );
+        if (header != null && index == 0) {
+          return header;
         }
         if (noResults) {
           return SizedBox(
@@ -209,7 +234,7 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
             ),
           );
         }
-        final RestaurantUiModel restaurant = state.restaurants[index - 1];
+        final RestaurantUiModel restaurant = state.restaurants[index - headerCount];
         return RestaurantRow(
           restaurant: restaurant,
           onTap: widget.onOpenRestaurant == null
