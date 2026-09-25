@@ -152,6 +152,17 @@ if ($versionCode) { Write-Host "    versionCode=$versionCode" }
 
 # --- build ----------------------------------------------------------------
 
+# Gradle's client JVM is launched from JAVA_HOME (typically Android Studio's
+# bundled JBR, JDK 24+), which prints JEP 472 "a restricted method in
+# java.lang.System has been called" warnings before our build even starts.
+# android/gradle.properties already passes --enable-native-access to the daemon
+# via org.gradle.jvmargs, but the client doesn't read that file, so the same
+# flag has to reach it through GRADLE_OPTS.
+$nativeAccessFlag = '--enable-native-access=ALL-UNNAMED'
+if ($env:GRADLE_OPTS -notmatch [regex]::Escape($nativeAccessFlag)) {
+    $env:GRADLE_OPTS = (@($env:GRADLE_OPTS, $nativeAccessFlag) | Where-Object { $_ }) -join ' '
+}
+
 Write-Step 'Building release App Bundle (flutter build appbundle --release)...'
 & flutter build appbundle --release
 if ($LASTEXITCODE -ne 0) {
