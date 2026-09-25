@@ -359,6 +359,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageCatalan => 'Catalan';
 
   @override
+  String get languageSystem => 'Follow the device language';
+
+  @override
   String get helpTitle => 'How to use EatApp';
 
   @override

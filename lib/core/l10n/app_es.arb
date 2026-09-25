@@ -119,6 +119,7 @@
   "languageEnglish": "Inglés",
   "languageSpanish": "Español",
   "languageCatalan": "Catalán",
+  "languageSystem": "Seguir el idioma del dispositivo",
 
   "helpTitle": "Cómo usar EatApp",
   "helpIntro": "Una guía rápida de todo lo que puede hacer EatApp — toca un tema para abrirlo.",

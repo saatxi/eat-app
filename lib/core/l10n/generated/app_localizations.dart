@@ -736,6 +736,12 @@ abstract class AppLocalizations {
   /// **'Catalan'**
   String get languageCatalan;
 
+  /// No description provided for @languageSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the device language'**
+  String get languageSystem;
+
   /// No description provided for @helpTitle.
   ///
   /// In en, this message translates to:

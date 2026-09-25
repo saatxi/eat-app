@@ -7,7 +7,8 @@ import '../list/restaurant_list_screen.dart';
 import '../list/restaurant_ui_model.dart';
 import '../log_visit/log_visit_screen.dart';
 import '../roulette/roulette_screen.dart';
-import 'placeholder_screen.dart';
+import '../settings/settings_screen.dart';
+import '../stats/statistics_screen.dart';
 
 /// The app's root: a bottom navigation bar over the four top-level sections.
 ///
@@ -34,6 +35,14 @@ class _HomeShellState extends State<HomeShell> {
           onEdit: (String id) => _pushEdit(restaurantId: id),
           onLogVisit: _pushLogVisit,
         ),
+      ),
+    );
+  }
+
+  void _pushStatistics() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const StatisticsScreen(),
       ),
     );
   }
@@ -72,7 +81,7 @@ class _HomeShellState extends State<HomeShell> {
             onOpenRestaurant: _pushDetail,
           ),
           RouletteScreen(onOpenRestaurant: _pushDetail),
-          PlaceholderScreen(title: l10n.navSettings),
+          SettingsScreen(onViewStatistics: _pushStatistics),
         ],
       ),
       bottomNavigationBar: NavigationBar(
