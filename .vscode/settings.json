@@ -7,6 +7,10 @@
     // task the extension runs to the installed Temurin 21.
     "java.jdt.ls.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot",
     "java.import.gradle.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot",
+    // The "Gradle for Java" extension (vscjava.vscode-gradle) launches Gradle with
+    // this JVM; left unset it falls back to JAVA_HOME, which is the Java 25 JBR and
+    // reproduces "Unsupported class file major version 69".
+    "gradle.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot",
     "java.configuration.runtimes": [
         {
             "name": "JavaSE-21",
