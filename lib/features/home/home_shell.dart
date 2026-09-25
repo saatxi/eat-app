@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/l10n/generated/app_localizations.dart';
 import '../detail/restaurant_detail_screen.dart';
+import '../edit/restaurant_edit_screen.dart';
 import '../list/restaurant_list_screen.dart';
 import '../list/restaurant_ui_model.dart';
 import 'placeholder_screen.dart';
@@ -37,11 +38,20 @@ class _HomeShellState extends State<HomeShell> {
       MaterialPageRoute<void>(
         builder: (BuildContext context) => RestaurantDetailScreen(
           restaurantId: restaurant.id,
-          // Editing and logging a visit are their own blocks; until they land
-          // each opens the placeholder rather than doing nothing.
-          onEdit: (String id) => _push(l10n.editTitleEdit),
+          onEdit: (String id) => _pushEdit(restaurantId: id),
+          // Logging a visit is its own block; until it lands this opens the
+          // placeholder rather than doing nothing.
           onLogVisit: (String id) => _push(l10n.logvisitTitle),
         ),
+      ),
+    );
+  }
+
+  void _pushEdit({String? restaurantId}) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) =>
+            RestaurantEditScreen(restaurantId: restaurantId),
       ),
     );
   }
@@ -55,7 +65,7 @@ class _HomeShellState extends State<HomeShell> {
         children: <Widget>[
           RestaurantListScreen(
             onOpenRestaurant: _pushDetail,
-            onAddRestaurant: () => _push(l10n.editTitleAdd),
+            onAddRestaurant: _pushEdit,
           ),
           PlaceholderScreen(title: l10n.navFavorites),
           PlaceholderScreen(title: l10n.navRoulette),
