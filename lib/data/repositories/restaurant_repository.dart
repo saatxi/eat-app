@@ -8,6 +8,8 @@ import '../db/daos/tag_dao.dart';
 import '../db/daos/visit_dao.dart';
 import '../models/restaurant_sort.dart';
 import '../models/stats_projections.dart';
+import '../share/backup_writer.dart';
+import '../share/restaurant_share_models.dart';
 
 /// The single, app-facing entry point to the restaurant data.
 ///
@@ -23,15 +25,18 @@ import '../models/stats_projections.dart';
 /// that have to be atomic (a restaurant plus its tags, a visit plus its photos),
 /// and the id/timestamp generation that makes those writes complete.
 ///
-/// Deliberately absent for now, because they belong to later blocks: the
-/// `backup.json` snapshot the Android repository wrote after every mutation
-/// (sharing/importing), and the deletion of photo files from disk (photos).
-/// Both are side effects on files, not on the database, so nothing here has to
-/// change shape to accommodate them.
+/// The `backup.json` snapshot the Android repository wrote after every change
+/// is written here too, through the optional [BackupWriter] a real app passes
+/// in — kept optional so a unit test can build a bare in-memory repository
+/// with no platform channel in the way. Deleting photo files from disk is
+/// still deliberately absent; that belongs with the photos block.
 class RestaurantRepository {
-  RestaurantRepository(this._database);
+  RestaurantRepository(this._database, {this.backupWriter});
 
   final AppDatabase _database;
+
+  /// Null when nothing should snapshot — the case in every unit test.
+  final BackupWriter? backupWriter;
 
   static const Uuid _uuid = Uuid();
 
@@ -103,6 +108,7 @@ class RestaurantRepository {
       await _restaurants.insertRestaurant(restaurant);
       await _tags.setTags(restaurant.id, tags);
     });
+    await _writeBackup();
   }
 
   /// Same contract as [insert]; the row must already exist.
@@ -111,10 +117,14 @@ class RestaurantRepository {
       await _restaurants.updateRestaurant(restaurant);
       await _tags.setTags(restaurant.id, tags);
     });
+    await _writeBackup();
   }
 
   /// No explicit tag/visit/photo cleanup: they all cascade on delete.
-  Future<void> delete(String id) => _restaurants.deleteRestaurant(id);
+  Future<void> delete(String id) async {
+    await _restaurants.deleteRestaurant(id);
+    await _writeBackup();
+  }
 
   Future<void> deleteAll() async {
     await _database.transaction(() async {
@@ -123,6 +133,54 @@ class RestaurantRepository {
       // the tags table itself needs its own wipe.
       await _tags.deleteAllTags();
     });
+    await _writeBackup();
+  }
+
+  // --- Sharing --------------------------------------------------------------
+
+  /// The exportable shape of every restaurant (or just [restaurantIds]),
+  /// carrying each one's tags and — when [includeVisits] is set — its visits.
+  ///
+  /// Both the shared/exported file and the automatic `backup.json` snapshot are
+  /// built from this one method, so the two can't drift apart in what they
+  /// consider a restaurant's data.
+  Future<List<RestaurantExport>> exportRestaurants({
+    List<String>? restaurantIds,
+    bool includeVisits = true,
+  }) async {
+    final List<Restaurant> all = await _restaurants.getAll();
+    final List<Restaurant> selected = restaurantIds == null
+        ? all
+        : <Restaurant>[
+            for (final Restaurant restaurant in all)
+              if (restaurantIds.contains(restaurant.id)) restaurant,
+          ];
+
+    final Map<String, List<String>> tagsByRestaurant = _groupTagNames(
+      await _tags.getAllRestaurantTagLinks(),
+    );
+    final Map<String, List<Visit>> visitsByRestaurant = includeVisits
+        ? _groupVisits(await _visits.getAllVisits())
+        : const <String, List<Visit>>{};
+
+    return <RestaurantExport>[
+      for (final Restaurant restaurant in selected)
+        exportRestaurant(
+          restaurant,
+          tags: tagsByRestaurant[restaurant.id] ?? const <String>[],
+          visits: visitsByRestaurant[restaurant.id] ?? const <Visit>[],
+        ),
+    ];
+  }
+
+  /// Writes the snapshot a real app keeps current after every change. A no-op
+  /// when no [BackupWriter] was supplied.
+  Future<void> _writeBackup() async {
+    final BackupWriter? writer = backupWriter;
+    if (writer == null) {
+      return;
+    }
+    await writer.write(await exportRestaurants());
   }
 
   // --- Tags -----------------------------------------------------------------
@@ -221,6 +279,7 @@ class RestaurantRepository {
         );
       }
     });
+    await _writeBackup();
   }
 
   /// Adds one more visit, together with any photos taken on it. Returns the new
@@ -254,10 +313,14 @@ class RestaurantRepository {
         );
       }
     });
+    await _writeBackup();
     return visitId;
   }
 
-  Future<void> deleteVisit(String id) => _visits.deleteVisit(id);
+  Future<void> deleteVisit(String id) async {
+    await _visits.deleteVisit(id);
+    await _writeBackup();
+  }
 
   // --- Photos ---------------------------------------------------------------
 
@@ -316,4 +379,22 @@ class RestaurantRepository {
 
   static String? _blankToNull(String? value) =>
       value == null || value.trim().isEmpty ? null : value;
+
+  static Map<String, List<String>> _groupTagNames(
+    List<RestaurantTagName> links,
+  ) {
+    final Map<String, List<String>> byRestaurant = <String, List<String>>{};
+    for (final RestaurantTagName link in links) {
+      (byRestaurant[link.restaurantId] ??= <String>[]).add(link.name);
+    }
+    return byRestaurant;
+  }
+
+  static Map<String, List<Visit>> _groupVisits(List<Visit> visits) {
+    final Map<String, List<Visit>> byRestaurant = <String, List<Visit>>{};
+    for (final Visit visit in visits) {
+      (byRestaurant[visit.restaurantId] ??= <Visit>[]).add(visit);
+    }
+    return byRestaurant;
+  }
 }

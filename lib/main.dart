@@ -10,6 +10,7 @@ import 'data/db/app_database.dart';
 import 'data/migration/room_to_drift_importer.dart';
 import 'data/repositories/restaurant_repository.dart';
 import 'data/repositories/user_preferences_repository.dart';
+import 'data/share/backup_writer.dart';
 import 'features/home/home_shell.dart';
 
 Future<void> main() async {
@@ -34,7 +35,12 @@ Future<void> main() async {
   runApp(
     EatApp(
       preferences: UserPreferencesRepository(store: preferences),
-      repository: RestaurantRepository(database),
+      // The on-device snapshot is written after every change, so a device
+      // restore brings the data along without the user ever pressing export.
+      repository: RestaurantRepository(
+        database,
+        backupWriter: const FileBackupWriter(),
+      ),
     ),
   );
 }

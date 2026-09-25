@@ -68,15 +68,15 @@ class TagDao extends DatabaseAccessor<AppDatabase> with _$TagDaoMixin {
     'SELECT rt.restaurantId AS restaurantId, t.name AS name '
     'FROM restaurant_tags rt JOIN tags t ON t.id = rt.tagId',
     readsFrom: <ResultSetImplementation>{tags, restaurantTags},
-  ).watch().map(
-    (List<QueryRow> rows) => <RestaurantTagName>[
-      for (final QueryRow row in rows)
-        RestaurantTagName(
-          restaurantId: row.read<String>('restaurantId'),
-          name: row.read<String>('name'),
-        ),
-    ],
-  );
+  ).watch().map(_mapRestaurantTagLinks);
+
+  /// One-shot variant of [observeAllRestaurantTagLinks], used to assemble the
+  /// export snapshot without subscribing to a stream that is read once.
+  Future<List<RestaurantTagName>> getAllRestaurantTagLinks() => customSelect(
+    'SELECT rt.restaurantId AS restaurantId, t.name AS name '
+    'FROM restaurant_tags rt JOIN tags t ON t.id = rt.tagId',
+    readsFrom: <ResultSetImplementation>{tags, restaurantTags},
+  ).get().then(_mapRestaurantTagLinks);
 
   /// Backs the statistics screen's "top tags" ranking, most-used first.
   Stream<List<TagCount>> observeTagCounts() => customSelect(
@@ -134,4 +134,13 @@ class TagDao extends DatabaseAccessor<AppDatabase> with _$TagDaoMixin {
   List<String> _readNames(List<QueryRow> rows) => <String>[
     for (final QueryRow row in rows) row.read<String>('name'),
   ];
+
+  List<RestaurantTagName> _mapRestaurantTagLinks(List<QueryRow> rows) =>
+      <RestaurantTagName>[
+        for (final QueryRow row in rows)
+          RestaurantTagName(
+            restaurantId: row.read<String>('restaurantId'),
+            name: row.read<String>('name'),
+          ),
+      ];
 }
