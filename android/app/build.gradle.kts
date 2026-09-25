@@ -1,8 +1,71 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// --- Git-tag-based versioning ---------------------------------------------
+// Kept identical to the scheme the previous (native) Android build used, so
+// this Flutter build keeps producing the same, strictly-increasing versionCode
+// the Play listing already has:
+//   versionName: from the nearest tag ("1.2.0", "1.2.0-3-g559a7d4", or a short
+//                SHA before the first tag; "-dirty" when the tree is modified).
+//   versionCode: total commit count on HEAD -- guaranteed monotonically
+//                non-decreasing, which is what Play requires. pubspec.yaml's
+//                build number is intentionally ignored.
+// NOTE: a CI checkout MUST use fetch-depth: 0 and fetch-tags: true, or this
+// silently falls back to versionCode=1 / a bare SHA.
+fun runGitCommand(vararg args: String): String? = try {
+    val process = ProcessBuilder(listOf("git") + args)
+        .directory(rootDir)
+        .redirectErrorStream(false)
+        .start()
+    val output = process.inputStream.bufferedReader().readText().trim()
+    if (process.waitFor() == 0 && output.isNotEmpty()) output else null
+} catch (e: Exception) {
+    null
+}
+
+val gitVersionName: String = runGitCommand("describe", "--tags", "--always", "--dirty")
+    ?.removePrefix("v")
+    ?: "0.0.0"
+
+val gitVersionCode: Int = runGitCommand("rev-list", "--count", "HEAD")
+    ?.toIntOrNull()
+    ?: 1
+// ---------------------------------------------------------------------------
+
+// --- Release signing -------------------------------------------------------
+// Same keystore and passwords as the previous Gradle build: read from the
+// repository-root local.properties (shared with the former native module) or
+// the matching EATAPP_* environment variables. A relative keystore path is
+// resolved against the repository root, exactly as before. When nothing is
+// configured the release build still runs, but stays unsigned and says so
+// loudly at build time instead of producing an artifact Play silently rejects.
+val repoRoot = rootDir.parentFile
+val localProperties = Properties().apply {
+    repoRoot.resolve("local.properties")
+        .takeIf { it.exists() }
+        ?.inputStream()
+        ?.use { load(it) }
+}
+
+fun localOrEnv(propertyKey: String, envKey: String): String? =
+    (localProperties.getProperty(propertyKey) ?: System.getenv(envKey))?.takeIf { it.isNotBlank() }
+
+val releaseKeystoreFile = localOrEnv("eatapp.keystore.file", "EATAPP_KEYSTORE_FILE")
+    ?.let { repoRoot.resolve(it) }
+val releaseKeystorePassword = localOrEnv("eatapp.keystore.password", "EATAPP_KEYSTORE_PASSWORD")
+val releaseKeyAlias = localOrEnv("eatapp.key.alias", "EATAPP_KEY_ALIAS")
+val releaseKeyPassword = localOrEnv("eatapp.key.password", "EATAPP_KEY_PASSWORD")
+
+val hasReleaseSigning = releaseKeystoreFile?.exists() == true &&
+    releaseKeystorePassword != null &&
+    releaseKeyAlias != null &&
+    releaseKeyPassword != null
+// ---------------------------------------------------------------------------
 
 android {
     namespace = "com.saatxi.eatapp"
@@ -15,25 +78,29 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.saatxi.eatapp"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
-        // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
-        // You can force using the value of versionCode by specifying the `-P force-version-code-ignoring-abi=true`
-        // flag during build.
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = gitVersionCode
+        versionName = gitVersionName
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = releaseKeystoreFile
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Null when no keystore is configured, which leaves the bundle
+            // unsigned so scripts/bundle.ps1 -AllowUnsigned still means what it says.
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 }
@@ -46,4 +113,24 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// Surface a missing keystore at build time rather than at upload time, and only
+// when a release build is actually being run so debug builds stay quiet.
+gradle.taskGraph.whenReady {
+    if (!hasReleaseSigning && allTasks.any { it.name.contains("Release") }) {
+        val keystore = releaseKeystoreFile
+        val reason = if (keystore != null && !keystore.exists()) {
+            "the configured keystore was not found at ${keystore.absolutePath}"
+        } else {
+            "release signing is not configured"
+        }
+        logger.warn(
+            "WARNING: $reason, so this release bundle will be UNSIGNED and cannot be " +
+                "uploaded to Play. Set eatapp.keystore.file, eatapp.keystore.password, " +
+                "eatapp.key.alias and eatapp.key.password in local.properties, or the matching " +
+                "EATAPP_KEYSTORE_FILE, EATAPP_KEYSTORE_PASSWORD, EATAPP_KEY_ALIAS and " +
+                "EATAPP_KEY_PASSWORD environment variables. See the README section on signing releases."
+        )
+    }
 }
