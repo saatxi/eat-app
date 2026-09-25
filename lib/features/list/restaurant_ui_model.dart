@@ -1,14 +1,12 @@
 import 'package:flutter/foundation.dart';
 
 import '../../core/utils/address_formatter.dart';
+import '../../core/widgets/presentation_bounds.dart';
 import '../../data/db/app_database.dart';
 
-/// Stars the rating scale is drawn on.
-const int maxRating = 5;
-
-/// Widest price band the source data can hold. 0 is not the cheapest band, it
-/// is "not set", and the picker starts at 1 — see `priceRangeLabel`.
-const int maxPriceRange = 6;
+// Re-exported so call sites that already import this model keep seeing the two
+// bounds, while the widgets under `core/widgets` read them from their own home.
+export '../../core/widgets/presentation_bounds.dart';
 
 /// What the screens draw, kept separate from the drift [Restaurant] row so the
 /// presentation decisions — which rating a row shows, whether a place counts as
