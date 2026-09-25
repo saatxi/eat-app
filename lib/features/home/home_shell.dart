@@ -4,6 +4,7 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../detail/restaurant_detail_screen.dart';
 import '../edit/restaurant_edit_screen.dart';
 import '../list/restaurant_list_screen.dart';
+import '../log_visit/log_visit_screen.dart';
 import '../list/restaurant_ui_model.dart';
 import 'placeholder_screen.dart';
 
@@ -24,25 +25,23 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
-  void _push(String title) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) => PlaceholderScreen(title: title),
-      ),
-    );
-  }
-
   void _pushDetail(RestaurantUiModel restaurant) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (BuildContext context) => RestaurantDetailScreen(
           restaurantId: restaurant.id,
           onEdit: (String id) => _pushEdit(restaurantId: id),
-          // Logging a visit is its own block; until it lands this opens the
-          // placeholder rather than doing nothing.
-          onLogVisit: (String id) => _push(l10n.logvisitTitle),
+          onLogVisit: _pushLogVisit,
         ),
+      ),
+    );
+  }
+
+  void _pushLogVisit(String restaurantId) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) =>
+            LogVisitScreen(restaurantId: restaurantId),
       ),
     );
   }
