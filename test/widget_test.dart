@@ -1,30 +1,47 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:eatapp/core/theme/app_palette.dart';
+import 'package:eatapp/core/theme/palettes/garden_palette.dart';
+import 'package:eatapp/core/theme/app_theme_mode.dart';
+import 'package:eatapp/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:eatapp/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('app builds on the default palette and mode', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const EatApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('EatApp'), findsOneWidget);
+    expect(find.text('Palette'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    final MaterialApp app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.themeMode, ThemeMode.light);
+    expect(app.theme!.colorScheme.primary, AppPalette.fallback.tones.primary.t40);
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('choosing a palette rebuilds the theme', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const EatApp());
+
+    await tester.tap(find.text('Garden'));
+    await tester.pumpAndSettle();
+
+    final MaterialApp app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.theme!.colorScheme.primary, gardenTones.primary.t40);
+    expect(app.darkTheme!.colorScheme.primary, gardenTones.primary.t80);
+  });
+
+  testWidgets('toggling dark mode switches MaterialApp.themeMode', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const EatApp());
+
+    await tester.tap(find.byIcon(Icons.light_mode));
+    await tester.pumpAndSettle();
+
+    final MaterialApp app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.themeMode, ThemeMode.dark);
+    expect(AppThemeMode.dark.brightness, Brightness.dark);
   });
 }
