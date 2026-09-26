@@ -6,8 +6,9 @@ import '../theme/tokens/cuisine_accents.dart';
 
 /// The icon, label and tint a cuisine badge is drawn with.
 ///
-/// Restaurants carry no photo of their own yet, so the list and detail screens
-/// draw a cuisine-derived badge in its place. All three lookups take the raw
+/// A restaurant with no photo of its own falls back to a cuisine-derived badge
+/// ([RestaurantThumbnail]), and these are what that badge is drawn with. All
+/// three lookups take the raw
 /// `cuisineType` value straight off the entity and degrade gracefully when it
 /// is not a key this build knows: a generic icon, a neutral tint and the raw
 /// string as the label — so a newer data file never breaks an older app.
