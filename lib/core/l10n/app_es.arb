@@ -99,13 +99,9 @@
 
   "settingsTitle": "Ajustes",
   "settingsSectionAppearance": "Apariencia",
-  "settingsPalette": "Esquema de color",
   "settingsThemeMode": "Tema",
   "themeModeLight": "Claro",
   "themeModeDark": "Oscuro",
-  "paletteMercadoFresco": "Mercado fresco",
-  "paletteGarden": "Huerto",
-  "paletteIndigo": "Índigo",
   "settingsSectionData": "Datos",
   "settingsActionViewStatistics": "Ver estadísticas",
   "settingsActionExportData": "Exportar mis datos",

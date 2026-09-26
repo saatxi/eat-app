@@ -178,7 +178,7 @@ lib/
 ├── app/               # AppScope (the repositories, published to the tree)
 ├── core/
 │   ├── l10n/          # ARB files + generated AppLocalizations
-│   ├── theme/         # palettes, tokens, ThemeData, gallery
+│   ├── theme/         # palette, tokens, ThemeData, gallery
 │   ├── utils/         # pure helpers (link/tag validation, search, address)
 │   └── widgets/       # shared presentational widgets
 ├── data/

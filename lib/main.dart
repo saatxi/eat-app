@@ -26,7 +26,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // The preference file is read before the first frame rather than asynchronously
-  // afterwards: the palette, the light/dark choice and the language all decide
+  // afterwards: the light/dark choice and the language all decide
   // what that first frame looks like, and starting on the defaults and swapping
   // them out afterwards would be a visible flash on every launch.
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -244,14 +244,8 @@ class _EatAppState extends State<EatApp> {
             // Both brightnesses are provided so Flutter can cross-fade between
             // them when the mode changes, instead of swapping the tree's theme
             // outright.
-            theme: AppTheme.of(
-              palette: preferences.palette,
-              mode: AppThemeMode.light,
-            ),
-            darkTheme: AppTheme.of(
-              palette: preferences.palette,
-              mode: AppThemeMode.dark,
-            ),
+            theme: AppTheme.of(mode: AppThemeMode.light),
+            darkTheme: AppTheme.of(mode: AppThemeMode.dark),
             themeMode: preferences.themeMode.brightness == Brightness.dark
                 ? ThemeMode.dark
                 : ThemeMode.light,

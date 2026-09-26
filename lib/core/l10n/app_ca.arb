@@ -99,13 +99,9 @@
 
   "settingsTitle": "Configuració",
   "settingsSectionAppearance": "Aparença",
-  "settingsPalette": "Esquema de color",
   "settingsThemeMode": "Tema",
   "themeModeLight": "Clar",
   "themeModeDark": "Fosc",
-  "paletteMercadoFresco": "Mercat fresc",
-  "paletteGarden": "Hort",
-  "paletteIndigo": "Indi",
   "settingsSectionData": "Dades",
   "settingsActionViewStatistics": "Veure estadístiques",
   "settingsActionExportData": "Exporta les meves dades",

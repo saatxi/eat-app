@@ -1,24 +1,21 @@
 import 'package:flutter/material.dart';
 
-import 'app_palette.dart';
 import 'app_theme_mode.dart';
+import 'palettes/verd_palette.dart';
 import 'tokens/app_color_scheme.dart';
 import 'tokens/app_typography.dart';
 import 'tokens/cuisine_accents.dart';
 import 'tokens/palette_tones.dart';
 
-/// Builds the app's `ThemeData` from a palette and a light/dark mode.
+/// Builds the app's `ThemeData` for a light/dark mode.
 ///
-/// This is the single place a `ColorScheme`, the type scale and the cuisine
-/// accents are assembled, so `MaterialApp` just picks between
-/// [of]`(..., AppThemeMode.light)` and [of]`(..., AppThemeMode.dark)`.
+/// This is the single place the app's one `ColorScheme`, the type scale and the
+/// cuisine accents are assembled, so `MaterialApp` just picks between
+/// [of]`(AppThemeMode.light)` and [of]`(AppThemeMode.dark)`.
 abstract final class AppTheme {
-  /// The theme for [palette] in [mode].
-  static ThemeData of({
-    AppPalette palette = AppPalette.fallback,
-    AppThemeMode mode = AppThemeMode.fallback,
-  }) =>
-      build(palette.tones, mode.brightness);
+  /// The theme for [mode], built from the app's single palette.
+  static ThemeData of({AppThemeMode mode = AppThemeMode.fallback}) =>
+      build(verdTones, mode.brightness);
 
   /// Builds a theme straight from tones and a brightness, which is what the
   /// contrast tests and `@Preview`-style galleries want.

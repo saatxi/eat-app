@@ -31,7 +31,7 @@ install's data is imported automatically on first launch — see
   pull-to-refresh, and the edge swipe-back on iOS.
 - Share one restaurant, or your whole list, through the normal share sheet;
   opening a shared file shows a review screen before anything is saved.
-- Three colour palettes and a light/dark choice in Settings.
+- A single colour scheme, with a light/dark choice in Settings.
 - English, Spanish and Catalan.
 - No account, no server, no network calls.
 
@@ -193,7 +193,7 @@ lib/
 ├── app/               # AppScope (the repositories, published to the tree)
 ├── core/
 │   ├── l10n/          # ARB files + generated AppLocalizations
-│   ├── theme/         # palettes, tokens, ThemeData, gallery
+│   ├── theme/         # palette, tokens, ThemeData, gallery
 │   ├── utils/         # pure helpers (link/tag validation, search, address)
 │   └── widgets/       # shared presentational widgets
 ├── data/

@@ -5,7 +5,8 @@ import 'dart:ui' show Locale;
 /// [languageCode] is what gets persisted (the same code the Android app's
 /// `values-xx` resource folders use), so entries must not be renamed without a
 /// migration; [fromLanguageCode] resolves an unrecognised or absent value to
-/// [fallback] instead of throwing, mirroring [AppPalette.fromId].
+/// [fallback] instead of throwing, the same graceful degradation the preference
+/// reader applies to any other stale stored id.
 enum AppLanguage {
   english('en'),
   spanish('es'),

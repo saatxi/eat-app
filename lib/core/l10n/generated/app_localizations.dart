@@ -616,12 +616,6 @@ abstract class AppLocalizations {
   /// **'Appearance'**
   String get settingsSectionAppearance;
 
-  /// No description provided for @settingsPalette.
-  ///
-  /// In en, this message translates to:
-  /// **'Color scheme'**
-  String get settingsPalette;
-
   /// No description provided for @settingsThemeMode.
   ///
   /// In en, this message translates to:
@@ -639,24 +633,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dark'**
   String get themeModeDark;
-
-  /// No description provided for @paletteMercadoFresco.
-  ///
-  /// In en, this message translates to:
-  /// **'Fresh Market'**
-  String get paletteMercadoFresco;
-
-  /// No description provided for @paletteGarden.
-  ///
-  /// In en, this message translates to:
-  /// **'Garden'**
-  String get paletteGarden;
-
-  /// No description provided for @paletteIndigo.
-  ///
-  /// In en, this message translates to:
-  /// **'Indigo'**
-  String get paletteIndigo;
 
   /// No description provided for @settingsSectionData.
   ///

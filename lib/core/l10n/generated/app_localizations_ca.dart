@@ -301,9 +301,6 @@ class AppLocalizationsCa extends AppLocalizations {
   String get settingsSectionAppearance => 'Aparença';
 
   @override
-  String get settingsPalette => 'Esquema de color';
-
-  @override
   String get settingsThemeMode => 'Tema';
 
   @override
@@ -311,15 +308,6 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get themeModeDark => 'Fosc';
-
-  @override
-  String get paletteMercadoFresco => 'Mercat fresc';
-
-  @override
-  String get paletteGarden => 'Hort';
-
-  @override
-  String get paletteIndigo => 'Indi';
 
   @override
   String get settingsSectionData => 'Dades';

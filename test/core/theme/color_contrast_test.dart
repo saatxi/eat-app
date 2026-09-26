@@ -1,79 +1,76 @@
 import 'dart:math' as math;
 
-import 'package:eatapp/core/theme/app_palette.dart';
 import 'package:eatapp/core/theme/app_theme.dart';
+import 'package:eatapp/core/theme/palettes/verd_palette.dart';
 import 'package:eatapp/core/theme/tokens/cuisine_accents.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The tone-to-role mapping states the rule "an on-colour is always the far end
-/// of its own ramp" once, for every palette. This holds the line: it walks all
-/// three palettes in both brightnesses and asserts the WCAG AA normal-text
-/// threshold (4.5:1) on every foreground/background pair the scheme exposes,
-/// including the cuisine accents.
+/// of its own ramp" once. This holds the line: it walks the app's single palette
+/// in both brightnesses and asserts the WCAG AA normal-text threshold (4.5:1)
+/// on every foreground/background pair the scheme exposes, including the
+/// cuisine accents.
 ///
 /// Port of the Android app's `ColorSchemeContrastTest`, so the rewrite cannot
 /// quietly reintroduce the hand-wired `onSecondaryContainer` bug that test was
 /// written to catch.
 const double _aaNormalText = 4.5;
 
-/// Small slack for floating-point rounding; the palettes are tuned to clear the
+/// Small slack for floating-point rounding; the palette is tuned to clear the
 /// threshold, not to sit exactly on it.
 const double _epsilon = 0.01;
 
 void main() {
-  const List<AppPalette> palettes = AppPalette.values;
   const List<Brightness> brightnesses = <Brightness>[
     Brightness.light,
     Brightness.dark,
   ];
 
-  for (final AppPalette palette in palettes) {
-    for (final Brightness brightness in brightnesses) {
-      final String label = '${palette.id} / ${brightness.name}';
-      final ThemeData theme = AppTheme.build(palette.tones, brightness);
-      final ColorScheme scheme = theme.colorScheme;
+  for (final Brightness brightness in brightnesses) {
+    final String label = 'verd / ${brightness.name}';
+    final ThemeData theme = AppTheme.build(verdTones, brightness);
+    final ColorScheme scheme = theme.colorScheme;
 
-      test('$label — brand on-colours clear AA', () {
-        _expectAa(scheme.primary, scheme.onPrimary, 'onPrimary');
-        _expectAa(scheme.primaryContainer, scheme.onPrimaryContainer, 'onPrimaryContainer');
-        _expectAa(scheme.secondary, scheme.onSecondary, 'onSecondary');
-        _expectAa(
-          scheme.secondaryContainer,
-          scheme.onSecondaryContainer,
-          'onSecondaryContainer',
-        );
-        _expectAa(scheme.tertiary, scheme.onTertiary, 'onTertiary');
-        _expectAa(
-          scheme.tertiaryContainer,
-          scheme.onTertiaryContainer,
-          'onTertiaryContainer',
-        );
-      });
+    test('$label — brand on-colours clear AA', () {
+      _expectAa(scheme.primary, scheme.onPrimary, 'onPrimary');
+      _expectAa(scheme.primaryContainer, scheme.onPrimaryContainer, 'onPrimaryContainer');
+      _expectAa(scheme.secondary, scheme.onSecondary, 'onSecondary');
+      _expectAa(
+        scheme.secondaryContainer,
+        scheme.onSecondaryContainer,
+        'onSecondaryContainer',
+      );
+      _expectAa(scheme.tertiary, scheme.onTertiary, 'onTertiary');
+      _expectAa(
+        scheme.tertiaryContainer,
+        scheme.onTertiaryContainer,
+        'onTertiaryContainer',
+      );
+    });
 
-      test('$label — error and surface on-colours clear AA', () {
-        _expectAa(scheme.error, scheme.onError, 'onError');
-        _expectAa(scheme.errorContainer, scheme.onErrorContainer, 'onErrorContainer');
-        _expectAa(scheme.surface, scheme.onSurface, 'onSurface');
-        _expectAa(
-          scheme.surfaceContainerHighest,
-          scheme.onSurface,
-          'onSurface over surfaceContainerHighest',
-        );
-        _expectAa(scheme.inverseSurface, scheme.onInverseSurface, 'onInverseSurface');
-      });
+    test('$label — error and surface on-colours clear AA', () {
+      _expectAa(scheme.error, scheme.onError, 'onError');
+      _expectAa(scheme.errorContainer, scheme.onErrorContainer, 'onErrorContainer');
+      _expectAa(scheme.surface, scheme.onSurface, 'onSurface');
+      _expectAa(
+        scheme.surfaceContainerHighest,
+        scheme.onSurface,
+        'onSurface over surfaceContainerHighest',
+      );
+      _expectAa(scheme.inverseSurface, scheme.onInverseSurface, 'onInverseSurface');
+    });
 
-      test('$label — cuisine accents clear AA', () {
-        final CuisineAccents accents = theme.extension<CuisineAccents>()!;
-        for (int i = 0; i < accents.slots.length; i++) {
-          _expectAa(
-            accents[i].container,
-            accents[i].onContainer,
-            'cuisine accent $i',
-          );
-        }
-      });
-    }
+    test('$label — cuisine accents clear AA', () {
+      final CuisineAccents accents = theme.extension<CuisineAccents>()!;
+      for (int i = 0; i < accents.slots.length; i++) {
+        _expectAa(
+          accents[i].container,
+          accents[i].onContainer,
+          'cuisine accent $i',
+        );
+      }
+    });
   }
 }
 

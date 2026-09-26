@@ -1,5 +1,4 @@
 import 'package:eatapp/core/l10n/app_language.dart';
-import 'package:eatapp/core/theme/app_palette.dart';
 import 'package:eatapp/core/theme/app_theme_mode.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,7 +13,6 @@ void main() {
     test('starts on the defaults', () {
       final UserPreferencesRepository repository = UserPreferencesRepository();
 
-      expect(repository.current.palette, AppPalette.fallback);
       expect(repository.current.themeMode, AppThemeMode.fallback);
       expect(repository.current.language, isNull);
       expect(repository.current.favoriteIds, isEmpty);
@@ -25,14 +23,12 @@ void main() {
       int notifications = 0;
       repository.listenable.addListener(() => notifications++);
 
-      await repository.setPalette(AppPalette.garden);
       await repository.setThemeMode(AppThemeMode.dark);
       await repository.setLanguage(AppLanguage.catalan);
 
-      expect(repository.current.palette, AppPalette.garden);
       expect(repository.current.themeMode, AppThemeMode.dark);
       expect(repository.current.language, AppLanguage.catalan);
-      expect(notifications, 3);
+      expect(notifications, 2);
     });
 
     test('a null language means "follow the device", not "fall back"', () async {
@@ -66,13 +62,12 @@ void main() {
 
     test('each change leaves the other values alone', () async {
       final UserPreferencesRepository repository = UserPreferencesRepository();
-      await repository.setPalette(AppPalette.indigo);
       await repository.setLanguage(AppLanguage.spanish);
       await repository.toggleFavorite('a');
 
       await repository.setThemeMode(AppThemeMode.dark);
 
-      expect(repository.current.palette, AppPalette.indigo);
+      expect(repository.current.themeMode, AppThemeMode.dark);
       expect(repository.current.language, AppLanguage.spanish);
       expect(repository.current.favoriteIds, <String>{'a'});
     });
@@ -86,11 +81,10 @@ void main() {
       store = await SharedPreferences.getInstance();
     }
 
-    test('persists palette, theme mode, language and favourites', () async {
+    test('persists theme mode, language and favourites', () async {
       await openStore();
       final UserPreferencesRepository first = UserPreferencesRepository(store: store);
 
-      await first.setPalette(AppPalette.garden);
       await first.setThemeMode(AppThemeMode.dark);
       await first.setLanguage(AppLanguage.spanish);
       await first.toggleFavorite('r1');
@@ -101,20 +95,19 @@ void main() {
         store: await SharedPreferences.getInstance(),
       );
 
-      expect(reopened.current.palette, AppPalette.garden);
       expect(reopened.current.themeMode, AppThemeMode.dark);
       expect(reopened.current.language, AppLanguage.spanish);
       expect(reopened.current.favoriteIds, <String>{'r1', 'r2'});
     });
 
     test('a stored file with no language key keeps following the device', () async {
-      await openStore(<String, Object>{'palette': 'indigo'});
+      await openStore(<String, Object>{'theme_mode': 'dark'});
 
       final UserPreferencesRepository repository = UserPreferencesRepository(
         store: store,
       );
 
-      expect(repository.current.palette, AppPalette.indigo);
+      expect(repository.current.themeMode, AppThemeMode.dark);
       expect(
         repository.current.language,
         isNull,
@@ -124,7 +117,6 @@ void main() {
 
     test('an unknown stored value degrades to the default instead of throwing', () async {
       await openStore(<String, Object>{
-        'palette': 'neon',
         'theme_mode': 'sepia',
         'language': 'de',
       });
@@ -133,7 +125,6 @@ void main() {
         store: store,
       );
 
-      expect(repository.current.palette, AppPalette.fallback);
       expect(repository.current.themeMode, AppThemeMode.fallback);
       expect(repository.current.language, isNull);
     });
@@ -156,11 +147,9 @@ void main() {
       await openStore();
       final UserPreferencesRepository repository = UserPreferencesRepository(store: store);
 
-      await repository.setPalette(AppPalette.mercadoFresco);
       await repository.setThemeMode(AppThemeMode.light);
       await repository.setLanguage(AppLanguage.catalan);
 
-      expect(store.getString('palette'), 'mercado_fresco');
       expect(store.getString('theme_mode'), 'light');
       expect(store.getString('language'), 'ca');
     });

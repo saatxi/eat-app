@@ -1,13 +1,12 @@
-import 'package:eatapp/core/theme/app_palette.dart';
 import 'package:eatapp/core/theme/app_theme.dart';
 import 'package:eatapp/core/theme/app_theme_mode.dart';
+import 'package:eatapp/core/theme/palettes/verd_palette.dart';
 import 'package:eatapp/core/theme/tokens/app_typography.dart';
 import 'package:eatapp/core/theme/tokens/cuisine_accents.dart';
 import 'package:eatapp/core/theme/tokens/palette_tones.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const List<AppPalette> _allPalettes = AppPalette.values;
 const List<Brightness> _bothBrightnesses = <Brightness>[
   Brightness.light,
   Brightness.dark,
@@ -15,19 +14,12 @@ const List<Brightness> _bothBrightnesses = <Brightness>[
 
 void main() {
   group('tokens', () {
-    test('every palette defines exactly the required number of accents', () {
-      for (final AppPalette palette in _allPalettes) {
-        expect(
-          palette.tones.accents.length,
-          cuisineAccentCount,
-          reason: '${palette.id} has the wrong accent count',
-        );
-      }
+    test('the palette defines exactly the required number of accents', () {
+      expect(verdTones.accents.length, cuisineAccentCount);
     });
 
     test('cuisine accents wrap, so any index is valid', () {
-      final CuisineAccents accents =
-          CuisineAccents.light(AppPalette.fallback.tones);
+      final CuisineAccents accents = CuisineAccents.light(verdTones);
       expect(accents[0].container, accents[cuisineAccentCount].container);
       expect(
         accents[cuisineAccentCount + 3].container,
@@ -56,13 +48,7 @@ void main() {
     });
   });
 
-  group('app palette / theme mode', () {
-    test('unknown persisted ids fall back instead of throwing', () {
-      expect(AppPalette.fromId('does_not_exist'), AppPalette.fallback);
-      expect(AppPalette.fromId(null), AppPalette.fallback);
-      expect(AppPalette.fromId('indigo'), AppPalette.indigo);
-    });
-
+  group('theme mode', () {
     test('theme mode resolves its brightness and falls back safely', () {
       expect(AppThemeMode.light.brightness, Brightness.light);
       expect(AppThemeMode.dark.brightness, Brightness.dark);
@@ -73,21 +59,17 @@ void main() {
 
   group('AppTheme', () {
     test('publishes the cuisine accents as a theme extension', () {
-      for (final AppPalette palette in _allPalettes) {
-        for (final Brightness brightness in _bothBrightnesses) {
-          final ThemeData theme = AppTheme.build(palette.tones, brightness);
-          final CuisineAccents? accents =
-              theme.extension<CuisineAccents>();
-          expect(accents, isNotNull, reason: '${palette.id} / $brightness');
-          expect(accents!.slots.length, cuisineAccentCount);
-        }
+      for (final Brightness brightness in _bothBrightnesses) {
+        final ThemeData theme = AppTheme.build(verdTones, brightness);
+        final CuisineAccents? accents = theme.extension<CuisineAccents>();
+        expect(accents, isNotNull, reason: '$brightness');
+        expect(accents!.slots.length, cuisineAccentCount);
       }
     });
 
     test('is Material 3 and matches the requested brightness', () {
       for (final Brightness brightness in _bothBrightnesses) {
-        final ThemeData theme =
-            AppTheme.build(AppPalette.fallback.tones, brightness);
+        final ThemeData theme = AppTheme.build(verdTones, brightness);
         expect(theme.useMaterial3, isTrue);
         expect(theme.colorScheme.brightness, brightness);
         expect(theme.textTheme.displayLarge, isNotNull);
@@ -95,13 +77,12 @@ void main() {
     });
 
     test('light and dark accents swap the container and on-colour', () {
-      final PaletteTones tones = AppPalette.fallback.tones;
-      final CuisineAccents light = CuisineAccents.light(tones);
-      final CuisineAccents dark = CuisineAccents.dark(tones);
-      expect(light[0].container, tones.accents[0].t90);
-      expect(light[0].onContainer, tones.accents[0].t10);
-      expect(dark[0].container, tones.accents[0].t30);
-      expect(dark[0].onContainer, tones.accents[0].t90);
+      final CuisineAccents light = CuisineAccents.light(verdTones);
+      final CuisineAccents dark = CuisineAccents.dark(verdTones);
+      expect(light[0].container, verdTones.accents[0].t90);
+      expect(light[0].onContainer, verdTones.accents[0].t10);
+      expect(dark[0].container, verdTones.accents[0].t30);
+      expect(dark[0].onContainer, verdTones.accents[0].t90);
     });
   });
 }

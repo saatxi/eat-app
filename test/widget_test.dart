@@ -1,5 +1,5 @@
 import 'package:eatapp/core/l10n/generated/app_localizations.dart';
-import 'package:eatapp/core/theme/app_palette.dart';
+import 'package:eatapp/core/theme/palettes/verd_palette.dart';
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
@@ -77,14 +77,14 @@ void main() {
     await disposeApp(tester);
   });
 
-  testWidgets('builds on the stored palette and mode', (
+  testWidgets('builds on the stored mode', (
     WidgetTester tester,
   ) async {
     await pumpApp(tester);
 
     final MaterialApp app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.themeMode, ThemeMode.light);
-    expect(app.theme!.colorScheme.primary, AppPalette.fallback.tones.primary.t40);
+    expect(app.theme!.colorScheme.primary, verdTones.primary.t40);
 
     await disposeApp(tester);
   });

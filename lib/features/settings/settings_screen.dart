@@ -4,7 +4,6 @@ import '../../app/app_scope.dart';
 import '../../core/app_version.dart';
 import '../../core/l10n/app_language.dart';
 import '../../core/l10n/generated/app_localizations.dart';
-import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_theme_mode.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/repositories/user_preferences_repository.dart';
@@ -62,28 +61,6 @@ class SettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: AppSpacing.xl),
             children: <Widget>[
               _SectionHeader(l10n.settingsSectionAppearance),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Text(
-                  l10n.settingsPalette,
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-              ),
-              for (final AppPalette palette in AppPalette.values)
-                ListTile(
-                  dense: true,
-                  title: Text(_paletteLabel(l10n, palette)),
-                  trailing: palette == value.palette
-                      ? Icon(
-                          Icons.check,
-                          color: Theme.of(context).colorScheme.primary,
-                        )
-                      : null,
-                  onTap: () => preferences.setPalette(palette),
-                ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.lg,
@@ -178,13 +155,6 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-
-  static String _paletteLabel(AppLocalizations l10n, AppPalette palette) =>
-      switch (palette) {
-        AppPalette.mercadoFresco => l10n.paletteMercadoFresco,
-        AppPalette.garden => l10n.paletteGarden,
-        AppPalette.indigo => l10n.paletteIndigo,
-      };
 
   static String _languageLabel(AppLocalizations l10n, AppLanguage language) =>
       switch (language) {

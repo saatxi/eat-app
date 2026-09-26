@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/l10n/app_language.dart';
-import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_theme_mode.dart';
 
 /// Everything the user has chosen, as opposed to everything that was synced.
@@ -13,13 +12,11 @@ import '../../core/theme/app_theme_mode.dart';
 @immutable
 class UserPreferences {
   const UserPreferences({
-    required this.palette,
     required this.themeMode,
     required this.language,
     required this.favoriteIds,
   });
 
-  final AppPalette palette;
   final AppThemeMode themeMode;
 
   /// Null means "no explicit choice yet", so a fresh install follows the
@@ -35,7 +32,6 @@ class UserPreferences {
 
   /// What the app shows before the stored values have been read back.
   static const UserPreferences defaults = UserPreferences(
-    palette: AppPalette.fallback,
     themeMode: AppThemeMode.fallback,
     language: null,
     favoriteIds: <String>{},
@@ -45,13 +41,11 @@ class UserPreferences {
   /// there would be no way to tell "leave the language alone" from "go back to
   /// following the device".
   UserPreferences copyWith({
-    AppPalette? palette,
     AppThemeMode? themeMode,
     AppLanguage? language,
     bool clearLanguage = false,
     Set<String>? favoriteIds,
   }) => UserPreferences(
-    palette: palette ?? this.palette,
     themeMode: themeMode ?? this.themeMode,
     language: clearLanguage ? null : (language ?? this.language),
     favoriteIds: favoriteIds ?? this.favoriteIds,
@@ -84,7 +78,6 @@ class UserPreferencesRepository {
   static Future<UserPreferencesRepository> open() async =>
       UserPreferencesRepository(store: await SharedPreferences.getInstance());
 
-  static const String _paletteKey = 'palette';
   static const String _themeModeKey = 'theme_mode';
   static const String _languageKey = 'language';
   static const String _favoriteIdsKey = 'favorite_ids';
@@ -100,12 +93,6 @@ class UserPreferencesRepository {
 
   bool isFavorite(String restaurantId) =>
       current.favoriteIds.contains(restaurantId);
-
-  Future<void> setPalette(AppPalette palette) async {
-    final UserPreferences next = current.copyWith(palette: palette);
-    _value.value = next;
-    await _store?.setString(_paletteKey, palette.id);
-  }
 
   Future<void> setThemeMode(AppThemeMode themeMode) async {
     final UserPreferences next = current.copyWith(themeMode: themeMode);
@@ -137,7 +124,6 @@ class UserPreferencesRepository {
   }
 
   static UserPreferences _read(SharedPreferences store) => UserPreferences(
-    palette: AppPalette.fromId(store.getString(_paletteKey)),
     themeMode: AppThemeMode.fromId(store.getString(_themeModeKey)),
     language: AppLanguage.tryFromLanguageCode(store.getString(_languageKey)),
     favoriteIds: (store.getStringList(_favoriteIdsKey) ?? const <String>[])
