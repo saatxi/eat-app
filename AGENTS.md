@@ -182,15 +182,14 @@ lib/
 - Markdown files (`README.md`, `AGENTS.md`, `docs/*.md`) must satisfy
   markdownlint (`markdownlint-cli2`, already installed) — run it with no
   arguments; `.markdownlint-cli2.jsonc`'s `globs` already point it at just
-  those files, and it `ignores` `.claude/`. It turns off MD013 (line-length)
-  for headings, tables and code blocks, since none of those can be rewrapped
-  without losing content or corrupting real code or data — everything else
-  still runs the default rule set. Check the editor's lint warnings on any
-  Markdown file you touch and fix them before moving on, rather than leaving
-  them for the next edit to trip over. A warning that's actually an
-  established, repo-wide convention is fine to keep as long as it's applied
-  consistently — don't silently break that consistency in just the section
-  you're touching.
+  those files. It turns off MD013 (line-length) for headings, tables and
+  code blocks, since none of those can be rewrapped without losing content
+  or corrupting real code or data — everything else still runs the default
+  rule set. Check the editor's lint warnings on any Markdown file you touch
+  and fix them before moving on, rather than leaving them for the next edit
+  to trip over. A warning that's actually an established, repo-wide
+  convention is fine to keep as long as it's applied consistently — don't
+  silently break that consistency in just the section you're touching.
 
 ## Security guidelines
 
