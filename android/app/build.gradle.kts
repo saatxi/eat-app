@@ -83,6 +83,17 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = gitVersionCode
         versionName = gitVersionName
+
+        // Flutter's plugin fills defaultConfig's abiFilters with the three ABIs
+        // it builds (armeabi-v7a, arm64-v8a, x86_64) -- see
+        // FlutterPlugin.configureAbiWithoutSplits. A Play-distributed app never
+        // ships to x86_64, so it is dropped here to trim the bundle. Setting it
+        // in defaultConfig (the point Flutter documents as taking precedence
+        // over its own defaults) is what makes the narrowing actually stick.
+        ndk {
+            abiFilters.clear()
+            abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
+        }
     }
 
     signingConfigs {
@@ -97,6 +108,15 @@ android {
     }
 
     buildTypes {
+        // Re-add x86_64 for debug only, so `flutter run` on an x86_64 emulator
+        // still works. The release build type sets no abiFilters of its own, so
+        // it inherits the arm-only defaultConfig above and the shipped bundle
+        // stays lean.
+        debug {
+            ndk {
+                abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a", "x86_64"))
+            }
+        }
         release {
             // Null when no keystore is configured, which leaves the bundle
             // unsigned so scripts/bundle.ps1 -AllowUnsigned still means what it says.

@@ -1,16 +1,20 @@
 <#
 .SYNOPSIS
-    Builds a signed release Android App Bundle (.aab) ready for upload to
-    Google Play, and archives the R8 mapping file alongside it.
+    Builds a signed, obfuscated release Android App Bundle (.aab) ready for
+    upload to Google Play, and archives the R8 mapping and Dart symbol files
+    alongside it.
 
 .DESCRIPTION
     Automates steps 3-5 of the README's "Releasing a new version" section:
     verifies release signing is configured (see README "Signing releases"),
-    runs `flutter build appbundle --release`, reports the resolved version, and copies
-    mapping.txt and native-debug-symbols.zip next to the .aab so they survive
-    the next build (which otherwise overwrites them). Warns (with a confirm
-    prompt) if the working tree is dirty or HEAD isn't exactly on a vX.Y.Z
-    tag, since either means this isn't a clean, reproducible release build.
+    runs `flutter build appbundle --release --obfuscate --split-debug-info=...`,
+    reports the resolved version, and copies the R8 mapping.txt, the Dart
+    <snapshot>.symbols files and native-debug-symbols.zip next to the .aab so
+    they survive the next build (which otherwise overwrites them). The Dart
+    symbols are what lets a crash report be deobfuscated, since --obfuscate
+    renames symbols. Warns (with a confirm prompt) if the working tree is dirty
+    or HEAD isn't exactly on a vX.Y.Z tag, since either means this isn't a
+    clean, reproducible release build.
 
     This script does not tag anything -- run scripts/release.ps1 first.
 
@@ -163,8 +167,13 @@ if ($env:GRADLE_OPTS -notmatch [regex]::Escape($nativeAccessFlag)) {
     $env:GRADLE_OPTS = (@($env:GRADLE_OPTS, $nativeAccessFlag) | Where-Object { $_ }) -join ' '
 }
 
-Write-Step 'Building release App Bundle (flutter build appbundle --release)...'
-& flutter build appbundle --release
+# --obfuscate renames Dart symbols and --split-debug-info writes the per-ABI
+# .symbols files needed to deobfuscate a stack trace; the two are used together.
+# The symbols land under build/ (gitignored) and are archived further below.
+$dartSymbolsDir = Join-Path $repoRoot 'build\app\outputs\symbols'
+
+Write-Step 'Building release App Bundle (flutter build appbundle --release --obfuscate --split-debug-info)...'
+& flutter build appbundle --release --obfuscate --split-debug-info=$dartSymbolsDir
 if ($LASTEXITCODE -ne 0) {
     Fail 'flutter build appbundle failed.'
 }
@@ -191,11 +200,30 @@ if (Test-Path -LiteralPath $mappingSrc) {
     Write-Warn "No mapping.txt found at $mappingSrc; deobfuscation for crash reports from this build won't be possible."
 }
 
+# --- Dart symbols archive ---------------------------------------------------
+# --obfuscate renames Dart symbols, so these per-ABI <snapshot>.symbols files
+# (written by --split-debug-info) are the only way to symbolicate Dart stack
+# traces from this build. Copied out from under build/ before the next build
+# overwrites them. The destination is replaced wholesale so a repeat build can't
+# nest a second copy inside the first.
+
+if (Test-Path -LiteralPath $dartSymbolsDir) {
+    $dartSymbolsDest = Join-Path $repoRoot "build\app\outputs\bundle\release\symbols-$versionName"
+    if (Test-Path -LiteralPath $dartSymbolsDest) {
+        Remove-Item -LiteralPath $dartSymbolsDest -Recurse -Force
+    }
+    Copy-Item -LiteralPath $dartSymbolsDir -Destination $dartSymbolsDest -Recurse -Force
+    Write-Step "Dart symbols archived to $dartSymbolsDest -- move it somewhere durable before your next clean build."
+} else {
+    Write-Warn "No Dart symbols directory found at $dartSymbolsDir; crash reports from this obfuscated build won't be deobfuscatable."
+}
+
 # --- native debug symbols archive --------------------------------------------
 # Same rationale as the mapping file above: copied out from under build/ before
-# the next build overwrites it. Produced by the release buildType's `ndk {
-# debugSymbolLevel = "FULL" }` in android/app/build.gradle.kts (when enabled);
-# upload it alongside the .aab on Play Console so native crashes/ANRs get symbolicated.
+# the next build overwrites it. Only produced when the release build type asks
+# for it via `ndk { debugSymbolLevel = "FULL" }`; this project does not set it,
+# so the warning below is expected. Enable it if you want Play Console to
+# symbolicate native crashes/ANRs.
 
 $symbolsSrc = Join-Path $repoRoot 'build\app\outputs\native-debug-symbols\release\native-debug-symbols.zip'
 if (Test-Path -LiteralPath $symbolsSrc) {
