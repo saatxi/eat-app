@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
+import '../../core/app_version.dart';
 import '../../core/l10n/app_language.dart';
 import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/app_palette.dart';
@@ -9,11 +10,11 @@ import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/repositories/user_preferences_repository.dart';
 import '../import_export/share_service.dart';
 
-/// Settings: the appearance choices, and the data actions.
+/// Settings: the appearance choices, the data actions, and which build this is.
 ///
-/// Ported from `ui/settings/SettingsScreen.kt`. Exporting and the help guide
-/// arrive with the import/export block; the version line with the release
-/// polish block.
+/// Ported from `ui/settings/SettingsScreen.kt`. The help row the native app had
+/// beside the version line is absent: there is no help screen in this app yet,
+/// so `settingsActionHelp` has nothing to open.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, this.onViewStatistics});
 
@@ -48,8 +49,9 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final UserPreferencesRepository preferences =
-        AppScope.of(context).preferences;
+    final AppScope scope = AppScope.of(context);
+    final UserPreferencesRepository preferences = scope.preferences;
+    final AppVersion? appVersion = scope.appVersion;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
@@ -157,6 +159,19 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 onTap: () => _confirmDeleteAll(context),
               ),
+              // Hidden when there is no platform to ask — a bare widget test.
+              // Then the bare version only: what the describe string adds past
+              // the tag is build detail, and a settings screen owes nobody the
+              // count of commits it happens to be sitting on.
+              if (appVersion != null) ...<Widget>[
+                _SectionHeader(l10n.settingsSectionAbout),
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(
+                    l10n.aboutVersionTemplateClean(appVersion.releaseVersion),
+                  ),
+                ),
+              ],
             ],
           );
         },

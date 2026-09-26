@@ -6,6 +6,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app_scope.dart';
+import 'core/app_version.dart';
 import 'core/l10n/app_language.dart';
 import 'core/l10n/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
@@ -29,6 +30,10 @@ Future<void> main() async {
   // what that first frame looks like, and starting on the defaults and swapping
   // them out afterwards would be a visible flash on every launch.
   final SharedPreferences preferences = await SharedPreferences.getInstance();
+
+  // Read here rather than where it is shown, so the settings screen can paint
+  // the version on its first frame instead of swapping it in a moment later.
+  final AppVersion appVersion = await AppVersion.load();
 
   // Opened eagerly so the Room→drift import can finish before anything tries to
   // read a restaurant — including the home-screen widget, which runs in its own
@@ -105,6 +110,7 @@ Future<void> main() async {
       preferences: userPreferences,
       repository: restaurantRepository,
       photoPicker: ImagePickerPhotoPicker(),
+      appVersion: appVersion,
       initialSharedFilePath: initialSharedFilePath,
       sharedFileStream: sharedFileStream,
       initialWidgetUri: initialWidgetUri,
@@ -138,6 +144,7 @@ class EatApp extends StatefulWidget {
     this.preferences,
     this.repository,
     this.photoPicker,
+    this.appVersion,
     this.initialSharedFilePath,
     this.sharedFileStream,
     this.initialWidgetUri,
@@ -155,6 +162,10 @@ class EatApp extends StatefulWidget {
   /// Null in tests, where the screens that add a photo are never driven; a fake
   /// stands in for the system picker there.
   final PhotoPicker? photoPicker;
+
+  /// Null in tests, which have no platform to ask. Settings hides its About
+  /// section when it is.
+  final AppVersion? appVersion;
 
   /// Null except on the cold start that opened the app via "Open with EatApp"
   /// on a shared restaurant file.
@@ -212,6 +223,7 @@ class _EatAppState extends State<EatApp> {
       restaurants: _repository,
       preferences: _preferences,
       photoPicker: _photoPicker,
+      appVersion: widget.appVersion,
       // Rebuilding from the repository rather than from local state is what makes
       // a change survive the widget being recreated, and what lets every stored
       // value be the single source of truth for what is on screen.

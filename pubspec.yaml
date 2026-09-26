@@ -82,6 +82,12 @@ dependencies:
   # are presentation-only — see lib/widget/ and android/app/src/main/.
   home_widget: ^0.10.0
 
+  # The version line Settings shows. It reads the values the platform carries
+  # rather than a copy kept in Dart: on Android those are the git-derived
+  # versionName/versionCode from android/app/build.gradle.kts, so the two can
+  # never disagree.
+  package_info_plus: ^10.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

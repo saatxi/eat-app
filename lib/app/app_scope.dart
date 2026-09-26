@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../core/app_version.dart';
 import '../data/photo/photo_picker.dart';
 import '../data/repositories/restaurant_repository.dart';
 import '../data/repositories/user_preferences_repository.dart';
@@ -23,12 +24,18 @@ class AppScope extends InheritedWidget {
     required this.restaurants,
     required this.preferences,
     required this.photoPicker,
+    this.appVersion,
     required super.child,
   });
 
   final RestaurantRepository restaurants;
   final UserPreferencesRepository preferences;
   final PhotoPicker photoPicker;
+
+  /// What the platform reports for the running build, read once at startup.
+  /// Null hides the settings screen's About section — the case in a bare widget
+  /// test, which has no platform to ask.
+  final AppVersion? appVersion;
 
   static AppScope of(BuildContext context) {
     final AppScope? scope =
@@ -44,5 +51,6 @@ class AppScope extends InheritedWidget {
   bool updateShouldNotify(AppScope oldWidget) =>
       oldWidget.restaurants != restaurants ||
       oldWidget.preferences != preferences ||
-      oldWidget.photoPicker != photoPicker;
+      oldWidget.photoPicker != photoPicker ||
+      oldWidget.appVersion != appVersion;
 }

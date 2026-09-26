@@ -1,4 +1,5 @@
 import 'package:eatapp/app/app_scope.dart';
+import 'package:eatapp/core/app_version.dart';
 import 'package:eatapp/core/l10n/app_language.dart';
 import 'package:eatapp/core/l10n/generated/app_localizations.dart';
 import 'package:eatapp/core/theme/app_palette.dart';
@@ -26,10 +27,13 @@ void main() {
 
   tearDown(() => db.close());
 
-  Widget host() => AppScope(
+  /// Null [appVersion] is what a bare widget test has: no platform to ask, so
+  /// the About section is absent.
+  Widget host({AppVersion? appVersion}) => AppScope(
     restaurants: repository,
     preferences: preferences,
     photoPicker: FakePhotoPicker(),
+    appVersion: appVersion,
     child: MaterialApp(
       theme: AppTheme.of(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -113,5 +117,51 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(await db.restaurantDao.getAll(), isEmpty);
+  });
+
+  testWidgets('the About section names the version', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(host(appVersion: const AppVersion('1.2.0')));
+
+    // About sits under the data actions, so the lazy list has to be scrolled
+    // down to it before the row exists to be read.
+    final Finder version = find.text('Version 1.2.0');
+    await tester.scrollUntilVisible(version, 200);
+    await tester.ensureVisible(version);
+    await tester.pumpAndSettle();
+
+    expect(version, findsOneWidget);
+    expect(find.text('About'), findsOneWidget);
+  });
+
+  testWidgets('and leaves the build detail out of it', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      host(appVersion: const AppVersion('1.2.0-3-g559a7d4-dirty')),
+    );
+
+    final Finder version = find.text('Version 1.2.0');
+    await tester.scrollUntilVisible(version, 200);
+    await tester.ensureVisible(version);
+    await tester.pumpAndSettle();
+
+    expect(version, findsOneWidget);
+  });
+
+  testWidgets('there is no About section without a version to name', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(host());
+
+    // Scrolled to the bottom, where the section would be: the list builds what
+    // is near the viewport, so its absence there is worth asserting.
+    final Finder deleteTile = find.text('Delete all restaurants');
+    await tester.scrollUntilVisible(deleteTile, 200);
+    await tester.ensureVisible(deleteTile);
+    await tester.pumpAndSettle();
+
+    expect(find.text('About'), findsNothing);
   });
 }
