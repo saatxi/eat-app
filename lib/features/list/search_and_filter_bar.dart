@@ -49,6 +49,7 @@ class SearchAndFilterBar extends StatefulWidget {
     required this.onCountryChange,
     required this.priceRange,
     required this.onPriceRangeChange,
+    required this.onClearFilters,
   });
 
   final TextEditingController searchController;
@@ -74,6 +75,11 @@ class SearchAndFilterBar extends StatefulWidget {
   final ValueChanged<String?> onCountryChange;
   final int? priceRange;
   final ValueChanged<int?> onPriceRangeChange;
+
+  /// Puts every dimension above back to "any" at once, so a stack of them does
+  /// not have to be unpicked chip by chip. The search query is not one of them,
+  /// and is left alone.
+  final VoidCallback onClearFilters;
 
   @override
   State<SearchAndFilterBar> createState() => _SearchAndFilterBarState();
@@ -235,118 +241,142 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
         AppSpacing.lg,
         AppSpacing.md,
       ),
-      child: Wrap(
-        spacing: AppSpacing.sm,
-        runSpacing: AppSpacing.sm,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          FilterDropdownChip(
-            selectedLabel: switch (widget.visited) {
-              false => l10n.visitStatusWantToTry,
-              true => l10n.visitStatusVisited,
-              null => l10n.listFilterVisitStatus,
-            },
-            isActive: widget.visited != null,
-            menuBuilder: (VoidCallback close) => <Widget>[
-              MenuItemButton(
-                onPressed: () {
-                  widget.onVisitedChange(widget.visited == false ? null : false);
-                  close();
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: <Widget>[
+              FilterDropdownChip(
+                selectedLabel: switch (widget.visited) {
+                  false => l10n.visitStatusWantToTry,
+                  true => l10n.visitStatusVisited,
+                  null => l10n.listFilterVisitStatus,
                 },
-                child: Text(l10n.visitStatusWantToTry),
-              ),
-              MenuItemButton(
-                onPressed: () {
-                  widget.onVisitedChange(widget.visited == true ? null : true);
-                  close();
-                },
-                child: Text(l10n.visitStatusVisited),
-              ),
-            ],
-          ),
-          FilterDropdownChip(
-            selectedLabel: widget.minRating == null
-                ? l10n.listFilterMinRating
-                : '${widget.minRating}+',
-            isActive: widget.minRating != null,
-            menuBuilder: (VoidCallback close) => <Widget>[
-              for (int rating = 1; rating <= maxRating; rating++)
-                MenuItemButton(
-                  onPressed: () {
-                    widget.onMinRatingChange(
-                      widget.minRating == rating ? null : rating,
-                    );
-                    close();
-                  },
-                  child: Text('$rating+'),
-                ),
-            ],
-          ),
-          FilterDropdownChip(
-            selectedLabel: widget.priceRange == null
-                ? l10n.listFilterPrice
-                : priceRangeLabel(l10n, widget.priceRange!),
-            isActive: widget.priceRange != null,
-            menuBuilder: (VoidCallback close) => <Widget>[
-              for (int price = 1; price <= maxPriceRange; price++)
-                MenuItemButton(
-                  onPressed: () {
-                    widget.onPriceRangeChange(
-                      widget.priceRange == price ? null : price,
-                    );
-                    close();
-                  },
-                  child: Text(priceRangeLabel(l10n, price)),
-                ),
-            ],
-          ),
-          // Only the cuisines actually present in the data are offered, so the
-          // menu stays short instead of listing all 24 vocabulary entries.
-          if (cuisines.isNotEmpty)
-            FilterDropdownChip(
-              selectedLabel: widget.cuisineType == null
-                  ? l10n.listFilterCuisine
-                  : cuisines
-                        .firstWhere(
-                          (MapEntry<String, String> entry) =>
-                              entry.key == widget.cuisineType,
-                          orElse: () => MapEntry<String, String>(
-                            widget.cuisineType!,
-                            cuisineLabel(l10n, widget.cuisineType!),
-                          ),
-                        )
-                        .value,
-              isActive: widget.cuisineType != null,
-              leading: widget.cuisineType == null
-                  ? null
-                  : Icon(cuisineIcon(widget.cuisineType!), size: 18),
-              menuBuilder: (VoidCallback close) => <Widget>[
-                for (final MapEntry<String, String> entry in cuisines)
+                isActive: widget.visited != null,
+                menuBuilder: (VoidCallback close) => <Widget>[
                   MenuItemButton(
                     onPressed: () {
-                      widget.onCuisineChange(
-                        widget.cuisineType == entry.key ? null : entry.key,
+                      widget.onVisitedChange(
+                        widget.visited == false ? null : false,
                       );
                       close();
                     },
-                    leadingIcon: Icon(cuisineIcon(entry.key)),
-                    child: Text(entry.value),
+                    child: Text(l10n.visitStatusWantToTry),
                   ),
-              ],
-            ),
-          // City/region/country are unbounded free text, unlike the closed
-          // cuisine vocabulary above — a menu entry per value could run to
-          // dozens, so this one opens a sheet with all three groups instead.
-          if (widget.availableCities.isNotEmpty ||
-              widget.availableRegions.isNotEmpty ||
-              widget.availableCountries.isNotEmpty)
-            ActionChip(
-              avatar: const Icon(Icons.location_on_outlined, size: 18),
-              label: Text(
-                activeLocationCount > 0
-                    ? l10n.listFilterLocationActive(activeLocationCount)
-                    : l10n.listFilterLocation,
+                  MenuItemButton(
+                    onPressed: () {
+                      widget.onVisitedChange(
+                        widget.visited == true ? null : true,
+                      );
+                      close();
+                    },
+                    child: Text(l10n.visitStatusVisited),
+                  ),
+                ],
               ),
-              onPressed: _openLocationSheet,
+              FilterDropdownChip(
+                selectedLabel: widget.minRating == null
+                    ? l10n.listFilterMinRating
+                    : '${widget.minRating}+',
+                isActive: widget.minRating != null,
+                menuBuilder: (VoidCallback close) => <Widget>[
+                  for (int rating = 1; rating <= maxRating; rating++)
+                    MenuItemButton(
+                      onPressed: () {
+                        widget.onMinRatingChange(
+                          widget.minRating == rating ? null : rating,
+                        );
+                        close();
+                      },
+                      child: Text('$rating+'),
+                    ),
+                ],
+              ),
+              FilterDropdownChip(
+                selectedLabel: widget.priceRange == null
+                    ? l10n.listFilterPrice
+                    : priceRangeLabel(l10n, widget.priceRange!),
+                isActive: widget.priceRange != null,
+                menuBuilder: (VoidCallback close) => <Widget>[
+                  for (int price = 1; price <= maxPriceRange; price++)
+                    MenuItemButton(
+                      onPressed: () {
+                        widget.onPriceRangeChange(
+                          widget.priceRange == price ? null : price,
+                        );
+                        close();
+                      },
+                      child: Text(priceRangeLabel(l10n, price)),
+                    ),
+                ],
+              ),
+              // Only the cuisines actually present in the data are offered, so
+              // the menu stays short instead of listing all 24 vocabulary
+              // entries.
+              if (cuisines.isNotEmpty)
+                FilterDropdownChip(
+                  selectedLabel: widget.cuisineType == null
+                      ? l10n.listFilterCuisine
+                      : cuisines
+                            .firstWhere(
+                              (MapEntry<String, String> entry) =>
+                                  entry.key == widget.cuisineType,
+                              orElse: () => MapEntry<String, String>(
+                                widget.cuisineType!,
+                                cuisineLabel(l10n, widget.cuisineType!),
+                              ),
+                            )
+                            .value,
+                  isActive: widget.cuisineType != null,
+                  leading: widget.cuisineType == null
+                      ? null
+                      : Icon(cuisineIcon(widget.cuisineType!), size: 18),
+                  menuBuilder: (VoidCallback close) => <Widget>[
+                    for (final MapEntry<String, String> entry in cuisines)
+                      MenuItemButton(
+                        onPressed: () {
+                          widget.onCuisineChange(
+                            widget.cuisineType == entry.key ? null : entry.key,
+                          );
+                          close();
+                        },
+                        leadingIcon: Icon(cuisineIcon(entry.key)),
+                        child: Text(entry.value),
+                      ),
+                  ],
+                ),
+              // City/region/country are unbounded free text, unlike the closed
+              // cuisine vocabulary above — a menu entry per value could run to
+              // dozens, so this one opens a sheet with all three groups
+              // instead.
+              if (widget.availableCities.isNotEmpty ||
+                  widget.availableRegions.isNotEmpty ||
+                  widget.availableCountries.isNotEmpty)
+                ActionChip(
+                  avatar: const Icon(Icons.location_on_outlined, size: 18),
+                  label: Text(
+                    activeLocationCount > 0
+                        ? l10n.listFilterLocationActive(activeLocationCount)
+                        : l10n.listFilterLocation,
+                  ),
+                  onPressed: _openLocationSheet,
+                ),
+            ],
+          ),
+          // Only while there is something to clear, the same rule the header's
+          // count badge follows. On a line of its own rather than inside the
+          // wrap, so it reads as the panel's action instead of as one more
+          // filter to pick.
+          if (_activeFilterCount > 0)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: widget.onClearFilters,
+                icon: const Icon(Icons.filter_alt_off, size: 18),
+                label: Text(l10n.listActionClearFilters),
+              ),
             ),
         ],
       ),

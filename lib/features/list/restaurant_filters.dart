@@ -154,6 +154,17 @@ class RestaurantFilters {
   /// their ordering undone.
   RestaurantFilters withoutFilters() => RestaurantFilters(sort: sort);
 
+  /// Drops the seven filter dimensions but keeps both the typed [query] and the
+  /// chosen order.
+  ///
+  /// Deliberately different from [withoutFilters]: this one is the filter
+  /// panel's own "clear" action, and the search field beside that panel is a
+  /// separate control with its own clear button — emptying what was typed there
+  /// would be a surprise, and the panel's active count doesn't include the query
+  /// either.
+  RestaurantFilters withoutFilterDimensions() =>
+      RestaurantFilters(query: query, sort: sort);
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

@@ -93,6 +93,20 @@ void main() {
     );
   });
 
+  test('withoutFilterDimensions keeps the query and the chosen order', () {
+    final RestaurantFilters cleared = everything.withoutFilterDimensions();
+
+    // Everything the filter panel owns is dropped — field 0, the query, is not:
+    // the search box above that panel has its own clear button.
+    expect(differences(everything, cleared), <int>[1, 2, 3, 5, 6, 7, 8]);
+    expect(
+      cleared.query,
+      'ferran',
+      reason: 'the panel clears filters, not the search box beside it',
+    );
+    expect(cleared.sort, RestaurantSort.rating);
+  });
+
   test('equality tells a cleared field from an unset one', () {
     expect(const RestaurantFilters(minRating: 4), isNot(const RestaurantFilters()));
     expect(const RestaurantFilters(visited: false), isNot(const RestaurantFilters(visited: true)));

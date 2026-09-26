@@ -157,6 +157,7 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                 onCountryChange: controller.onCountryChange,
                 priceRange: state.priceRange,
                 onPriceRangeChange: controller.onPriceRangeChange,
+                onClearFilters: controller.clearFilterDimensions,
               ),
               Expanded(
                 child: RefreshIndicator(

@@ -262,8 +262,16 @@ class RestaurantListController extends ChangeNotifier {
   }
 
   /// Deliberately leaves [RestaurantSort] alone — see [RestaurantFilters.withoutFilters].
+  ///
+  /// Reached from the "no matches" state, so it drops the search query too.
   void clearFilters() =>
       _setFilters(_filters.withoutFilters(), debounceQuery: false);
+
+  /// The filter panel's "clear" action: every dimension back to "any" in one
+  /// step, with the typed search left where it is — see
+  /// [RestaurantFilters.withoutFilterDimensions].
+  void clearFilterDimensions() =>
+      _setFilters(_filters.withoutFilterDimensions(), debounceQuery: false);
 
   @override
   void dispose() {

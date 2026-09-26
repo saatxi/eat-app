@@ -191,6 +191,41 @@ void main() {
       expect(idsOf(controller), <String>['b']);
     });
 
+    test('are cleared in one step, leaving the search box alone', () async {
+      await repository.insert(restaurant(id: 'a', name: 'Kebab', cuisineType: 'turkish'));
+      await repository.insert(restaurant(id: 'b', name: 'Sushi', cuisineType: 'japanese'));
+      final RestaurantListController controller = buildController();
+      await waitFor(
+        () => controller.state.restaurants.length == 2,
+        description: 'both restaurants',
+      );
+
+      controller.onSearchQueryChange('kebab');
+      controller.onMinRatingChange(4);
+      controller.onCuisineChange('japanese');
+      await waitFor(
+        () => controller.state.restaurants.isEmpty,
+        description: 'nothing matches the query and both filters at once',
+      );
+
+      controller.clearFilterDimensions();
+
+      await waitFor(
+        () => controller.state.restaurants.length == 1,
+        description: 'the query-only list',
+      );
+      expect(
+        idsOf(controller),
+        <String>['a'],
+        reason: 'the query still narrows the list; pairing it with the rating '
+            'and cuisine filters is what had emptied it',
+      );
+      expect(controller.state.minRating, isNull);
+      expect(controller.state.cuisineType, isNull);
+      expect(controller.state.searchQuery, 'kebab');
+      expect(controller.state.hasActiveFilter, isTrue);
+    });
+
     test('are cleared without touching the chosen order', () async {
       await repository.insert(restaurant(id: 'a', name: 'Kebab', cuisineType: 'turkish'));
       await repository.insert(restaurant(id: 'b', name: 'Sushi', cuisineType: 'japanese'));
