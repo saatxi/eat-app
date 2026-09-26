@@ -15,7 +15,7 @@
     instagram,tags,city,region,country,visits, matching
     lib/data/share/restaurant_share_models.dart. On the way into .eatapp, rows
     are validated the same way the app would validate them on import (required
-    name/cuisineType/priceRange, priceRange 0-4, cuisineType from the closed
+    name/cuisineType/priceRange, priceRange 0-6, cuisineType from the closed
     vocabulary in lib/data/models/cuisine.dart) -- an invalid row is skipped
     with a warning rather than failing the whole file, since that's what the
     app does too.
@@ -27,7 +27,7 @@
     visits is a semicolon-separated list of visit entries, each shaped
     "yyyy-MM-dd:rating:priceRange[:notes]", e.g.
     "2026-03-01:4:2:Great tasting menu;2026-06-14:5:2". rating is 0-5,
-    priceRange is 0-4 (0 means "not set"), notes is optional and must not
+    priceRange is 0-6 (0 means "not set"), notes is optional and must not
     contain ':' or ';'.
 
     Pass -Template to just write an example CSV to start from instead of
@@ -102,9 +102,9 @@ Sushi Ken,japanese,,3,,,,"Tokyo",,Japan,
 '@ | Set-Content -LiteralPath $templatePath -Encoding utf8
     Write-Step "Template written to $templatePath"
     Write-Step ('Valid cuisineType values: ' + ($ValidCuisines -join ', '))
-    Write-Step 'priceRange: 0-4. streetAddress/website/instagram/tags/city/region/country/visits are optional -- leave blank.'
+    Write-Step 'priceRange: 0-6. streetAddress/website/instagram/tags/city/region/country/visits are optional -- leave blank.'
     Write-Step 'tags: semicolon-separated, e.g. "date night;terrace".'
-    Write-Step 'visits: semicolon-separated entries "yyyy-MM-dd:rating:priceRange[:notes]", rating 0-5, priceRange 0-4 (0 = not set).'
+    Write-Step 'visits: semicolon-separated entries "yyyy-MM-dd:rating:priceRange[:notes]", rating 0-5, priceRange 0-6 (0 = not set).'
     exit 0
 }
 
@@ -254,8 +254,8 @@ function Convert-CsvToEatApp {
         }
 
         $priceRange = 0
-        if (-not [int]::TryParse($row.priceRange, [ref] $priceRange) -or $priceRange -lt 0 -or $priceRange -gt 4) {
-            Write-Warn "Line $lineNumber ('$name') -- skipped: priceRange must be an integer 0-4, got '$($row.priceRange)'."
+        if (-not [int]::TryParse($row.priceRange, [ref] $priceRange) -or $priceRange -lt 0 -or $priceRange -gt 6) {
+            Write-Warn "Line $lineNumber ('$name') -- skipped: priceRange must be an integer 0-6, got '$($row.priceRange)'."
             $skipped++
             continue
         }
@@ -309,8 +309,8 @@ function Convert-CsvToEatApp {
                 }
 
                 $visitPriceRange = 0
-                if (-not [int]::TryParse($priceRangeText, [ref] $visitPriceRange) -or $visitPriceRange -lt 0 -or $visitPriceRange -gt 4) {
-                    Write-Warn "Line $lineNumber ('$name') -- skipped: visit priceRange must be an integer 0-4, got '$priceRangeText'."
+                if (-not [int]::TryParse($priceRangeText, [ref] $visitPriceRange) -or $visitPriceRange -lt 0 -or $visitPriceRange -gt 6) {
+                    Write-Warn "Line $lineNumber ('$name') -- skipped: visit priceRange must be an integer 0-6, got '$priceRangeText'."
                     $visitParseFailed = $true
                     break
                 }

@@ -84,8 +84,8 @@ if (-not $SkipCleanCheck) {
 }
 
 # --- signing ------------------------------------------------------------------
-# Mirrors the localOrEnv() lookup in app/build.gradle.kts so this script can
-# fail fast instead of letting Gradle silently produce an unsigned .aab.
+# Mirrors the localOrEnv() lookup in android/app/build.gradle.kts so this script
+# can fail fast instead of letting Gradle silently produce an unsigned .aab.
 
 function Get-LocalOrEnv {
     param([string] $PropertyKey, [string] $EnvKey)
