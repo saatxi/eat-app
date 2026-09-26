@@ -59,6 +59,15 @@ dependencies:
   # restaurant), the list's "share all" and Settings' "export my data".
   share_plus: ^13.3.0
 
+  # Delivers a restaurant file opened from outside the app ("Open with EatApp")
+  # to the import review screen. On Android it resolves the content:// Uri to a
+  # real file path; see the ACTION_VIEW filters in android/app's manifest.
+  #
+  # Pinned below 1.9.0: that release hard-codes compileSdk 37, past this
+  # project's AGP. 1.8.1 targets compileSdk 34 and its missing JVM target is
+  # aligned to 17 in android/build.gradle.kts.
+  receive_sharing_intent: ">=1.7.0 <1.9.0"
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

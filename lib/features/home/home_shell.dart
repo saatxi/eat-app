@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/l10n/generated/app_localizations.dart';
 import '../detail/restaurant_detail_screen.dart';
 import '../edit/restaurant_edit_screen.dart';
+import '../import_export/import_screen.dart';
 import '../list/restaurant_list_screen.dart';
 import '../list/restaurant_ui_model.dart';
 import '../log_visit/log_visit_screen.dart';
@@ -18,7 +21,19 @@ import '../stats/statistics_screen.dart';
 /// Android app's tablet `NavigationRail` / two-pane layout is left for the polish
 /// block; this is the phone shape both share.
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+  const HomeShell({
+    super.key,
+    this.initialSharedFilePath,
+    this.sharedFileStream,
+  });
+
+  /// Non-null only on the cold start that opened the app via "Open with
+  /// EatApp" on a shared restaurant file.
+  final String? initialSharedFilePath;
+
+  /// The warm-start counterpart: a shared file arriving while the app is
+  /// already running.
+  final Stream<String>? sharedFileStream;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -26,6 +41,26 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
+
+  StreamSubscription<String>? _sharedFiles;
+
+  @override
+  void initState() {
+    super.initState();
+    final String? initial = widget.initialSharedFilePath;
+    if (initial != null) {
+      // The Navigator above this widget is not ready until the first frame,
+      // so the cold-start import is pushed once it is.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openImport(initial));
+    }
+    _sharedFiles = widget.sharedFileStream?.listen(_openImport);
+  }
+
+  @override
+  void dispose() {
+    _sharedFiles?.cancel();
+    super.dispose();
+  }
 
   void _pushDetail(RestaurantUiModel restaurant) {
     Navigator.of(context).push(
@@ -61,6 +96,22 @@ class _HomeShellState extends State<HomeShell> {
       MaterialPageRoute<void>(
         builder: (BuildContext context) =>
             RestaurantEditScreen(restaurantId: restaurantId),
+      ),
+    );
+  }
+
+  /// Opens the review screen for a file handed over by another app. Pushed on
+  /// top of whatever is showing, since "Open with" can arrive on any screen.
+  void _openImport(String filePath) {
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => ImportScreen(
+          filePath: filePath,
+          onDone: () => Navigator.of(context).pop(),
+        ),
       ),
     );
   }

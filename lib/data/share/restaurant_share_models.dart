@@ -236,6 +236,24 @@ List<VisitExport> validatedVisits(RestaurantExport export) =>
 List<String> validatedTagNames(RestaurantExport export) =>
     normalizeTagNames(export.tags);
 
+/// Whether [candidate] looks like [existing] — the same name, and the same
+/// address unless either side has none recorded.
+///
+/// Ported from the Android import screen's private `isLikelyDuplicateOf`. A
+/// missing address on either side must not block a match on name alone, or an
+/// imported row that never had one would silently land as a second copy instead
+/// of being offered as a Replace.
+bool isLikelyDuplicateOf(Restaurant candidate, Restaurant existing) {
+  final bool sameName =
+      candidate.name.trim().toLowerCase() == existing.name.trim().toLowerCase();
+  final String candidateAddress = candidate.streetAddress?.trim() ?? '';
+  final String existingAddress = existing.streetAddress?.trim() ?? '';
+  final bool sameAddress = candidateAddress.isEmpty ||
+      existingAddress.isEmpty ||
+      candidateAddress.toLowerCase() == existingAddress.toLowerCase();
+  return sameName && sameAddress;
+}
+
 String? _blankToNull(String? value) {
   final String trimmed = value?.trim() ?? '';
   return trimmed.isEmpty ? null : trimmed;

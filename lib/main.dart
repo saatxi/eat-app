@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app_scope.dart';
@@ -32,6 +35,25 @@ Future<void> main() async {
     preferences: preferences,
   ).run();
 
+  // "Open with EatApp" hands the file over as an intent, and the plugin
+  // resolves a content:// Uri to a real path copied into the cache. The
+  // cold-start file arrives once through getInitialMedia, every later one on
+  // the stream; both land at the same review screen.
+  final ReceiveSharingIntent sharingIntent = ReceiveSharingIntent.instance;
+  final String? initialSharedFilePath = _sharedFilePath(
+    await sharingIntent.getInitialMedia(),
+  );
+  // Consume the cold-start file so a later rebuild of the root does not prompt
+  // for the same one twice.
+  if (initialSharedFilePath != null) {
+    await sharingIntent.reset();
+  }
+  final Stream<String> sharedFileStream = sharingIntent
+      .getMediaStream()
+      .map(_sharedFilePath)
+      .where((String? path) => path != null)
+      .cast<String>();
+
   runApp(
     EatApp(
       preferences: UserPreferencesRepository(store: preferences),
@@ -41,8 +63,23 @@ Future<void> main() async {
         database,
         backupWriter: const FileBackupWriter(),
       ),
+      initialSharedFilePath: initialSharedFilePath,
+      sharedFileStream: sharedFileStream,
     ),
   );
+}
+
+/// The first readable path among [files], or null when the share carried none.
+///
+/// The plugin reports each shared item with a `path` (a file path, a URL, or
+/// plain text); the import flow only ever wants one that names a file.
+String? _sharedFilePath(List<SharedMediaFile> files) {
+  for (final SharedMediaFile file in files) {
+    if (file.path.isNotEmpty) {
+      return file.path;
+    }
+  }
+  return null;
 }
 
 /// The application root.
@@ -51,7 +88,13 @@ Future<void> main() async {
 /// light and dark `ThemeData` the token layer builds, wires up localization and
 /// hands the tree its [HomeShell]. Routing itself lives in the shell.
 class EatApp extends StatefulWidget {
-  const EatApp({super.key, this.preferences, this.repository});
+  const EatApp({
+    super.key,
+    this.preferences,
+    this.repository,
+    this.initialSharedFilePath,
+    this.sharedFileStream,
+  });
 
   /// Null in tests and previews, where an in-memory repository keeps the widget
   /// free of any plugin dependency.
@@ -60,6 +103,14 @@ class EatApp extends StatefulWidget {
   /// Likewise null in tests and previews, where an in-memory database stands in
   /// for the file-backed one.
   final RestaurantRepository? repository;
+
+  /// Null except on the cold start that opened the app via "Open with EatApp"
+  /// on a shared restaurant file.
+  final String? initialSharedFilePath;
+
+  /// The warm-start counterpart of [initialSharedFilePath] — a new shared file
+  /// arriving while the app is already running. Null in tests.
+  final Stream<String>? sharedFileStream;
 
   @override
   State<EatApp> createState() => _EatAppState();
@@ -127,7 +178,10 @@ class _EatAppState extends State<EatApp> {
             themeMode: preferences.themeMode.brightness == Brightness.dark
                 ? ThemeMode.dark
                 : ThemeMode.light,
-            home: const HomeShell(),
+            home: HomeShell(
+              initialSharedFilePath: widget.initialSharedFilePath,
+              sharedFileStream: widget.sharedFileStream,
+            ),
           );
         },
       ),

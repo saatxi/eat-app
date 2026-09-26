@@ -92,6 +92,10 @@ class RestaurantRepository {
 
   Stream<Restaurant?> observeById(String id) => _restaurants.observeById(id);
 
+  /// Every restaurant, as a one-shot read — the import review flags duplicates
+  /// against this, and it has no stream of its own to subscribe to.
+  Future<List<Restaurant>> getAllRestaurants() => _restaurants.getAll();
+
   /// [restaurant.id] must already be a freshly generated UUID and its
   /// `searchText` already built with `buildSearchText` — both are the caller's
   /// contract on the Android side too, and the edit screen owns them because it

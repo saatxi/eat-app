@@ -24,6 +24,38 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Lets a restaurant file shared from another app (WhatsApp, Gmail,
+                 Files...) reopen EatApp with "Open with EatApp". A plain
+                 standard application/json matches what the outgoing share sets,
+                 and the two generic types cover apps that don't preserve it.
+                 The file itself is untrusted input, validated before anything
+                 reaches the database — see lib/data/share/restaurant_import_reader.dart. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <!-- Fallback for the ".eatapp" extension the writer names the file
+                 with: a local file manager commonly hands back a content:// Uri
+                 whose path mirrors the real filename and looks up the type from
+                 the extension, rather than preserving the MIME type set on the
+                 outgoing share. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="content"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\.eatapp" />
+                <data
+                    android:scheme="file"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\.eatapp" />
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
