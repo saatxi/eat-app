@@ -331,6 +331,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportDialogIncludeVisits => 'Include visits';
 
   @override
+  String get shareFailed => 'Couldn\'t share the file. Please try again.';
+
+  @override
   String get settingsActionDeleteAllData => 'Delete all restaurants';
 
   @override

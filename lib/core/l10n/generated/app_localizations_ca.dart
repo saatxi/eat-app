@@ -333,6 +333,10 @@ class AppLocalizationsCa extends AppLocalizations {
   String get exportDialogIncludeVisits => 'Inclou les visites';
 
   @override
+  String get shareFailed =>
+      'No s\'ha pogut compartir el fitxer. Torna-ho a provar.';
+
+  @override
   String get settingsActionDeleteAllData => 'Elimina tots els restaurants';
 
   @override

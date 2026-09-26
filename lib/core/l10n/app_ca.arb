@@ -110,6 +110,7 @@
   "exportDialogTitle": "Exporta restaurants",
   "exportDialogBody": "Tria què vols incloure al fitxer exportat.",
   "exportDialogIncludeVisits": "Inclou les visites",
+  "shareFailed": "No s'ha pogut compartir el fitxer. Torna-ho a provar.",
   "settingsActionDeleteAllData": "Elimina tots els restaurants",
   "settingsDeleteAllConfirmTitle": "Vols eliminar tots els restaurants?",
   "settingsDeleteAllConfirmBody": "Això elimina tots els restaurants de l'aplicació. Aquesta acció no es pot desfer.",

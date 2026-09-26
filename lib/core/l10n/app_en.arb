@@ -180,6 +180,7 @@
   "exportDialogTitle": "Export restaurants",
   "exportDialogBody": "Choose what to include in the exported file.",
   "exportDialogIncludeVisits": "Include visits",
+  "shareFailed": "Couldn't share the file. Please try again.",
   "settingsActionDeleteAllData": "Delete all restaurants",
   "settingsDeleteAllConfirmTitle": "Delete all restaurants?",
   "settingsDeleteAllConfirmBody": "This deletes every restaurant in the app. This can't be undone.",

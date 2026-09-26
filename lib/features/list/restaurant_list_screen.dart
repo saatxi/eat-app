@@ -5,6 +5,7 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/empty_state.dart';
+import '../import_export/share_service.dart';
 import 'restaurant_list_controller.dart';
 import 'restaurant_row.dart';
 import 'restaurant_ui_model.dart';
@@ -85,6 +86,21 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
         title: Text(
           widget.favouritesOnly ? l10n.favoritesTitle : l10n.listTitle,
         ),
+        // "Share all" means all, not just what the active filters leave visible
+        // — the same rule the Android screen follows. Favourites has nothing of
+        // its own to export, so it drops the action.
+        actions: widget.favouritesOnly
+            ? null
+            : <Widget>[
+                IconButton(
+                  onPressed: () => exportAndShareRestaurants(
+                    context,
+                    repository: AppScope.of(context).restaurants,
+                  ),
+                  tooltip: l10n.listActionShareAll,
+                  icon: const Icon(Icons.share_outlined),
+                ),
+              ],
         // A two-stop tonal wash rather than a flat container colour: a sense of
         // place above the list without touching the app bar's scroll behaviour.
         flexibleSpace:

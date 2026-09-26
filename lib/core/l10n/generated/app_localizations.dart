@@ -682,6 +682,12 @@ abstract class AppLocalizations {
   /// **'Include visits'**
   String get exportDialogIncludeVisits;
 
+  /// No description provided for @shareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t share the file. Please try again.'**
+  String get shareFailed;
+
   /// No description provided for @settingsActionDeleteAllData.
   ///
   /// In en, this message translates to:

@@ -17,6 +17,7 @@ import '../../core/widgets/rating_and_price_row.dart';
 import '../../core/widgets/rating_trend_chart.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/tag_pill_row.dart';
+import '../import_export/share_service.dart';
 import '../list/restaurant_ui_model.dart';
 import 'detail_state.dart';
 import 'restaurant_detail_controller.dart';
@@ -26,8 +27,7 @@ import 'restaurant_detail_controller.dart';
 ///
 /// Ported from `ui/detail/RestaurantDetailScreen.kt`. The shared-element
 /// transition from the list's cuisine badge is left to the polish block; the
-/// screen is otherwise complete, minus sharing (which arrives with the
-/// import/export block) and the photo strip's picker (photos block).
+/// screen is otherwise complete, minus the photo strip's picker (photos block).
 class RestaurantDetailScreen extends StatefulWidget {
   const RestaurantDetailScreen({
     super.key,
@@ -82,6 +82,19 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     }
   }
 
+  /// Shares just this restaurant, carrying its real visit history (the export
+  /// reads the visits back from the repository rather than from the on-screen
+  /// summary), so nothing is lost the way the Android app's fabricated single
+  /// visit used to be.
+  Future<void> _share(RestaurantUiModel restaurant) {
+    return exportAndShareRestaurants(
+      context,
+      repository: AppScope.of(context).restaurants,
+      restaurantIds: <String>[restaurant.id],
+      singleName: restaurant.name,
+    );
+  }
+
   Future<void> _delete() async {
     final bool confirmed = await showDeleteConfirmDialog(context);
     if (!confirmed || !mounted) {
@@ -125,6 +138,11 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   onPressed: () => widget.onEdit?.call(restaurant.id),
                   tooltip: l10n.detailActionEdit,
                   icon: const Icon(Icons.edit_outlined),
+                ),
+                IconButton(
+                  onPressed: () => _share(restaurant),
+                  tooltip: l10n.detailActionShare,
+                  icon: const Icon(Icons.share_outlined),
                 ),
                 IconButton(
                   onPressed: _delete,

@@ -69,9 +69,13 @@ void main() {
     await tester.pumpWidget(host());
 
     // The list only builds what is on screen, and the data rows sit below the
-    // appearance ones, so they have to be scrolled into view first.
+    // appearance ones. scrollUntilVisible builds the row as it scrolls, but can
+    // stop while it is still inside the cache extent but below the fold, so
+    // ensureVisible then brings it fully on screen before it is tapped.
     final Finder deleteTile = find.text('Delete all restaurants');
     await tester.scrollUntilVisible(deleteTile, 200);
+    await tester.ensureVisible(deleteTile);
+    await tester.pumpAndSettle();
     await tester.tap(deleteTile);
     await tester.pumpAndSettle();
 
@@ -80,6 +84,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(await db.restaurantDao.getAll(), hasLength(1));
 
+    await tester.ensureVisible(deleteTile);
+    await tester.pumpAndSettle();
     await tester.tap(deleteTile);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete').last);

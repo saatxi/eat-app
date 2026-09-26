@@ -54,6 +54,11 @@ dependencies:
   # detail screen.
   url_launcher: ^6.3.1
 
+  # Opens the system share sheet with the restaurant file written by
+  # data/share/restaurant_share_writer.dart — from the detail screen (one
+  # restaurant), the list's "share all" and Settings' "export my data".
+  share_plus: ^13.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

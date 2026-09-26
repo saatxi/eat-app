@@ -7,6 +7,7 @@ import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_theme_mode.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/repositories/user_preferences_repository.dart';
+import '../import_export/share_service.dart';
 
 /// Settings: the appearance choices, and the data actions.
 ///
@@ -139,6 +140,14 @@ class SettingsScreen extends StatelessWidget {
                   title: Text(l10n.settingsActionViewStatistics),
                   onTap: onViewStatistics,
                 ),
+              ListTile(
+                leading: const Icon(Icons.share_outlined),
+                title: Text(l10n.settingsActionExportData),
+                onTap: () => exportAndShareRestaurants(
+                  context,
+                  repository: AppScope.of(context).restaurants,
+                ),
+              ),
               ListTile(
                 leading: Icon(
                   Icons.delete_outline,

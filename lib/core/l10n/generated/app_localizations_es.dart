@@ -332,6 +332,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get exportDialogIncludeVisits => 'Incluir las visitas';
 
   @override
+  String get shareFailed =>
+      'No se ha podido compartir el archivo. Inténtalo de nuevo.';
+
+  @override
   String get settingsActionDeleteAllData => 'Eliminar todos los restaurantes';
 
   @override
