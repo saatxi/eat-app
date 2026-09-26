@@ -93,7 +93,14 @@ Optional detailed explanation
   Databases are exercised against an in-memory drift database
   (`AppDatabase.memory()`), so the whole suite runs on the Dart VM with no
   device. Fakes are written by hand; there is no mocking package and adding
-  one needs discussing first.
+  one needs discussing first. Two traps when widget-testing a screen that
+  reads the database, both of which show up as a *hang* rather than a failure:
+  a query awaited inside a `testWidgets` body never completes under the fake
+  clock (do it in `setUp`, or inside `tester.runAsync`), and a long screen's
+  lower half is never built at all by its lazy `ListView` unless the test gives
+  itself a tall viewport (`tester.view.physicalSize`). `pumpAndSettle` is also
+  out whenever the screen shows a `CircularProgressIndicator` — those never
+  settle; pump frames by hand instead.
 - **Home-screen widget**: `home_widget`, with a thin native renderer on each
   side — a Kotlin `AppWidgetProvider`
   (`android/app/src/main/kotlin/com/saatxi/eatapp/EatAppHomeWidgetProvider.kt`)
