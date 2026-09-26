@@ -37,7 +37,11 @@ abstract interface class PhotoStorage {
 /// Room→drift import copies over still resolve, and photos that predate the
 /// Flutter rewrite carry over untouched.
 class FilePhotoStorage implements PhotoStorage {
-  const FilePhotoStorage({this.maxDimension = 1600, this.jpegQuality = 85});
+  const FilePhotoStorage({
+    this.maxDimension = 1600,
+    this.jpegQuality = 85,
+    this.supportDirectory,
+  });
 
   /// Longest side of the stored image, in pixels. Large enough for a full-screen
   /// detail view, small enough that a scanned list stays cheap.
@@ -45,6 +49,12 @@ class FilePhotoStorage implements PhotoStorage {
 
   /// JPEG quality of a re-encoded image, on the `image` package's 0-100 scale.
   final int jpegQuality;
+
+  /// The directory the `photos/` folder hangs off. Null — the real case — means
+  /// `getApplicationSupportDirectory()`; a test passes a temp directory, which
+  /// is what lets the decode-and-bounds pipeline be exercised with no platform
+  /// channel and no device.
+  final Directory? supportDirectory;
 
   static const String _directoryName = 'photos';
   static const Uuid _uuid = Uuid();
@@ -86,7 +96,8 @@ class FilePhotoStorage implements PhotoStorage {
   }
 
   Future<Directory> _photoDirectory() async {
-    final Directory support = await getApplicationSupportDirectory();
+    final Directory support =
+        supportDirectory ?? await getApplicationSupportDirectory();
     final Directory directory = Directory(p.join(support.path, _directoryName));
     if (!await directory.exists()) {
       await directory.create(recursive: true);
@@ -102,7 +113,7 @@ class FilePhotoStorage implements PhotoStorage {
 /// the bytes plus the two knobs, all of which cross an isolate boundary safely.
 Uint8List? _normalisePhoto((Uint8List, int, int) job) {
   final (Uint8List bytes, int maxDimension, int quality) = job;
-  final img.Image? decoded = img.decodeImage(bytes);
+  final img.Image? decoded = _tryDecode(bytes);
   if (decoded == null) {
     return null;
   }
@@ -122,4 +133,19 @@ Uint8List? _normalisePhoto((Uint8List, int, int) job) {
           );
   }
   return img.encodeJpg(photo, quality: quality);
+}
+
+/// [img.decodeImage], with a throw treated as "not an image" too.
+///
+/// The decoder is not total: a short or malformed file can make it throw rather
+/// than answer null — the PSD probe, for one, reads past the end of a tiny
+/// buffer — and a format it doesn't recognise at all just returns null. Both
+/// mean the same thing to the caller, which is that the bytes are worth keeping
+/// as they are rather than losing the photo.
+img.Image? _tryDecode(Uint8List bytes) {
+  try {
+    return img.decodeImage(bytes);
+  } on Object {
+    return null;
+  }
 }
