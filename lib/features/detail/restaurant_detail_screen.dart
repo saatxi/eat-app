@@ -15,6 +15,7 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/price_range_label.dart';
 import '../../core/widgets/rating_and_price_row.dart';
 import '../../core/widgets/rating_trend_chart.dart';
+import '../../core/widgets/restaurant_thumbnail.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/tag_pill_row.dart';
 import '../import_export/share_service.dart';
@@ -25,15 +26,17 @@ import 'restaurant_detail_controller.dart';
 /// Everything about one restaurant: its overview, rating and price, links, a
 /// small rating trend and the reverse-chronological visit timeline.
 ///
-/// Ported from `ui/detail/RestaurantDetailScreen.kt`. The shared-element
-/// transition from the list's cuisine badge is left to the polish block; the
-/// screen is otherwise complete, minus the photo strip's picker (photos block).
+/// Ported from `ui/detail/RestaurantDetailScreen.kt`. On a phone it is pushed as
+/// a route; on a tablet-width window the shell keeps it beside the list, which
+/// is what [embedded] marks.
 class RestaurantDetailScreen extends StatefulWidget {
   const RestaurantDetailScreen({
     super.key,
     required this.restaurantId,
     this.onEdit,
     this.onLogVisit,
+    this.embedded = false,
+    this.onClose,
   });
 
   final String restaurantId;
@@ -41,6 +44,17 @@ class RestaurantDetailScreen extends StatefulWidget {
   /// Null leaves the action hidden — the case in a bare widget test.
   final ValueChanged<String>? onEdit;
   final ValueChanged<String>? onLogVisit;
+
+  /// True when this screen is the detail half of the tablet two-pane layout
+  /// rather than a pushed route. It changes nothing about the layout — the back
+  /// button was never there, since the shell's root route can't be popped — only
+  /// what "leave this screen" means for the two states that offer it.
+  final bool embedded;
+
+  /// Called instead of popping when [embedded] and there is nothing left to
+  /// show (the restaurant was deleted, or never existed), so the shell can clear
+  /// its selection rather than popping itself off the stack.
+  final VoidCallback? onClose;
 
   @override
   State<RestaurantDetailScreen> createState() => _RestaurantDetailScreenState();
@@ -104,7 +118,11 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     if (!mounted) {
       return;
     }
-    Navigator.of(context).pop();
+    if (widget.embedded) {
+      widget.onClose?.call();
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -166,7 +184,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                 title: l10n.detailNotFoundTitle,
                 body: l10n.detailNotFoundBody,
                 actionLabel: l10n.actionGoBack,
-                onAction: () => Navigator.of(context).pop(),
+                onAction: widget.embedded
+                    ? widget.onClose
+                    : () => Navigator.of(context).pop(),
               ),
             final DetailLoaded loaded => _LoadedContent(
                 state: loaded,
@@ -202,22 +222,34 @@ class _LoadedContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          if (restaurant.photoPath != null) ...<Widget>[
-            ClipRRect(
-              borderRadius: AppRadius.mediumAll,
-              child: Image.file(
-                File(restaurant.photoPath!),
-                width: double.infinity,
-                height: 220,
-                fit: BoxFit.cover,
-                semanticLabel: l10n.detailPhotoDescription,
-                errorBuilder:
-                    (BuildContext context, Object error, StackTrace? stack) =>
-                        const SizedBox.shrink(),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
+          // The other end of the row's [restaurantHeroTag]: the photo when there
+          // is one, and the same cuisine badge the row fell back to otherwise,
+          // so the shared element always has a counterpart on both screens.
+          Hero(
+            tag: restaurantHeroTag(restaurant.id),
+            child: restaurant.photoPath != null
+                ? ClipRRect(
+                    borderRadius: AppRadius.mediumAll,
+                    child: Image.file(
+                      File(restaurant.photoPath!),
+                      width: double.infinity,
+                      height: 220,
+                      fit: BoxFit.cover,
+                      semanticLabel: l10n.detailPhotoDescription,
+                      errorBuilder:
+                          (BuildContext context, Object error, StackTrace? stack) =>
+                              const SizedBox.shrink(),
+                    ),
+                  )
+                : Align(
+                    alignment: Alignment.centerLeft,
+                    child: RestaurantThumbnail(
+                      cuisineKey: restaurant.cuisineKey,
+                      size: 72,
+                    ),
+                  ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
           _SectionLabel(l10n.detailSectionOverview),
           _InfoRow(
             icon: cuisineIcon(restaurant.cuisineKey),

@@ -8,6 +8,15 @@ import '../../data/db/app_database.dart';
 // bounds, while the widgets under `core/widgets` read them from their own home.
 export '../../core/widgets/presentation_bounds.dart';
 
+/// The `Hero` tag that pairs a list row's thumbnail with the detail screen's
+/// header, so tapping a row flies the image across instead of swapping screens
+/// outright.
+///
+/// One function rather than a literal in each file, because the two ends have to
+/// agree exactly — a mismatch silently loses the transition rather than failing.
+String restaurantHeroTag(String restaurantId) =>
+    'restaurant-hero-$restaurantId';
+
 /// What the screens draw, kept separate from the drift [Restaurant] row so the
 /// presentation decisions — which rating a row shows, whether a place counts as
 /// visited — are made once here instead of being repeated inside widgets.

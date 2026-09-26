@@ -199,6 +199,13 @@ lib/
 - **Versioning**: `versionCode`/`versionName` are derived from git in
   `android/app/build.gradle.kts` (commit count / nearest `vX.Y.Z` tag) —
   never from `pubspec.yaml`, and never hardcoded. See README's "Versioning".
+- **Adaptive layout**: `HomeShell` switches at 840 logical pixels
+  (`HomeShell.twoPaneBreakpoint`) — a bottom bar and a pushed detail screen
+  below it, a `NavigationRail` and the detail beside the list above it. The
+  list row's thumbnail and the detail's header share a `Hero` tag from
+  `restaurantHeroTag`, so keep the two ends paired; and keep the two-pane row
+  inside its `HeroMode(enabled: false)`, or the selected row and the detail
+  header would put the same tag on one route, which a Hero flight rejects.
 - The app is the source of truth for its own data: restaurants are created,
   edited and deleted entirely on-device. The one exception is importing a
   restaurant file shared by another EatApp user

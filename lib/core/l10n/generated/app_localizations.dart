@@ -352,6 +352,18 @@ abstract class AppLocalizations {
   /// **'This restaurant was removed.'**
   String get detailNotFoundBody;
 
+  /// No description provided for @detailSelectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing selected'**
+  String get detailSelectTitle;
+
+  /// No description provided for @detailSelectBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a restaurant from the list to see its details here.'**
+  String get detailSelectBody;
+
   /// No description provided for @detailActionEdit.
   ///
   /// In en, this message translates to:

@@ -46,6 +46,8 @@
 
   "detailNotFoundTitle": "Restaurant no trobat",
   "detailNotFoundBody": "Aquest restaurant s'ha eliminat.",
+  "detailSelectTitle": "Res seleccionat",
+  "detailSelectBody": "Tria un restaurant de la llista per veure'n els detalls aquí.",
   "detailActionEdit": "Edita",
   "detailActionShare": "Comparteix",
   "detailActionDelete": "Elimina",

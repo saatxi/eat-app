@@ -243,6 +243,24 @@ class RestaurantListController extends ChangeNotifier {
   Future<void> deleteRestaurant(String restaurantId) =>
       repository.delete(restaurantId);
 
+  /// Re-runs the list query against the database and waits for its answer.
+  ///
+  /// The list is already live — every stream it reads republishes on write — so
+  /// this is not how it keeps up. It exists for the pull-to-refresh gesture: it
+  /// gives the pull something real to wait for rather than a cosmetic pause, and
+  /// a way to force a re-read if a stream ever goes quiet.
+  Future<void> refresh() async {
+    final Completer<void> answered = Completer<void>();
+    _subscribeToRestaurants(
+      onFirstEmission: () {
+        if (!answered.isCompleted) {
+          answered.complete();
+        }
+      },
+    );
+    await answered.future;
+  }
+
   /// Deliberately leaves [RestaurantSort] alone — see [RestaurantFilters.withoutFilters].
   void clearFilters() =>
       _setFilters(_filters.withoutFilters(), debounceQuery: false);
@@ -283,7 +301,7 @@ class RestaurantListController extends ChangeNotifier {
     _publish();
   }
 
-  void _subscribeToRestaurants() {
+  void _subscribeToRestaurants({VoidCallback? onFirstEmission}) {
     if (_disposed) {
       return;
     }
@@ -304,6 +322,7 @@ class RestaurantListController extends ChangeNotifier {
           _restaurants = value;
           _loaded = true;
           _publish();
+          onFirstEmission?.call();
         });
   }
 

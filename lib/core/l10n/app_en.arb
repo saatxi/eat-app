@@ -71,6 +71,8 @@
 
   "detailNotFoundTitle": "Restaurant not found",
   "detailNotFoundBody": "This restaurant was removed.",
+  "detailSelectTitle": "Nothing selected",
+  "detailSelectBody": "Pick a restaurant from the list to see its details here.",
   "detailActionEdit": "Edit",
   "detailActionShare": "Share",
   "detailActionDelete": "Delete",

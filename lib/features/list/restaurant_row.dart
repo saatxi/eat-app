@@ -122,10 +122,16 @@ class RestaurantRow extends StatelessWidget {
                     ),
                     child: Row(
                       children: <Widget>[
-                        RestaurantThumbnail(
-                          cuisineKey: restaurant.cuisineKey,
-                          photoPath: restaurant.photoPath,
-                          size: _badgeSize,
+                        // Paired with the detail screen's header by
+                        // [restaurantHeroTag], so the thumbnail flies across on
+                        // the way in rather than the new screen just appearing.
+                        Hero(
+                          tag: restaurantHeroTag(restaurant.id),
+                          child: RestaurantThumbnail(
+                            cuisineKey: restaurant.cuisineKey,
+                            photoPath: restaurant.photoPath,
+                            size: _badgeSize,
+                          ),
                         ),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(

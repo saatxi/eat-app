@@ -25,6 +25,8 @@ install's data is imported automatically on first launch — see
   most-picked cuisines, price-tier spread and a monthly rating trend.
 - A home-screen widget showing a random want-to-try restaurant, with a shuffle
   button and a tap that opens that restaurant.
+- A tablet-width layout: a navigation rail, and the list beside the selected
+  restaurant's detail instead of the detail replacing the list.
 - Share one restaurant, or your whole list, through the normal share sheet;
   opening a shared file shows a review screen before anything is saved.
 - Three colour palettes and a light/dark choice in Settings.

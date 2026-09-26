@@ -5,6 +5,7 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/empty_state.dart';
+import '../../core/widgets/staggered_entrance.dart';
 import '../import_export/share_service.dart';
 import 'restaurant_list_controller.dart';
 import 'restaurant_row.dart';
@@ -157,7 +158,14 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                 priceRange: state.priceRange,
                 onPriceRangeChange: controller.onPriceRangeChange,
               ),
-              Expanded(child: _content(state, controller, l10n)),
+              Expanded(
+                child: RefreshIndicator(
+                  // Pulling re-runs the query rather than waiting on a cosmetic
+                  // delay — see RestaurantListController.refresh.
+                  onRefresh: controller.refresh,
+                  child: _content(state, controller, l10n),
+                ),
+              ),
             ],
           );
         },
@@ -176,6 +184,9 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
       // for a frame on every cold start. Shape-matching skeleton rows read as
       // faster than a centred spinner even though the wait is identical.
       return ListView.separated(
+        // Scrollable even when the content is shorter than the viewport, so the
+        // pull-to-refresh gesture is available in every state.
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(AppSpacing.lg),
         itemCount: skeletonRowCount,
         separatorBuilder: (BuildContext context, int index) =>
@@ -190,21 +201,23 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
     if (noResults && !state.hasActiveFilter) {
       // There is nothing to narrow down yet — either no restaurant has been
       // added, or none has been hearted.
-      return EmptyState(
-        icon: widget.favouritesOnly
-            ? Icons.favorite_border
-            : Icons.restaurant_menu,
-        title: widget.favouritesOnly
-            ? l10n.favoritesEmptyTitle
-            : l10n.listEmptyTitle,
-        body: widget.favouritesOnly
-            ? l10n.favoritesEmptyBody
-            : l10n.listEmptyBody,
-        actionLabel:
-            !widget.favouritesOnly && widget.onAddRestaurant != null
-                ? l10n.listActionAddRestaurant
-                : null,
-        onAction: widget.onAddRestaurant,
+      return _refreshableEmpty(
+        EmptyState(
+          icon: widget.favouritesOnly
+              ? Icons.favorite_border
+              : Icons.restaurant_menu,
+          title: widget.favouritesOnly
+              ? l10n.favoritesEmptyTitle
+              : l10n.listEmptyTitle,
+          body: widget.favouritesOnly
+              ? l10n.favoritesEmptyBody
+              : l10n.listEmptyBody,
+          actionLabel:
+              !widget.favouritesOnly && widget.onAddRestaurant != null
+                  ? l10n.listActionAddRestaurant
+                  : null,
+          onAction: widget.onAddRestaurant,
+        ),
       );
     }
 
@@ -230,6 +243,7 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
     final int headerCount = header == null ? 0 : 1;
 
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(AppSpacing.lg),
       itemCount: headerCount + (noResults ? 1 : state.restaurants.length),
       separatorBuilder: (BuildContext context, int index) =>
@@ -251,17 +265,38 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
           );
         }
         final RestaurantUiModel restaurant = state.restaurants[index - headerCount];
-        return RestaurantRow(
-          restaurant: restaurant,
-          onTap: widget.onOpenRestaurant == null
-              ? null
-              : () => widget.onOpenRestaurant!(restaurant),
-          onFavoriteToggle: controller.toggleFavorite,
-          onDeleteRequest: () => _confirmDelete(restaurant),
+        return StaggeredEntrance(
+          // Indexed by the row's place in the list, so the cascade runs top to
+          // bottom whether or not the suggestion header is showing above it.
+          index: index,
+          child: RestaurantRow(
+            restaurant: restaurant,
+            onTap: widget.onOpenRestaurant == null
+                ? null
+                : () => widget.onOpenRestaurant!(restaurant),
+            onFavoriteToggle: controller.toggleFavorite,
+            onDeleteRequest: () => _confirmDelete(restaurant),
+          ),
         );
       },
     );
   }
+
+  /// Wraps a shorter-than-the-viewport state so it can still be pulled.
+  ///
+  /// A [RefreshIndicator] needs a scrollable child, and the empty states are
+  /// centred blocks lighter than the screen — handed over raw, they would give
+  /// the gesture nothing to grab.
+  Widget _refreshableEmpty(Widget child) => LayoutBuilder(
+    builder: (BuildContext context, BoxConstraints constraints) =>
+        SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: child,
+          ),
+        ),
+  );
 }
 
 class _TopGradient extends StatelessWidget {

@@ -155,6 +155,13 @@ class AppLocalizationsCa extends AppLocalizations {
   String get detailNotFoundBody => 'Aquest restaurant s\'ha eliminat.';
 
   @override
+  String get detailSelectTitle => 'Res seleccionat';
+
+  @override
+  String get detailSelectBody =>
+      'Tria un restaurant de la llista per veure\'n els detalls aquí.';
+
+  @override
   String get detailActionEdit => 'Edita';
 
   @override
