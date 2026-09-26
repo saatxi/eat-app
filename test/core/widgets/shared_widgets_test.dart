@@ -2,6 +2,7 @@ import 'package:eatapp/core/l10n/generated/app_localizations.dart';
 import 'package:eatapp/core/theme/app_theme.dart';
 import 'package:eatapp/core/widgets/empty_state.dart';
 import 'package:eatapp/core/widgets/rating_and_price_row.dart';
+import 'package:eatapp/core/widgets/rating_trend_chart.dart';
 import 'package:eatapp/core/widgets/shimmer_box.dart';
 import 'package:eatapp/core/widgets/tag_pill_row.dart';
 import 'package:flutter/material.dart';
@@ -117,6 +118,48 @@ void main() {
       );
 
       expect(find.byType(FilledButton), findsNothing);
+    });
+  });
+
+  group('RatingTrendChart', () {
+    testWidgets('fills the box its caller reserved', (
+      WidgetTester tester,
+    ) async {
+      // The detail screen's shape: a fixed-height container whose width comes
+      // from a loose parent, so the chart is handed a loose width. A bare
+      // `CustomPaint` lays out at zero under those constraints and paints
+      // nothing — which is what left that slot a bare vertical bar.
+      await tester.pumpWidget(
+        _host(
+          Center(
+            child: SizedBox(
+              width: 300,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Container(
+                    height: 100,
+                    padding: const EdgeInsets.all(12),
+                    child: const RatingTrendChart(
+                      values: <double>[3, 5],
+                      lineColor: Colors.teal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final Finder paint = find.descendant(
+        of: find.byType(RatingTrendChart),
+        matching: find.byType(CustomPaint),
+      );
+      expect(paint, findsOneWidget);
+      // 300 wide and 100 tall, less the 12pt padding on every side.
+      expect(tester.getSize(paint), const Size(276, 76));
     });
   });
 

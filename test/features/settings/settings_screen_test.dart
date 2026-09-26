@@ -39,6 +39,14 @@ void main() {
     ),
   );
 
+  /// Taps the language selector's anchor and waits for its menu to open. The
+  /// anchor is a `ListTile`, so it is found by its drop-down arrow rather than
+  /// by its label — the label is the current choice and changes with it.
+  Future<void> openLanguageSelector(WidgetTester tester) async {
+    await tester.tap(find.widgetWithIcon(ListTile, Icons.arrow_drop_down));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('picking a palette stores it', (WidgetTester tester) async {
     await tester.pumpWidget(host());
 
@@ -50,18 +58,29 @@ void main() {
     expect(preferences.current.palette, AppPalette.garden);
   });
 
-  testWidgets('picking a language stores it, and the device row clears it', (
+  testWidgets('the selector offers only the shipped languages, and stores one', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(host());
 
-    await tester.tap(find.text('Spanish'));
-    await tester.pump();
-    expect(preferences.current.language, AppLanguage.spanish);
+    // Nothing is stored yet, so the anchor shows the language the app resolved
+    // to — English, the locale this host pins — and the remaining choices only
+    // exist while the menu is open.
+    expect(find.widgetWithText(ListTile, 'English'), findsOneWidget);
+    expect(find.widgetWithText(MenuItemButton, 'Spanish'), findsNothing);
 
-    await tester.tap(find.text('Follow the device language'));
-    await tester.pump();
-    expect(preferences.current.language, isNull);
+    await openLanguageSelector(tester);
+
+    // The shipped languages and nothing else: no "follow the device" row, and
+    // no language the app has no translations for.
+    expect(find.byType(MenuItemButton), findsNWidgets(3));
+
+    await tester.tap(find.widgetWithText(MenuItemButton, 'Spanish'));
+    await tester.pumpAndSettle();
+
+    expect(preferences.current.language, AppLanguage.spanish);
+    expect(find.widgetWithText(ListTile, 'Spanish'), findsOneWidget);
+    expect(find.widgetWithText(MenuItemButton, 'Spanish'), findsNothing);
   });
 
   testWidgets('deleting everything waits for the confirmation', (

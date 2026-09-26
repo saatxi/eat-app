@@ -276,9 +276,16 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
+  /// The phone shape's navigation bar. Its labels stay off: the four icons are
+  /// distinct enough to read on their own, and the destinations still carry
+  /// their label as a tooltip and as semantics, so screen readers and long-press
+  /// both still announce the section. The rail keeps its labels — there they sit
+  /// beside the icon rather than under it, and a rail is tall enough to afford
+  /// them.
   NavigationBar _bottomBar(AppLocalizations l10n) => NavigationBar(
     selectedIndex: _index,
     onDestinationSelected: _selectTab,
+    labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
     destinations: <NavigationDestination>[
       NavigationDestination(
         icon: const Icon(Icons.restaurant_menu),

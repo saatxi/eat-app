@@ -6,7 +6,11 @@ import 'package:flutter/material.dart';
 /// The project has no charting library, so the mockup's inline chart is
 /// translated to `Canvas` calls instead — a port of the Android app's
 /// `RatingTrendChart`. Used for a restaurant's own rating-over-time line on the
-/// detail screen and, later, the statistics screen's charts.
+/// detail screen and for the collection-wide one on the statistics screen.
+///
+/// It fills whatever slot its caller gives it, so the caller owns the size: the
+/// detail screen's tinted box and the statistics card's `SizedBox` each fix a
+/// height, and this widget takes their width.
 class RatingTrendChart extends StatelessWidget {
   const RatingTrendChart({
     super.key,
@@ -23,11 +27,17 @@ class RatingTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _RatingTrendPainter(
-        values: values,
-        lineColor: lineColor,
-        maxValue: maxValue,
+    // `CustomPaint` with neither a child nor a size lays itself out at zero,
+    // and a zero-width canvas paints nothing visible — which is what turned the
+    // detail screen's chart slot into a bare vertical bar. `SizedBox.expand`
+    // gives it the box the caller reserved.
+    return SizedBox.expand(
+      child: CustomPaint(
+        painter: _RatingTrendPainter(
+          values: values,
+          lineColor: lineColor,
+          maxValue: maxValue,
+        ),
       ),
     );
   }

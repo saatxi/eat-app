@@ -115,24 +115,22 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               _SectionHeader(l10n.settingsSectionLanguage),
-              // The first entry is "follow the device", which is the stored
-              // null — a real choice rather than a missing one, so it gets its
-              // own row like the three languages do.
-              for (final AppLanguage? language in <AppLanguage?>[
-                null,
-                ...AppLanguage.selectable,
-              ])
-                ListTile(
-                  dense: true,
-                  title: Text(_languageLabel(l10n, language)),
-                  trailing: language == value.language
-                      ? Icon(
-                          Icons.check,
-                          color: Theme.of(context).colorScheme.primary,
-                        )
-                      : null,
-                  onTap: () => preferences.setLanguage(language),
-                ),
+              _LanguageSelector(
+                // Nothing stored means "follow the device", which is what the
+                // app is already showing, so the selector opens on the language
+                // that was actually resolved rather than on a fourth,
+                // non-language row. The same resolution `theme_gallery.dart`
+                // uses to name its own language switch.
+                value:
+                    value.language ??
+                    AppLanguage.resolveDeviceLocale(
+                      Localizations.localeOf(context),
+                    ) ??
+                    AppLanguage.fallback,
+                labelFor: (AppLanguage language) =>
+                    _languageLabel(l10n, language),
+                onChanged: preferences.setLanguage,
+              ),
               _SectionHeader(l10n.settingsSectionData),
               if (onViewStatistics != null)
                 ListTile(
@@ -173,14 +171,69 @@ class SettingsScreen extends StatelessWidget {
         AppPalette.indigo => l10n.paletteIndigo,
       };
 
-  static String _languageLabel(AppLocalizations l10n, AppLanguage? language) =>
-      language == null
-      ? l10n.languageSystem
-      : switch (language) {
-          AppLanguage.english => l10n.languageEnglish,
-          AppLanguage.spanish => l10n.languageSpanish,
-          AppLanguage.catalan => l10n.languageCatalan,
-        };
+  static String _languageLabel(AppLocalizations l10n, AppLanguage language) =>
+      switch (language) {
+        AppLanguage.english => l10n.languageEnglish,
+        AppLanguage.spanish => l10n.languageSpanish,
+        AppLanguage.catalan => l10n.languageCatalan,
+      };
+}
+
+/// The language selector: one row showing the current choice, with the rest of
+/// [AppLanguage.selectable] behind a menu.
+///
+/// Only the languages this app actually ships translations for are offered — a
+/// device in a language we don't translate never widens the menu, it just
+/// resolves to [AppLanguage.fallback] as it did before.
+///
+/// Built on `MenuAnchor` rather than a `DropdownButton`, the same way the list
+/// screen's filter chips are: the anchor is an ordinary [ListTile] that keeps
+/// its own row styling and tap handling, and the choices are plain
+/// [MenuItemButton]s. The tick sits on the trailing side, where it already was
+/// in the list this replaced, so no row needs a blank spacer to stay aligned.
+class _LanguageSelector extends StatelessWidget {
+  const _LanguageSelector({
+    required this.value,
+    required this.labelFor,
+    required this.onChanged,
+  });
+
+  /// The choice the selector opens on. Never null: an unstored preference means
+  /// "follow the device", and the caller resolves that to the language the app
+  /// is actually showing.
+  final AppLanguage value;
+
+  /// The translated name of a choice.
+  final String Function(AppLanguage language) labelFor;
+
+  final ValueChanged<AppLanguage> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color primary = Theme.of(context).colorScheme.primary;
+    return MenuAnchor(
+      menuChildren: <Widget>[
+        for (final AppLanguage language in AppLanguage.selectable)
+          MenuItemButton(
+            onPressed: () => onChanged(language),
+            trailingIcon: language == value
+                ? Icon(Icons.check, color: primary)
+                : null,
+            child: Text(labelFor(language)),
+          ),
+      ],
+      builder:
+          (BuildContext context, MenuController controller, Widget? child) {
+            return ListTile(
+              leading: const Icon(Icons.language),
+              title: Text(labelFor(value)),
+              trailing: const Icon(Icons.arrow_drop_down),
+              onTap: () =>
+                  controller.isOpen ? controller.close() : controller.open(),
+            );
+          },
+    );
+  }
 }
 
 class _SectionHeader extends StatelessWidget {
