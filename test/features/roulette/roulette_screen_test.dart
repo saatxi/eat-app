@@ -11,13 +11,9 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../data/db/db_test_utils.dart';
 import '../../data/photo/photo_fakes.dart';
 
-/// The reveal itself: the card is as tall as what it has to say, so the screen
-/// has to cope with a window that is shorter than that.
-///
-/// Nothing here asserts a layout — a render overflow is reported as a framework
-/// error, so simply laying the screen out in a short window is the assertion,
-/// the same way `test/features/accessibility/text_scale_test.dart` uses a large
-/// text size.
+/// The reveal itself, on a phone: the pick card is as tall as what it has to
+/// say, so the screen has to be arranged around it rather than the other way
+/// round.
 void main() {
   late AppDatabase db;
   late RestaurantRepository repository;
@@ -44,6 +40,11 @@ void main() {
     ),
   );
 
+  /// A small phone: 360x536 is what this screen gets on a 360x616 window with
+  /// the shell's bottom bar under it, which is where the pick card used to be
+  /// cut off.
+  const Size smallPhone = Size(360, 536);
+
   /// Pumped by hand rather than with `pumpAndSettle`: the first-load spinner
   /// never settles.
   Future<void> pump(WidgetTester tester) async {
@@ -59,16 +60,31 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   }
 
-  testWidgets('the reveal scrolls rather than overflowing a short window', (
+  /// The reveal's own scroll view: the filter strip above it scrolls sideways,
+  /// this one, if it ever has to, scrolls down.
+  Finder revealArea() => find.byWidgetPredicate(
+    (Widget widget) =>
+        widget is SingleChildScrollView &&
+        widget.scrollDirection == Axis.vertical,
+  );
+
+  /// How far the reveal has to scroll to show all of the card. Zero means the
+  /// whole card is on screen; anything else means its bottom is cut off.
+  double revealOverflow(WidgetTester tester) => tester
+      .state<ScrollableState>(
+        find.descendant(of: revealArea(), matching: find.byType(Scrollable)),
+      )
+      .position
+      .maxScrollExtent;
+
+  testWidgets('the whole pick card fits on a small phone', (
     WidgetTester tester,
   ) async {
-    // A small phone, taken down to a window shorter than the pick card: the
-    // filter row, the button and the reveal all have to fit above the fold of a
-    // screen this size, and the card is the one piece with a fixed height.
     tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(360, 420);
+    tester.view.physicalSize = smallPhone;
     addTearDown(tester.view.reset);
 
+    // An address is what makes the card its tallest.
     await repository.insert(
       restaurant(
         id: 'a',
@@ -85,8 +101,35 @@ void main() {
     await pump(tester);
 
     expect(find.text('Cal Ferran'), findsOneWidget);
-    // The button stays outside the scrolling area, where the tap left it.
+    expect(
+      revealOverflow(tester),
+      0,
+      reason: 'nothing of the card may sit below the fold of a phone this size',
+    );
+    // The button stays outside the reveal, where the tap left it.
     expect(find.text('Try again'), findsOneWidget);
+
+    await disposeApp(tester);
+  });
+
+  testWidgets('the filters are all still there, in one strip', (
+    WidgetTester tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = smallPhone;
+    addTearDown(tester.view.reset);
+
+    await repository.insert(restaurant(id: 'a', name: 'Cal Ferran'));
+    await tester.pumpWidget(host(const RouletteScreen()));
+    await pump(tester);
+
+    // Scrolled off the right edge or not, every filter is still in the strip
+    // above the reveal rather than wrapped onto a second line of it.
+    expect(find.text('Favorites only'), findsOneWidget);
+    expect(find.text('Status'), findsOneWidget);
+    expect(find.text('Rating'), findsOneWidget);
+    expect(find.text('Price'), findsOneWidget);
+    expect(find.text('1 restaurant'), findsOneWidget);
 
     await disposeApp(tester);
   });

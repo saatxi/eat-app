@@ -256,95 +256,103 @@ class _Filters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    // One strip that scrolls sideways rather than a block that wraps: wrapped,
+    // these chips came to three lines on a phone, which is as much height as the
+    // pick card needs for the whole of itself — and every line of it came out of
+    // the reveal below, which is this screen's entire point. A strip keeps them
+    // a tap away at any width, and on a window wide enough for all of them
+    // nothing moves at all.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.sm,
-        AppSpacing.lg,
-        AppSpacing.xs,
-      ),
-      child: Wrap(
-        spacing: AppSpacing.sm,
-        runSpacing: AppSpacing.sm,
-        children: <Widget>[
-          FilterChip(
-            selected: state.favoritesOnly,
-            onSelected: controller.onFavoritesOnlyChange,
-            avatar: state.favoritesOnly
-                ? null
-                : const Icon(Icons.favorite_border, size: 18),
-            label: Text(l10n.rouletteOnlyFavorites),
-          ),
-          FilterDropdownChip(
-            selectedLabel: switch (state.visited) {
-              false => l10n.visitStatusWantToTry,
-              true => l10n.visitStatusVisited,
-              null => l10n.rouletteFilterStatus,
-            },
-            isActive: state.visited != null,
-            menuBuilder: (VoidCallback close) => <Widget>[
-              MenuItemButton(
-                onPressed: () {
-                  controller.onVisitedChange(
-                    state.visited == false ? null : false,
-                  );
-                  close();
-                },
-                child: Text(l10n.visitStatusWantToTry),
-              ),
-              MenuItemButton(
-                onPressed: () {
-                  controller.onVisitedChange(state.visited == true ? null : true);
-                  close();
-                },
-                child: Text(l10n.visitStatusVisited),
-              ),
-            ],
-          ),
-          FilterDropdownChip(
-            selectedLabel: state.minRating == null
-                ? l10n.rouletteFilterRating
-                : '${state.minRating}+',
-            isActive: state.minRating != null,
-            menuBuilder: (VoidCallback close) => <Widget>[
-              for (int rating = 1; rating <= maxRating; rating++)
-                MenuItemButton(
-                  onPressed: () {
-                    controller.onMinRatingChange(
-                      state.minRating == rating ? null : rating,
-                    );
-                    close();
-                  },
-                  child: Text('$rating+'),
-                ),
-            ],
-          ),
-          FilterDropdownChip(
-            selectedLabel: state.priceRange == null
-                ? l10n.rouletteFilterPrice
-                : priceRangeLabel(l10n, state.priceRange!),
-            isActive: state.priceRange != null,
-            menuBuilder: (VoidCallback close) => <Widget>[
-              for (int price = 1; price <= maxPriceRange; price++)
-                MenuItemButton(
-                  onPressed: () {
-                    controller.onPriceRangeChange(
-                      state.priceRange == price ? null : price,
-                    );
-                    close();
-                  },
-                  child: Text(priceRangeLabel(l10n, price)),
-                ),
-            ],
-          ),
-          // How many places a spin could land on — the number that explains why
-          // a filter combination is turning up nothing.
-          if (!state.isInitialLoad)
-            Chip(
-              avatar: const Icon(Icons.casino_outlined, size: 18),
-              label: Text(l10n.listResultCount(state.candidates.length)),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        // Laid out inside a horizontal scroll view, so it never wraps: the
+        // `Wrap` is what keeps the chips' own spacing, not what lays them out.
+        child: Wrap(
+          spacing: AppSpacing.sm,
+          children: <Widget>[
+            FilterChip(
+              selected: state.favoritesOnly,
+              onSelected: controller.onFavoritesOnlyChange,
+              avatar: state.favoritesOnly
+                  ? null
+                  : const Icon(Icons.favorite_border, size: 18),
+              label: Text(l10n.rouletteOnlyFavorites),
             ),
-        ],
+            FilterDropdownChip(
+              selectedLabel: switch (state.visited) {
+                false => l10n.visitStatusWantToTry,
+                true => l10n.visitStatusVisited,
+                null => l10n.rouletteFilterStatus,
+              },
+              isActive: state.visited != null,
+              menuBuilder: (VoidCallback close) => <Widget>[
+                MenuItemButton(
+                  onPressed: () {
+                    controller.onVisitedChange(
+                      state.visited == false ? null : false,
+                    );
+                    close();
+                  },
+                  child: Text(l10n.visitStatusWantToTry),
+                ),
+                MenuItemButton(
+                  onPressed: () {
+                    controller.onVisitedChange(
+                      state.visited == true ? null : true,
+                    );
+                    close();
+                  },
+                  child: Text(l10n.visitStatusVisited),
+                ),
+              ],
+            ),
+            FilterDropdownChip(
+              selectedLabel: state.minRating == null
+                  ? l10n.rouletteFilterRating
+                  : '${state.minRating}+',
+              isActive: state.minRating != null,
+              menuBuilder: (VoidCallback close) => <Widget>[
+                for (int rating = 1; rating <= maxRating; rating++)
+                  MenuItemButton(
+                    onPressed: () {
+                      controller.onMinRatingChange(
+                        state.minRating == rating ? null : rating,
+                      );
+                      close();
+                    },
+                    child: Text('$rating+'),
+                  ),
+              ],
+            ),
+            FilterDropdownChip(
+              selectedLabel: state.priceRange == null
+                  ? l10n.rouletteFilterPrice
+                  : priceRangeLabel(l10n, state.priceRange!),
+              isActive: state.priceRange != null,
+              menuBuilder: (VoidCallback close) => <Widget>[
+                for (int price = 1; price <= maxPriceRange; price++)
+                  MenuItemButton(
+                    onPressed: () {
+                      controller.onPriceRangeChange(
+                        state.priceRange == price ? null : price,
+                      );
+                      close();
+                    },
+                    child: Text(priceRangeLabel(l10n, price)),
+                  ),
+              ],
+            ),
+            // How many places a spin could land on — the number that explains
+            // why a filter combination is turning up nothing.
+            if (!state.isInitialLoad)
+              Chip(
+                avatar: const Icon(Icons.casino_outlined, size: 18),
+                label: Text(l10n.listResultCount(state.candidates.length)),
+              ),
+          ],
+        ),
       ),
     );
   }
