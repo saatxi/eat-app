@@ -13,11 +13,12 @@
 
     The CSV has columns name,cuisineType,streetAddress,priceRange,website,
     instagram,tags,city,region,country,visits, matching
-    RestaurantShareModels.kt. On the way into .eatapp, rows are validated the
-    same way the app would validate them on import (required
+    lib/data/share/restaurant_share_models.dart. On the way into .eatapp, rows
+    are validated the same way the app would validate them on import (required
     name/cuisineType/priceRange, priceRange 0-4, cuisineType from the closed
-    vocabulary in Cuisine.kt) -- an invalid row is skipped with a warning
-    rather than failing the whole file, since that's what the app does too.
+    vocabulary in lib/data/models/cuisine.dart) -- an invalid row is skipped
+    with a warning rather than failing the whole file, since that's what the
+    app does too.
     On the way into CSV, every row is trusted as-is (it's the app's own
     export).
 
@@ -76,8 +77,8 @@ function Write-Step { param([string] $Message) Write-Host "==> $Message" -Foregr
 function Write-Warn { param([string] $Message) Write-Host "!!  $Message" -ForegroundColor Yellow }
 function Fail       { param([string] $Message) Write-Host "x   $Message" -ForegroundColor Red; exit 1 }
 
-# Mirrors the closed vocabulary in Cuisine.kt -- kept in sync manually, same
-# as the README's copy of it.
+# Mirrors the closed vocabulary in lib/data/models/cuisine.dart -- kept in sync
+# manually, same as the README's copy of it.
 $ValidCuisines = @(
     'mediterranean', 'spanish', 'catalan', 'basque', 'italian', 'japanese',
     'chinese', 'asian', 'indian', 'middle_eastern', 'american', 'seafood',

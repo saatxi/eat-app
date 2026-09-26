@@ -1,6 +1,0 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Compose draws all real UI; this exists only because AppCompatActivity
-         (needed for AppCompatDelegate.setApplicationLocales, see MainActivity)
-         requires a Theme.AppCompat descendant or it throws at startup. -->
-    <style name="Theme.EatApp" parent="Theme.AppCompat.Light.NoActionBar" />
-</resources>

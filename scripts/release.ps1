@@ -135,4 +135,4 @@ if ($LASTEXITCODE -ne 0) {
     Fail "Could not push $tag to $Remote."
 }
 
-Write-Step "$tag pushed. Next: ./gradlew :app:printVersionInfo, then assembleRelease / bundleRelease (see README)."
+Write-Step "$tag pushed. Next: ./scripts/bundle.ps1 to build the signed release bundle (see README)."

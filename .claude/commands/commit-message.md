@@ -21,7 +21,7 @@ Additional context provided by the user (may be empty): $ARGUMENTS
 
 ## Format rules
 
-See [CLAUDE.md](../../CLAUDE.md)'s "Commit and tag messages" section for the full rules (when Claude may run `git commit`/`git tag`, message format, no attribution lines, etc.) — they apply here too. In short:
+See [AGENTS.md](../../AGENTS.md)'s "Commit and tag messages" section for the full rules (when an agent may run `git commit`/`git tag`, message format, no attribution lines, etc.) — they apply here too. In short:
 
 ```text
 Short summary

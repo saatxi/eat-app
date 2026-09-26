@@ -1,12 +1,9 @@
 {
   // MD013 (line-length) can't be satisfied by rewrapping these three
   // element types without losing content, since none of them can span
-  // multiple physical lines: a heading is one line by syntax (and
-  // development-log.md's "### F-XX · <description>" finding headings are a
-  // repo-wide convention of long, fully descriptive one-liners); a table
-  // row is one line by syntax; a fenced code block holds real code or
-  // fixed-width data (development-log.md has literal column-aligned data
-  // dumps) that reformatting would corrupt.
+  // multiple physical lines: a heading is one line by syntax; a table row
+  // is one line by syntax; a fenced code block holds real code or
+  // fixed-width data that reformatting would corrupt.
   "config": {
     "MD013": {
       "code_blocks": false,
@@ -14,15 +11,15 @@
       "tables": false
     }
   },
-  // The exact scope CLAUDE.md documents — README.md, CLAUDE.md and
+  // The exact scope AGENTS.md documents — README.md, AGENTS.md and
   // docs/*.md — so a plain `markdownlint-cli2` with no arguments lints the
   // right files. CHANGELOG.md is deliberately not included: it's generated
-  // from git tag messages, which CLAUDE.md's own tag-message convention
+  // from git tag messages, which AGENTS.md's own tag-message convention
   // keeps unwrapped (one continuous line per paragraph), so it isn't held
   // to this line-length rule set.
   "globs": [
     "README.md",
-    "CLAUDE.md",
+    "AGENTS.md",
     "docs/*.md"
   ],
   // .claude/skills/* are third-party skill repos (tracked as gitlinks), not
