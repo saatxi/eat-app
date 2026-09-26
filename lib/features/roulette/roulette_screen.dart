@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_spacing.dart';
-import '../../core/theme/tokens/cuisine_accents.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/filter_dropdown_chip.dart';
 import '../../core/widgets/price_range_label.dart';
 import '../../core/widgets/rating_and_price_row.dart';
+import '../../core/widgets/restaurant_thumbnail.dart';
 import '../list/restaurant_ui_model.dart';
 import 'roulette_controller.dart';
 
@@ -163,7 +163,6 @@ class _ResultCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
-    final CuisineTint tint = cuisineTint(context, restaurant.cuisineKey);
     final String priceLabel = priceRangeLabel(l10n, restaurant.priceRange);
     final String? address = restaurant.formattedAddress;
 
@@ -177,20 +176,12 @@ class _ResultCard extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Container(
-                width: 72,
-                height: 72,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: tint.container,
-                  border: Border.all(color: tint.onContainer, width: 1.5),
-                ),
-                child: Icon(
-                  cuisineIcon(restaurant.cuisineKey),
-                  size: 32,
-                  color: tint.onContainer,
-                ),
+              RestaurantThumbnail(
+                cuisineKey: restaurant.cuisineKey,
+                photoPath: restaurant.photoPath,
+                size: 72,
+                iconSize: 32,
+                semanticLabel: l10n.detailPhotoDescription,
               ),
               const SizedBox(height: AppSpacing.md),
               Text(

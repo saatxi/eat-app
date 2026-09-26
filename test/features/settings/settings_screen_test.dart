@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../data/db/db_test_utils.dart';
+import '../../data/photo/photo_fakes.dart';
 
 void main() {
   late AppDatabase db;
@@ -28,6 +29,7 @@ void main() {
   Widget host() => AppScope(
     restaurants: repository,
     preferences: preferences,
+    photoPicker: FakePhotoPicker(),
     child: MaterialApp(
       theme: AppTheme.of(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,

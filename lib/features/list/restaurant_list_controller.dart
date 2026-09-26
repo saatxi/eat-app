@@ -134,6 +134,12 @@ class RestaurantListController extends ChangeNotifier {
           _publish();
         },
       ),
+      repository.observeRestaurantPhotoPaths().listen(
+        (Map<String, String> value) {
+          _photoPathsByRestaurantId = value;
+          _publish();
+        },
+      ),
       repository.observeCuisineTypes().listen((List<String> value) {
         _availableCuisines = value;
         _publish();
@@ -189,6 +195,7 @@ class RestaurantListController extends ChangeNotifier {
   List<Restaurant> _restaurants = const <Restaurant>[];
   Map<String, List<String>> _tagsByRestaurantId = const <String, List<String>>{};
   Map<String, Visit> _latestVisitByRestaurantId = const <String, Visit>{};
+  Map<String, String> _photoPathsByRestaurantId = const <String, String>{};
   Set<String> _favoriteIds = const <String>{};
   List<String> _availableCuisines = const <String>[];
   List<String> _availableCities = const <String>[];
@@ -334,6 +341,7 @@ class RestaurantListController extends ChangeNotifier {
               isFavorite: _favoriteIds.contains(restaurant.id),
               tags: _tagsByRestaurantId[restaurant.id] ?? const <String>[],
               latestVisit: _latestVisitByRestaurantId[restaurant.id],
+              photoPath: _photoPathsByRestaurantId[restaurant.id],
             ),
       ],
       isInitialLoad: !_loaded,

@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
+import '../../core/theme/tokens/app_radius.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/price_range_picker.dart';
@@ -46,6 +49,7 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
     _controller ??= RestaurantEditController(
       repository: AppScope.of(context).restaurants,
       restaurantId: widget.restaurantId,
+      photoPicker: AppScope.of(context).photoPicker,
     )..addListener(_prefillOnce);
   }
 
@@ -162,6 +166,11 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                       errorText:
                           state.cuisineError ? l10n.editErrorCuisineRequired : null,
                       onTap: _pickCuisine,
+                    ),
+                    _PhotoField(
+                      photoPath: state.photoPreviewPath,
+                      onAdd: controller.pickPhoto,
+                      onRemove: controller.removePhoto,
                     ),
                     _textField(
                       controller: _streetAddress,
@@ -395,6 +404,69 @@ class _TagSuggestions extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// The restaurant's one photo: a preview when there is one, and the buttons that
+/// add, replace or remove it. Everything is staged in the controller and only
+/// written on save, so backing out of the form changes nothing.
+class _PhotoField extends StatelessWidget {
+  const _PhotoField({
+    required this.photoPath,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final String? photoPath;
+  final VoidCallback onAdd;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String? path = photoPath;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (path != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: ClipRRect(
+                borderRadius: AppRadius.mediumAll,
+                child: Image.file(
+                  File(path),
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  semanticLabel: l10n.editPhotoPreviewDescription,
+                  errorBuilder:
+                      (BuildContext context, Object error, StackTrace? stack) =>
+                          const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          Row(
+            children: <Widget>[
+              OutlinedButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.photo_library_outlined),
+                label: Text(l10n.editActionAddPhoto),
+              ),
+              if (path != null) ...<Widget>[
+                const SizedBox(width: AppSpacing.sm),
+                TextButton.icon(
+                  onPressed: onRemove,
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(l10n.editActionRemovePhoto),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

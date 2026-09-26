@@ -68,6 +68,15 @@ dependencies:
   # aligned to 17 in android/build.gradle.kts.
   receive_sharing_intent: ">=1.7.0 <1.9.0"
 
+  # Copies a picked photo into the app's own private storage, normalising its
+  # EXIF orientation and bounding its longest side — see data/photo/. Pure Dart,
+  # so it runs the same on Android and iOS.
+  image: ^4.10.1
+
+  # The system photo picker (Android Photo Picker / iOS PHPicker). Returns a
+  # temporary file the app then copies through `image` above.
+  image_picker: ^1.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -175,7 +175,7 @@ void main() {
       restaurantId: 'a',
       visitDate: 1000,
       rating: 4,
-      photoPaths: <String>['/tmp/one.jpg', '/tmp/two.jpg'],
+      photoSourcePaths: <String>['/tmp/one.jpg', '/tmp/two.jpg'],
     );
 
     final RestaurantDetailController controller = buildController('a');

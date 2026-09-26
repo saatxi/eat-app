@@ -4,10 +4,10 @@ import 'package:flutter/services.dart';
 import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_radius.dart';
 import '../../core/theme/tokens/app_spacing.dart';
-import '../../core/theme/tokens/cuisine_accents.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/price_range_label.dart';
 import '../../core/widgets/rating_and_price_row.dart';
+import '../../core/widgets/restaurant_thumbnail.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/tag_pill_row.dart';
 import 'restaurant_ui_model.dart';
@@ -122,7 +122,11 @@ class RestaurantRow extends StatelessWidget {
                     ),
                     child: Row(
                       children: <Widget>[
-                        _CuisineBadge(cuisineKey: restaurant.cuisineKey),
+                        RestaurantThumbnail(
+                          cuisineKey: restaurant.cuisineKey,
+                          photoPath: restaurant.photoPath,
+                          size: _badgeSize,
+                        ),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: _Details(
@@ -197,30 +201,6 @@ class _SwipeHint extends StatelessWidget {
       ),
       // Decorative: a hint drawn behind a row mid-drag, not a target of its own.
       child: Icon(icon, color: contentColor),
-    );
-  }
-}
-
-class _CuisineBadge extends StatelessWidget {
-  const _CuisineBadge({required this.cuisineKey});
-
-  final String cuisineKey;
-
-  @override
-  Widget build(BuildContext context) {
-    final CuisineTint tint = cuisineTint(context, cuisineKey);
-    return Container(
-      width: _badgeSize,
-      height: _badgeSize,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: tint.container,
-        // A ring in the cuisine's own accent; `onContainer` stands in for it,
-        // since a CuisineTint only carries the container/on-container pair.
-        border: Border.all(color: tint.onContainer, width: 1.5),
-      ),
-      child: Icon(cuisineIcon(cuisineKey), size: 24, color: tint.onContainer),
     );
   }
 }

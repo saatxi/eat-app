@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
+import '../../core/theme/tokens/app_radius.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/price_range_picker.dart';
 import '../../core/widgets/rating_picker.dart';
@@ -34,6 +37,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
       _controller = LogVisitController(
         repository: AppScope.of(context).restaurants,
         restaurantId: widget.restaurantId,
+        photoPicker: AppScope.of(context).photoPicker,
       )..addListener(_syncDate);
       _syncDate();
     }
@@ -175,6 +179,12 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
                           border: const OutlineInputBorder(),
                         ),
                       ),
+                      const SizedBox(height: AppSpacing.lg),
+                      _PhotoStrip(
+                        paths: state.photoSourcePaths,
+                        onAdd: controller.pickPhoto,
+                        onRemove: controller.removePhoto,
+                      ),
                     ],
                   ),
                 ),
@@ -183,6 +193,81 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+/// The visit's photos: a horizontal strip of staged thumbnails, each removable,
+/// with an "add" button underneath. Staged only — the files are persisted when
+/// the visit is saved.
+class _PhotoStrip extends StatelessWidget {
+  const _PhotoStrip({
+    required this.paths,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final List<String> paths;
+  final VoidCallback onAdd;
+  final ValueChanged<String> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (paths.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: SizedBox(
+              height: 96,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: paths.length,
+                separatorBuilder: (BuildContext context, int index) =>
+                    const SizedBox(width: AppSpacing.sm),
+                itemBuilder: (BuildContext context, int index) {
+                  final String path = paths[index];
+                  return Stack(
+                    children: <Widget>[
+                      ClipRRect(
+                        borderRadius: AppRadius.smallAll,
+                        child: Image.file(
+                          File(path),
+                          width: 96,
+                          height: 96,
+                          fit: BoxFit.cover,
+                          semanticLabel: l10n.logvisitPhotoDescription,
+                          errorBuilder:
+                              (
+                                BuildContext context,
+                                Object error,
+                                StackTrace? stack,
+                              ) => const SizedBox.shrink(),
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: IconButton(
+                          onPressed: () => onRemove(path),
+                          tooltip: l10n.logvisitActionRemovePhoto,
+                          icon: const Icon(Icons.cancel),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        OutlinedButton.icon(
+          onPressed: onAdd,
+          icon: const Icon(Icons.add_a_photo_outlined),
+          label: Text(l10n.logvisitActionAddPhoto),
+        ),
+      ],
     );
   }
 }

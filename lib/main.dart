@@ -11,6 +11,9 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/app_theme_mode.dart';
 import 'data/db/app_database.dart';
 import 'data/migration/room_to_drift_importer.dart';
+import 'data/photo/image_picker_photo_picker.dart';
+import 'data/photo/photo_picker.dart';
+import 'data/photo/photo_storage.dart';
 import 'data/repositories/restaurant_repository.dart';
 import 'data/repositories/user_preferences_repository.dart';
 import 'data/share/backup_writer.dart';
@@ -59,10 +62,14 @@ Future<void> main() async {
       preferences: UserPreferencesRepository(store: preferences),
       // The on-device snapshot is written after every change, so a device
       // restore brings the data along without the user ever pressing export.
+      // The photo storage lives on the repository: it is the only place that
+      // writes or removes a stored photo, so a delete can take the file with it.
       repository: RestaurantRepository(
         database,
         backupWriter: const FileBackupWriter(),
+        photoStorage: const FilePhotoStorage(),
       ),
+      photoPicker: ImagePickerPhotoPicker(),
       initialSharedFilePath: initialSharedFilePath,
       sharedFileStream: sharedFileStream,
     ),
@@ -84,14 +91,16 @@ String? _sharedFilePath(List<SharedMediaFile> files) {
 
 /// The application root.
 ///
-/// It publishes the two repositories through an [AppScope], selects between the
-/// light and dark `ThemeData` the token layer builds, wires up localization and
-/// hands the tree its [HomeShell]. Routing itself lives in the shell.
+/// It publishes the repositories and the photo picker through an [AppScope],
+/// selects between the light and dark `ThemeData` the token layer builds, wires
+/// up localization and hands the tree its [HomeShell]. Routing itself lives in
+/// the shell.
 class EatApp extends StatefulWidget {
   const EatApp({
     super.key,
     this.preferences,
     this.repository,
+    this.photoPicker,
     this.initialSharedFilePath,
     this.sharedFileStream,
   });
@@ -103,6 +112,10 @@ class EatApp extends StatefulWidget {
   /// Likewise null in tests and previews, where an in-memory database stands in
   /// for the file-backed one.
   final RestaurantRepository? repository;
+
+  /// Null in tests, where the screens that add a photo are never driven; a fake
+  /// stands in for the system picker there.
+  final PhotoPicker? photoPicker;
 
   /// Null except on the cold start that opened the app via "Open with EatApp"
   /// on a shared restaurant file.
@@ -122,6 +135,9 @@ class _EatAppState extends State<EatApp> {
 
   late final RestaurantRepository _repository =
       widget.repository ?? RestaurantRepository(AppDatabase.memory());
+
+  late final PhotoPicker _photoPicker =
+      widget.photoPicker ?? ImagePickerPhotoPicker();
 
   /// Resolves the device's preferred language to one we ship, falling back to
   /// English — without this, Flutter's default resolution picks the first
@@ -147,6 +163,7 @@ class _EatAppState extends State<EatApp> {
     return AppScope(
       restaurants: _repository,
       preferences: _preferences,
+      photoPicker: _photoPicker,
       // Rebuilding from the repository rather than from local state is what makes
       // a change survive the widget being recreated, and what lets every stored
       // value be the single source of truth for what is on screen.

@@ -8,6 +8,7 @@ import '../db/daos/tag_dao.dart';
 import '../db/daos/visit_dao.dart';
 import '../models/restaurant_sort.dart';
 import '../models/stats_projections.dart';
+import '../photo/photo_storage.dart';
 import '../share/backup_writer.dart';
 import '../share/restaurant_share_models.dart';
 
@@ -28,15 +29,21 @@ import '../share/restaurant_share_models.dart';
 /// The `backup.json` snapshot the Android repository wrote after every change
 /// is written here too, through the optional [BackupWriter] a real app passes
 /// in — kept optional so a unit test can build a bare in-memory repository
-/// with no platform channel in the way. Deleting photo files from disk is
-/// still deliberately absent; that belongs with the photos block.
+/// with no platform channel in the way. The photo files behind the `photos`
+/// rows are cleaned up through the optional [PhotoStorage], likewise kept
+/// optional — a database-only test passes none and the rows cascade on their
+/// own, leaving the fake paths on disk untouched.
 class RestaurantRepository {
-  RestaurantRepository(this._database, {this.backupWriter});
+  RestaurantRepository(this._database, {this.backupWriter, this.photoStorage});
 
   final AppDatabase _database;
 
   /// Null when nothing should snapshot — the case in every unit test.
   final BackupWriter? backupWriter;
+
+  /// Null when nothing should be deleted from disk — the case in a database-only
+  /// test, where the `photos` rows point at paths a fake never created.
+  final PhotoStorage? photoStorage;
 
   static const Uuid _uuid = Uuid();
 
@@ -124,19 +131,24 @@ class RestaurantRepository {
     await _writeBackup();
   }
 
-  /// No explicit tag/visit/photo cleanup: they all cascade on delete.
+  /// The tag/visit/photo rows all cascade on delete; only their photo *files*
+  /// are read back first, since the cascade knows nothing about the disk.
   Future<void> delete(String id) async {
+    final List<Photo> photos = await _photos.getAllPhotosForRestaurant(id);
     await _restaurants.deleteRestaurant(id);
+    await _deleteFiles(photos);
     await _writeBackup();
   }
 
   Future<void> deleteAll() async {
+    final List<Photo> photos = await _photos.getAllPhotos();
     await _database.transaction(() async {
       await _restaurants.deleteAllRestaurants();
       // The cascade only clears restaurant_tags when restaurants are deleted —
       // the tags table itself needs its own wipe.
       await _tags.deleteAllTags();
     });
+    await _deleteFiles(photos);
     await _writeBackup();
   }
 
@@ -265,6 +277,10 @@ class RestaurantRepository {
     required int rating,
     String? notes,
   }) async {
+    // The visits being replaced take their photos with them; the restaurant's own
+    // photo is not a visit's and is deliberately left alone.
+    final List<Photo> removedPhotos = await _photos
+        .getVisitPhotosForRestaurant(restaurantId);
     await _database.transaction(() async {
       final Visit? existing = await _visits.getLatestVisit(restaurantId);
       await _visits.deleteAllVisitsForRestaurant(restaurantId);
@@ -283,22 +299,32 @@ class RestaurantRepository {
         );
       }
     });
+    await _deleteFiles(removedPhotos);
     await _writeBackup();
   }
 
   /// Adds one more visit, together with any photos taken on it. Returns the new
   /// visit's id.
   ///
+  /// [photoSourcePaths] are the temporary paths the picker returned; each is
+  /// persisted through [photoStorage] first (outside the transaction, since it
+  /// touches the disk) and it is the stored copy that goes in the database.
+  ///
   /// This is the real, multi-visit-per-restaurant path the log-visit screen
-  /// uses; import replays a whole history through it, one visit at a time.
+  /// uses; import replays a whole history through it, one visit at a time, with
+  /// no photos of its own.
   Future<String> addVisit({
     required String restaurantId,
     required int visitDate,
     required int rating,
     String? notes,
     int priceRange = 0,
-    List<String> photoPaths = const <String>[],
+    List<String> photoSourcePaths = const <String>[],
   }) async {
+    final List<String> storedPaths = <String>[
+      for (final String sourcePath in photoSourcePaths)
+        await photoStorage?.persist(sourcePath) ?? sourcePath,
+    ];
     final String visitId = _uuid.v4();
     await _database.transaction(() async {
       await _visits.insertVisit(
@@ -311,7 +337,7 @@ class RestaurantRepository {
           priceRange: priceRange,
         ),
       );
-      for (final (int index, String path) in photoPaths.indexed) {
+      for (final (int index, String path) in storedPaths.indexed) {
         await _photos.insertPhoto(
           Photo(id: _uuid.v4(), visitId: visitId, path: path, position: index),
         );
@@ -321,8 +347,12 @@ class RestaurantRepository {
     return visitId;
   }
 
+  /// The visit's photo rows cascade away with it; their files are read back
+  /// first so they can be removed from disk too.
   Future<void> deleteVisit(String id) async {
+    final List<Photo> photos = await _photos.getPhotosForVisit(id);
     await _visits.deleteVisit(id);
+    await _deleteFiles(photos);
     await _writeBackup();
   }
 
@@ -334,10 +364,42 @@ class RestaurantRepository {
   Stream<List<Photo>> observePhotosForVisit(String visitId) =>
       _photos.observePhotosForVisit(visitId);
 
+  /// One restaurant-level photo per restaurant that has one, keyed by id — the
+  /// thumbnail the list and roulette rows draw.
+  Stream<Map<String, String>> observeRestaurantPhotoPaths() =>
+      _photos.observeRestaurantPhotoPaths();
+
   /// The first restaurant-level photo, if any — used to prefill the edit form
   /// and to show a single thumbnail in the list.
   Future<String?> getRestaurantPhotoPath(String restaurantId) async =>
       (await _photos.getFirstPhotoForRestaurant(restaurantId))?.path;
+
+  /// Replaces a restaurant's photo: [sourcePath] is a freshly picked temporary
+  /// file to persist, or null to clear the photo. Either way the restaurant's
+  /// previous photo file is deleted, so a replace never leaves the old copy
+  /// orphaned on disk.
+  Future<void> setRestaurantPhoto(String restaurantId, String? sourcePath) async {
+    final List<Photo> existing = await _photos.getPhotosForRestaurant(
+      restaurantId,
+    );
+    final String? storedPath = sourcePath == null
+        ? null
+        : await photoStorage?.persist(sourcePath) ?? sourcePath;
+    await _database.transaction(() async {
+      await _photos.deleteAllPhotosForRestaurant(restaurantId);
+      if (storedPath != null) {
+        await _photos.insertPhoto(
+          Photo(
+            id: _uuid.v4(),
+            restaurantId: restaurantId,
+            path: storedPath,
+            position: 0,
+          ),
+        );
+      }
+    });
+    await _deleteFiles(existing);
+  }
 
   /// Appends [photoPaths] after whatever the restaurant already has. A no-op for
   /// an empty list, so a caller that simply passes "the photos I collected"
@@ -365,10 +427,14 @@ class RestaurantRepository {
     });
   }
 
-  /// Deletes one photo row (restaurant- or visit-level). The file it points at
-  /// is left on disk for now — removing it belongs with the rest of the photo
-  /// storage work.
-  Future<void> deletePhoto(String id) => _photos.deletePhoto(id);
+  /// Deletes one photo row (restaurant- or visit-level) and the file behind it.
+  Future<void> deletePhoto(String id) async {
+    final Photo? photo = await _photos.getById(id);
+    await _photos.deletePhoto(id);
+    if (photo != null) {
+      await _deleteFiles(<Photo>[photo]);
+    }
+  }
 
   // --- Helpers --------------------------------------------------------------
 
@@ -400,5 +466,17 @@ class RestaurantRepository {
       (byRestaurant[visit.restaurantId] ??= <Visit>[]).add(visit);
     }
     return byRestaurant;
+  }
+
+  /// Removes the files behind [photos], when a storage is configured. Rows are
+  /// always gone by the time this runs, so a missing file is simply skipped.
+  Future<void> _deleteFiles(List<Photo> photos) async {
+    final PhotoStorage? storage = photoStorage;
+    if (storage == null || photos.isEmpty) {
+      return;
+    }
+    for (final Photo photo in photos) {
+      await storage.delete(photo.path);
+    }
   }
 }

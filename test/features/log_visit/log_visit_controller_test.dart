@@ -4,6 +4,7 @@ import 'package:eatapp/features/log_visit/log_visit_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../data/db/db_test_utils.dart';
+import '../../data/photo/photo_fakes.dart';
 
 void main() {
   late AppDatabase db;
@@ -92,5 +93,69 @@ void main() {
 
     final List<Visit> visits = await repository.observeVisitsForRestaurant('a').first;
     expect(visits, hasLength(1), reason: 'a double tap logs one visit');
+  });
+
+  group('photos', () {
+    late FakePhotoStorage storage;
+    late FakePhotoPicker picker;
+
+    setUp(() {
+      storage = FakePhotoStorage();
+      picker = FakePhotoPicker();
+      repository = RestaurantRepository(db, photoStorage: storage);
+    });
+
+    LogVisitController build() {
+      final LogVisitController controller = LogVisitController(
+        repository: repository,
+        restaurantId: 'a',
+        photoPicker: picker,
+        now: DateTime(2026, 3, 4),
+      );
+      controllers.add(controller);
+      return controller;
+    }
+
+    test('a picked photo is carried onto the saved visit', () async {
+      picker.nextPath = '/tmp/one.jpg';
+      final LogVisitController controller = build();
+
+      await controller.pickPhoto();
+      expect(controller.state.photoSourcePaths, <String>['/tmp/one.jpg']);
+
+      await controller.save();
+
+      final List<Visit> visits = await repository
+          .observeVisitsForRestaurant('a')
+          .first;
+      final List<Photo> photos = await repository
+          .observePhotosForVisit(visits.single.id)
+          .first;
+      expect(<String>[for (final Photo photo in photos) photo.path], <String>[
+        'stored/one.jpg',
+      ]);
+    });
+
+    test('a cancelled pick stages nothing', () async {
+      picker.nextPath = null;
+      final LogVisitController controller = build();
+
+      await controller.pickPhoto();
+
+      expect(controller.state.photoSourcePaths, isEmpty);
+    });
+
+    test('removing a staged photo drops just that one', () async {
+      picker.nextPath = '/tmp/one.jpg';
+      final LogVisitController controller = build();
+      await controller.pickPhoto();
+      picker.nextPath = '/tmp/two.jpg';
+      await controller.pickPhoto();
+      expect(controller.state.photoSourcePaths, hasLength(2));
+
+      controller.removePhoto('/tmp/one.jpg');
+
+      expect(controller.state.photoSourcePaths, <String>['/tmp/two.jpg']);
+    });
   });
 }

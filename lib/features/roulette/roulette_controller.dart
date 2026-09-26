@@ -65,6 +65,12 @@ class RouletteController extends ChangeNotifier {
         _publish();
       },
     );
+    _photoPathsSubscription = repository.observeRestaurantPhotoPaths().listen(
+      (Map<String, String> value) {
+        _photoPaths = value;
+        _publish();
+      },
+    );
     _subscribe();
   }
 
@@ -77,11 +83,13 @@ class RouletteController extends ChangeNotifier {
 
   StreamSubscription<List<Restaurant>>? _restaurantsSubscription;
   StreamSubscription<Map<String, Visit>>? _latestVisitsSubscription;
+  StreamSubscription<Map<String, String>>? _photoPathsSubscription;
 
   List<Restaurant> _restaurants = const <Restaurant>[];
   List<Restaurant> _candidates = const <Restaurant>[];
   Restaurant? _picked;
   Map<String, Visit> _latestVisits = const <String, Visit>{};
+  Map<String, String> _photoPaths = const <String, String>{};
   Set<String> _favoriteIds = const <String>{};
   int _pickCount = 0;
   bool _loaded = false;
@@ -113,6 +121,7 @@ class RouletteController extends ChangeNotifier {
     preferences.listenable.removeListener(_onPreferencesChanged);
     unawaited(_restaurantsSubscription?.cancel());
     unawaited(_latestVisitsSubscription?.cancel());
+    unawaited(_photoPathsSubscription?.cancel());
     super.dispose();
   }
 
@@ -162,6 +171,7 @@ class RouletteController extends ChangeNotifier {
         restaurant.toUiModel(
           isFavorite: _favoriteIds.contains(restaurant.id),
           latestVisit: _latestVisits[restaurant.id],
+          photoPath: _photoPaths[restaurant.id],
         ),
     ];
     RestaurantUiModel? pickedModel;

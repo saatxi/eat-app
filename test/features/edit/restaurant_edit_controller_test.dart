@@ -4,6 +4,7 @@ import 'package:eatapp/features/edit/restaurant_edit_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../data/db/db_test_utils.dart';
+import '../../data/photo/photo_fakes.dart';
 
 Future<void> waitFor(
   bool Function() condition, {
@@ -146,5 +147,87 @@ void main() {
     expect(rows.single.id, 'a');
     expect(rows.single.name, 'Cal Ferran Nou');
     expect(await filteredIds(db, query: 'nou'), <String>['a']);
+  });
+
+  group('the photo', () {
+    late FakePhotoStorage storage;
+    late FakePhotoPicker picker;
+
+    setUp(() {
+      storage = FakePhotoStorage();
+      picker = FakePhotoPicker();
+      repository = RestaurantRepository(db, photoStorage: storage);
+    });
+
+    RestaurantEditController build({String? restaurantId}) {
+      final RestaurantEditController controller = RestaurantEditController(
+        repository: repository,
+        restaurantId: restaurantId,
+        photoPicker: picker,
+      );
+      controllers.add(controller);
+      return controller;
+    }
+
+    test('a picked photo is persisted on save', () async {
+      picker.nextPath = '/tmp/pick.jpg';
+      final RestaurantEditController controller = build();
+      controller.onNameChange('Cal Ferran');
+      controller.onCuisineChange('mediterranean');
+
+      await controller.pickPhoto();
+      expect(controller.state.photoPreviewPath, '/tmp/pick.jpg');
+
+      expect(await controller.save(), isTrue);
+
+      final Restaurant row = (await db.restaurantDao.getAll()).single;
+      expect(await repository.getRestaurantPhotoPath(row.id), 'stored/pick.jpg');
+    });
+
+    test('a cancelled pick leaves nothing staged', () async {
+      picker.nextPath = null;
+      final RestaurantEditController controller = build();
+
+      await controller.pickPhoto();
+
+      expect(controller.state.photoPreviewPath, isNull);
+      expect(controller.state.photoChanged, isFalse);
+    });
+
+    test('removing the stored photo clears it on save', () async {
+      await repository.insert(restaurant(id: 'a', name: 'Cal Ferran'));
+      await repository.addRestaurantPhotos('a', <String>['/photos/old.jpg']);
+
+      final RestaurantEditController controller = build(restaurantId: 'a');
+      await waitFor(
+        () => !controller.state.isLoading,
+        description: 'the restaurant to load into the form',
+      );
+      expect(controller.state.photoPreviewPath, '/photos/old.jpg');
+
+      controller.removePhoto();
+      expect(controller.state.photoPreviewPath, isNull);
+
+      expect(await controller.save(), isTrue);
+      expect(await repository.getRestaurantPhotoPath('a'), isNull);
+      expect(storage.deleted, <String>['/photos/old.jpg']);
+    });
+
+    test('an untouched photo is neither rewritten nor deleted', () async {
+      await repository.insert(restaurant(id: 'a', name: 'Cal Ferran'));
+      await repository.addRestaurantPhotos('a', <String>['/photos/old.jpg']);
+
+      final RestaurantEditController controller = build(restaurantId: 'a');
+      await waitFor(
+        () => !controller.state.isLoading,
+        description: 'the restaurant to load into the form',
+      );
+      controller.onNameChange('Cal Ferran Nou');
+      expect(await controller.save(), isTrue);
+
+      expect(storage.persistCount, 0);
+      expect(storage.deleted, isEmpty);
+      expect(await repository.getRestaurantPhotoPath('a'), '/photos/old.jpg');
+    });
   });
 }

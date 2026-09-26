@@ -202,6 +202,22 @@ class _LoadedContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          if (restaurant.photoPath != null) ...<Widget>[
+            ClipRRect(
+              borderRadius: AppRadius.mediumAll,
+              child: Image.file(
+                File(restaurant.photoPath!),
+                width: double.infinity,
+                height: 220,
+                fit: BoxFit.cover,
+                semanticLabel: l10n.detailPhotoDescription,
+                errorBuilder:
+                    (BuildContext context, Object error, StackTrace? stack) =>
+                        const SizedBox.shrink(),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
           _SectionLabel(l10n.detailSectionOverview),
           _InfoRow(
             icon: cuisineIcon(restaurant.cuisineKey),

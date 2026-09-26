@@ -41,6 +41,12 @@ class RestaurantDetailController extends ChangeNotifier {
         _tags = value;
         _publish();
       }),
+      repository.observePhotosForRestaurant(restaurantId).listen(
+        (List<Photo> photos) {
+          _restaurantPhotoPath = photos.isEmpty ? null : photos.first.path;
+          _publish();
+        },
+      ),
       repository.observeVisitsForRestaurant(restaurantId).listen(_onVisits),
     ]);
   }
@@ -61,6 +67,7 @@ class RestaurantDetailController extends ChangeNotifier {
   List<Visit> _visits = const <Visit>[];
   List<String> _tags = const <String>[];
   Set<String> _favoriteIds = const <String>{};
+  String? _restaurantPhotoPath;
   final Map<String, List<String>> _photosByVisitId = <String, List<String>>{};
 
   /// Flipped by the first emission of the restaurant query — an absent row
@@ -144,6 +151,7 @@ class RestaurantDetailController extends ChangeNotifier {
           isFavorite: _favoriteIds.contains(restaurant.id),
           tags: _tags,
           latestVisit: visits.isEmpty ? null : visits.first,
+          photoPath: _restaurantPhotoPath,
         ),
         visits: <VisitUiModel>[
           for (final Visit visit in visits)

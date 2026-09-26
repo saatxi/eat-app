@@ -8,6 +8,7 @@ import '../../core/utils/search_normalizer.dart';
 import '../../core/utils/tag_validation.dart';
 import '../../core/widgets/presentation_bounds.dart';
 import '../../data/db/app_database.dart';
+import '../../data/photo/photo_picker.dart';
 import '../../data/repositories/restaurant_repository.dart';
 import 'restaurant_edit_state.dart';
 
@@ -18,12 +19,14 @@ import 'restaurant_edit_state.dart';
 /// The Flutter counterpart of the Android `RestaurantEditViewModel`. It also
 /// holds the four "suggestions" streams the form offers while typing (existing
 /// tags, cities, regions and countries), which is why it is a controller rather
-/// than a plain form object. Photos are deliberately absent — they arrive with
-/// the photos block.
+/// than a plain form object. A photo is picked through [photoPicker] (optional,
+/// so a unit test can build a controller with none) and written through the
+/// repository, which owns the storage.
 class RestaurantEditController extends ChangeNotifier {
   RestaurantEditController({
     required this.repository,
     this.restaurantId,
+    this.photoPicker,
   }) {
     _state = RestaurantEditState(isLoading: restaurantId != null);
     _subscriptions.addAll(<StreamSubscription<Object>>[
@@ -53,6 +56,10 @@ class RestaurantEditController extends ChangeNotifier {
 
   final RestaurantRepository repository;
   final String? restaurantId;
+
+  /// Opens the system picker for the restaurant's photo. Null in a unit test
+  /// that never picks one, in which case [pickPhoto] is a no-op.
+  final PhotoPicker? photoPicker;
 
   bool get isEditingExisting => restaurantId != null;
 
@@ -126,6 +133,25 @@ class RestaurantEditController extends ChangeNotifier {
         ),
       );
 
+  /// Opens the picker and stages whatever comes back. Nothing is written until
+  /// [save]: a back-out leaves the form, and the database, untouched.
+  Future<void> pickPhoto() async {
+    final String? path = await photoPicker?.pickFromGallery();
+    if (path == null || _disposed) {
+      return;
+    }
+    _set(_state.copyWith(pickedPhotoPath: path, photoRemoved: false));
+  }
+
+  /// Clears the photo, whether that is a stored one or a just-picked one. A new
+  /// pick afterwards simply overrides this.
+  void removePhoto() => _set(
+        _state.copyWith(
+          clearPickedPhoto: true,
+          photoRemoved: _state.existingPhotoPath != null,
+        ),
+      );
+
   /// Validates the form and, if it passes, inserts or updates the restaurant.
   /// Returns false when something was flagged, leaving the caller on the form.
   Future<bool> save() async {
@@ -162,8 +188,9 @@ class RestaurantEditController extends ChangeNotifier {
     final String? region = _nonBlank(state.region);
     final String? country = _nonBlank(state.country);
 
+    final String id = restaurantId ?? _uuid.v4();
     final Restaurant restaurant = Restaurant(
-      id: restaurantId ?? _uuid.v4(),
+      id: id,
       name: name,
       cuisineType: cuisineType,
       streetAddress: streetAddress,
@@ -189,6 +216,16 @@ class RestaurantEditController extends ChangeNotifier {
       await repository.insert(restaurant, tags: state.tags);
     } else {
       await repository.update(restaurant, state.tags);
+    }
+
+    // The photo is written after the row, so a new restaurant has an id to hang
+    // it off, and only when the user actually touched it — an untouched edit
+    // must not rewrite (and re-encode) the photo that is already there.
+    final String? picked = state.pickedPhotoPath;
+    if (picked != null) {
+      await repository.setRestaurantPhoto(id, picked);
+    } else if (state.photoRemoved && state.existingPhotoPath != null) {
+      await repository.setRestaurantPhoto(id, null);
     }
     return true;
   }
@@ -216,6 +253,10 @@ class RestaurantEditController extends ChangeNotifier {
     if (_disposed) {
       return;
     }
+    final String? photoPath = await repository.getRestaurantPhotoPath(id);
+    if (_disposed) {
+      return;
+    }
     _set(
       RestaurantEditState(
         isLoading: false,
@@ -229,6 +270,7 @@ class RestaurantEditController extends ChangeNotifier {
         website: restaurant.website ?? '',
         instagram: restaurant.instagram ?? '',
         tags: tags,
+        existingPhotoPath: photoPath,
       ),
     );
   }

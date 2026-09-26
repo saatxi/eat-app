@@ -4,6 +4,7 @@ import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../db/db_test_utils.dart';
+import '../photo/photo_fakes.dart';
 
 void main() {
   late AppDatabase db;
@@ -180,7 +181,7 @@ void main() {
         restaurantId: 'a',
         visitDate: 1,
         rating: 4,
-        photoPaths: <String>['/photos/1.jpg'],
+        photoSourcePaths: <String>['/photos/1.jpg'],
       );
       await repository.addRestaurantPhotos('a', <String>['/photos/2.jpg']);
 
@@ -217,7 +218,7 @@ void main() {
         rating: 4,
         notes: 'Good',
         priceRange: 2,
-        photoPaths: <String>['/photos/a.jpg', '/photos/b.jpg'],
+        photoSourcePaths: <String>['/photos/a.jpg', '/photos/b.jpg'],
       );
 
       final List<Visit> visits = await repository
@@ -375,7 +376,7 @@ void main() {
         restaurantId: 'a',
         visitDate: 1,
         rating: 3,
-        photoPaths: <String>['/photos/visit.jpg'],
+        photoSourcePaths: <String>['/photos/visit.jpg'],
       );
 
       expect(await repository.observePhotosForRestaurant('a').first, isEmpty);
@@ -524,6 +525,119 @@ void main() {
         'Girona',
       ]);
       expect(await repository.observeRegions().first, isEmpty);
+    });
+  });
+
+  group('photo files', () {
+    late FakePhotoStorage storage;
+
+    setUp(() {
+      storage = FakePhotoStorage();
+      repository = RestaurantRepository(db, photoStorage: storage);
+    });
+
+    test('deleting a restaurant removes its own and its visits\' photos', () async {
+      await repository.insert(restaurant(id: 'a', name: 'First'));
+      await repository.addRestaurantPhotos('a', <String>['/photos/own.jpg']);
+      await repository.addVisit(
+        restaurantId: 'a',
+        visitDate: 1,
+        rating: 3,
+        photoSourcePaths: <String>['/photos/visit.jpg'],
+      );
+
+      await repository.delete('a');
+
+      expect(
+        storage.deleted,
+        containsAll(<String>['/photos/own.jpg', 'stored/visit.jpg']),
+      );
+    });
+
+    test('deleteAll removes every stored file', () async {
+      await repository.insert(restaurant(id: 'a', name: 'First'));
+      await repository.addRestaurantPhotos('a', <String>['/photos/own.jpg']);
+      await repository.addVisit(
+        restaurantId: 'a',
+        visitDate: 1,
+        rating: 3,
+        photoSourcePaths: <String>['/photos/visit.jpg'],
+      );
+
+      await repository.deleteAll();
+
+      expect(
+        storage.deleted,
+        containsAll(<String>['/photos/own.jpg', 'stored/visit.jpg']),
+      );
+    });
+
+    test('deleting a visit removes only its files', () async {
+      await repository.insert(restaurant(id: 'a', name: 'First'));
+      await repository.addRestaurantPhotos('a', <String>['/photos/own.jpg']);
+      final String visitId = await repository.addVisit(
+        restaurantId: 'a',
+        visitDate: 1,
+        rating: 3,
+        photoSourcePaths: <String>['/photos/visit.jpg'],
+      );
+
+      await repository.deleteVisit(visitId);
+
+      expect(storage.deleted, <String>['stored/visit.jpg']);
+    });
+
+    test('deleting one photo removes only its file', () async {
+      await repository.insert(restaurant(id: 'a', name: 'First'));
+      await repository.addRestaurantPhotos('a', <String>[
+        '/photos/a.jpg',
+        '/photos/b.jpg',
+      ]);
+      final Photo first = (await repository
+          .observePhotosForRestaurant('a')
+          .first).first;
+
+      await repository.deletePhoto(first.id);
+
+      expect(storage.deleted, <String>['/photos/a.jpg']);
+    });
+
+    test('replacing the photo persists the pick and drops the previous file',
+        () async {
+      await repository.insert(restaurant(id: 'a', name: 'First'));
+      await repository.addRestaurantPhotos('a', <String>['/photos/old.jpg']);
+
+      await repository.setRestaurantPhoto('a', '/tmp/pick.jpg');
+
+      expect(storage.persistCount, 1);
+      expect(await repository.getRestaurantPhotoPath('a'), 'stored/pick.jpg');
+      expect(storage.deleted, <String>['/photos/old.jpg']);
+    });
+
+    test('clearing the photo with null deletes the file', () async {
+      await repository.insert(restaurant(id: 'a', name: 'First'));
+      await repository.addRestaurantPhotos('a', <String>['/photos/old.jpg']);
+
+      await repository.setRestaurantPhoto('a', null);
+
+      expect(await repository.getRestaurantPhotoPath('a'), isNull);
+      expect(storage.deleted, <String>['/photos/old.jpg']);
+    });
+
+    test('the thumbnail map carries restaurant photos only, keyed by id',
+        () async {
+      await repository.insert(restaurant(id: 'a', name: 'First'));
+      await repository.insert(restaurant(id: 'b', name: 'Second'));
+      await repository.addRestaurantPhotos('a', <String>['/photos/a.jpg']);
+      await repository.addVisit(
+        restaurantId: 'b',
+        visitDate: 1,
+        rating: 3,
+        photoSourcePaths: <String>['/photos/visit.jpg'],
+      );
+
+      expect(await repository.observeRestaurantPhotoPaths().first,
+          <String, String>{'a': '/photos/a.jpg'});
     });
   });
 }
