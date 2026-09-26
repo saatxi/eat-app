@@ -8,6 +8,7 @@ import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/filter_dropdown_chip.dart';
 import '../../core/widgets/price_range_label.dart';
+import '../../core/widgets/pressable_scale.dart';
 import '../../core/widgets/rating_and_price_row.dart';
 import '../../core/widgets/restaurant_thumbnail.dart';
 import '../list/restaurant_ui_model.dart';
@@ -103,18 +104,36 @@ class _RouletteScreenState extends State<RouletteScreen> {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
+                  duration: const Duration(milliseconds: 280),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  // Fades and settles into place rather than popping: the reveal
+                  // is the app's one theatrical moment, and an organic ease-out
+                  // matches the redesign's "no hard bounce" rule.
+                  transitionBuilder: (
+                    Widget child,
+                    Animation<double> animation,
+                  ) =>
+                      FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.92, end: 1).animate(animation),
+                      child: child,
+                    ),
+                  ),
                   child: picked == null
                       ? _Prompt(
                           key: const ValueKey<String>('prompt'),
                           l10n: l10n,
                         )
-                      : _ResultCard(
+                      : PressableScale(
                           key: ValueKey<String>('pick-${state.pickCount}'),
-                          restaurant: picked,
-                          onTap: widget.onOpenRestaurant == null
-                              ? null
-                              : () => widget.onOpenRestaurant!(picked),
+                          child: _ResultCard(
+                            restaurant: picked,
+                            onTap: widget.onOpenRestaurant == null
+                                ? null
+                                : () => widget.onOpenRestaurant!(picked),
+                          ),
                         ),
                 ),
               ),
@@ -171,7 +190,7 @@ class _Prompt extends StatelessWidget {
 }
 
 class _ResultCard extends StatelessWidget {
-  const _ResultCard({super.key, required this.restaurant, this.onTap});
+  const _ResultCard({required this.restaurant, this.onTap});
 
   final RestaurantUiModel restaurant;
   final VoidCallback? onTap;

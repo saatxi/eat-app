@@ -5,6 +5,7 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/empty_state.dart';
+import '../../core/widgets/pressable_scale.dart';
 import '../../core/widgets/staggered_entrance.dart';
 import '../import_export/share_service.dart';
 import 'restaurant_list_controller.dart';
@@ -109,10 +110,12 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
       ),
       floatingActionButton: widget.onAddRestaurant == null
           ? null
-          : FloatingActionButton(
-              onPressed: widget.onAddRestaurant,
-              tooltip: l10n.listActionAddRestaurant,
-              child: const Icon(Icons.add),
+          : PressableScale(
+              child: FloatingActionButton(
+                onPressed: widget.onAddRestaurant,
+                tooltip: l10n.listActionAddRestaurant,
+                child: const Icon(Icons.add),
+              ),
             ),
       body: ListenableBuilder(
         listenable: controller,
@@ -316,7 +319,15 @@ class _TopGradient extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: <Color>[scheme.primaryContainer, scheme.surface],
+          // Leaf at the top, citrus in the middle, then the plain surface, so
+          // the list opens on the scheme's two greens before settling onto the
+          // page instead of starting on a flat slab of colour.
+          colors: <Color>[
+            scheme.primaryContainer,
+            scheme.secondaryContainer,
+            scheme.surface,
+          ],
+          stops: const <double>[0, 0.55, 1],
         ),
       ),
     );

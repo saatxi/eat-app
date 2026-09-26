@@ -5,6 +5,7 @@ import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_radius.dart';
 import '../../core/theme/tokens/app_spacing.dart';
+import '../../core/widgets/animated_counter.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/price_range_label.dart';
@@ -93,7 +94,7 @@ class _Loaded extends StatelessWidget {
         // equal-weight tiles — it is the number that answers "how much have I
         // collected"; the other three just qualify it.
         _StatTile(
-          value: state.totalCount.toString(),
+          count: state.totalCount,
           label: l10n.statsTileTotal,
           containerColor: theme.colorScheme.primaryContainer,
           contentColor: theme.colorScheme.onPrimaryContainer,
@@ -107,7 +108,7 @@ class _Loaded extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: _StatTile(
-                  value: state.visitedCount.toString(),
+                  count: state.visitedCount,
                   label: l10n.statsTileVisited,
                   containerColor: theme.colorScheme.surfaceContainerHighest,
                   contentColor: theme.colorScheme.onSurface,
@@ -117,7 +118,7 @@ class _Loaded extends StatelessWidget {
               ),
               Expanded(
                 child: _StatTile(
-                  value: state.wantToTryCount.toString(),
+                  count: state.wantToTryCount,
                   label: l10n.statsTileWantToTry,
                   containerColor: theme.colorScheme.surfaceContainerHighest,
                   contentColor: theme.colorScheme.onSurface,
@@ -228,15 +229,25 @@ class _Loaded extends StatelessWidget {
 
 class _StatTile extends StatelessWidget {
   const _StatTile({
-    required this.value,
+    this.value,
+    this.count,
     required this.label,
     required this.containerColor,
     required this.contentColor,
     required this.valueStyle,
     required this.padding,
-  });
+  }) : assert(
+          (value == null) != (count == null),
+          'a tile shows either a formatted value or a countable one',
+        );
 
-  final String value;
+  /// A pre-formatted value, for the tiles that are not a plain number — the
+  /// average rating, which is a locale-formatted string, or an em dash.
+  final String? value;
+
+  /// A number the tile counts up to. Mutually exclusive with [value].
+  final int? count;
+
   final String label;
   final Color containerColor;
   final Color contentColor;
@@ -245,6 +256,8 @@ class _StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final int? count = this.count;
+    final TextStyle? numberStyle = valueStyle?.copyWith(color: contentColor);
     return Card(
       margin: EdgeInsets.zero,
       color: containerColor,
@@ -253,15 +266,17 @@ class _StatTile extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
-              value,
-              style: valueStyle?.copyWith(
-                color: contentColor,
-                // Tabular figures keep the digits from shifting width as the
-                // count changes.
-                fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+            if (count != null)
+              AnimatedCounter(value: count, style: numberStyle)
+            else
+              Text(
+                value!,
+                style: numberStyle?.copyWith(
+                  // Tabular figures keep the digits from shifting width as the
+                  // value changes.
+                  fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+                ),
               ),
-            ),
             const SizedBox(height: AppSpacing.xs),
             Text(
               label,
