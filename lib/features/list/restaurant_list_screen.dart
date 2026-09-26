@@ -225,12 +225,17 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
     // list down; browsing everything instead, that same spot offers a starting
     // point rather than sitting blank. Favourites has nothing to suggest.
     final Widget? header = state.hasActiveFilter
-        ? Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              l10n.listResultCount(state.restaurants.length),
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ? Semantics(
+            // A live region, so narrowing the list announces the new count
+            // instead of leaving a screen-reader user to go looking for it.
+            liveRegion: true,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                l10n.listResultCount(state.restaurants.length),
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           )

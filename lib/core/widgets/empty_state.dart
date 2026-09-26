@@ -38,7 +38,16 @@ class EmptyState extends StatelessWidget {
             // Decorative: the title and body below say everything this conveys.
             ExcludeSemantics(child: _EmptyStateArt(icon: icon)),
             const SizedBox(height: AppSpacing.lg),
-            Text(title, style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
+            Semantics(
+              // A heading, so TalkBack's heading navigation lands on the one
+              // thing this state is about rather than reading the block flat.
+              header: true,
+              child: Text(
+                title,
+                style: theme.textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+            ),
             const SizedBox(height: AppSpacing.xs),
             Text(
               body,

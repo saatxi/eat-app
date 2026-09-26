@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -114,6 +115,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     if (!confirmed || !mounted) {
       return;
     }
+    HapticFeedback.heavyImpact();
     await _controller?.deleteRestaurant();
     if (!mounted) {
       return;
@@ -142,7 +144,10 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             actions: <Widget>[
               if (restaurant != null) ...<Widget>[
                 IconButton(
-                  onPressed: controller.toggleFavorite,
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    controller.toggleFavorite();
+                  },
                   tooltip: restaurant.isFavorite
                       ? l10n.actionRemoveFavorite
                       : l10n.actionAddFavorite,

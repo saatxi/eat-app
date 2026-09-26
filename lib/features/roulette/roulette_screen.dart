@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
@@ -15,8 +16,7 @@ import 'roulette_controller.dart';
 /// "Can't decide? Let the app pick." — a random restaurant from a pool narrowed
 /// by a few light filters.
 ///
-/// Ported from `ui/roulette/RouletteScreen.kt`. The shuffle animation is left to
-/// the polish block; the pick itself is real.
+/// Ported from `ui/roulette/RouletteScreen.kt`.
 class RouletteScreen extends StatefulWidget {
   const RouletteScreen({super.key, this.onOpenRestaurant});
 
@@ -110,7 +110,12 @@ class _RouletteScreenState extends State<RouletteScreen> {
           ),
           const SizedBox(height: AppSpacing.lg),
           FilledButton.icon(
-            onPressed: controller.pick,
+            onPressed: () {
+              // The app's one deliberately theatrical moment, so the tap weighs
+              // more than an ordinary button's to match the reveal above it.
+              HapticFeedback.mediumImpact();
+              controller.pick();
+            },
             icon: const Icon(Icons.casino),
             label: Text(
               picked == null

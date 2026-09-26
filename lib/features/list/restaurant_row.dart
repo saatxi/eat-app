@@ -90,11 +90,14 @@ class RestaurantRow extends StatelessWidget {
       // Never let the swipe itself carry the row away: favouriting removes
       // nothing, and a delete only happens once the confirmation the request
       // below triggers is accepted — so the row springs back either way.
+      // The two gestures get different feedback rather than the same thud:
+      // favouriting is a selection, deleting is heavier and deliberate.
       confirmDismiss: (DismissDirection direction) async {
-        HapticFeedback.mediumImpact();
         if (direction == DismissDirection.startToEnd) {
+          HapticFeedback.selectionClick();
           onFavoriteToggle(restaurant.id);
         } else {
+          HapticFeedback.heavyImpact();
           onDeleteRequest();
         }
         return false;
@@ -162,7 +165,7 @@ class RestaurantRow extends StatelessWidget {
             right: 0,
             child: IconButton(
               onPressed: () {
-                HapticFeedback.mediumImpact();
+                HapticFeedback.selectionClick();
                 onFavoriteToggle(restaurant.id);
               },
               tooltip: restaurant.isFavorite

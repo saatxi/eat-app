@@ -206,6 +206,15 @@ lib/
   `restaurantHeroTag`, so keep the two ends paired; and keep the two-pane row
   inside its `HeroMode(enabled: false)`, or the selected row and the detail
   header would put the same tag on one route, which a Hero flight rejects.
+- **Behaviour adapts, looks don't**: colours, type and layout are identical on
+  every platform; only behaviour changes. iOS gets its edge swipe-back from the
+  framework's default `PageTransitionsTheme`, so don't add an override that
+  restates it (`test/core/theme/page_transitions_test.dart` holds that
+  decision). `HapticFeedback` is used deliberately, not everywhere: a selection
+  click for favourites, a heavy impact for a confirmed delete, a medium impact
+  for the roulette. Dynamic type is supported rather than clamped —
+  `test/features/accessibility/text_scale_test.dart` lays the busiest screens
+  out at 2x and fails on a render overflow.
 - The app is the source of truth for its own data: restaurants are created,
   edited and deleted entirely on-device. The one exception is importing a
   restaurant file shared by another EatApp user
