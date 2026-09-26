@@ -12,8 +12,8 @@ import '../../data/db/db_test_utils.dart';
 import '../../data/photo/photo_fakes.dart';
 
 /// The reveal itself, on a phone: the pick card is as tall as what it has to
-/// say, so the screen has to be arranged around it rather than the other way
-/// round.
+/// say, and so is the filter block above it, and the two have to share a window
+/// that is not quite tall enough for both at full size.
 void main() {
   late AppDatabase db;
   late RestaurantRepository repository;
@@ -60,26 +60,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   }
 
-  /// The reveal's own scroll view: the filter strip above it scrolls sideways,
-  /// this one, if it ever has to, scrolls down.
-  Finder revealArea() => find.byWidgetPredicate(
-    (Widget widget) =>
-        widget is SingleChildScrollView &&
-        widget.scrollDirection == Axis.vertical,
-  );
-
-  /// How far the reveal has to scroll to show all of the card. Zero means the
-  /// whole card is on screen; anything else means its bottom is cut off.
-  double revealOverflow(WidgetTester tester) => tester
-      .state<ScrollableState>(
-        find.descendant(of: revealArea(), matching: find.byType(Scrollable)),
-      )
-      .position
-      .maxScrollExtent;
-
-  testWidgets('the whole pick card fits on a small phone', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('the whole pick card is on screen', (WidgetTester tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = smallPhone;
     addTearDown(tester.view.reset);
@@ -101,18 +82,18 @@ void main() {
     await pump(tester);
 
     expect(find.text('Cal Ferran'), findsOneWidget);
+    // The reveal scales the card down to fit rather than letting it spill past
+    // its box, so its bottom edge sits above the button — nothing is cut off.
     expect(
-      revealOverflow(tester),
-      0,
-      reason: 'nothing of the card may sit below the fold of a phone this size',
+      tester.getBottomLeft(find.byType(Card)).dy,
+      lessThanOrEqualTo(tester.getTopLeft(find.byType(FilledButton)).dy),
     );
-    // The button stays outside the reveal, where the tap left it.
-    expect(find.text('Try again'), findsOneWidget);
+    expect(tester.takeException(), isNull);
 
     await disposeApp(tester);
   });
 
-  testWidgets('the filters are all still there, in one strip', (
+  testWidgets('the filter chips wrap rather than run off the edge', (
     WidgetTester tester,
   ) async {
     tester.view.devicePixelRatio = 1;
@@ -123,13 +104,19 @@ void main() {
     await tester.pumpWidget(host(const RouletteScreen()));
     await pump(tester);
 
-    // Scrolled off the right edge or not, every filter is still in the strip
-    // above the reveal rather than wrapped onto a second line of it.
-    expect(find.text('Favorites only'), findsOneWidget);
-    expect(find.text('Status'), findsOneWidget);
-    expect(find.text('Rating'), findsOneWidget);
-    expect(find.text('Price'), findsOneWidget);
-    expect(find.text('1 restaurant'), findsOneWidget);
+    // A wrapping row never clips a chip at the right edge: each one is fully on
+    // screen, at whatever line it landed on.
+    final double rightEdge = tester.view.physicalSize.width;
+    for (final String label in <String>[
+      'Favorites only',
+      'Status',
+      'Rating',
+      'Price',
+      '1 restaurant',
+    ]) {
+      final Rect rect = tester.getRect(find.text(label));
+      expect(rect.right, lessThanOrEqualTo(rightEdge), reason: '$label is cut');
+    }
 
     await disposeApp(tester);
   });
