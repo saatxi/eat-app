@@ -110,6 +110,15 @@ Optional detailed explanation
   says is decided in `lib/widget/`, and the `HomeWidgetKeys` there are the
   contract the native code reads. The iOS extension is a one-time Xcode
   step that no tool outside Xcode can do — `docs/ios-widget.md`.
+- **Launcher icon and splash screen**: one artwork, living in the two Android
+  vector drawables the native app's adaptive icon was built from
+  (`android/app/src/main/res/drawable/ic_launcher_background.xml` and
+  `…_foreground.xml`). The adaptive icon XML and the pre-12 launch screen take
+  those directly; the raster copies each store needs — the Android `mipmap-*`
+  PNGs and iOS's AppIcon and LaunchImage sets — come from
+  `scripts/generate_app_icons.dart`, run by hand with
+  `flutter test scripts/generate_app_icons.dart` after touching either vector.
+  Don't edit one of those PNGs directly: it will be overwritten.
 
 ## Migrating from the old Android app
 

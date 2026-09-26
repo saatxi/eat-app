@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The launcher icon from API 26 on: the same brown plate and cream cutlery the
+  native Android app shipped, which is what the launcher draws and what the
+  system splash screen shows on Android 12 and later. The legacy PNGs beside
+  this file are the same artwork, rendered flat, for API 23 to 25.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>

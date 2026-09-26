@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The launch screen's ground. It is the light background tone of the default
+  Mercado fresco palette (neutral t94 — see
+  lib/core/theme/palettes/mercado_fresco_palette.dart), so the window Android
+  paints while the engine starts is the same colour as the first frame the app
+  paints, and the hand-off between them does not flash. The night value is the
+  dark-mode background of the same palette.
+-->
+<resources>
+    <color name="splash_background">#F4F1E6</color>
+</resources>

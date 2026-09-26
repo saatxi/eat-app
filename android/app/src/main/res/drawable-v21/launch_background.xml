@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!--
+  The API 21+ copy of `drawable/launch_background.xml`, which is the one every
+  supported device actually gets (the app's minSdk is 23). Kept in step with it
+  by hand, as Flutter's own template does.
+-->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="?android:colorBackground" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+    <item android:drawable="@color/splash_background" />
+    <item
+        android:drawable="@drawable/splash_logo"
+        android:gravity="center"
+        android:height="96dp"
+        android:width="96dp" />
 </layer-list>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The launcher icon's own artwork as one drawable, for the launch screen: the
+  two layers the adaptive icon is built from, stacked exactly as a launcher
+  stacks them. Reusing those two vectors rather than a copy of the fork and
+  knife is what keeps the splash and the icon from drifting apart.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_launcher_background" />
+    <item android:drawable="@drawable/ic_launcher_foreground" />
+</layer-list>
