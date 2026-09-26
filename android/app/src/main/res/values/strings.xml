@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The only strings that have to live as Android resources rather than in the
+    ARB files: the widget picker reads @string/widget_description from the
+    launcher, before any Dart code (or any stored preference) exists, and the
+    layout needs a contentDescription the accessibility service can read before
+    the widget's data has been filled in. The dynamic widget text still comes
+    from Dart — see lib/widget/home_widget_service.dart.
+-->
+<resources>
+    <string name="widget_description">Shows a random restaurant you want to try, right on your home screen.</string>
+    <string name="widget_action_shuffle">Shuffle</string>
+</resources>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The "Want to try" widget's layout. Every text here is filled in at runtime
+    by EatAppHomeWidgetProvider from the data the Dart side published; the
+    android:text values are only what the tools preview and the first render
+    before the app has ever run show.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/eatapp_home_widget_background"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/widget_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:letterSpacing="0.06"
+        android:maxLines="1"
+        android:textColor="#8A000000"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        tools:text="EatApp · Want to try" />
+
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="6dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="3"
+        android:textColor="#DE000000"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        tools:text="Cal Ferran" />
+
+    <TextView
+        android:id="@+id/widget_subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="#99000000"
+        android:textSize="13sp"
+        tools:text="Catalan · Barcelona" />
+
+    <ImageButton
+        android:id="@+id/widget_shuffle"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="end"
+        android:layout_marginTop="4dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:contentDescription="@string/widget_action_shuffle"
+        android:padding="6dp"
+        android:scaleType="fitCenter"
+        android:src="@android:drawable/ic_menu_rotate"
+        android:tint="#99000000" />
+</LinearLayout>

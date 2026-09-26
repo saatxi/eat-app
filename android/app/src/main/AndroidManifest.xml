@@ -57,6 +57,29 @@
                     android:pathPattern=".*\\.eatapp" />
             </intent-filter>
         </activity>
+        <!-- The "Want to try" home-screen widget. The provider draws the card
+             from data the Dart side publishes through the home_widget plugin;
+             see android/app/src/main/kotlin/com/saatxi/eatapp/EatAppHomeWidgetProvider.kt. -->
+        <receiver
+            android:name=".EatAppHomeWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/eatapp_home_widget_info" />
+        </receiver>
+        <!-- Runs the widget's shuffle button in a headless Flutter engine, which
+             calls back into homeWidgetBackgroundCallback. Required by the
+             home_widget plugin; without it the button would do nothing. -->
+        <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
+            </intent-filter>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android string resources treat ' and " as quoting characters, so both
+         are backslash-escaped to read as literal text here. -->
+    <string name="widget_description">Mostra un restaurant a l\'atzar de la teva llista \"per provar\", a la pantalla d\'inici.</string>
+    <string name="widget_action_shuffle">Un altre</string>
+</resources>

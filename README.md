@@ -23,6 +23,8 @@ install's data is imported automatically on first launch — see
   want-to-try restaurants.
 - A statistics screen — totals, visited vs want-to-try, average rating,
   most-picked cuisines, price-tier spread and a monthly rating trend.
+- A home-screen widget showing a random want-to-try restaurant, with a shuffle
+  button and a tap that opens that restaurant.
 - Share one restaurant, or your whole list, through the normal share sheet;
   opening a shared file shows a review screen before anything is saved.
 - Three colour palettes and a light/dark choice in Settings.
@@ -150,12 +152,33 @@ Play Services), and it runs roughly once a day while idle, charging and on
 Wi-Fi — not immediately after every change, so a restaurant added seconds
 before uninstalling might not have been backed up yet.
 
+## The home-screen widget
+
+Add the "Want to try" widget from your home screen's widget picker to keep a
+random restaurant from your want-to-try list within reach. It shows the
+restaurant's name and cuisine, offers a shuffle button that picks another one
+without opening the app, and opens that restaurant's detail screen when the
+card is tapped. When nothing is want-to-try it shows a prompt instead.
+
+It is not a second copy of your data: the widget is redrawn from the same
+on-device database the app uses, whenever a restaurant is added, edited or
+deleted, and it follows the language you've chosen in Settings.
+
+This is the one feature with native code on both platforms — an Android
+`AppWidgetProvider` and an iOS WidgetKit extension, each a thin renderer
+driven from Dart through the
+[`home_widget`](https://pub.dev/packages/home_widget) plugin. The Android half
+is committed under `android/` and builds with the app. The iOS half needs a
+one-time Xcode step to create its widget extension target, which no tool
+outside Xcode can do; see [docs/ios-widget.md](docs/ios-widget.md).
+
 ## Tech stack
 
 - Flutter + Material 3 (Dart)
 - [drift](https://drift.simonbinder.eu/) (SQLite) for local persistence
 - `share_plus` and `receive_sharing_intent` for the share/import flows
 - `url_launcher` for links and maps, `shared_preferences` for preferences
+- `home_widget` for the home-screen widget's Android and iOS halves
 - Localized with `flutter gen-l10n` (ARB files under `lib/core/l10n/`)
 
 ## Project structure
@@ -175,7 +198,8 @@ lib/
 │   ├── models/        # Cuisine, sort, stats projections
 │   ├── repositories/  # RestaurantRepository, UserPreferencesRepository
 │   └── share/         # export/import models, JSON, file readers/writers
-└── features/          # one folder per screen: state + controller + widgets
+├── features/          # one folder per screen: state + controller + widgets
+└── widget/            # the home-screen widget's Dart-side bridge
 ```
 
 ## Requirements

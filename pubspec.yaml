@@ -77,6 +77,11 @@ dependencies:
   # temporary file the app then copies through `image` above.
   image_picker: ^1.2.3
 
+  # Publishes the home-screen widget's data to the platform's own widget store:
+  # an Android shared-preferences file and an iOS App Group. The native halves
+  # are presentation-only — see lib/widget/ and android/app/src/main/.
+  home_widget: ^0.10.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

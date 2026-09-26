@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/l10n/generated/app_localizations.dart';
+import '../../widget/home_widget_snapshot.dart';
 import '../detail/restaurant_detail_screen.dart';
 import '../edit/restaurant_edit_screen.dart';
 import '../import_export/import_screen.dart';
@@ -25,6 +26,8 @@ class HomeShell extends StatefulWidget {
     super.key,
     this.initialSharedFilePath,
     this.sharedFileStream,
+    this.initialWidgetUri,
+    this.widgetClickStream,
   });
 
   /// Non-null only on the cold start that opened the app via "Open with
@@ -35,6 +38,15 @@ class HomeShell extends StatefulWidget {
   /// already running.
   final Stream<String>? sharedFileStream;
 
+  /// Non-null only on the cold start that opened the app by tapping the
+  /// home-screen widget. Resolved through `homeWidgetRestaurantId`, so a link
+  /// that isn't ours is ignored rather than pushed.
+  final Uri? initialWidgetUri;
+
+  /// The warm-start counterpart: the widget tapped while the app is already
+  /// running.
+  final Stream<Uri?>? widgetClickStream;
+
   @override
   State<HomeShell> createState() => _HomeShellState();
 }
@@ -43,6 +55,7 @@ class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
   StreamSubscription<String>? _sharedFiles;
+  StreamSubscription<Uri?>? _widgetClicks;
 
   @override
   void initState() {
@@ -54,19 +67,34 @@ class _HomeShellState extends State<HomeShell> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _openImport(initial));
     }
     _sharedFiles = widget.sharedFileStream?.listen(_openImport);
+
+    final Uri? initialWidget = widget.initialWidgetUri;
+    if (initialWidget != null) {
+      // Same first-frame constraint as the cold-start import above.
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _openWidgetLink(initialWidget),
+      );
+    }
+    _widgetClicks = widget.widgetClickStream?.listen(_openWidgetLink);
   }
 
   @override
   void dispose() {
     _sharedFiles?.cancel();
+    _widgetClicks?.cancel();
     super.dispose();
   }
 
-  void _pushDetail(RestaurantUiModel restaurant) {
+  void _pushDetail(RestaurantUiModel restaurant) =>
+      _pushDetailById(restaurant.id);
+
+  /// Pushes the detail screen for [restaurantId]. Split out from [_pushDetail]
+  /// because the widget link names a restaurant by id, with no UI model to hand.
+  void _pushDetailById(String restaurantId) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (BuildContext context) => RestaurantDetailScreen(
-          restaurantId: restaurant.id,
+          restaurantId: restaurantId,
           onEdit: (String id) => _pushEdit(restaurantId: id),
           onLogVisit: _pushLogVisit,
         ),
@@ -98,6 +126,17 @@ class _HomeShellState extends State<HomeShell> {
             RestaurantEditScreen(restaurantId: restaurantId),
       ),
     );
+  }
+
+  /// Opens the detail screen named by a home-screen widget tap. Anything that
+  /// isn't one of our links — the shuffle URI, a link from another app — is
+  /// ignored rather than pushed.
+  void _openWidgetLink(Uri? uri) {
+    final String? restaurantId = homeWidgetRestaurantId(uri);
+    if (!mounted || restaurantId == null) {
+      return;
+    }
+    _pushDetailById(restaurantId);
   }
 
   /// Opens the review screen for a file handed over by another app. Pushed on

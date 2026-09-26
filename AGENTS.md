@@ -54,10 +54,13 @@ Optional detailed explanation
 
 ## Tech stack & tools
 
-- **Language**: Dart only. UI is Flutter + Material 3; there are no XML
-  layouts and no Kotlin/Java sources left — the native Android app this
-  project grew out of was removed once the Flutter rewrite shipped (see
-  "Migrating from the old Android app" below).
+- **Language**: Dart, plus native code only where a platform demands it. UI is
+  Flutter + Material 3; the native Android app this project grew out of was
+  removed once the Flutter rewrite shipped (see "Migrating from the old
+  Android app" below). The one exception is the home-screen widget, whose
+  Android half is a Kotlin `AppWidgetProvider` plus a few XML resources under
+  `android/app/src/main/`, and whose iOS half is a Swift WidgetKit extension
+  under `ios/EatAppWidget/`. Nothing else is native.
 - **State**: one `ChangeNotifier` controller per screen under
   `lib/features/*/…_controller.dart`, each publishing an immutable `*UiState`
   snapshot the widgets rebuild from. There is no state-management package (no
@@ -75,7 +78,11 @@ Optional detailed explanation
   `lib/core/l10n/` (`app_en.arb` is the template, plus `_es` and `_ca`), and
   the generated `AppLocalizations` is committed under
   `lib/core/l10n/generated/` (regenerated on every build because
-  `pubspec.yaml` sets `generate: true`).
+  `pubspec.yaml` sets `generate: true`). The home-screen widget goes through
+  the ARB files too — Dart publishes its strings as widget data — with one
+  narrow exception: the launcher's widget picker reads
+  `android/app/src/main/res/values*/strings.xml` (`widget_description`,
+  `widget_action_shuffle`) before any Dart code has run.
 - **Networking**: none. The app makes no network calls — every restaurant is
   entered, edited and deleted on-device via drift. Don't add a networking
   package or a remote/file-based data source without discussing it first.
@@ -87,6 +94,15 @@ Optional detailed explanation
   (`AppDatabase.memory()`), so the whole suite runs on the Dart VM with no
   device. Fakes are written by hand; there is no mocking package and adding
   one needs discussing first.
+- **Home-screen widget**: `home_widget`, with a thin native renderer on each
+  side — a Kotlin `AppWidgetProvider`
+  (`android/app/src/main/kotlin/com/saatxi/eatapp/EatAppHomeWidgetProvider.kt`)
+  over the layout/xml/drawable resources beside it, and a Swift WidgetKit
+  extension in `ios/EatAppWidget/`. Keep the native halves
+  presentation-only: which restaurant, which language and what every string
+  says is decided in `lib/widget/`, and the `HomeWidgetKeys` there are the
+  contract the native code reads. The iOS extension is a one-time Xcode
+  step that no tool outside Xcode can do — `docs/ios-widget.md`.
 
 ## Migrating from the old Android app
 
@@ -133,6 +149,11 @@ regenerate the drift code with:
 dart run build_runner build --delete-conflicting-outputs
 ```
 
+The home-screen widget's Android half is Kotlin and Android resources, so
+`flutter build apk` is what checks it — `flutter analyze`/`flutter test`
+only reach its Dart side. Its iOS half is a WidgetKit target that no tool
+outside Xcode can create; `docs/ios-widget.md` has the one-time steps.
+
 ## Project structure
 
 ```text
@@ -150,10 +171,11 @@ lib/
 │   ├── models/        # Cuisine, sort, stats projections
 │   ├── repositories/  # RestaurantRepository, UserPreferencesRepository
 │   └── share/         # export/import models, JSON, file readers/writers
-└── features/          # one folder per screen: state + controller + widgets
-    ├── home/          # bottom-nav shell
-    ├── list/  detail/  edit/  log_visit/  roulette/  settings/  stats/
-    └── import_export/ # sharing in/out + the review/confirm screen
+├── features/          # one folder per screen: state + controller + widgets
+│   ├── home/          # bottom-nav shell
+│   ├── list/  detail/  edit/  log_visit/  roulette/  settings/  stats/
+│   └── import_export/ # sharing in/out + the review/confirm screen
+└── widget/            # the home-screen widget's Dart-side bridge
 ```
 
 ## Conventions
@@ -161,7 +183,10 @@ lib/
 - All in-app strings live in the ARB files under `lib/core/l10n/` — no
   hardcoded UI text in Dart. `app_en.arb` is the template (English); `_es`
   covers Spanish and `_ca` Catalan. Add a key to every locale file, never
-  just one.
+  just one. The home-screen widget follows this like everything else, since
+  Dart hands it the translated strings; the sole native exception is the
+  widget picker's own `widget_description`/`widget_action_shuffle`, which the
+  launcher reads before Flutter starts.
 - **Cuisine vocabulary**: the `cuisineType` column stores stable,
   language-independent keys (`japanese`, `fast_food`, …), never display
   labels. The closed list lives in
@@ -214,6 +239,12 @@ lib/
   grants are per-Intent, not a permission). Don't add any permission
   (network, location, contacts, storage, etc.) without an explicit, discussed
   reason.
+- The home-screen widget's data leaves the app through a platform store, not
+  the network: an Android shared-preferences file and an iOS App Group. Its
+  background `BroadcastReceiver` is `exported` (the `home_widget` plugin's
+  design) so the launcher can ask for a redraw, but it only re-reads local
+  data, and the URI it carries chooses between "shuffle" and "redraw" and
+  nothing else. Keep it read-only.
 - Release builds are minified and shrunk by R8 through the Flutter Android
   build. Keep any project keep rules narrow — a broad `-keep` silently
   disables optimization for everything it matches.

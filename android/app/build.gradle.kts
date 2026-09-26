@@ -79,7 +79,11 @@ android {
 
     defaultConfig {
         applicationId = "com.saatxi.eatapp"
-        minSdk = flutter.minSdkVersion
+        // The home_widget plugin's Android library declares minSdk 23, and a
+        // lower app minSdk would fail the manifest merge. Flutter's own default
+        // is already at or above this, so the maxOf only matters if it ever
+        // drops back down.
+        minSdk = maxOf(flutter.minSdkVersion, 23)
         targetSdk = flutter.targetSdkVersion
         versionCode = gitVersionCode
         versionName = gitVersionName

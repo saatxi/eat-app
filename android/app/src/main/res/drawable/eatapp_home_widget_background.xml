@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Mercado Fresco palette's light surface (neutral t98), rounded to match
+     the app's card radius. Kept as a plain colour rather than following the
+     user's palette/theme: a home-screen widget has no theme of its own to read,
+     and a card that is always the app's paper reads correctly on most
+     wallpapers. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#FFFDF7" />
+    <corners android:radius="20dp" />
+</shape>

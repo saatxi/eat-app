@@ -34,7 +34,12 @@ import '../share/restaurant_share_models.dart';
 /// optional — a database-only test passes none and the rows cascade on their
 /// own, leaving the fake paths on disk untouched.
 class RestaurantRepository {
-  RestaurantRepository(this._database, {this.backupWriter, this.photoStorage});
+  RestaurantRepository(
+    this._database, {
+    this.backupWriter,
+    this.photoStorage,
+    this.onChanged,
+  });
 
   final AppDatabase _database;
 
@@ -44,6 +49,12 @@ class RestaurantRepository {
   /// Null when nothing should be deleted from disk — the case in a database-only
   /// test, where the `photos` rows point at paths a fake never created.
   final PhotoStorage? photoStorage;
+
+  /// Called after every write that lands, which is how the home-screen widget
+  /// keeps up. Kept as a bare callback rather than a named collaborator so this
+  /// layer still knows nothing about the widget plugin — it only says "something
+  /// changed" and lets `main` decide who cares. Null in every unit test.
+  final Future<void> Function()? onChanged;
 
   static const Uuid _uuid = Uuid();
 
@@ -119,7 +130,7 @@ class RestaurantRepository {
       await _restaurants.insertRestaurant(restaurant);
       await _tags.setTags(restaurant.id, tags);
     });
-    await _writeBackup();
+    await _afterWrite();
   }
 
   /// Same contract as [insert]; the row must already exist.
@@ -128,7 +139,7 @@ class RestaurantRepository {
       await _restaurants.updateRestaurant(restaurant);
       await _tags.setTags(restaurant.id, tags);
     });
-    await _writeBackup();
+    await _afterWrite();
   }
 
   /// The tag/visit/photo rows all cascade on delete; only their photo *files*
@@ -137,7 +148,7 @@ class RestaurantRepository {
     final List<Photo> photos = await _photos.getAllPhotosForRestaurant(id);
     await _restaurants.deleteRestaurant(id);
     await _deleteFiles(photos);
-    await _writeBackup();
+    await _afterWrite();
   }
 
   Future<void> deleteAll() async {
@@ -149,7 +160,7 @@ class RestaurantRepository {
       await _tags.deleteAllTags();
     });
     await _deleteFiles(photos);
-    await _writeBackup();
+    await _afterWrite();
   }
 
   // --- Sharing --------------------------------------------------------------
@@ -189,14 +200,16 @@ class RestaurantRepository {
     ];
   }
 
-  /// Writes the snapshot a real app keeps current after every change. A no-op
-  /// when no [BackupWriter] was supplied.
-  Future<void> _writeBackup() async {
+  /// Runs what a real app wants after every write that lands: the `backup.json`
+  /// snapshot, and telling [onChanged] — the home-screen widget — that something
+  /// moved. Either is a no-op when its collaborator wasn't supplied, which is
+  /// the case in every unit test.
+  Future<void> _afterWrite() async {
     final BackupWriter? writer = backupWriter;
-    if (writer == null) {
-      return;
+    if (writer != null) {
+      await writer.write(await exportRestaurants());
     }
-    await writer.write(await exportRestaurants());
+    await onChanged?.call();
   }
 
   // --- Tags -----------------------------------------------------------------
@@ -300,7 +313,7 @@ class RestaurantRepository {
       }
     });
     await _deleteFiles(removedPhotos);
-    await _writeBackup();
+    await _afterWrite();
   }
 
   /// Adds one more visit, together with any photos taken on it. Returns the new
@@ -343,7 +356,7 @@ class RestaurantRepository {
         );
       }
     });
-    await _writeBackup();
+    await _afterWrite();
     return visitId;
   }
 
@@ -353,7 +366,7 @@ class RestaurantRepository {
     final List<Photo> photos = await _photos.getPhotosForVisit(id);
     await _visits.deleteVisit(id);
     await _deleteFiles(photos);
-    await _writeBackup();
+    await _afterWrite();
   }
 
   // --- Photos ---------------------------------------------------------------

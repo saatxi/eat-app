@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,6 +19,7 @@ import 'data/repositories/restaurant_repository.dart';
 import 'data/repositories/user_preferences_repository.dart';
 import 'data/share/backup_writer.dart';
 import 'features/home/home_shell.dart';
+import 'widget/home_widget_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +39,47 @@ Future<void> main() async {
     locator: const RoomDatabaseFileLocator(),
     preferences: preferences,
   ).run();
+
+  // The home-screen widget's two tails: the App Group it shares with the iOS
+  // extension, and the callback its shuffle button runs in the background. The
+  // callback is a top-level function because the plugin launches a second
+  // engine for it, in its own isolate, and finds it by name.
+  await HomeWidget.setAppGroupId(homeWidgetAppGroupId);
+  await HomeWidget.registerInteractivityCallback(homeWidgetBackgroundCallback);
+
+  // A cold start that came from tapping the widget arrives as one URI, and a
+  // tap while the app is already running arrives on the stream; the shell
+  // resolves both to the same detail screen.
+  final Uri? initialWidgetUri = await HomeWidget.initiallyLaunchedFromHomeWidget();
+  final Stream<Uri?> widgetClickStream = HomeWidget.widgetClicked;
+
+  final UserPreferencesRepository userPreferences =
+      UserPreferencesRepository(store: preferences);
+
+  // `late` breaks the one cycle there is: the repository has to exist before
+  // the widget service (which holds it) and the service has to exist before the
+  // repository's callback, which is written as a closure so it is only read —
+  // and the still-unassigned `homeWidget` only touched — the first time a write
+  // lands, long after both were built.
+  late final HomeWidgetService homeWidget;
+  final RestaurantRepository restaurantRepository = RestaurantRepository(
+    database,
+    // The on-device snapshot is written after every change, so a device restore
+    // brings the data along without the user ever pressing export.
+    backupWriter: const FileBackupWriter(),
+    // The photo storage lives on the repository: it is the only place that
+    // writes or removes a stored photo, so a delete can take the file with it.
+    photoStorage: const FilePhotoStorage(),
+    onChanged: () => homeWidget.refresh(),
+  );
+  homeWidget = HomeWidgetService(
+    repository: restaurantRepository,
+    preferences: userPreferences,
+  );
+  // Published once on every launch, so a widget already sitting on the home
+  // screen picks up whatever the Room→drift import just brought over — the
+  // writes it makes go straight to the database, not through the repository.
+  await homeWidget.refresh();
 
   // "Open with EatApp" hands the file over as an intent, and the plugin
   // resolves a content:// Uri to a real path copied into the cache. The
@@ -59,19 +102,13 @@ Future<void> main() async {
 
   runApp(
     EatApp(
-      preferences: UserPreferencesRepository(store: preferences),
-      // The on-device snapshot is written after every change, so a device
-      // restore brings the data along without the user ever pressing export.
-      // The photo storage lives on the repository: it is the only place that
-      // writes or removes a stored photo, so a delete can take the file with it.
-      repository: RestaurantRepository(
-        database,
-        backupWriter: const FileBackupWriter(),
-        photoStorage: const FilePhotoStorage(),
-      ),
+      preferences: userPreferences,
+      repository: restaurantRepository,
       photoPicker: ImagePickerPhotoPicker(),
       initialSharedFilePath: initialSharedFilePath,
       sharedFileStream: sharedFileStream,
+      initialWidgetUri: initialWidgetUri,
+      widgetClickStream: widgetClickStream,
     ),
   );
 }
@@ -103,6 +140,8 @@ class EatApp extends StatefulWidget {
     this.photoPicker,
     this.initialSharedFilePath,
     this.sharedFileStream,
+    this.initialWidgetUri,
+    this.widgetClickStream,
   });
 
   /// Null in tests and previews, where an in-memory repository keeps the widget
@@ -124,6 +163,15 @@ class EatApp extends StatefulWidget {
   /// The warm-start counterpart of [initialSharedFilePath] — a new shared file
   /// arriving while the app is already running. Null in tests.
   final Stream<String>? sharedFileStream;
+
+  /// The cold-start deep link from a tap on the home-screen widget, resolved
+  /// through `homeWidgetRestaurantId`. Null unless the app was launched that
+  /// way.
+  final Uri? initialWidgetUri;
+
+  /// The warm-start counterpart of [initialWidgetUri] — a tap on the widget
+  /// while the app is already running. Null in tests.
+  final Stream<Uri?>? widgetClickStream;
 
   @override
   State<EatApp> createState() => _EatAppState();
@@ -198,6 +246,8 @@ class _EatAppState extends State<EatApp> {
             home: HomeShell(
               initialSharedFilePath: widget.initialSharedFilePath,
               sharedFileStream: widget.sharedFileStream,
+              initialWidgetUri: widget.initialWidgetUri,
+              widgetClickStream: widget.widgetClickStream,
             ),
           );
         },
