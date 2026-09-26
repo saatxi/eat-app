@@ -90,22 +90,42 @@ class _RouletteScreenState extends State<RouletteScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           Expanded(
-            child: Center(
-              // Keyed by the spin count so a repeat pick still re-runs the
-              // fade, which is what makes a second tap feel like it did
-              // something even when it landed on the same place.
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: picked == null
-                    ? _Prompt(key: const ValueKey<String>('prompt'), l10n: l10n)
-                    : _ResultCard(
-                        key: ValueKey<String>('pick-${state.pickCount}'),
-                        restaurant: picked,
-                        onTap: widget.onOpenRestaurant == null
-                            ? null
-                            : () => widget.onOpenRestaurant!(picked),
+            // The card is exactly as tall as what it has to say, and a short
+            // window — or a large system text size — can leave it less room than
+            // that. The reveal scrolls instead of overflowing its column; the
+            // `LayoutBuilder` is what keeps it centred while it does fit, since
+            // a bare scroll view would top-align a child shorter than its
+            // viewport.
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: Center(
+                      // Keyed by the spin count so a repeat pick still re-runs
+                      // the fade, which is what makes a second tap feel like it
+                      // did something even when it landed on the same place.
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: picked == null
+                            ? _Prompt(
+                                key: const ValueKey<String>('prompt'),
+                                l10n: l10n,
+                              )
+                            : _ResultCard(
+                                key: ValueKey<String>('pick-${state.pickCount}'),
+                                restaurant: picked,
+                                onTap: widget.onOpenRestaurant == null
+                                    ? null
+                                    : () => widget.onOpenRestaurant!(picked),
+                              ),
                       ),
-              ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
