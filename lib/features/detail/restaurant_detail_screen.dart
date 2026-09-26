@@ -175,13 +175,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
               ],
             ],
           ),
-          floatingActionButton: restaurant == null
-              ? null
-              : FloatingActionButton.extended(
-                  onPressed: () => widget.onLogVisit?.call(restaurant.id),
-                  icon: const Icon(Icons.add),
-                  label: Text(l10n.detailActionLogVisit),
-                ),
           body: switch (state) {
             DetailLoading() => const _DetailSkeleton(),
             DetailNotFound() => EmptyState(
@@ -196,6 +189,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             final DetailLoaded loaded => _LoadedContent(
                 state: loaded,
                 onOpen: _open,
+                onLogVisit: widget.onLogVisit,
               ),
           },
         );
@@ -205,10 +199,18 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 }
 
 class _LoadedContent extends StatelessWidget {
-  const _LoadedContent({required this.state, required this.onOpen});
+  const _LoadedContent({
+    required this.state,
+    required this.onOpen,
+    this.onLogVisit,
+  });
 
   final DetailLoaded state;
   final ValueChanged<String> onOpen;
+
+  /// Null leaves the visits section's action hidden — the case in a bare widget
+  /// test, the same as [RestaurantDetailScreen.onEdit].
+  final ValueChanged<String>? onLogVisit;
 
   @override
   Widget build(BuildContext context) {
@@ -311,7 +313,15 @@ class _LoadedContent extends StatelessWidget {
             ),
           ],
           const SizedBox(height: AppSpacing.lg),
-          _VisitsSection(visits: state.visits, cuisineKey: restaurant.cuisineKey),
+          _VisitsSection(
+            visits: state.visits,
+            cuisineKey: restaurant.cuisineKey,
+            // Bound to this restaurant here: the section only has to know
+            // whether the action exists at all.
+            onAddVisit: onLogVisit == null
+                ? null
+                : () => onLogVisit!(restaurant.id),
+          ),
         ],
       ),
     );
@@ -450,10 +460,17 @@ class _RatingTrendSection extends StatelessWidget {
 }
 
 class _VisitsSection extends StatelessWidget {
-  const _VisitsSection({required this.visits, required this.cuisineKey});
+  const _VisitsSection({
+    required this.visits,
+    required this.cuisineKey,
+    this.onAddVisit,
+  });
 
   final List<VisitUiModel> visits;
   final String cuisineKey;
+
+  /// Null leaves the action out of the header.
+  final VoidCallback? onAddVisit;
 
   @override
   Widget build(BuildContext context) {
@@ -462,7 +479,21 @@ class _VisitsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        _SectionLabel(l10n.detailSectionVisits),
+        // The action lives in its own section's header rather than in a FAB:
+        // a FAB floats over a scrolling list and hides the very cards it is
+        // about, which these are.
+        Row(
+          children: <Widget>[
+            _SectionLabel(l10n.detailSectionVisits),
+            const Spacer(),
+            if (onAddVisit != null)
+              TextButton.icon(
+                onPressed: onAddVisit,
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(l10n.detailActionLogVisit),
+              ),
+          ],
+        ),
         if (visits.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
