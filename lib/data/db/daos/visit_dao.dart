@@ -8,20 +8,25 @@ part 'visit_dao.g.dart';
 
 /// Every per-visit query. A restaurant with no visits is a "want to try" entry;
 /// one or more makes it "visited".
+///
+/// Soft-deleted rows are excluded throughout: a visit tombstoned by a shared
+/// delete (locally or by another member) must not count as a visit, feed a
+/// rating trend, or keep a restaurant looking "visited".
 @DriftAccessor(tables: <Type>[Visits])
 class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
   VisitDao(super.db);
 
   Stream<List<Visit>> observeVisitsForRestaurant(String restaurantId) =>
       customSelect(
-        'SELECT * FROM visits WHERE restaurantId = ? ORDER BY visitDate DESC',
+        'SELECT * FROM visits WHERE restaurantId = ? AND deletedAt IS NULL '
+        'ORDER BY visitDate DESC',
         variables: <Variable<Object>>[Variable<String>(restaurantId)],
         readsFrom: <ResultSetImplementation>{visits},
       ).watch().map(_mapVisits);
 
   /// One-shot: the most recent visit, if any — used to prefill the edit form.
   Future<Visit?> getLatestVisit(String restaurantId) => customSelect(
-    'SELECT * FROM visits WHERE restaurantId = ? '
+    'SELECT * FROM visits WHERE restaurantId = ? AND deletedAt IS NULL '
     'ORDER BY visitDate DESC LIMIT 1',
     variables: <Variable<Object>>[Variable<String>(restaurantId)],
     readsFrom: <ResultSetImplementation>{visits},
@@ -34,8 +39,9 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
   Stream<List<Visit>> observeLatestVisitByRestaurantId() => customSelect(
     'SELECT v.* FROM visits v '
     'INNER JOIN (SELECT restaurantId, MAX(visitDate) AS maxDate FROM visits '
-    'GROUP BY restaurantId) latest '
-    'ON latest.restaurantId = v.restaurantId AND latest.maxDate = v.visitDate',
+    'WHERE deletedAt IS NULL GROUP BY restaurantId) latest '
+    'ON latest.restaurantId = v.restaurantId AND latest.maxDate = v.visitDate '
+    'WHERE v.deletedAt IS NULL',
     readsFrom: <ResultSetImplementation>{visits},
   ).watch().map(_mapVisits);
 
@@ -45,26 +51,72 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
   Future<void> updateVisit(Visit row) =>
       (update(visits)..where((t) => t.id.equals(row.id))).write(row);
 
+  /// Writes a visit back in place, clearing any tombstone. Used when the edit
+  /// form rewrites the single visit of a shared restaurant: the row is revived
+  /// rather than re-inserted, so its id stays stable. `toCompanion(false)`
+  /// includes the null columns, which is what actually clears `deletedAt`.
+  Future<void> reviveVisit(Visit row) =>
+      into(visits).insertOnConflictUpdate(row.toCompanion(false));
+
   Future<void> deleteVisit(String id) =>
       (delete(visits)..where((t) => t.id.equals(id))).go();
 
   Future<void> deleteAllVisitsForRestaurant(String restaurantId) =>
       (delete(visits)..where((t) => t.restaurantId.equals(restaurantId))).go();
 
+  /// One-shot lookup by id, tombstones *included* — see `RestaurantDao.getById`.
+  Future<Visit?> getById(String id) => customSelect(
+    'SELECT * FROM visits WHERE id = ?',
+    variables: <Variable<Object>>[Variable<String>(id)],
+    readsFrom: <ResultSetImplementation>{visits},
+  ).getSingleOrNull().then(
+    (QueryRow? row) => row == null ? null : visits.map(row.data),
+  );
+
+  /// Every visit of a restaurant, tombstones *included* — the rows to tombstone
+  /// when a shared restaurant is soft-deleted.
+  Future<List<Visit>> getVisitsForRestaurant(String restaurantId) =>
+      customSelect(
+        'SELECT * FROM visits WHERE restaurantId = ?',
+        variables: <Variable<Object>>[Variable<String>(restaurantId)],
+        readsFrom: <ResultSetImplementation>{visits},
+      ).get().then(_mapVisits);
+
+  /// Tombstones one shared visit — see `RestaurantDao.softDeleteRestaurant`.
+  Future<void> softDeleteVisit(String id, int timestamp) =>
+      (update(visits)..where((t) => t.id.equals(id))).write(
+        VisitsCompanion(
+          deletedAt: Value<int>(timestamp),
+          updatedAt: Value<int>(timestamp),
+        ),
+      );
+
+  /// Tombstones every visit of a restaurant, for the shared-restaurant delete.
+  Future<void> softDeleteVisitsForRestaurant(
+    String restaurantId,
+    int timestamp,
+  ) => (update(visits)..where((t) => t.restaurantId.equals(restaurantId))).write(
+    VisitsCompanion(
+      deletedAt: Value<int>(timestamp),
+      updatedAt: Value<int>(timestamp),
+    ),
+  );
+
   /// One-shot snapshot of every visit, used to write the full backup file.
   Future<List<Visit>> getAllVisits() => customSelect(
-    'SELECT * FROM visits',
+    'SELECT * FROM visits WHERE deletedAt IS NULL',
     readsFrom: <ResultSetImplementation>{visits},
   ).get().then(_mapVisits);
 
   Stream<int> observeVisitedCount() => customSelect(
-    'SELECT COUNT(DISTINCT restaurantId) AS count FROM visits',
+    'SELECT COUNT(DISTINCT restaurantId) AS count FROM visits '
+    'WHERE deletedAt IS NULL',
     readsFrom: <ResultSetImplementation>{visits},
   ).watchSingle().map((QueryRow row) => row.read<int>('count'));
 
   /// Null when nothing has a real visit yet.
   Stream<double?> observeAverageRating() => customSelect(
-    'SELECT AVG(rating) AS average FROM visits',
+    'SELECT AVG(rating) AS average FROM visits WHERE deletedAt IS NULL',
     readsFrom: <ResultSetImplementation>{visits},
   ).watchSingle().map((QueryRow row) => row.read<double?>('average'));
 
@@ -73,7 +125,8 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
   /// isn't a portable single expression and this table is small enough that
   /// bucketing in Dart is simpler.
   Stream<List<int>> observeAllVisitDates() => customSelect(
-    'SELECT visitDate AS visitDate FROM visits ORDER BY visitDate ASC',
+    'SELECT visitDate AS visitDate FROM visits WHERE deletedAt IS NULL '
+    'ORDER BY visitDate ASC',
     readsFrom: <ResultSetImplementation>{visits},
   ).watch().map(
     (List<QueryRow> rows) => <int>[
@@ -85,7 +138,7 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
   /// caller, same rationale as [observeAllVisitDates].
   Stream<List<VisitDateRating>> observeAllVisitDateRatings() => customSelect(
     'SELECT visitDate AS visitDate, rating AS rating FROM visits '
-    'ORDER BY visitDate ASC',
+    'WHERE deletedAt IS NULL ORDER BY visitDate ASC',
     readsFrom: <ResultSetImplementation>{visits},
   ).watch().map(
     (List<QueryRow> rows) => <VisitDateRating>[

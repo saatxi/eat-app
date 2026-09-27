@@ -10,6 +10,9 @@ import '../models/stats_projections.dart';
 import '../photo/photo_storage.dart';
 import '../share/backup_writer.dart';
 import '../share/restaurant_share_models.dart';
+import '../sync/pending_sync_store.dart';
+import '../sync/shared_write.dart';
+import '../sync/sync_table.dart';
 
 /// The single, app-facing entry point to the restaurant data.
 ///
@@ -60,6 +63,11 @@ class RestaurantRepository {
   late final RestaurantDao _restaurants = _database.restaurantDao;
   late final VisitDao _visits = _database.visitDao;
   late final PhotoDao _photos = _database.photoDao;
+
+  /// The push queue that shared writes are recorded in, so the sync engine can
+  /// find everything this device changed. Reads and writes the same drift
+  /// database as the DAOs above; private writes never touch it.
+  late final PendingSyncStore _pending = PendingSyncStore(_database);
 
   // --- Restaurants ----------------------------------------------------------
 
@@ -116,20 +124,47 @@ class RestaurantRepository {
   /// `searchText` already built with `buildSearchText` — both are the caller's
   /// contract on the Android side too, and the edit screen owns them because it
   /// is the only place that has the untrimmed form values in hand.
+  ///
+  /// A shared row (`groupId` set) is queued in the same transaction, so it is
+  /// pushed on the next sync; a private one is written exactly as before.
   Future<void> insert(Restaurant restaurant) async {
-    await _restaurants.insertRestaurant(restaurant);
+    await _database.transaction(() async {
+      await _restaurants.insertRestaurant(restaurant);
+      await _enqueueIfShared(
+        SyncTable.restaurants,
+        restaurant.id,
+        restaurant.groupId,
+      );
+    });
     await _afterWrite();
   }
 
   /// Same contract as [insert]; the row must already exist.
   Future<void> update(Restaurant restaurant) async {
-    await _restaurants.updateRestaurant(restaurant);
+    await _database.transaction(() async {
+      await _restaurants.updateRestaurant(restaurant);
+      await _enqueueIfShared(
+        SyncTable.restaurants,
+        restaurant.id,
+        restaurant.groupId,
+      );
+    });
     await _afterWrite();
   }
 
-  /// The visit/photo rows all cascade on delete; only their photo *files*
-  /// are read back first, since the cascade knows nothing about the disk.
+  /// Deletes a restaurant: hard for a private one, softly for a shared one.
+  ///
+  /// A private row's visits and photos all cascade on delete; only their photo
+  /// *files* are read back first, since the cascade knows nothing about the
+  /// disk. A shared row is tombstoned instead (see [_softDeleteSharedRestaurant])
+  /// so the deletion can reach every member on the next push.
   Future<void> delete(String id) async {
+    final Restaurant? row = await _restaurants.getById(id);
+    if (row != null && row.groupId != null) {
+      await _softDeleteSharedRestaurant(row);
+      await _afterWrite();
+      return;
+    }
     final List<Photo> photos = await _photos.getAllPhotosForRestaurant(id);
     await _restaurants.deleteRestaurant(id);
     await _deleteFiles(photos);
@@ -238,11 +273,16 @@ class RestaurantRepository {
   /// one with [rating]/[notes], reusing the existing visit's identity and date
   /// when there was one so re-saving the form neither resets the date to "now"
   /// nor makes the row look new.
+  /// Passing [shared] swaps the "clear" from a hard delete to a tombstone: a
+  /// shared visit is never removed outright, it is written back with `deletedAt`
+  /// set (and queued) so every member learns it is gone. When the form still
+  /// wants a visit, the row is revived in place, keeping its id stable.
   Future<void> saveSingleVisit({
     required String restaurantId,
     required bool visited,
     required int rating,
     String? notes,
+    SharedWrite? shared,
   }) async {
     // The visits being replaced take their photos with them; the restaurant's own
     // photo is not a visit's and is deliberately left alone.
@@ -250,21 +290,44 @@ class RestaurantRepository {
         .getVisitPhotosForRestaurant(restaurantId);
     await _database.transaction(() async {
       final Visit? existing = await _visits.getLatestVisit(restaurantId);
-      await _visits.deleteAllVisitsForRestaurant(restaurantId);
+      if (shared == null) {
+        await _visits.deleteAllVisitsForRestaurant(restaurantId);
+        if (visited) {
+          await _visits.insertVisit(
+            _singleVisitRow(
+              existing: existing,
+              restaurantId: restaurantId,
+              rating: rating,
+              notes: notes,
+              shared: null,
+            ),
+          );
+        }
+        return;
+      }
+
+      final int now = DateTime.now().millisecondsSinceEpoch;
+      final List<Visit> cleared = await _visits.getVisitsForRestaurant(
+        restaurantId,
+      );
+      await _visits.softDeleteVisitsForRestaurant(restaurantId, now);
+      for (final Visit visit in cleared) {
+        await _pending.enqueue(SyncTable.visits, visit.id, shared.groupId);
+      }
+      for (final Photo photo in removedPhotos) {
+        await _photos.softDeletePhoto(photo.id, now);
+        await _pending.enqueue(SyncTable.photos, photo.id, shared.groupId);
+      }
       if (visited) {
-        await _visits.insertVisit(
-          Visit(
-            id: existing?.id ?? _uuid.v4(),
-            restaurantId: restaurantId,
-            visitDate: existing?.visitDate ?? DateTime.now().millisecondsSinceEpoch,
-            rating: rating,
-            notes: notes,
-            // Carried over rather than taken from the form, which doesn't ask:
-            // dropping it would silently lose the price band on every re-save.
-            priceRange: existing?.priceRange ?? 0,
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
-          ),
+        final Visit row = _singleVisitRow(
+          existing: existing,
+          restaurantId: restaurantId,
+          rating: rating,
+          notes: notes,
+          shared: shared,
         );
+        await _visits.reviveVisit(row);
+        await _pending.enqueue(SyncTable.visits, row.id, shared.groupId);
       }
     });
     await _deleteFiles(removedPhotos);
@@ -281,6 +344,8 @@ class RestaurantRepository {
   /// This is the real, multi-visit-per-restaurant path the log-visit screen
   /// uses; import replays a whole history through it, one visit at a time, with
   /// no photos of its own.
+  /// Passing [shared] attributes the visit and its photos to a group and queues
+  /// them; without it the write is private, exactly as before.
   Future<String> addVisit({
     required String restaurantId,
     required int visitDate,
@@ -288,12 +353,17 @@ class RestaurantRepository {
     String? notes,
     int priceRange = 0,
     List<String> photoSourcePaths = const <String>[],
+    SharedWrite? shared,
   }) async {
     final List<String> storedPaths = <String>[
       for (final String sourcePath in photoSourcePaths)
         await photoStorage?.persist(sourcePath) ?? sourcePath,
     ];
     final String visitId = _uuid.v4();
+    final List<String> photoIds = <String>[
+      for (final String _ in storedPaths) _uuid.v4(),
+    ];
+    final int now = DateTime.now().millisecondsSinceEpoch;
     await _database.transaction(() async {
       await _visits.insertVisit(
         Visit(
@@ -303,29 +373,55 @@ class RestaurantRepository {
           rating: rating,
           notes: notes,
           priceRange: priceRange,
-          updatedAt: DateTime.now().millisecondsSinceEpoch,
+          groupId: shared?.groupId,
+          createdBy: shared?.createdBy,
+          updatedAt: now,
         ),
       );
       for (final (int index, String path) in storedPaths.indexed) {
         await _photos.insertPhoto(
           Photo(
-            id: _uuid.v4(),
+            id: photoIds[index],
             visitId: visitId,
             path: path,
             position: index,
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
+            groupId: shared?.groupId,
+            createdBy: shared?.createdBy,
+            updatedAt: now,
           ),
         );
+      }
+      if (shared != null) {
+        await _pending.enqueue(SyncTable.visits, visitId, shared.groupId);
+        for (final String photoId in photoIds) {
+          await _pending.enqueue(SyncTable.photos, photoId, shared.groupId);
+        }
       }
     });
     await _afterWrite();
     return visitId;
   }
 
-  /// The visit's photo rows cascade away with it; their files are read back
-  /// first so they can be removed from disk too.
+  /// For a private visit, the photo rows cascade away with it and their files
+  /// are read back first so they can be removed from disk too. A shared visit
+  /// and its photos are tombstoned (and queued) instead, never removed.
   Future<void> deleteVisit(String id) async {
+    final Visit? row = await _visits.getById(id);
     final List<Photo> photos = await _photos.getPhotosForVisit(id);
+    final String? groupId = row?.groupId;
+    if (groupId != null) {
+      final int now = DateTime.now().millisecondsSinceEpoch;
+      await _database.transaction(() async {
+        await _visits.softDeleteVisit(id, now);
+        await _photos.softDeletePhotosForVisit(id, now);
+        await _pending.enqueue(SyncTable.visits, id, groupId);
+        for (final Photo photo in photos) {
+          await _pending.enqueue(SyncTable.photos, photo.id, groupId);
+        }
+      });
+      await _afterWrite();
+      return;
+    }
     await _visits.deleteVisit(id);
     await _deleteFiles(photos);
     await _afterWrite();
@@ -353,25 +449,43 @@ class RestaurantRepository {
   /// file to persist, or null to clear the photo. Either way the restaurant's
   /// previous photo file is deleted, so a replace never leaves the old copy
   /// orphaned on disk.
-  Future<void> setRestaurantPhoto(String restaurantId, String? sourcePath) async {
+  Future<void> setRestaurantPhoto(
+    String restaurantId,
+    String? sourcePath, {
+    SharedWrite? shared,
+  }) async {
     final List<Photo> existing = await _photos.getPhotosForRestaurant(
       restaurantId,
     );
     final String? storedPath = sourcePath == null
         ? null
         : await photoStorage?.persist(sourcePath) ?? sourcePath;
+    final int now = DateTime.now().millisecondsSinceEpoch;
     await _database.transaction(() async {
-      await _photos.deleteAllPhotosForRestaurant(restaurantId);
+      if (shared == null) {
+        await _photos.deleteAllPhotosForRestaurant(restaurantId);
+      } else {
+        await _photos.softDeletePhotosForRestaurant(restaurantId, now);
+        for (final Photo photo in existing) {
+          await _pending.enqueue(SyncTable.photos, photo.id, shared.groupId);
+        }
+      }
       if (storedPath != null) {
+        final String photoId = _uuid.v4();
         await _photos.insertPhoto(
           Photo(
-            id: _uuid.v4(),
+            id: photoId,
             restaurantId: restaurantId,
             path: storedPath,
             position: 0,
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
+            groupId: shared?.groupId,
+            createdBy: shared?.createdBy,
+            updatedAt: now,
           ),
         );
+        if (shared != null) {
+          await _pending.enqueue(SyncTable.photos, photoId, shared.groupId);
+        }
       }
     });
     await _deleteFiles(existing);
@@ -382,31 +496,52 @@ class RestaurantRepository {
   /// doesn't have to special-case having collected none.
   Future<void> addRestaurantPhotos(
     String restaurantId,
-    List<String> photoPaths,
-  ) async {
+    List<String> photoPaths, {
+    SharedWrite? shared,
+  }) async {
     if (photoPaths.isEmpty) {
       return;
     }
     final int startPosition =
         await _photos.getMaxPositionForRestaurant(restaurantId) + 1;
+    final List<String> photoIds = <String>[
+      for (final String _ in photoPaths) _uuid.v4(),
+    ];
+    final int now = DateTime.now().millisecondsSinceEpoch;
     await _database.transaction(() async {
       for (final (int index, String path) in photoPaths.indexed) {
         await _photos.insertPhoto(
           Photo(
-            id: _uuid.v4(),
+            id: photoIds[index],
             restaurantId: restaurantId,
             path: path,
             position: startPosition + index,
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
+            groupId: shared?.groupId,
+            createdBy: shared?.createdBy,
+            updatedAt: now,
           ),
         );
+        if (shared != null) {
+          await _pending.enqueue(SyncTable.photos, photoIds[index], shared.groupId);
+        }
       }
     });
   }
 
-  /// Deletes one photo row (restaurant- or visit-level) and the file behind it.
+  /// Deletes one photo (restaurant- or visit-level) and the file behind it — a
+  /// shared photo is tombstoned and queued instead of removed.
   Future<void> deletePhoto(String id) async {
     final Photo? photo = await _photos.getById(id);
+    final String? groupId = photo?.groupId;
+    if (photo != null && groupId != null) {
+      final int now = DateTime.now().millisecondsSinceEpoch;
+      await _database.transaction(() async {
+        await _photos.softDeletePhoto(id, now);
+        await _pending.enqueue(SyncTable.photos, id, groupId);
+      });
+      await _deleteFiles(<Photo>[photo]);
+      return;
+    }
     await _photos.deletePhoto(id);
     if (photo != null) {
       await _deleteFiles(<Photo>[photo]);
@@ -434,6 +569,68 @@ class RestaurantRepository {
     }
     return byRestaurant;
   }
+
+  /// Queues a row for sync when it belongs to a group. A private row has no
+  /// group to push to and is left alone, which is what keeps personal mode
+  /// exactly the app it was before groups existed.
+  Future<void> _enqueueIfShared(
+    SyncTable table,
+    String rowId,
+    String? groupId,
+  ) async {
+    if (groupId == null) {
+      return;
+    }
+    await _pending.enqueue(table, rowId, groupId);
+  }
+
+  /// Tombstones a shared restaurant and everything under it, and queues all of
+  /// it so a push tells every member. Local photo files are deliberately left
+  /// on disk: the tombstone rows still reference them and there is no purge
+  /// step yet to reclaim them.
+  Future<void> _softDeleteSharedRestaurant(Restaurant row) async {
+    final String groupId = row.groupId!;
+    final int now = DateTime.now().millisecondsSinceEpoch;
+    final List<Visit> visits = await _visits.getVisitsForRestaurant(row.id);
+    final List<Photo> photos = await _photos.getAllPhotosForRestaurant(row.id);
+    await _database.transaction(() async {
+      await _restaurants.softDeleteRestaurant(row.id, now);
+      await _visits.softDeleteVisitsForRestaurant(row.id, now);
+      await _photos.softDeletePhotosForRestaurant(row.id, now);
+      for (final Visit visit in visits) {
+        await _photos.softDeletePhotosForVisit(visit.id, now);
+      }
+      await _pending.enqueue(SyncTable.restaurants, row.id, groupId);
+      for (final Visit visit in visits) {
+        await _pending.enqueue(SyncTable.visits, visit.id, groupId);
+      }
+      for (final Photo photo in photos) {
+        await _pending.enqueue(SyncTable.photos, photo.id, groupId);
+      }
+    });
+  }
+
+  /// The single visit the edit form collects, reused from the existing row when
+  /// there is one so a re-save neither resets the date nor the price band.
+  Visit _singleVisitRow({
+    required Visit? existing,
+    required String restaurantId,
+    required int rating,
+    required String? notes,
+    required SharedWrite? shared,
+  }) => Visit(
+    id: existing?.id ?? _uuid.v4(),
+    restaurantId: restaurantId,
+    visitDate: existing?.visitDate ?? DateTime.now().millisecondsSinceEpoch,
+    rating: rating,
+    notes: notes,
+    // Carried over rather than taken from the form, which doesn't ask: dropping
+    // it would silently lose the price band on every re-save.
+    priceRange: existing?.priceRange ?? 0,
+    groupId: shared?.groupId,
+    createdBy: shared?.createdBy,
+    updatedAt: DateTime.now().millisecondsSinceEpoch,
+  );
 
   /// Removes the files behind [photos], when a storage is configured. Rows are
   /// always gone by the time this runs, so a missing file is simply skipped.

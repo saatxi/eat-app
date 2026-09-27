@@ -6,19 +6,25 @@ import '../tables.dart';
 part 'photo_dao.g.dart';
 
 /// Every stored-photo query, restaurant- and visit-level alike.
+///
+/// Soft-deleted rows are excluded throughout: a photo tombstoned by a shared
+/// delete must not draw a thumbnail or a gallery entry, and a visit's
+/// tombstoned photos must go with it.
 @DriftAccessor(tables: <Type>[Photos, Visits])
 class PhotoDao extends DatabaseAccessor<AppDatabase> with _$PhotoDaoMixin {
   PhotoDao(super.db);
 
   Stream<List<Photo>> observePhotosForRestaurant(String restaurantId) =>
       customSelect(
-        'SELECT * FROM photos WHERE restaurantId = ? ORDER BY position ASC',
+        'SELECT * FROM photos WHERE restaurantId = ? AND deletedAt IS NULL '
+        'ORDER BY position ASC',
         variables: <Variable<Object>>[Variable<String>(restaurantId)],
         readsFrom: <ResultSetImplementation>{photos},
       ).watch().map(_mapPhotos);
 
   Stream<List<Photo>> observePhotosForVisit(String visitId) => customSelect(
-    'SELECT * FROM photos WHERE visitId = ? ORDER BY position ASC',
+    'SELECT * FROM photos WHERE visitId = ? AND deletedAt IS NULL '
+    'ORDER BY position ASC',
     variables: <Variable<Object>>[Variable<String>(visitId)],
     readsFrom: <ResultSetImplementation>{photos},
   ).watch().map(_mapPhotos);
@@ -30,7 +36,7 @@ class PhotoDao extends DatabaseAccessor<AppDatabase> with _$PhotoDaoMixin {
   /// the lowest `position` wins when a row somehow carries more.
   Stream<Map<String, String>> observeRestaurantPhotoPaths() => customSelect(
     'SELECT restaurantId, path FROM photos WHERE restaurantId IS NOT NULL '
-    'ORDER BY restaurantId ASC, position ASC',
+    'AND deletedAt IS NULL ORDER BY restaurantId ASC, position ASC',
     readsFrom: <ResultSetImplementation>{photos},
   ).watch().map((List<QueryRow> rows) {
     final Map<String, String> byRestaurant = <String, String>{};
@@ -47,7 +53,7 @@ class PhotoDao extends DatabaseAccessor<AppDatabase> with _$PhotoDaoMixin {
   /// edit form.
   Future<Photo?> getFirstPhotoForRestaurant(String restaurantId) =>
       customSelect(
-        'SELECT * FROM photos WHERE restaurantId = ? '
+        'SELECT * FROM photos WHERE restaurantId = ? AND deletedAt IS NULL '
         'ORDER BY position ASC LIMIT 1',
         variables: <Variable<Object>>[Variable<String>(restaurantId)],
         readsFrom: <ResultSetImplementation>{photos},
@@ -58,14 +64,16 @@ class PhotoDao extends DatabaseAccessor<AppDatabase> with _$PhotoDaoMixin {
   /// One-shot: every restaurant-level photo, in position order.
   Future<List<Photo>> getPhotosForRestaurant(String restaurantId) =>
       customSelect(
-        'SELECT * FROM photos WHERE restaurantId = ? ORDER BY position ASC',
+        'SELECT * FROM photos WHERE restaurantId = ? AND deletedAt IS NULL '
+        'ORDER BY position ASC',
         variables: <Variable<Object>>[Variable<String>(restaurantId)],
         readsFrom: <ResultSetImplementation>{photos},
       ).get().then(_mapPhotos);
 
   /// One-shot: the photos taken on one visit.
   Future<List<Photo>> getPhotosForVisit(String visitId) => customSelect(
-    'SELECT * FROM photos WHERE visitId = ? ORDER BY position ASC',
+    'SELECT * FROM photos WHERE visitId = ? AND deletedAt IS NULL '
+    'ORDER BY position ASC',
     variables: <Variable<Object>>[Variable<String>(visitId)],
     readsFrom: <ResultSetImplementation>{photos},
   ).get().then(_mapPhotos);
@@ -76,7 +84,8 @@ class PhotoDao extends DatabaseAccessor<AppDatabase> with _$PhotoDaoMixin {
       customSelect(
         'SELECT p.* FROM photos p '
         'LEFT JOIN visits v ON p.visitId = v.id '
-        'WHERE p.restaurantId = ? OR v.restaurantId = ?',
+        'WHERE (p.restaurantId = ? OR v.restaurantId = ?) '
+        'AND p.deletedAt IS NULL',
         variables: <Variable<Object>>[
           Variable<String>(restaurantId),
           Variable<String>(restaurantId),
@@ -91,17 +100,17 @@ class PhotoDao extends DatabaseAccessor<AppDatabase> with _$PhotoDaoMixin {
       customSelect(
         'SELECT p.* FROM photos p '
         'JOIN visits v ON p.visitId = v.id '
-        'WHERE v.restaurantId = ?',
+        'WHERE v.restaurantId = ? AND p.deletedAt IS NULL',
         variables: <Variable<Object>>[Variable<String>(restaurantId)],
         readsFrom: <ResultSetImplementation>{photos, visits},
       ).get().then(_mapPhotos);
 
   /// Every stored photo, for the whole-list wipe.
   Future<List<Photo>> getAllPhotos() =>
-      select(photos).get();
+      (select(photos)..where((t) => t.deletedAt.isNull())).get();
 
   Future<Photo?> getById(String id) => customSelect(
-    'SELECT * FROM photos WHERE id = ?',
+    'SELECT * FROM photos WHERE id = ? AND deletedAt IS NULL',
     variables: <Variable<Object>>[Variable<String>(id)],
     readsFrom: <ResultSetImplementation>{photos},
   ).getSingleOrNull().then(
@@ -112,7 +121,7 @@ class PhotoDao extends DatabaseAccessor<AppDatabase> with _$PhotoDaoMixin {
   /// `+ 1`.
   Future<int> getMaxPositionForRestaurant(String restaurantId) => customSelect(
     'SELECT COALESCE(MAX(position), -1) AS position FROM photos '
-    'WHERE restaurantId = ?',
+    'WHERE restaurantId = ? AND deletedAt IS NULL',
     variables: <Variable<Object>>[Variable<String>(restaurantId)],
     readsFrom: <ResultSetImplementation>{photos},
   ).getSingle().then((QueryRow row) => row.read<int>('position'));
@@ -124,6 +133,37 @@ class PhotoDao extends DatabaseAccessor<AppDatabase> with _$PhotoDaoMixin {
 
   Future<void> deleteAllPhotosForRestaurant(String restaurantId) =>
       (delete(photos)..where((t) => t.restaurantId.equals(restaurantId))).go();
+
+  /// Tombstones one shared photo — see `RestaurantDao.softDeleteRestaurant`.
+  Future<void> softDeletePhoto(String id, int timestamp) =>
+      (update(photos)..where((t) => t.id.equals(id))).write(
+        PhotosCompanion(
+          deletedAt: Value<int>(timestamp),
+          updatedAt: Value<int>(timestamp),
+        ),
+      );
+
+  /// Tombstones every restaurant-level photo — the replace path's shared
+  /// counterpart to the hard [deleteAllPhotosForRestaurant].
+  Future<void> softDeletePhotosForRestaurant(
+    String restaurantId,
+    int timestamp,
+  ) =>
+      (update(photos)..where((t) => t.restaurantId.equals(restaurantId))).write(
+        PhotosCompanion(
+          deletedAt: Value<int>(timestamp),
+          updatedAt: Value<int>(timestamp),
+        ),
+      );
+
+  /// Tombstones every photo of a visit, for the visit (and restaurant) delete.
+  Future<void> softDeletePhotosForVisit(String visitId, int timestamp) =>
+      (update(photos)..where((t) => t.visitId.equals(visitId))).write(
+        PhotosCompanion(
+          deletedAt: Value<int>(timestamp),
+          updatedAt: Value<int>(timestamp),
+        ),
+      );
 
   List<Photo> _mapPhotos(List<QueryRow> rows) => <Photo>[
     for (final QueryRow row in rows) photos.map(row.data),

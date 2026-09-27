@@ -1,10 +1,12 @@
 import 'package:flutter/widgets.dart';
 
 import '../core/app_version.dart';
+import '../data/groups/group_gateway.dart';
 import '../data/photo/photo_picker.dart';
 import '../data/repositories/restaurant_repository.dart';
 import '../data/repositories/user_preferences_repository.dart';
 import '../data/supabase/identity.dart';
+import '../data/sync/sync_service.dart';
 
 /// Hands the app's long-lived collaborators to any screen that needs them.
 ///
@@ -27,6 +29,8 @@ class AppScope extends InheritedWidget {
     required this.photoPicker,
     this.appVersion,
     this.identity,
+    this.groups,
+    this.sync,
     required super.child,
   });
 
@@ -38,6 +42,12 @@ class AppScope extends InheritedWidget {
   /// mode where groups are off — including every widget test that builds a
   /// bare tree — and every screen must cope with that rather than assume it.
   final IdentityGateway? identity;
+
+  /// The groups backend, and the sync driver that talks to it. Both null
+  /// whenever the build carries no Supabase configuration, exactly like
+  /// [identity]; personal mode never builds or touches them.
+  final GroupGateway? groups;
+  final SyncService? sync;
 
   /// What the platform reports for the running build, read once at startup.
   /// Null hides the settings screen's About section — the case in a bare widget
@@ -60,5 +70,7 @@ class AppScope extends InheritedWidget {
       oldWidget.preferences != preferences ||
       oldWidget.photoPicker != photoPicker ||
       oldWidget.appVersion != appVersion ||
-      oldWidget.identity != identity;
+      oldWidget.identity != identity ||
+      oldWidget.groups != groups ||
+      oldWidget.sync != sync;
 }

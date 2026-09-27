@@ -19,6 +19,10 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
 
   /// The list screen's single query.
   ///
+  /// Soft-deleted rows are excluded everywhere here: a tombstone pushed by
+  /// another member (or written locally as part of a shared delete) is not a
+  /// row the UI should show, and neither is a visit of one.
+  ///
   /// Placeholders, in order: the search query (twice — the null check and the
   /// `LIKE`), the minimum rating (twice), the cuisine key (twice), the visited
   /// flag (three times — the null check and its two branches), city, region and
@@ -50,19 +54,20 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
 
     return customSelect(
       'SELECT * FROM restaurants r '
-      "WHERE (? IS NULL OR searchText LIKE '%' || ? || '%' ESCAPE '\\') "
+      'WHERE r.deletedAt IS NULL '
+      "AND (? IS NULL OR searchText LIKE '%' || ? || '%' ESCAPE '\\') "
       'AND (? IS NULL OR EXISTS (SELECT 1 FROM visits v '
-      'WHERE v.restaurantId = r.id AND v.rating >= ?)) '
+      'WHERE v.restaurantId = r.id AND v.rating >= ? AND v.deletedAt IS NULL)) '
       'AND (? IS NULL OR cuisineType = ?) '
       'AND (? IS NULL '
-      'OR (? = 1 AND EXISTS (SELECT 1 FROM visits v WHERE v.restaurantId = r.id)) '
-      'OR (? = 0 AND NOT EXISTS (SELECT 1 FROM visits v WHERE v.restaurantId = r.id))) '
+      'OR (? = 1 AND EXISTS (SELECT 1 FROM visits v WHERE v.restaurantId = r.id AND v.deletedAt IS NULL)) '
+      'OR (? = 0 AND NOT EXISTS (SELECT 1 FROM visits v WHERE v.restaurantId = r.id AND v.deletedAt IS NULL))) '
       'AND (? IS NULL OR city = ?) '
       'AND (? IS NULL OR region = ?) '
       'AND (? IS NULL OR country = ?) '
       'AND (? IS NULL OR priceRange = ?) '
       'ORDER BY CASE WHEN ? THEN '
-      '(SELECT MAX(v2.rating) FROM visits v2 WHERE v2.restaurantId = r.id) '
+      '(SELECT MAX(v2.rating) FROM visits v2 WHERE v2.restaurantId = r.id AND v2.deletedAt IS NULL) '
       'ELSE 0 END DESC, name COLLATE NOCASE ASC',
       variables: <Variable<Object>>[
         Variable<String>(query),
@@ -91,7 +96,8 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
   /// The cuisine keys actually present in the data, so the filter row can offer
   /// only those instead of all 24 entries of the vocabulary.
   Stream<List<String>> observeCuisineTypes() => customSelect(
-    'SELECT DISTINCT cuisineType AS cuisineType FROM restaurants',
+    'SELECT DISTINCT cuisineType AS cuisineType FROM restaurants '
+    'WHERE deletedAt IS NULL',
     readsFrom: <ResultSetImplementation>{restaurants},
   ).watch().map(
     (List<QueryRow> rows) => <String>[
@@ -112,7 +118,7 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
   Stream<List<String>> observeCountries() => _observeDistinct('country');
 
   Stream<Restaurant?> observeById(String id) => customSelect(
-    'SELECT * FROM restaurants WHERE id = ?',
+    'SELECT * FROM restaurants WHERE id = ? AND deletedAt IS NULL',
     variables: <Variable<Object>>[Variable<String>(id)],
     readsFrom: <ResultSetImplementation>{restaurants},
   ).watchSingleOrNull().map(
@@ -122,7 +128,8 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
   /// A one-shot snapshot of every row, used to write the full backup file after
   /// each write.
   Future<List<Restaurant>> getAll() => customSelect(
-    'SELECT * FROM restaurants ORDER BY name COLLATE NOCASE ASC',
+    'SELECT * FROM restaurants WHERE deletedAt IS NULL '
+    'ORDER BY name COLLATE NOCASE ASC',
     readsFrom: <ResultSetImplementation>{restaurants},
   ).get().then(_mapRestaurants);
 
@@ -140,16 +147,38 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> deleteAllRestaurants() => delete(restaurants).go();
 
+  /// One-shot lookup by id, tombstones *included*: the repository needs a row's
+  /// own `groupId` to decide whether a delete is the shared soft kind, and this
+  /// is the one place that must see a row regardless of its tombstone state.
+  Future<Restaurant?> getById(String id) => customSelect(
+    'SELECT * FROM restaurants WHERE id = ?',
+    variables: <Variable<Object>>[Variable<String>(id)],
+    readsFrom: <ResultSetImplementation>{restaurants},
+  ).getSingleOrNull().then(
+    (QueryRow? row) => row == null ? null : restaurants.map(row.data),
+  );
+
+  /// Marks a shared row deleted without removing it, so a pull can deliver the
+  /// deletion to every member. [timestamp] is both the tombstone and the
+  /// last-write stamp the sync layer compares on.
+  Future<void> softDeleteRestaurant(String id, int timestamp) =>
+      (update(restaurants)..where((t) => t.id.equals(id))).write(
+        RestaurantsCompanion(
+          deletedAt: Value<int>(timestamp),
+          updatedAt: Value<int>(timestamp),
+        ),
+      );
+
   // --- Statistics -----------------------------------------------------------
 
   Stream<int> observeTotalCount() => customSelect(
-    'SELECT COUNT(*) AS count FROM restaurants',
+    'SELECT COUNT(*) AS count FROM restaurants WHERE deletedAt IS NULL',
     readsFrom: <ResultSetImplementation>{restaurants},
   ).watchSingle().map((QueryRow row) => row.read<int>('count'));
 
   Stream<List<CuisineCount>> observeCuisineCounts() => customSelect(
     'SELECT cuisineType AS cuisineType, COUNT(*) AS count FROM restaurants '
-    'GROUP BY cuisineType ORDER BY count DESC',
+    'WHERE deletedAt IS NULL GROUP BY cuisineType ORDER BY count DESC',
     readsFrom: <ResultSetImplementation>{restaurants},
   ).watch().map(
     (List<QueryRow> rows) => <CuisineCount>[
@@ -163,7 +192,7 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
 
   Stream<List<PriceRangeCount>> observePriceRangeCounts() => customSelect(
     'SELECT priceRange AS priceRange, COUNT(*) AS count FROM restaurants '
-    'GROUP BY priceRange',
+    'WHERE deletedAt IS NULL GROUP BY priceRange',
     readsFrom: <ResultSetImplementation>{restaurants},
   ).watch().map(
     (List<QueryRow> rows) => <PriceRangeCount>[
@@ -180,8 +209,9 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
   /// it (re)renders instead of observing. Null when nothing is marked
   /// want-to-try.
   Future<Restaurant?> getRandomWantToTry() => customSelect(
-    'SELECT * FROM restaurants WHERE NOT EXISTS '
-    '(SELECT 1 FROM visits WHERE restaurantId = restaurants.id) '
+    'SELECT * FROM restaurants WHERE deletedAt IS NULL AND NOT EXISTS '
+    '(SELECT 1 FROM visits WHERE restaurantId = restaurants.id '
+    'AND visits.deletedAt IS NULL) '
     'ORDER BY RANDOM() LIMIT 1',
     readsFrom: <ResultSetImplementation>{restaurants, visits},
   ).getSingleOrNull().then(
@@ -190,7 +220,8 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
 
   Stream<List<String>> _observeDistinct(String column) => customSelect(
     'SELECT DISTINCT $column AS value FROM restaurants '
-    'WHERE $column IS NOT NULL ORDER BY $column COLLATE NOCASE ASC',
+    'WHERE $column IS NOT NULL AND deletedAt IS NULL '
+    'ORDER BY $column COLLATE NOCASE ASC',
     readsFrom: <ResultSetImplementation>{restaurants},
   ).watch().map(
     (List<QueryRow> rows) => <String>[

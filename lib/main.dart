@@ -20,7 +20,13 @@ import 'data/photo/photo_picker.dart';
 import 'data/photo/photo_storage.dart';
 import 'data/repositories/restaurant_repository.dart';
 import 'data/repositories/user_preferences_repository.dart';
+import 'data/groups/group_gateway.dart';
 import 'data/share/backup_writer.dart';
+import 'data/sync/pending_sync_store.dart';
+import 'data/sync/supabase_transport.dart';
+import 'data/sync/sync_cursor_store.dart';
+import 'data/sync/sync_engine.dart';
+import 'data/sync/sync_service.dart';
 import 'features/home/home_shell.dart';
 import 'widget/home_widget_service.dart';
 
@@ -85,19 +91,33 @@ Future<void> main() async {
       UserPreferencesRepository(store: preferences);
 
   // The shared-groups backend, wired only when the build carries its
-  // configuration. The client is built once here and the identity gateway —
-  // the only piece the rest of the app touches in this phase — is published
-  // through AppScope alongside the repositories. The sync layer (phase 4)
-  // will take the client itself.
+  // configuration. The client is built once here and shared by the three
+  // pieces that need it — the identity gateway, the groups gateway and the
+  // sync layer — all published through AppScope alongside the repositories.
+  // Every one of them stays null under a bare build, leaving personal mode —
+  // and every test that does not configure Supabase — untouched.
   final ({String url, String anonKey})? supabaseConfig = _supabaseConfig();
-  final IdentityGateway? identityGateway = supabaseConfig == null
+  final SupabaseClient? supabaseClient = supabaseConfig == null
+      ? null
+      : SupabaseClient(supabaseConfig.url, supabaseConfig.anonKey);
+  final IdentityGateway? identityGateway = supabaseClient == null
       ? null
       : SupabaseIdentityGateway(
-          client: SupabaseClient(
-            supabaseConfig.url,
-            supabaseConfig.anonKey,
-          ),
+          client: supabaseClient,
           preferences: preferences,
+        );
+  final GroupGateway? groupGateway = supabaseClient == null
+      ? null
+      : SupabaseGroupGateway(supabaseClient);
+  final SyncService? syncService = supabaseClient == null
+      ? null
+      : SyncService(
+          SyncEngine(
+            database: database,
+            pending: PendingSyncStore(database),
+            cursors: SyncCursorStore(database),
+            transport: SupabaseSyncTransport(supabaseClient),
+          ),
         );
 
   // `late` breaks the one cycle there is: the repository has to exist before
@@ -151,6 +171,8 @@ Future<void> main() async {
       photoPicker: ImagePickerPhotoPicker(),
       appVersion: appVersion,
       identityGateway: identityGateway,
+      groupGateway: groupGateway,
+      syncService: syncService,
       initialSharedFilePath: initialSharedFilePath,
       sharedFileStream: sharedFileStream,
       initialWidgetUri: initialWidgetUri,
@@ -186,6 +208,8 @@ class EatApp extends StatefulWidget {
     this.photoPicker,
     this.appVersion,
     this.identityGateway,
+    this.groupGateway,
+    this.syncService,
     this.initialSharedFilePath,
     this.sharedFileStream,
     this.initialWidgetUri,
@@ -211,6 +235,11 @@ class EatApp extends StatefulWidget {
   /// Null whenever the build carries no Supabase configuration — the default
   /// for tests and previews — and the whole groups feature stays dormant.
   final IdentityGateway? identityGateway;
+
+  /// The groups backend and its sync driver. Null under the same condition as
+  /// [identityGateway], so personal mode never builds or touches them.
+  final GroupGateway? groupGateway;
+  final SyncService? syncService;
 
   /// Null except on the cold start that opened the app via "Open with EatApp"
   /// on a shared restaurant file.
@@ -270,6 +299,8 @@ class _EatAppState extends State<EatApp> {
       photoPicker: _photoPicker,
       appVersion: widget.appVersion,
       identity: widget.identityGateway,
+      groups: widget.groupGateway,
+      sync: widget.syncService,
       // Rebuilding from the repository rather than from local state is what makes
       // a change survive the widget being recreated, and what lets every stored
       // value be the single source of truth for what is on screen.
