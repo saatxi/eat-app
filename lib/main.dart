@@ -23,6 +23,7 @@ import 'data/repositories/user_preferences_repository.dart';
 import 'data/groups/group_gateway.dart';
 import 'data/share/backup_writer.dart';
 import 'data/sync/pending_sync_store.dart';
+import 'data/sync/photo_blob_store.dart';
 import 'data/sync/supabase_transport.dart';
 import 'data/sync/sync_cursor_store.dart';
 import 'data/sync/sync_engine.dart';
@@ -117,6 +118,10 @@ Future<void> main() async {
             pending: PendingSyncStore(database),
             cursors: SyncCursorStore(database),
             transport: SupabaseSyncTransport(supabaseClient),
+            // Photos take both halves: the local store the file lands in, and
+            // the bucket the binary travels through.
+            photoStorage: const FilePhotoStorage(),
+            blobs: SupabasePhotoBlobStore(supabaseClient),
           ),
         );
 

@@ -78,6 +78,33 @@ class RemoteVisit {
   final String? deletedAt;
 }
 
+/// A photo as it travels with the remote. The binary never rides in the row:
+/// [storagePath] names the object in the Storage bucket, uploaded before the row
+/// so no reference ever dangles.
+class RemotePhoto {
+  const RemotePhoto({
+    required this.id,
+    required this.groupId,
+    required this.restaurantId,
+    required this.visitId,
+    required this.position,
+    required this.storagePath,
+    required this.createdBy,
+    required this.updatedAt,
+    required this.deletedAt,
+  });
+
+  final String id;
+  final String groupId;
+  final String? restaurantId;
+  final String? visitId;
+  final int position;
+  final String storagePath;
+  final String createdBy;
+  final String updatedAt;
+  final String? deletedAt;
+}
+
 /// Something went wrong in the sync layer, in terms the app can log or show.
 class SyncException implements Exception {
   const SyncException(this.message);

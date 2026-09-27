@@ -1,5 +1,6 @@
 import 'package:eatapp/data/sync/remote_models.dart';
 import 'package:eatapp/data/sync/supabase_transport.dart';
+import 'package:eatapp/data/sync/sync_mapper.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 RemoteRestaurant restaurant() => RemoteRestaurant(
@@ -30,6 +31,18 @@ RemoteVisit visit() => RemoteVisit(
   createdBy: 'u1',
   updatedAt: '2026-09-27T10:00:00.000Z',
   deletedAt: null,
+);
+
+RemotePhoto photo() => RemotePhoto(
+  id: 'p1',
+  groupId: 'g1',
+  restaurantId: 'r1',
+  visitId: null,
+  position: 0,
+  storagePath: 'g1/p1',
+  createdBy: 'u1',
+  updatedAt: '2026-09-27T10:00:00.000Z',
+  deletedAt: '2026-09-27T11:00:00.000Z',
 );
 
 void main() {
@@ -92,6 +105,29 @@ void main() {
     expect(parsed.notes, 'nice');
     expect(parsed.deletedAt, isNull);
     expect(parsed.updatedAt, '2026-09-27T10:00:00.000Z');
+  });
+
+  test('photoToJson and photoFromJson map the photo columns', () {
+    final Map<String, dynamic> json = photoToJson(photo());
+    expect(json['restaurant_id'], 'r1');
+    expect(json['visit_id'], isNull);
+    expect(json['storage_path'], 'g1/p1');
+    expect(json['position'], 0);
+    expect(json.containsKey('updated_at'), isFalse);
+
+    final RemotePhoto parsed = photoFromJson(<String, dynamic>{
+      ...json,
+      'updated_at': '2026-09-27T10:00:00.000Z',
+    });
+    expect(parsed.id, 'p1');
+    expect(parsed.restaurantId, 'r1');
+    expect(parsed.visitId, isNull);
+    expect(parsed.storagePath, 'g1/p1');
+    expect(parsed.deletedAt, '2026-09-27T11:00:00.000Z');
+  });
+
+  test('photoStoragePath nests the object under its group', () {
+    expect(photoStoragePath(groupId: 'g1', photoId: 'p1'), 'g1/p1');
   });
 
   test('a non-string, non-DateTime timestamp is rejected, not coerced', () {

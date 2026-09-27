@@ -27,6 +27,14 @@ abstract interface class PhotoStorage {
   /// never did) is not an error — a delete of a row whose file is already gone
   /// should still succeed.
   Future<void> delete(String storedPath);
+
+  /// Reads the stored file's bytes, for uploading it to the remote during a
+  /// sync.
+  Future<List<int>> readBytes(String storedPath);
+
+  /// Writes [bytes] as a new stored file and returns its path, for a photo the
+  /// sync downloaded from the remote.
+  Future<String> writeBytes(List<int> bytes);
 }
 
 /// The real [PhotoStorage]: a `photos/` directory beside the database, with the
@@ -93,6 +101,18 @@ class FilePhotoStorage implements PhotoStorage {
     if (await file.exists()) {
       await file.delete();
     }
+  }
+
+  @override
+  Future<List<int>> readBytes(String storedPath) =>
+      File(storedPath).readAsBytes();
+
+  @override
+  Future<String> writeBytes(List<int> bytes) async {
+    final Directory directory = await _photoDirectory();
+    final String path = p.join(directory.path, '${_uuid.v4()}.jpg');
+    await File(path).writeAsBytes(bytes, flush: true);
+    return path;
   }
 
   Future<Directory> _photoDirectory() async {

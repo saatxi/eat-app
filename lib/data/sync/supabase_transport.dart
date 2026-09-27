@@ -39,6 +39,17 @@ class SupabaseSyncTransport implements SyncTransport {
   }
 
   @override
+  Future<void> pushPhotos(List<RemotePhoto> rows) async {
+    if (rows.isEmpty) {
+      return;
+    }
+    await _client.from('photos').upsert(
+      <Map<String, dynamic>>[for (final RemotePhoto p in rows) photoToJson(p)],
+      onConflict: 'id',
+    );
+  }
+
+  @override
   Future<GroupPull> pullGroup({
     required String groupId,
     String? since,
@@ -48,12 +59,15 @@ class SupabaseSyncTransport implements SyncTransport {
       since,
     );
     final List<RemoteVisit> visits = await _pullVisits(groupId, since);
+    final List<RemotePhoto> photos = await _pullPhotos(groupId, since);
     return GroupPull(
       restaurants: restaurants,
       visits: visits,
+      photos: photos,
       cursor: _newestIso(<String?>[
         ...restaurants.map((RemoteRestaurant r) => r.updatedAt),
         ...visits.map((RemoteVisit v) => v.updatedAt),
+        ...photos.map((RemotePhoto p) => p.updatedAt),
       ]),
     );
   }
@@ -80,6 +94,17 @@ class SupabaseSyncTransport implements SyncTransport {
     final rows = await query;
     return <RemoteVisit>[
       for (final Map<String, dynamic> row in rows) visitFromJson(row),
+    ];
+  }
+
+  Future<List<RemotePhoto>> _pullPhotos(String groupId, String? since) async {
+    var query = _client.from('photos').select().eq('group_id', groupId);
+    if (since != null) {
+      query = query.gt('updated_at', since);
+    }
+    final rows = await query;
+    return <RemotePhoto>[
+      for (final Map<String, dynamic> row in rows) photoFromJson(row),
     ];
   }
 }
@@ -149,6 +174,32 @@ RemoteVisit visitFromJson(Map<String, dynamic> json) => RemoteVisit(
   rating: (json['rating'] as num).toInt(),
   notes: json['notes'] as String?,
   priceRange: (json['priceRange'] as num).toInt(),
+  createdBy: json['created_by'] as String,
+  updatedAt: _asIso(json['updated_at']),
+  deletedAt: _asIsoOrNull(json['deleted_at']),
+);
+
+/// Serializes a photo row for an upsert. As with the other two, `updated_at` is
+/// left to the server, and the binary is not here at all — only its bucket path.
+Map<String, dynamic> photoToJson(RemotePhoto p) => <String, dynamic>{
+  'id': p.id,
+  'group_id': p.groupId,
+  'restaurant_id': p.restaurantId,
+  'visit_id': p.visitId,
+  'position': p.position,
+  'storage_path': p.storagePath,
+  'created_by': p.createdBy,
+  'deleted_at': p.deletedAt,
+};
+
+/// Parses a photo as Supabase returns it.
+RemotePhoto photoFromJson(Map<String, dynamic> json) => RemotePhoto(
+  id: json['id'] as String,
+  groupId: json['group_id'] as String,
+  restaurantId: json['restaurant_id'] as String?,
+  visitId: json['visit_id'] as String?,
+  position: (json['position'] as num).toInt(),
+  storagePath: json['storage_path'] as String,
   createdBy: json['created_by'] as String,
   updatedAt: _asIso(json['updated_at']),
   deletedAt: _asIsoOrNull(json['deleted_at']),

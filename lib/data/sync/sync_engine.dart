@@ -1,5 +1,7 @@
 import '../db/app_database.dart';
+import '../photo/photo_storage.dart';
 import 'pending_sync_store.dart';
+import 'photo_blob_store.dart';
 import 'remote_models.dart';
 import 'sync_cursor_store.dart';
 import 'sync_mapper.dart';
@@ -20,6 +22,8 @@ class SyncEngine {
     required PendingSyncStore pending,
     required SyncCursorStore cursors,
     required SyncTransport transport,
+    this.photoStorage,
+    this.blobs,
   // Private named fields cannot take initializing formals (Dart has no
   // private named parameters), so the assignments stay explicit.
   // ignore: prefer_initializing_formals
@@ -35,6 +39,12 @@ class SyncEngine {
   final PendingSyncStore _pending;
   final SyncCursorStore _cursors;
   final SyncTransport _transport;
+
+  /// The local photo store and the remote blob store, both needed together for
+  /// photos to sync at all. Null (a unit test, a build with no backend) simply
+  /// skips photo binaries — rows still sync.
+  final PhotoStorage? photoStorage;
+  final PhotoBlobStore? blobs;
 
   /// Pushes this device's changes, then pulls the group's — push first so the
   /// remote has our rows before we ask what changed since we last looked.
@@ -58,6 +68,10 @@ class SyncEngine {
     final List<String> visitIds = <String>[
       for (final PendingSync e in entries)
         if (e.sharedTable == SyncTable.visits.name) e.rowId,
+    ];
+    final List<String> photoIds = <String>[
+      for (final PendingSync e in entries)
+        if (e.sharedTable == SyncTable.photos.name) e.rowId,
     ];
 
     if (restaurantIds.isNotEmpty) {
@@ -83,6 +97,44 @@ class SyncEngine {
       }
       await _pending.complete(SyncTable.visits, visitIds);
     }
+
+    if (photoIds.isNotEmpty) {
+      final List<Photo> rows = await (_database
+              .select(_database.photos)
+            ..where((t) => t.id.isIn(photoIds)))
+          .get();
+      if (rows.isNotEmpty) {
+        final List<RemotePhoto> remotes = <RemotePhoto>[
+          for (final Photo row in rows) toRemotePhoto(row),
+        ];
+        await _pushPhotoBinaries(rows, remotes);
+        await _transport.pushPhotos(remotes);
+      }
+      await _pending.complete(SyncTable.photos, photoIds);
+    }
+  }
+
+  /// Uploads each live photo's binary before its row is upserted, so a row never
+  /// points at an object that isn't there. A tombstone has no binary to send,
+  /// and with no blob store configured (a unit test) the whole step is skipped.
+  Future<void> _pushPhotoBinaries(
+    List<Photo> rows,
+    List<RemotePhoto> remotes,
+  ) async {
+    final PhotoBlobStore? blobs = this.blobs;
+    final PhotoStorage? storage = photoStorage;
+    if (blobs == null || storage == null) {
+      return;
+    }
+    for (int i = 0; i < rows.length; i++) {
+      if (rows[i].deletedAt != null) {
+        continue;
+      }
+      await blobs.upload(
+        remotes[i].storagePath,
+        await storage.readBytes(rows[i].path),
+      );
+    }
   }
 
   /// Applies everything in [groupId] that is newer than this device's cursor,
@@ -92,6 +144,14 @@ class SyncEngine {
     final GroupPull pull = await _transport.pullGroup(
       groupId: groupId,
       since: since,
+    );
+
+    // Download every binary *before* opening the transaction: a network call
+    // inside it would hold the database open for its whole duration. A
+    // tombstone has no binary, and with no blob store configured the photos are
+    // applied as rows with no local file.
+    final Map<String, String> localPaths = await _downloadPhotoBinaries(
+      pull.photos,
     );
 
     await _database.transaction(() async {
@@ -105,11 +165,38 @@ class SyncEngine {
           toVisit(v).toCompanion(false),
         );
       }
+      for (final RemotePhoto p in pull.photos) {
+        await _database.into(_database.photos).insertOnConflictUpdate(
+          toPhoto(p, localPath: localPaths[p.id] ?? '').toCompanion(false),
+        );
+      }
     });
 
     final String? cursor = pull.cursor;
     if (cursor != null) {
       await _cursors.advance(groupId, cursor);
     }
+  }
+
+  /// Downloads each live remote photo into the local store, returning the path
+  /// it landed at, keyed by photo id. Tombstones get no entry.
+  Future<Map<String, String>> _downloadPhotoBinaries(
+    List<RemotePhoto> photos,
+  ) async {
+    final PhotoBlobStore? blobs = this.blobs;
+    final PhotoStorage? storage = photoStorage;
+    if (blobs == null || storage == null) {
+      return const <String, String>{};
+    }
+    final Map<String, String> paths = <String, String>{};
+    for (final RemotePhoto photo in photos) {
+      if (photo.deletedAt != null) {
+        continue;
+      }
+      paths[photo.id] = await storage.writeBytes(
+        await blobs.download(photo.storagePath),
+      );
+    }
+    return paths;
   }
 }

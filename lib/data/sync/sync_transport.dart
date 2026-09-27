@@ -15,8 +15,13 @@ abstract class SyncTransport {
   /// Upserts [rows] to the remote.
   Future<void> pushVisits(List<RemoteVisit> rows);
 
+  /// Upserts [rows] to the remote. The photo's *binary* is uploaded separately
+  /// (and first) by the engine; this carries only the row and its
+  /// `storage_path`.
+  Future<void> pushPhotos(List<RemotePhoto> rows);
+
   /// Fetches every row in [groupId] whose `updated_at` is strictly newer than
-  /// [since], across both shared tables, in one request.
+  /// [since], across the three shared tables, in one request.
   Future<GroupPull> pullGroup({required String groupId, String? since});
 }
 
@@ -25,14 +30,16 @@ class GroupPull {
   const GroupPull({
     required this.restaurants,
     required this.visits,
+    required this.photos,
     required this.cursor,
   });
 
   final List<RemoteRestaurant> restaurants;
   final List<RemoteVisit> visits;
+  final List<RemotePhoto> photos;
 
-  /// The newest remote `updated_at` seen across both tables — the value to
-  /// store as the next [since]. Null when neither table had a row newer than
-  /// the requested [since], in which case the previous cursor stands.
+  /// The newest remote `updated_at` seen across every table — the value to
+  /// store as the next [since]. Null when no table had a row newer than the
+  /// requested [since], in which case the previous cursor stands.
   final String? cursor;
 }

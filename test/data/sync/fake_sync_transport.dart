@@ -9,6 +9,7 @@ import 'package:eatapp/data/sync/sync_transport.dart';
 class FakeSyncTransport implements SyncTransport {
   final List<RemoteRestaurant> pushedRestaurants = <RemoteRestaurant>[];
   final List<RemoteVisit> pushedVisits = <RemoteVisit>[];
+  final List<RemotePhoto> pushedPhotos = <RemotePhoto>[];
 
   /// The table names in push order, for asserting dependency ordering.
   final List<String> pushLog = <String>[];
@@ -17,6 +18,7 @@ class FakeSyncTransport implements SyncTransport {
   final Map<String, List<RemoteRestaurant>> restaurants =
       <String, List<RemoteRestaurant>>{};
   final Map<String, List<RemoteVisit>> visits = <String, List<RemoteVisit>>{};
+  final Map<String, List<RemotePhoto>> photos = <String, List<RemotePhoto>>{};
 
   @override
   Future<void> pushRestaurants(List<RemoteRestaurant> rows) async {
@@ -28,6 +30,12 @@ class FakeSyncTransport implements SyncTransport {
   Future<void> pushVisits(List<RemoteVisit> rows) async {
     pushLog.add('visits');
     pushedVisits.addAll(rows);
+  }
+
+  @override
+  Future<void> pushPhotos(List<RemotePhoto> rows) async {
+    pushLog.add('photos');
+    pushedPhotos.addAll(rows);
   }
 
   @override
@@ -43,12 +51,17 @@ class FakeSyncTransport implements SyncTransport {
         (visits[groupId] ?? const <RemoteVisit>[])
             .where((RemoteVisit v) => _after(v.updatedAt, since))
             .toList();
+    final List<RemotePhoto> ps = (photos[groupId] ?? const <RemotePhoto>[])
+        .where((RemotePhoto p) => _after(p.updatedAt, since))
+        .toList();
     return GroupPull(
       restaurants: rs,
       visits: vs,
+      photos: ps,
       cursor: _newest(<String?>[
         ...rs.map((RemoteRestaurant r) => r.updatedAt),
         ...vs.map((RemoteVisit v) => v.updatedAt),
+        ...ps.map((RemotePhoto p) => p.updatedAt),
       ]),
     );
   }

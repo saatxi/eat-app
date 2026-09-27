@@ -6,6 +6,8 @@ import 'package:eatapp/data/sync/sync_engine.dart';
 import 'package:eatapp/data/sync/sync_table.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../photo/photo_fakes.dart';
+import 'fake_photo_blob_store.dart';
 import 'fake_sync_transport.dart';
 
 Restaurant sharedRestaurant() => Restaurant(
@@ -52,6 +54,28 @@ RemoteRestaurant remoteRestaurant({
   deletedAt: deletedAt,
 );
 
+Photo sharedPhoto() => Photo(
+  id: 'p1',
+  groupId: 'g1',
+  restaurantId: 'r1',
+  path: 'stored/local.jpg',
+  position: 0,
+  createdBy: 'u1',
+  updatedAt: 1000,
+);
+
+RemotePhoto remotePhoto({String id = 'p9', String? deletedAt}) => RemotePhoto(
+  id: id,
+  groupId: 'g1',
+  restaurantId: null,
+  visitId: null,
+  position: 0,
+  storagePath: 'g1/$id',
+  createdBy: 'u1',
+  updatedAt: '2026-09-27T10:00:00.000Z',
+  deletedAt: deletedAt,
+);
+
 RemoteVisit remoteVisit({
   String id = 'v9',
   String restaurantId = 'r9',
@@ -74,6 +98,8 @@ void main() {
   late PendingSyncStore pending;
   late SyncCursorStore cursors;
   late FakeSyncTransport transport;
+  late FakePhotoStorage photoStorage;
+  late FakePhotoBlobStore blobs;
   late SyncEngine engine;
 
   setUp(() {
@@ -81,11 +107,15 @@ void main() {
     pending = PendingSyncStore(db);
     cursors = SyncCursorStore(db);
     transport = FakeSyncTransport();
+    photoStorage = FakePhotoStorage();
+    blobs = FakePhotoBlobStore();
     engine = SyncEngine(
       database: db,
       pending: pending,
       cursors: cursors,
       transport: transport,
+      photoStorage: photoStorage,
+      blobs: blobs,
     );
   });
 
@@ -111,6 +141,45 @@ void main() {
   test('pushGroup is a no-op when the queue is empty', () async {
     await engine.pushGroup('g1');
     expect(transport.pushLog, isEmpty);
+  });
+
+  test('pushGroup uploads a photo binary before its row', () async {
+    await db.into(db.restaurants).insert(sharedRestaurant());
+    await db.into(db.photos).insert(sharedPhoto());
+    photoStorage.files['stored/local.jpg'] = <int>[1, 2, 3];
+    await pending.enqueue(SyncTable.photos, 'p1', 'g1');
+
+    await engine.pushGroup('g1');
+
+    expect(blobs.uploadLog, <String>['g1/p1']);
+    expect(blobs.objects['g1/p1'], <int>[1, 2, 3]);
+    expect(transport.pushedPhotos.map((RemotePhoto p) => p.id), <String>['p1']);
+    expect(transport.pushedPhotos.single.storagePath, 'g1/p1');
+  });
+
+  test('pullGroup downloads a photo binary and points the row at it', () async {
+    blobs.objects['g1/p9'] = <int>[9, 9];
+    transport.photos['g1'] = <RemotePhoto>[remotePhoto()];
+
+    await engine.pullGroup('g1');
+
+    final Photo row = await db.select(db.photos).getSingle();
+    expect(row.id, 'p9');
+    expect(row.groupId, 'g1');
+    expect(row.path, 'stored/downloaded-0');
+    expect(photoStorage.written['stored/downloaded-0'], <int>[9, 9]);
+  });
+
+  test('a pulled photo tombstone writes no file', () async {
+    transport.photos['g1'] = <RemotePhoto>[
+      remotePhoto(deletedAt: '2026-09-27T11:00:00.000Z'),
+    ];
+
+    await engine.pullGroup('g1');
+
+    final Photo row = await db.select(db.photos).getSingle();
+    expect(row.deletedAt, isNotNull);
+    expect(photoStorage.written, isEmpty);
   });
 
   test('pullGroup applies remote rows and advances the cursor', () async {

@@ -87,6 +87,41 @@ Visit toVisit(RemoteVisit v) => Visit(
   deletedAt: epochMillisFromIso(v.deletedAt),
 );
 
+/// The bucket key a photo's binary lives at: one folder per group, so the
+/// Storage rules can scope access the same way the row RLS does.
+String photoStoragePath({required String groupId, required String photoId}) =>
+    '$groupId/$photoId';
+
+RemotePhoto toRemotePhoto(Photo p) {
+  final String groupId = _requireShared(p.groupId, 'photo', p.id);
+  final String createdBy = _requireShared(p.createdBy, 'photo', p.id);
+  return RemotePhoto(
+    id: p.id,
+    groupId: groupId,
+    restaurantId: p.restaurantId,
+    visitId: p.visitId,
+    position: p.position,
+    storagePath: photoStoragePath(groupId: groupId, photoId: p.id),
+    createdBy: createdBy,
+    updatedAt: isoFromEpochMillis(p.updatedAt),
+    deletedAt: p.deletedAt == null ? null : isoFromEpochMillis(p.deletedAt!),
+  );
+}
+
+/// Rebuilds the drift row from a remote one. [localPath] is where the pulled
+/// binary now sits on this device — the remote row only names the bucket object.
+Photo toPhoto(RemotePhoto r, {required String localPath}) => Photo(
+  id: r.id,
+  groupId: r.groupId,
+  restaurantId: r.restaurantId,
+  visitId: r.visitId,
+  path: localPath,
+  position: r.position,
+  createdBy: r.createdBy,
+  updatedAt: epochMillisFromIso(r.updatedAt)!,
+  deletedAt: epochMillisFromIso(r.deletedAt),
+);
+
 String _requireShared(String? value, String kind, String id) {
   if (value == null) {
     throw SyncException('cannot push a private or unattributed $kind $id');
