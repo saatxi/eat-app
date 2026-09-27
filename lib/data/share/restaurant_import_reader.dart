@@ -52,9 +52,18 @@ const Uuid _uuid = Uuid();
 /// anything reaches the database. Fetching the bytes off a picked file is a
 /// separate step handled by the import screen.
 ImportOutcome readRestaurantImport(String rawJson) {
+  // A UTF-8 BOM is legal at the head of a text file but not inside JSON, and
+  // Dart's parser rejects it outright — so a file that picked one up in transit
+  // (a Windows editor's "save as", a cloud round-trip) would be turned away as
+  // if it were somebody else's file, though its bytes are otherwise identical
+  // to one the app wrote. Drop a single leading BOM before parsing.
+  final String source = rawJson.startsWith('\uFEFF')
+      ? rawJson.substring(1)
+      : rawJson;
+
   final Object? decoded;
   try {
-    decoded = jsonDecode(rawJson);
+    decoded = jsonDecode(source);
   } on FormatException {
     return const ImportError(ImportFailureReason.invalidFile);
   }

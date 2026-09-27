@@ -12,7 +12,7 @@
     -To to override the guess.
 
     The CSV has columns name,cuisineType,streetAddress,priceRange,website,
-    instagram,tags,city,region,country,visits, matching
+    instagram,city,region,country,visits, matching
     lib/data/share/restaurant_share_models.dart. On the way into .eatapp, rows
     are validated the same way the app would validate them on import (required
     name/cuisineType/priceRange, priceRange 0-6, cuisineType from the closed
@@ -21,8 +21,6 @@
     app does too.
     On the way into CSV, every row is trusted as-is (it's the app's own
     export).
-
-    tags is a semicolon-separated list, e.g. "date night;terrace".
 
     visits is a semicolon-separated list of visit entries, each shaped
     "yyyy-MM-dd:rating:priceRange[:notes]", e.g.
@@ -96,14 +94,13 @@ if ($Template) {
         Fail "$templatePath already exists -- pass -OutputPath to write somewhere else."
     }
     @'
-name,cuisineType,streetAddress,priceRange,website,instagram,tags,city,region,country,visits
-Casa Pepe,spanish,Carrer Major 12,2,https://casapepe.com,@casapepe,date night;terrace,Barcelona,Catalonia,Spain,2026-03-01:4:2:Great tasting menu
-Sushi Ken,japanese,,3,,,,"Tokyo",,Japan,
+name,cuisineType,streetAddress,priceRange,website,instagram,city,region,country,visits
+Casa Pepe,spanish,Carrer Major 12,2,https://casapepe.com,@casapepe,Barcelona,Catalonia,Spain,2026-03-01:4:2:Great tasting menu
+Sushi Ken,japanese,,3,,,,Tokyo,,Japan,
 '@ | Set-Content -LiteralPath $templatePath -Encoding utf8
     Write-Step "Template written to $templatePath"
     Write-Step ('Valid cuisineType values: ' + ($ValidCuisines -join ', '))
-    Write-Step 'priceRange: 0-6. streetAddress/website/instagram/tags/city/region/country/visits are optional -- leave blank.'
-    Write-Step 'tags: semicolon-separated, e.g. "date night;terrace".'
+    Write-Step 'priceRange: 0-6. streetAddress/website/instagram/city/region/country/visits are optional -- leave blank.'
     Write-Step 'visits: semicolon-separated entries "yyyy-MM-dd:rating:priceRange[:notes]", rating 0-5, priceRange 0-6 (0 = not set).'
     exit 0
 }
@@ -152,17 +149,6 @@ function Format-JsonField {
     return "$pad`"$Key`": $(Format-JsonScalar $Value)$comma"
 }
 
-function Format-JsonStringArrayField {
-    param([string] $Key, [string[]] $Values, [int] $Indent, [bool] $TrailingComma)
-    $pad = ' ' * $Indent
-    $comma = if ($TrailingComma) { ',' } else { '' }
-    if (-not $Values -or $Values.Count -eq 0) {
-        return "$pad`"$Key`": []$comma"
-    }
-    $items = ($Values | ForEach-Object { Format-JsonString $_ }) -join ', '
-    return "$pad`"$Key`": [$items]$comma"
-}
-
 function Format-VisitsField {
     param([System.Collections.Generic.List[object]] $Visits, [int] $Indent, [bool] $TrailingComma)
     $pad = ' ' * $Indent
@@ -206,7 +192,6 @@ function ConvertTo-ShareFileJson {
             $lines.Add((Format-JsonField 'priceRange' $r.priceRange 6 $true))
             $lines.Add((Format-JsonField 'website' $r.website 6 $true))
             $lines.Add((Format-JsonField 'instagram' $r.instagram 6 $true))
-            $lines.Add((Format-JsonStringArrayField 'tags' $r.tags 6 $true))
             $lines.Add((Format-JsonField 'city' $r.city 6 $true))
             $lines.Add((Format-JsonField 'region' $r.region 6 $true))
             $lines.Add((Format-JsonField 'country' $r.country 6 $true))
@@ -273,11 +258,6 @@ function Convert-CsvToEatApp {
         if ([string]::IsNullOrWhiteSpace($region)) { $region = $null }
         if ([string]::IsNullOrWhiteSpace($country)) { $country = $null }
 
-        $tags = @()
-        if ($row.tags -and -not [string]::IsNullOrWhiteSpace($row.tags)) {
-            $tags = @($row.tags -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-        }
-
         $visits = New-Object System.Collections.Generic.List[object]
         $visitParseFailed = $false
         if ($row.visits -and -not [string]::IsNullOrWhiteSpace($row.visits)) {
@@ -335,7 +315,6 @@ function Convert-CsvToEatApp {
             priceRange = $priceRange
             website = $website
             instagram = $instagram
-            tags = $tags
             city = $city
             region = $region
             country = $country
@@ -367,12 +346,6 @@ function Format-CsvField {
     param([string] $Value)
     if ($null -eq $Value) { return '' }
     return $Value
-}
-
-function ConvertTo-Csv-Tags {
-    param([string[]] $Tags)
-    if (-not $Tags -or $Tags.Count -eq 0) { return '' }
-    return ($Tags -join ';')
 }
 
 function ConvertTo-Csv-Visits {
@@ -428,7 +401,6 @@ function Convert-EatAppToCsv {
             priceRange = $r.priceRange
             website = Format-CsvField $r.website
             instagram = Format-CsvField $r.instagram
-            tags = ConvertTo-Csv-Tags $r.tags
             city = Format-CsvField $r.city
             region = Format-CsvField $r.region
             country = Format-CsvField $r.country

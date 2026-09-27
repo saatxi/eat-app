@@ -17,7 +17,7 @@ String _file(List<Object?> restaurants) => jsonEncode(<String, Object?>{
 
 void main() {
   group('the share file round-trips', () {
-    test('a restaurant with its tags, visits and normalised links', () {
+    test('a restaurant with its visits and normalised links', () {
       final Restaurant source = restaurant(
         id: 'a',
         name: 'Cal Ferran',
@@ -99,6 +99,16 @@ void main() {
 
     test('when the top level is not an object', () {
       expect(readRestaurantImport('[1,2,3]'), isA<ImportError>());
+    });
+
+    test('when the file carries a leading UTF-8 BOM', () {
+      // A BOM is legal at the head of a text file but not inside JSON, and
+      // Dart's parser rejects it — so a file that picked one up in transit is
+      // otherwise identical to one the app wrote and must still be accepted.
+      expect(
+        readRestaurantImport('\uFEFF${_file(<Object?>[])}'),
+        isA<ImportSuccess>(),
+      );
     });
 
     test('when the format marker is missing or foreign', () {
