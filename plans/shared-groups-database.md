@@ -402,9 +402,12 @@ drift 15→16 amb les metadades de sincronització) i 3 (identitat i client
 Supabase) estan fetes i verificades; el seu registre viu a git, a `supabase/`
 i a `lib/data/supabase/`. Queden pendent:
 
-1. **Capa de sincronització** (`lib/data/sync/`): cua de canvis pendents,
-   push/pull incremental per `updated_at`, gestió de fotos amb Storage,
-   indicador d'estat a la UI; fakes a mà per als tests.
+1. **Capa de sincronització** (`lib/data/sync/`) — començada: la cua de
+   canvis pendents (`PendingSyncStore`, taula `pending_syncs`) i el cursor
+   de pull per grup (`SyncCursorStore`, taula `sync_cursors`) ja viuen al
+   drift local (migració 16→17). Falta el transport remot — push/pull
+   incremental per `updated_at`, gestió de fotos amb Storage i l'indicador
+   d'estat a la UI; fakes a mà per als tests.
 2. **Grups i UI** (`lib/features/groups/`): creació de grup, selector de grup
    a la llista, pantalla de membres (expulsió/marxar), totes les cadenes als
    tres fitxers ARB.

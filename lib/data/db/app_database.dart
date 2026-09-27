@@ -17,13 +17,14 @@ part 'app_database.g.dart';
 ///
 /// [schemaVersion] began at 14 — Room's frozen baseline — so the Room→drift
 /// import could adopt an existing install's file without a version bump. It is
-/// now 16: 15 dropped the removed tag feature's two tables, and 16 added the
+/// now 17: 15 dropped the removed tag feature's two tables, 16 added the
 /// shared-group sync metadata (`groupId`, `createdBy`, `updatedAt`,
-/// `deletedAt`) to every shared table — all nullable or defaulted, so the
-/// migration is purely additive and existing rows stay private
-/// (`groupId` NULL) without backfill.
+/// `deletedAt`) to every shared table, and 17 added the two drift-only tables
+/// the sync layer itself keeps — [PendingSyncs] (the push queue) and
+/// [SyncCursors] (the per-group pull cursor). Every migration so far is purely
+/// additive, so existing rows stay private (`groupId` NULL) without backfill.
 @DriftDatabase(
-  tables: <Type>[Restaurants, Visits, Photos],
+  tables: <Type>[Restaurants, Visits, Photos, PendingSyncs, SyncCursors],
   daos: <Type>[RestaurantDao, VisitDao, PhotoDao],
 )
 class AppDatabase extends _$AppDatabase {
@@ -33,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -63,6 +64,13 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(photos, photos.createdBy);
         await m.addColumn(photos, photos.updatedAt);
         await m.addColumn(photos, photos.deletedAt);
+      }
+      // 16 -> 17: the sync layer's own bookkeeping — the push queue and the
+      // per-group pull cursor. Both are drift-only tables with no Room
+      // counterpart, so creating them is the whole migration.
+      if (from < 17) {
+        await m.createTable(pendingSyncs);
+        await m.createTable(syncCursors);
       }
     },
     // SQLite requires this per connection, and every cascade delete the schema

@@ -2114,12 +2114,516 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
   }
 }
 
+class $PendingSyncsTable extends PendingSyncs
+    with TableInfo<$PendingSyncsTable, PendingSync> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingSyncsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _sharedTableMeta = const VerificationMeta(
+    'sharedTable',
+  );
+  @override
+  late final GeneratedColumn<String> sharedTable = GeneratedColumn<String>(
+    'sharedTable',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rowIdMeta = const VerificationMeta('rowId');
+  @override
+  late final GeneratedColumn<String> rowId = GeneratedColumn<String>(
+    'rowId',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+    'groupId',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [sharedTable, rowId, groupId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_syncs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PendingSync> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sharedTable')) {
+      context.handle(
+        _sharedTableMeta,
+        sharedTable.isAcceptableOrUnknown(
+          data['sharedTable']!,
+          _sharedTableMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sharedTableMeta);
+    }
+    if (data.containsKey('rowId')) {
+      context.handle(
+        _rowIdMeta,
+        rowId.isAcceptableOrUnknown(data['rowId']!, _rowIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rowIdMeta);
+    }
+    if (data.containsKey('groupId')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['groupId']!, _groupIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {sharedTable, rowId};
+  @override
+  PendingSync map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingSync(
+      sharedTable: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sharedTable'],
+      )!,
+      rowId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rowId'],
+      )!,
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}groupId'],
+      )!,
+    );
+  }
+
+  @override
+  $PendingSyncsTable createAlias(String alias) {
+    return $PendingSyncsTable(attachedDatabase, alias);
+  }
+}
+
+class PendingSync extends DataClass implements Insertable<PendingSync> {
+  /// Which shared table the dirty row lives in: the Dart name of one of the
+  /// `SyncTable` values (`restaurants`, `visits` or `photos`), which is the
+  /// same string on both the drift and the Supabase side.
+  final String sharedTable;
+
+  /// The dirty row's id — a client-generated UUID.
+  final String rowId;
+
+  /// The group the row belongs to, copied at enqueue time so a push can be
+  /// scoped to one group without joining back to the source row first.
+  final String groupId;
+  const PendingSync({
+    required this.sharedTable,
+    required this.rowId,
+    required this.groupId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sharedTable'] = Variable<String>(sharedTable);
+    map['rowId'] = Variable<String>(rowId);
+    map['groupId'] = Variable<String>(groupId);
+    return map;
+  }
+
+  PendingSyncsCompanion toCompanion(bool nullToAbsent) {
+    return PendingSyncsCompanion(
+      sharedTable: Value(sharedTable),
+      rowId: Value(rowId),
+      groupId: Value(groupId),
+    );
+  }
+
+  factory PendingSync.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingSync(
+      sharedTable: serializer.fromJson<String>(json['sharedTable']),
+      rowId: serializer.fromJson<String>(json['rowId']),
+      groupId: serializer.fromJson<String>(json['groupId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'sharedTable': serializer.toJson<String>(sharedTable),
+      'rowId': serializer.toJson<String>(rowId),
+      'groupId': serializer.toJson<String>(groupId),
+    };
+  }
+
+  PendingSync copyWith({String? sharedTable, String? rowId, String? groupId}) =>
+      PendingSync(
+        sharedTable: sharedTable ?? this.sharedTable,
+        rowId: rowId ?? this.rowId,
+        groupId: groupId ?? this.groupId,
+      );
+  PendingSync copyWithCompanion(PendingSyncsCompanion data) {
+    return PendingSync(
+      sharedTable: data.sharedTable.present
+          ? data.sharedTable.value
+          : this.sharedTable,
+      rowId: data.rowId.present ? data.rowId.value : this.rowId,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingSync(')
+          ..write('sharedTable: $sharedTable, ')
+          ..write('rowId: $rowId, ')
+          ..write('groupId: $groupId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(sharedTable, rowId, groupId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingSync &&
+          other.sharedTable == this.sharedTable &&
+          other.rowId == this.rowId &&
+          other.groupId == this.groupId);
+}
+
+class PendingSyncsCompanion extends UpdateCompanion<PendingSync> {
+  final Value<String> sharedTable;
+  final Value<String> rowId;
+  final Value<String> groupId;
+  final Value<int> rowid;
+  const PendingSyncsCompanion({
+    this.sharedTable = const Value.absent(),
+    this.rowId = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PendingSyncsCompanion.insert({
+    required String sharedTable,
+    required String rowId,
+    required String groupId,
+    this.rowid = const Value.absent(),
+  }) : sharedTable = Value(sharedTable),
+       rowId = Value(rowId),
+       groupId = Value(groupId);
+  static Insertable<PendingSync> custom({
+    Expression<String>? sharedTable,
+    Expression<String>? rowId,
+    Expression<String>? groupId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (sharedTable != null) 'sharedTable': sharedTable,
+      if (rowId != null) 'rowId': rowId,
+      if (groupId != null) 'groupId': groupId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PendingSyncsCompanion copyWith({
+    Value<String>? sharedTable,
+    Value<String>? rowId,
+    Value<String>? groupId,
+    Value<int>? rowid,
+  }) {
+    return PendingSyncsCompanion(
+      sharedTable: sharedTable ?? this.sharedTable,
+      rowId: rowId ?? this.rowId,
+      groupId: groupId ?? this.groupId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (sharedTable.present) {
+      map['sharedTable'] = Variable<String>(sharedTable.value);
+    }
+    if (rowId.present) {
+      map['rowId'] = Variable<String>(rowId.value);
+    }
+    if (groupId.present) {
+      map['groupId'] = Variable<String>(groupId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingSyncsCompanion(')
+          ..write('sharedTable: $sharedTable, ')
+          ..write('rowId: $rowId, ')
+          ..write('groupId: $groupId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncCursorsTable extends SyncCursors
+    with TableInfo<$SyncCursorsTable, SyncCursor> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncCursorsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+    'groupId',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastPulledAtMeta = const VerificationMeta(
+    'lastPulledAt',
+  );
+  @override
+  late final GeneratedColumn<String> lastPulledAt = GeneratedColumn<String>(
+    'lastPulledAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [groupId, lastPulledAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_cursors';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncCursor> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('groupId')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['groupId']!, _groupIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('lastPulledAt')) {
+      context.handle(
+        _lastPulledAtMeta,
+        lastPulledAt.isAcceptableOrUnknown(
+          data['lastPulledAt']!,
+          _lastPulledAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastPulledAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId};
+  @override
+  SyncCursor map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncCursor(
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}groupId'],
+      )!,
+      lastPulledAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lastPulledAt'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncCursorsTable createAlias(String alias) {
+    return $SyncCursorsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncCursor extends DataClass implements Insertable<SyncCursor> {
+  /// The group this cursor advances for.
+  final String groupId;
+
+  /// ISO-8601 `updated_at` of the newest remote row already pulled.
+  final String lastPulledAt;
+  const SyncCursor({required this.groupId, required this.lastPulledAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['groupId'] = Variable<String>(groupId);
+    map['lastPulledAt'] = Variable<String>(lastPulledAt);
+    return map;
+  }
+
+  SyncCursorsCompanion toCompanion(bool nullToAbsent) {
+    return SyncCursorsCompanion(
+      groupId: Value(groupId),
+      lastPulledAt: Value(lastPulledAt),
+    );
+  }
+
+  factory SyncCursor.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncCursor(
+      groupId: serializer.fromJson<String>(json['groupId']),
+      lastPulledAt: serializer.fromJson<String>(json['lastPulledAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'groupId': serializer.toJson<String>(groupId),
+      'lastPulledAt': serializer.toJson<String>(lastPulledAt),
+    };
+  }
+
+  SyncCursor copyWith({String? groupId, String? lastPulledAt}) => SyncCursor(
+    groupId: groupId ?? this.groupId,
+    lastPulledAt: lastPulledAt ?? this.lastPulledAt,
+  );
+  SyncCursor copyWithCompanion(SyncCursorsCompanion data) {
+    return SyncCursor(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      lastPulledAt: data.lastPulledAt.present
+          ? data.lastPulledAt.value
+          : this.lastPulledAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncCursor(')
+          ..write('groupId: $groupId, ')
+          ..write('lastPulledAt: $lastPulledAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(groupId, lastPulledAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncCursor &&
+          other.groupId == this.groupId &&
+          other.lastPulledAt == this.lastPulledAt);
+}
+
+class SyncCursorsCompanion extends UpdateCompanion<SyncCursor> {
+  final Value<String> groupId;
+  final Value<String> lastPulledAt;
+  final Value<int> rowid;
+  const SyncCursorsCompanion({
+    this.groupId = const Value.absent(),
+    this.lastPulledAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncCursorsCompanion.insert({
+    required String groupId,
+    required String lastPulledAt,
+    this.rowid = const Value.absent(),
+  }) : groupId = Value(groupId),
+       lastPulledAt = Value(lastPulledAt);
+  static Insertable<SyncCursor> custom({
+    Expression<String>? groupId,
+    Expression<String>? lastPulledAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (groupId != null) 'groupId': groupId,
+      if (lastPulledAt != null) 'lastPulledAt': lastPulledAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncCursorsCompanion copyWith({
+    Value<String>? groupId,
+    Value<String>? lastPulledAt,
+    Value<int>? rowid,
+  }) {
+    return SyncCursorsCompanion(
+      groupId: groupId ?? this.groupId,
+      lastPulledAt: lastPulledAt ?? this.lastPulledAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (groupId.present) {
+      map['groupId'] = Variable<String>(groupId.value);
+    }
+    if (lastPulledAt.present) {
+      map['lastPulledAt'] = Variable<String>(lastPulledAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncCursorsCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('lastPulledAt: $lastPulledAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $RestaurantsTable restaurants = $RestaurantsTable(this);
   late final $VisitsTable visits = $VisitsTable(this);
   late final $PhotosTable photos = $PhotosTable(this);
+  late final $PendingSyncsTable pendingSyncs = $PendingSyncsTable(this);
+  late final $SyncCursorsTable syncCursors = $SyncCursorsTable(this);
   late final Index indexRestaurantsName = Index(
     'index_restaurants_name',
     'CREATE INDEX index_restaurants_name ON restaurants (name)',
@@ -2136,6 +2640,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'index_photos_visitId',
     'CREATE INDEX index_photos_visitId ON photos (visitId)',
   );
+  late final Index indexPendingSyncsGroupId = Index(
+    'index_pending_syncs_groupId',
+    'CREATE INDEX index_pending_syncs_groupId ON pending_syncs (groupId)',
+  );
   late final RestaurantDao restaurantDao = RestaurantDao(this as AppDatabase);
   late final VisitDao visitDao = VisitDao(this as AppDatabase);
   late final PhotoDao photoDao = PhotoDao(this as AppDatabase);
@@ -2147,10 +2655,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     restaurants,
     visits,
     photos,
+    pendingSyncs,
+    syncCursors,
     indexRestaurantsName,
     indexVisitsRestaurantId,
     indexPhotosRestaurantId,
     indexPhotosVisitId,
+    indexPendingSyncsGroupId,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3739,6 +4250,333 @@ typedef $$PhotosTableProcessedTableManager =
       Photo,
       PrefetchHooks Function({bool restaurantId, bool visitId})
     >;
+typedef $$PendingSyncsTableCreateCompanionBuilder =
+    PendingSyncsCompanion Function({
+      required String sharedTable,
+      required String rowId,
+      required String groupId,
+      Value<int> rowid,
+    });
+typedef $$PendingSyncsTableUpdateCompanionBuilder =
+    PendingSyncsCompanion Function({
+      Value<String> sharedTable,
+      Value<String> rowId,
+      Value<String> groupId,
+      Value<int> rowid,
+    });
+
+class $$PendingSyncsTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingSyncsTable> {
+  $$PendingSyncsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get sharedTable => $composableBuilder(
+    column: $table.sharedTable,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rowId => $composableBuilder(
+    column: $table.rowId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PendingSyncsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingSyncsTable> {
+  $$PendingSyncsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get sharedTable => $composableBuilder(
+    column: $table.sharedTable,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rowId => $composableBuilder(
+    column: $table.rowId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PendingSyncsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingSyncsTable> {
+  $$PendingSyncsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get sharedTable => $composableBuilder(
+    column: $table.sharedTable,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get rowId =>
+      $composableBuilder(column: $table.rowId, builder: (column) => column);
+
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+}
+
+class $$PendingSyncsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PendingSyncsTable,
+          PendingSync,
+          $$PendingSyncsTableFilterComposer,
+          $$PendingSyncsTableOrderingComposer,
+          $$PendingSyncsTableAnnotationComposer,
+          $$PendingSyncsTableCreateCompanionBuilder,
+          $$PendingSyncsTableUpdateCompanionBuilder,
+          (
+            PendingSync,
+            BaseReferences<_$AppDatabase, $PendingSyncsTable, PendingSync>,
+          ),
+          PendingSync,
+          PrefetchHooks Function()
+        > {
+  $$PendingSyncsTableTableManager(_$AppDatabase db, $PendingSyncsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingSyncsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingSyncsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PendingSyncsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> sharedTable = const Value.absent(),
+                Value<String> rowId = const Value.absent(),
+                Value<String> groupId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PendingSyncsCompanion(
+                sharedTable: sharedTable,
+                rowId: rowId,
+                groupId: groupId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String sharedTable,
+                required String rowId,
+                required String groupId,
+                Value<int> rowid = const Value.absent(),
+              }) => PendingSyncsCompanion.insert(
+                sharedTable: sharedTable,
+                rowId: rowId,
+                groupId: groupId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PendingSyncsTable, PendingSync>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $PendingSyncsTable,
+                    PendingSync
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PendingSyncsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PendingSyncsTable,
+      PendingSync,
+      $$PendingSyncsTableFilterComposer,
+      $$PendingSyncsTableOrderingComposer,
+      $$PendingSyncsTableAnnotationComposer,
+      $$PendingSyncsTableCreateCompanionBuilder,
+      $$PendingSyncsTableUpdateCompanionBuilder,
+      (
+        PendingSync,
+        BaseReferences<_$AppDatabase, $PendingSyncsTable, PendingSync>,
+      ),
+      PendingSync,
+      PrefetchHooks Function()
+    >;
+typedef $$SyncCursorsTableCreateCompanionBuilder =
+    SyncCursorsCompanion Function({
+      required String groupId,
+      required String lastPulledAt,
+      Value<int> rowid,
+    });
+typedef $$SyncCursorsTableUpdateCompanionBuilder =
+    SyncCursorsCompanion Function({
+      Value<String> groupId,
+      Value<String> lastPulledAt,
+      Value<int> rowid,
+    });
+
+class $$SyncCursorsTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncCursorsTable> {
+  $$SyncCursorsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastPulledAt => $composableBuilder(
+    column: $table.lastPulledAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncCursorsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncCursorsTable> {
+  $$SyncCursorsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastPulledAt => $composableBuilder(
+    column: $table.lastPulledAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncCursorsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncCursorsTable> {
+  $$SyncCursorsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get lastPulledAt => $composableBuilder(
+    column: $table.lastPulledAt,
+    builder: (column) => column,
+  );
+}
+
+class $$SyncCursorsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncCursorsTable,
+          SyncCursor,
+          $$SyncCursorsTableFilterComposer,
+          $$SyncCursorsTableOrderingComposer,
+          $$SyncCursorsTableAnnotationComposer,
+          $$SyncCursorsTableCreateCompanionBuilder,
+          $$SyncCursorsTableUpdateCompanionBuilder,
+          (
+            SyncCursor,
+            BaseReferences<_$AppDatabase, $SyncCursorsTable, SyncCursor>,
+          ),
+          SyncCursor,
+          PrefetchHooks Function()
+        > {
+  $$SyncCursorsTableTableManager(_$AppDatabase db, $SyncCursorsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncCursorsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncCursorsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncCursorsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> groupId = const Value.absent(),
+                Value<String> lastPulledAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncCursorsCompanion(
+                groupId: groupId,
+                lastPulledAt: lastPulledAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String groupId,
+                required String lastPulledAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SyncCursorsCompanion.insert(
+                groupId: groupId,
+                lastPulledAt: lastPulledAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SyncCursorsTable, SyncCursor>(table),
+                  BaseReferences<_$AppDatabase, $SyncCursorsTable, SyncCursor>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncCursorsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncCursorsTable,
+      SyncCursor,
+      $$SyncCursorsTableFilterComposer,
+      $$SyncCursorsTableOrderingComposer,
+      $$SyncCursorsTableAnnotationComposer,
+      $$SyncCursorsTableCreateCompanionBuilder,
+      $$SyncCursorsTableUpdateCompanionBuilder,
+      (
+        SyncCursor,
+        BaseReferences<_$AppDatabase, $SyncCursorsTable, SyncCursor>,
+      ),
+      SyncCursor,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3749,4 +4587,8 @@ class $AppDatabaseManager {
       $$VisitsTableTableManager(_db, _db.visits);
   $$PhotosTableTableManager get photos =>
       $$PhotosTableTableManager(_db, _db.photos);
+  $$PendingSyncsTableTableManager get pendingSyncs =>
+      $$PendingSyncsTableTableManager(_db, _db.pendingSyncs);
+  $$SyncCursorsTableTableManager get syncCursors =>
+      $$SyncCursorsTableTableManager(_db, _db.syncCursors);
 }

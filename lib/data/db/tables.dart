@@ -149,3 +149,58 @@ class Photos extends Table with GroupSyncColumns {
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
+
+/// The local queue of shared rows that still need to be pushed to the remote.
+///
+/// One entry per dirty row, keyed by (table, row) so repeated writes to the
+/// same row coalesce into one entry instead of accumulating. The queue records
+/// *which* rows changed; a push reads the row's current state from its own
+/// table, so an edit that lands after the enqueue (or a tombstone whose
+/// `deletedAt` was set) pushes the latest shape, not a snapshot of the moment
+/// it was enqueued.
+///
+/// This table and [SyncCursors] are drift-only: they were added for the shared
+/// groups sync layer and have no Room counterpart, which is why they sit after
+/// the three imported tables rather than among them.
+@DataClassName('PendingSync')
+@TableIndex(name: 'index_pending_syncs_groupId', columns: {#groupId})
+class PendingSyncs extends Table {
+  @override
+  String get tableName => 'pending_syncs';
+
+  /// Which shared table the dirty row lives in: the Dart name of one of the
+  /// `SyncTable` values (`restaurants`, `visits` or `photos`), which is the
+  /// same string on both the drift and the Supabase side.
+  TextColumn get sharedTable => text().named('sharedTable')();
+
+  /// The dirty row's id — a client-generated UUID.
+  TextColumn get rowId => text().named('rowId')();
+
+  /// The group the row belongs to, copied at enqueue time so a push can be
+  /// scoped to one group without joining back to the source row first.
+  TextColumn get groupId => text().named('groupId')();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{sharedTable, rowId};
+}
+
+/// One row per group the device is a member of, holding this device's pull
+/// cursor: the newest remote `updated_at` it has already applied.
+///
+/// The remote timestamp is stored verbatim as the ISO-8601 string Supabase
+/// sent, so the next pull can pass it straight back into an `updated_at >`
+/// comparison without any clock or precision conversion in between.
+@DataClassName('SyncCursor')
+class SyncCursors extends Table {
+  @override
+  String get tableName => 'sync_cursors';
+
+  /// The group this cursor advances for.
+  TextColumn get groupId => text().named('groupId')();
+
+  /// ISO-8601 `updated_at` of the newest remote row already pulled.
+  TextColumn get lastPulledAt => text().named('lastPulledAt')();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{groupId};
+}
