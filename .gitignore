@@ -33,3 +33,8 @@ app.*.map.json
 
 # Supabase CLI local state (project link credentials)
 supabase/.temp/
+
+# Local Supabase config for `flutter run --dart-define-from-file` (see
+# .vscode/launch.json). Holds the project URL and anon key, so it must never be
+# committed.
+/dart_defines.json

@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "EatApp (personal, no backend)",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            // Turns on the shared-groups feature. Reads the project URL and the
+            // anon key from dart_defines.json (gitignored — fill in
+            // SUPABASE_ANON_KEY from the Supabase dashboard, Project Settings →
+            // API). An empty key leaves the feature dormant rather than building
+            // a client with a bad key.
+            "name": "EatApp (groups)",
+            "request": "launch",
+            "type": "dart",
+            "toolArgs": [
+                "--dart-define-from-file=dart_defines.json"
+            ]
+        }
+    ]
+}

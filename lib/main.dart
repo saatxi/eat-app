@@ -37,8 +37,12 @@ import 'widget/home_widget_service.dart';
 const String _supabaseUrlKey = 'SUPABASE_URL';
 const String _supabaseAnonKeyKey = 'SUPABASE_ANON_KEY';
 
-/// ({String url, String anonKey})? — null when either define is missing,
-/// which leaves the app in the fully-offline personal mode it has always had.
+/// ({String url, String anonKey})? — null when either define is missing *or
+/// blank*, which leaves the app in the fully-offline personal mode it has
+/// always had. Treating a blank value as absent matters because
+/// `--dart-define-from-file` hands over whatever the JSON holds: the committed
+/// template ships an empty anon key, and that must not build a client with a
+/// key that could never authenticate.
 ({String url, String anonKey})? _supabaseConfig() {
   const String? url = bool.hasEnvironment(_supabaseUrlKey)
       ? String.fromEnvironment(_supabaseUrlKey)
@@ -46,7 +50,7 @@ const String _supabaseAnonKeyKey = 'SUPABASE_ANON_KEY';
   const String? anonKey = bool.hasEnvironment(_supabaseAnonKeyKey)
       ? String.fromEnvironment(_supabaseAnonKeyKey)
       : null;
-  if (url == null || anonKey == null) {
+  if (url == null || url.isEmpty || anonKey == null || anonKey.isEmpty) {
     return null;
   }
   return (url: url, anonKey: anonKey);
