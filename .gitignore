@@ -30,3 +30,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Supabase CLI local state (project link credentials)
+supabase/.temp/
