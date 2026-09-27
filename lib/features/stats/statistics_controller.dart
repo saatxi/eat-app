@@ -48,34 +48,39 @@ class StatisticsController extends ChangeNotifier {
   StatisticsController({
     required this.repository,
     this.clock = DateTime.now,
+    this.groupId,
   }) {
     _subscriptions.addAll(<StreamSubscription<Object?>>[
-      repository.observeTotalCount().listen((int value) {
+      repository.observeTotalCount(groupId: groupId).listen((int value) {
         _totalCount = value;
         _loaded = true;
         _publish();
       }),
-      repository.observeVisitedCount().listen((int value) {
+      repository.observeVisitedCount(groupId: groupId).listen((int value) {
         _visitedCount = value;
         _publish();
       }),
-      repository.observeAverageRating().listen((double? value) {
+      repository.observeAverageRating(groupId: groupId).listen((double? value) {
         _averageRating = value;
         _publish();
       }),
-      repository.observeCuisineCounts().listen((List<CuisineCount> value) {
-        _cuisineCounts = value;
-        _publish();
-      }),
-      repository.observePriceRangeCounts().listen((List<PriceRangeCount> value) {
-        _priceRangeCounts = value;
-        _publish();
-      }),
-      repository.observeAllVisitDates().listen((List<int> value) {
+      repository.observeCuisineCounts(groupId: groupId).listen(
+        (List<CuisineCount> value) {
+          _cuisineCounts = value;
+          _publish();
+        },
+      ),
+      repository.observePriceRangeCounts(groupId: groupId).listen(
+        (List<PriceRangeCount> value) {
+          _priceRangeCounts = value;
+          _publish();
+        },
+      ),
+      repository.observeAllVisitDates(groupId: groupId).listen((List<int> value) {
         _visitDates = value;
         _publish();
       }),
-      repository.observeAllVisitDateRatings().listen(
+      repository.observeAllVisitDateRatings(groupId: groupId).listen(
         (List<VisitDateRating> value) {
           _visitDateRatings = value;
           _publish();
@@ -89,6 +94,10 @@ class StatisticsController extends ChangeNotifier {
   /// Reads "now" for the trailing-month window; injectable so the window is
   /// testable at all.
   final DateTime Function() clock;
+
+  /// The scope to aggregate: a group id, or null for Personal. A pushed screen,
+  /// so it is read once when the screen opens rather than tracked live.
+  final String? groupId;
 
   final List<StreamSubscription<Object?>> _subscriptions =
       <StreamSubscription<Object?>>[];

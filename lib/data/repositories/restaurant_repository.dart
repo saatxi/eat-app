@@ -78,6 +78,9 @@ class RestaurantRepository {
   /// and the `LIKE` against the stored `searchText` column stays a plain
   /// substring match. A blank filter is the same as no filter, which is also
   /// true of every other argument.
+  ///
+  /// [groupId] is the scope: a group id shows that group's rows, null the
+  /// private ones. Every collection query below takes the same argument.
   Stream<List<Restaurant>> observeFiltered({
     String? query,
     int? minRating,
@@ -88,6 +91,7 @@ class RestaurantRepository {
     String? region,
     String? country,
     int? priceRange,
+    String? groupId,
   }) {
     final String? foldedQuery = _foldQuery(query);
 
@@ -103,16 +107,21 @@ class RestaurantRepository {
       region: _blankToNull(region),
       country: _blankToNull(country),
       priceRange: priceRange,
+      groupId: groupId,
     );
   }
 
-  Stream<List<String>> observeCuisineTypes() => _restaurants.observeCuisineTypes();
+  Stream<List<String>> observeCuisineTypes({String? groupId}) =>
+      _restaurants.observeCuisineTypes(groupId: groupId);
 
-  Stream<List<String>> observeCities() => _restaurants.observeCities();
+  Stream<List<String>> observeCities({String? groupId}) =>
+      _restaurants.observeCities(groupId: groupId);
 
-  Stream<List<String>> observeRegions() => _restaurants.observeRegions();
+  Stream<List<String>> observeRegions({String? groupId}) =>
+      _restaurants.observeRegions(groupId: groupId);
 
-  Stream<List<String>> observeCountries() => _restaurants.observeCountries();
+  Stream<List<String>> observeCountries({String? groupId}) =>
+      _restaurants.observeCountries(groupId: groupId);
 
   Stream<Restaurant?> observeById(String id) => _restaurants.observeById(id);
 
@@ -225,30 +234,35 @@ class RestaurantRepository {
 
   // --- Statistics -----------------------------------------------------------
 
-  Stream<int> observeTotalCount() => _restaurants.observeTotalCount();
+  Stream<int> observeTotalCount({String? groupId}) =>
+      _restaurants.observeTotalCount(groupId: groupId);
 
-  Stream<int> observeVisitedCount() => _visits.observeVisitedCount();
+  Stream<int> observeVisitedCount({String? groupId}) =>
+      _visits.observeVisitedCount(groupId: groupId);
 
-  Stream<double?> observeAverageRating() => _visits.observeAverageRating();
+  Stream<double?> observeAverageRating({String? groupId}) =>
+      _visits.observeAverageRating(groupId: groupId);
 
-  Stream<List<CuisineCount>> observeCuisineCounts() =>
-      _restaurants.observeCuisineCounts();
+  Stream<List<CuisineCount>> observeCuisineCounts({String? groupId}) =>
+      _restaurants.observeCuisineCounts(groupId: groupId);
 
-  Stream<List<PriceRangeCount>> observePriceRangeCounts() =>
-      _restaurants.observePriceRangeCounts();
+  Stream<List<PriceRangeCount>> observePriceRangeCounts({String? groupId}) =>
+      _restaurants.observePriceRangeCounts(groupId: groupId);
 
   /// Every visit's raw epoch-millis date, across every restaurant — bucketed
   /// into months by the statistics screen, which is why this is the raw list.
-  Stream<List<int>> observeAllVisitDates() => _visits.observeAllVisitDates();
+  Stream<List<int>> observeAllVisitDates({String? groupId}) =>
+      _visits.observeAllVisitDates(groupId: groupId);
 
   /// Every visit's raw date and rating, for the monthly-average chart.
-  Stream<List<VisitDateRating>> observeAllVisitDateRatings() =>
-      _visits.observeAllVisitDateRatings();
+  Stream<List<VisitDateRating>> observeAllVisitDateRatings({String? groupId}) =>
+      _visits.observeAllVisitDateRatings(groupId: groupId);
 
   /// One random want-to-try restaurant, for the home-screen widget. A one-shot
   /// query rather than a stream, since the widget asks again each time it
   /// (re)renders instead of observing. Null when nothing is want-to-try.
-  Future<Restaurant?> getRandomWantToTry() => _restaurants.getRandomWantToTry();
+  Future<Restaurant?> getRandomWantToTry({String? groupId}) =>
+      _restaurants.getRandomWantToTry(groupId: groupId);
 
   // --- Visits ---------------------------------------------------------------
 
@@ -257,8 +271,10 @@ class RestaurantRepository {
 
   /// Every restaurant's most recent visit, keyed by restaurant id — backs the
   /// list, favourites and roulette rows.
-  Stream<Map<String, Visit>> observeLatestVisitByRestaurantId() => _visits
-      .observeLatestVisitByRestaurantId()
+  Stream<Map<String, Visit>> observeLatestVisitByRestaurantId({
+    String? groupId,
+  }) => _visits
+      .observeLatestVisitByRestaurantId(groupId: groupId)
       .map(
         (List<Visit> visits) => <String, Visit>{
           for (final Visit visit in visits) visit.restaurantId: visit,
@@ -437,8 +453,8 @@ class RestaurantRepository {
 
   /// One restaurant-level photo per restaurant that has one, keyed by id — the
   /// thumbnail the list and roulette rows draw.
-  Stream<Map<String, String>> observeRestaurantPhotoPaths() =>
-      _photos.observeRestaurantPhotoPaths();
+  Stream<Map<String, String>> observeRestaurantPhotoPaths({String? groupId}) =>
+      _photos.observeRestaurantPhotoPaths(groupId: groupId);
 
   /// The first restaurant-level photo, if any — used to prefill the edit form
   /// and to show a single thumbnail in the list.

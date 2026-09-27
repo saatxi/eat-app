@@ -6,6 +6,8 @@ import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/staggered_entrance.dart';
+import '../groups/group_selector.dart';
+import '../groups/groups_controller.dart';
 import '../import_export/share_service.dart';
 import 'journal_filter_bar.dart';
 import 'restaurant_card.dart';
@@ -47,6 +49,10 @@ class JournalScreen extends StatefulWidget {
 class _JournalScreenState extends State<JournalScreen> {
   RestaurantListController? _controller;
 
+  /// The group scope selector's state. Built only when the app has a groups
+  /// backend — [GroupsController.canUseGroups] gates its widget.
+  GroupsController? _groupsController;
+
   /// Owned here rather than by the bar so the screen can push the active query
   /// back into it when a filter change resets it.
   final TextEditingController _searchController = TextEditingController();
@@ -59,12 +65,18 @@ class _JournalScreenState extends State<JournalScreen> {
       repository: scope.restaurants,
       preferences: scope.preferences,
     );
+    _groupsController ??= GroupsController(
+      preferences: scope.preferences,
+      gateway: scope.groups,
+      identity: scope.identity,
+    );
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     _controller?.dispose();
+    _groupsController?.dispose();
     super.dispose();
   }
 
@@ -130,6 +142,8 @@ class _JournalScreenState extends State<JournalScreen> {
           }
           return Column(
             children: <Widget>[
+              if (_groupsController != null && _groupsController!.canUseGroups)
+                GroupSelector(controller: _groupsController!),
               JournalFilterBar(
                 controller: controller,
                 state: state,

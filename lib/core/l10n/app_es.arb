@@ -252,5 +252,25 @@
   "widgetLabel": "EatApp · Por probar",
   "widgetDescription": "Muestra un restaurante al azar de tu lista \"por probar\", en tu pantalla de inicio.",
   "widgetEmptyBody": "Marca un restaurante como \"por probar\" para verlo aquí.",
-  "widgetActionShuffle": "Otro"
+  "widgetActionShuffle": "Otro",
+
+  "groupsScopeLabel": "Grupo",
+  "groupsScopePersonal": "Personal",
+  "groupsErrorLoad": "No se pudieron cargar tus grupos.",
+  "groupsActionCreate": "Nuevo grupo",
+  "groupsCreateTitle": "Nuevo grupo",
+  "groupsFieldName": "Nombre del grupo",
+  "groupsCreateAction": "Crear",
+  "groupsCreateErrorRequired": "Escribe un nombre para el grupo",
+  "groupsCreateErrorFailed": "No se pudo crear el grupo. Inténtalo de nuevo.",
+  "groupsMembersTitle": "Miembros",
+  "groupsMembersError": "No se pudieron cargar los miembros.",
+  "groupsMemberOwner": "Administrador",
+  "groupsMemberYou": "Tú",
+  "groupsActionLeave": "Salir del grupo",
+  "groupsLeaveConfirmTitle": "¿Salir de este grupo?",
+  "groupsLeaveConfirmBody": "Dejarás de ver los restaurantes de este grupo. Seguirán con los demás miembros.",
+  "groupsActionRemove": "Expulsar",
+  "groupsRemoveConfirmTitle": "¿Expulsar a este miembro?",
+  "groupsRemoveConfirmBody": "Perderá el acceso a los restaurantes del grupo."
 }

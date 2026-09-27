@@ -1479,6 +1479,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shuffle'**
   String get widgetActionShuffle;
+
+  /// No description provided for @groupsScopeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get groupsScopeLabel;
+
+  /// No description provided for @groupsScopePersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get groupsScopePersonal;
+
+  /// No description provided for @groupsErrorLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your groups.'**
+  String get groupsErrorLoad;
+
+  /// No description provided for @groupsActionCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'New group'**
+  String get groupsActionCreate;
+
+  /// No description provided for @groupsCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New group'**
+  String get groupsCreateTitle;
+
+  /// No description provided for @groupsFieldName.
+  ///
+  /// In en, this message translates to:
+  /// **'Group name'**
+  String get groupsFieldName;
+
+  /// No description provided for @groupsCreateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get groupsCreateAction;
+
+  /// No description provided for @groupsCreateErrorRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a group name'**
+  String get groupsCreateErrorRequired;
+
+  /// No description provided for @groupsCreateErrorFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the group. Please try again.'**
+  String get groupsCreateErrorFailed;
+
+  /// No description provided for @groupsMembersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get groupsMembersTitle;
+
+  /// No description provided for @groupsMembersError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the members.'**
+  String get groupsMembersError;
+
+  /// No description provided for @groupsMemberOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get groupsMemberOwner;
+
+  /// No description provided for @groupsMemberYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get groupsMemberYou;
+
+  /// No description provided for @groupsActionLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave group'**
+  String get groupsActionLeave;
+
+  /// No description provided for @groupsLeaveConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave this group?'**
+  String get groupsLeaveConfirmTitle;
+
+  /// No description provided for @groupsLeaveConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll stop seeing this group\'s restaurants. They stay with the other members.'**
+  String get groupsLeaveConfirmBody;
+
+  /// No description provided for @groupsActionRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get groupsActionRemove;
+
+  /// No description provided for @groupsRemoveConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this member?'**
+  String get groupsRemoveConfirmTitle;
+
+  /// No description provided for @groupsRemoveConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They\'ll lose access to the group\'s restaurants.'**
+  String get groupsRemoveConfirmBody;
 }
 
 class _AppLocalizationsDelegate

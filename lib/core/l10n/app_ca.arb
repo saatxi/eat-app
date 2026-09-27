@@ -252,5 +252,25 @@
   "widgetLabel": "EatApp · Per provar",
   "widgetDescription": "Mostra un restaurant a l'atzar de la teva llista \"per provar\", a la pantalla d'inici.",
   "widgetEmptyBody": "Marca un restaurant com a \"per provar\" per veure'l aquí.",
-  "widgetActionShuffle": "Un altre"
+  "widgetActionShuffle": "Un altre",
+
+  "groupsScopeLabel": "Grup",
+  "groupsScopePersonal": "Personal",
+  "groupsErrorLoad": "No s'han pogut carregar els teus grups.",
+  "groupsActionCreate": "Grup nou",
+  "groupsCreateTitle": "Grup nou",
+  "groupsFieldName": "Nom del grup",
+  "groupsCreateAction": "Crea",
+  "groupsCreateErrorRequired": "Escriu un nom per al grup",
+  "groupsCreateErrorFailed": "No s'ha pogut crear el grup. Torna-ho a provar.",
+  "groupsMembersTitle": "Membres",
+  "groupsMembersError": "No s'han pogut carregar els membres.",
+  "groupsMemberOwner": "Administrador",
+  "groupsMemberYou": "Tu",
+  "groupsActionLeave": "Sortir del grup",
+  "groupsLeaveConfirmTitle": "Vols sortir d'aquest grup?",
+  "groupsLeaveConfirmBody": "Deixaràs de veure els restaurants d'aquest grup. Es quedaran amb els altres membres.",
+  "groupsActionRemove": "Expulsa",
+  "groupsRemoveConfirmTitle": "Vols expulsar aquest membre?",
+  "groupsRemoveConfirmBody": "Perdrà l'accés als restaurants del grup."
 }

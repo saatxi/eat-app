@@ -16,6 +16,7 @@ void main() {
       expect(repository.current.themeMode, AppThemeMode.fallback);
       expect(repository.current.language, isNull);
       expect(repository.current.favoriteIds, isEmpty);
+      expect(repository.current.selectedGroupId, isNull);
     });
 
     test('still changes and notifies, so tests and previews can drive it', () async {
@@ -42,6 +43,20 @@ void main() {
         repository.current.language,
         isNull,
         reason: 'clearing is a real state, distinct from the English fallback',
+      );
+    });
+
+    test('a null selected group means Personal, distinct from a group id', () async {
+      final UserPreferencesRepository repository = UserPreferencesRepository();
+
+      await repository.setSelectedGroup('g1');
+      expect(repository.current.selectedGroupId, 'g1');
+
+      await repository.setSelectedGroup(null);
+      expect(
+        repository.current.selectedGroupId,
+        isNull,
+        reason: 'back to Personal is a real state, not "no choice yet"',
       );
     });
 
@@ -98,6 +113,26 @@ void main() {
       expect(reopened.current.themeMode, AppThemeMode.dark);
       expect(reopened.current.language, AppLanguage.spanish);
       expect(reopened.current.favoriteIds, <String>{'r1', 'r2'});
+    });
+
+    test('persists the selected group and clears it back to Personal', () async {
+      await openStore();
+      final UserPreferencesRepository repository = UserPreferencesRepository(
+        store: store,
+      );
+
+      await repository.setSelectedGroup('g1');
+
+      expect(store.getString('selected_group_id'), 'g1');
+      expect(
+        UserPreferencesRepository(store: store).current.selectedGroupId,
+        'g1',
+      );
+
+      await repository.setSelectedGroup(null);
+
+      expect(store.containsKey('selected_group_id'), isFalse);
+      expect(UserPreferencesRepository(store: store).current.selectedGroupId, isNull);
     });
 
     test('a stored file with no language key keeps following the device', () async {

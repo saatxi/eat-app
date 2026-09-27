@@ -770,4 +770,64 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get widgetActionShuffle => 'Shuffle';
+
+  @override
+  String get groupsScopeLabel => 'Group';
+
+  @override
+  String get groupsScopePersonal => 'Personal';
+
+  @override
+  String get groupsErrorLoad => 'Couldn\'t load your groups.';
+
+  @override
+  String get groupsActionCreate => 'New group';
+
+  @override
+  String get groupsCreateTitle => 'New group';
+
+  @override
+  String get groupsFieldName => 'Group name';
+
+  @override
+  String get groupsCreateAction => 'Create';
+
+  @override
+  String get groupsCreateErrorRequired => 'Enter a group name';
+
+  @override
+  String get groupsCreateErrorFailed =>
+      'Couldn\'t create the group. Please try again.';
+
+  @override
+  String get groupsMembersTitle => 'Members';
+
+  @override
+  String get groupsMembersError => 'Couldn\'t load the members.';
+
+  @override
+  String get groupsMemberOwner => 'Owner';
+
+  @override
+  String get groupsMemberYou => 'You';
+
+  @override
+  String get groupsActionLeave => 'Leave group';
+
+  @override
+  String get groupsLeaveConfirmTitle => 'Leave this group?';
+
+  @override
+  String get groupsLeaveConfirmBody =>
+      'You\'ll stop seeing this group\'s restaurants. They stay with the other members.';
+
+  @override
+  String get groupsActionRemove => 'Remove';
+
+  @override
+  String get groupsRemoveConfirmTitle => 'Remove this member?';
+
+  @override
+  String get groupsRemoveConfirmBody =>
+      'They\'ll lose access to the group\'s restaurants.';
 }

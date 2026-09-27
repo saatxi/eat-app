@@ -129,39 +129,10 @@ class RestaurantListController extends ChangeNotifier {
   }) {
     _favoritesOnly = favoritesOnly;
     _favoriteIds = preferences.current.favoriteIds;
+    _groupId = preferences.current.selectedGroupId;
     preferences.listenable.addListener(_onPreferencesChanged);
 
-    _dataSubscriptions.addAll(<StreamSubscription<Object>>[
-      repository.observeLatestVisitByRestaurantId().listen(
-        (Map<String, Visit> value) {
-          _latestVisitByRestaurantId = value;
-          _publish();
-        },
-      ),
-      repository.observeRestaurantPhotoPaths().listen(
-        (Map<String, String> value) {
-          _photoPathsByRestaurantId = value;
-          _publish();
-        },
-      ),
-      repository.observeCuisineTypes().listen((List<String> value) {
-        _availableCuisines = value;
-        _publish();
-      }),
-      repository.observeCities().listen((List<String> value) {
-        _availableCities = value;
-        _publish();
-      }),
-      repository.observeRegions().listen((List<String> value) {
-        _availableRegions = value;
-        _publish();
-      }),
-      repository.observeCountries().listen((List<String> value) {
-        _availableCountries = value;
-        _publish();
-      }),
-    ]);
-
+    _subscribeData();
     _subscribeToRestaurants();
   }
 
@@ -203,6 +174,11 @@ class RestaurantListController extends ChangeNotifier {
   Map<String, Visit> _latestVisitByRestaurantId = const <String, Visit>{};
   Map<String, String> _photoPathsByRestaurantId = const <String, String>{};
   Set<String> _favoriteIds = const <String>{};
+
+  /// The scope the list is showing: a group id, or null for Personal. Kept in
+  /// step with the preference, and every collection subscription is rebuilt
+  /// when it moves.
+  String? _groupId;
   List<String> _availableCuisines = const <String>[];
   List<String> _availableCities = const <String>[];
   List<String> _availableRegions = const <String>[];
@@ -214,6 +190,14 @@ class RestaurantListController extends ChangeNotifier {
   bool _disposed = false;
 
   RestaurantListUiState get state => _state;
+
+  /// The scope the list is showing, for the selector to render as selected.
+  String? get groupId => _groupId;
+
+  /// Changes the scope and persists it. The preference listener does the rest
+  /// (rebuilds every subscription), so this is all a selector has to call.
+  Future<void> selectGroup(String? groupId) =>
+      preferences.setSelectedGroup(groupId);
 
   void onSearchQueryChange(String query) =>
       _setFilters(_filters.withQuery(query), debounceQuery: true);
@@ -296,10 +280,7 @@ class RestaurantListController extends ChangeNotifier {
     _debounce?.cancel();
     preferences.listenable.removeListener(_onPreferencesChanged);
     _cancelRestaurantsSubscription();
-    for (final StreamSubscription<Object> subscription in _dataSubscriptions) {
-      unawaited(subscription.cancel());
-    }
-    _dataSubscriptions.clear();
+    _cancelDataSubscriptions();
     super.dispose();
   }
 
@@ -342,6 +323,7 @@ class RestaurantListController extends ChangeNotifier {
           region: _filters.region,
           country: _filters.country,
           priceRange: _filters.priceRange,
+          groupId: _groupId,
         )
         .listen((List<Restaurant> value) {
           _restaurants = value;
@@ -360,8 +342,62 @@ class RestaurantListController extends ChangeNotifier {
     }
   }
 
+  /// The collection subscriptions — the ones that live as long as the
+  /// controller — all scoped to the current group. Rebuilt whenever the scope
+  /// changes, since a different group is a different set of rows.
+  void _subscribeData() {
+    _cancelDataSubscriptions();
+    _dataSubscriptions.addAll(<StreamSubscription<Object>>[
+      repository.observeLatestVisitByRestaurantId(groupId: _groupId).listen(
+        (Map<String, Visit> value) {
+          _latestVisitByRestaurantId = value;
+          _publish();
+        },
+      ),
+      repository.observeRestaurantPhotoPaths(groupId: _groupId).listen(
+        (Map<String, String> value) {
+          _photoPathsByRestaurantId = value;
+          _publish();
+        },
+      ),
+      repository.observeCuisineTypes(groupId: _groupId).listen(
+        (List<String> value) {
+          _availableCuisines = value;
+          _publish();
+        },
+      ),
+      repository.observeCities(groupId: _groupId).listen((List<String> value) {
+        _availableCities = value;
+        _publish();
+      }),
+      repository.observeRegions(groupId: _groupId).listen((List<String> value) {
+        _availableRegions = value;
+        _publish();
+      }),
+      repository.observeCountries(groupId: _groupId).listen(
+        (List<String> value) {
+          _availableCountries = value;
+          _publish();
+        },
+      ),
+    ]);
+  }
+
+  void _cancelDataSubscriptions() {
+    for (final StreamSubscription<Object> subscription in _dataSubscriptions) {
+      unawaited(subscription.cancel());
+    }
+    _dataSubscriptions.clear();
+  }
+
   void _onPreferencesChanged() {
-    _favoriteIds = preferences.current.favoriteIds;
+    final UserPreferences prefs = preferences.current;
+    _favoriteIds = prefs.favoriteIds;
+    if (prefs.selectedGroupId != _groupId) {
+      _groupId = prefs.selectedGroupId;
+      _subscribeData();
+      _subscribeToRestaurants();
+    }
     _publish();
   }
 

@@ -34,11 +34,14 @@ class PhotoDao extends DatabaseAccessor<AppDatabase> with _$PhotoDaoMixin {
   ///
   /// Restaurant-level photos are effectively one per restaurant in this UI, so
   /// the lowest `position` wins when a row somehow carries more.
-  Stream<Map<String, String>> observeRestaurantPhotoPaths() => customSelect(
-    'SELECT restaurantId, path FROM photos WHERE restaurantId IS NOT NULL '
-    'AND deletedAt IS NULL ORDER BY restaurantId ASC, position ASC',
-    readsFrom: <ResultSetImplementation>{photos},
-  ).watch().map((List<QueryRow> rows) {
+  Stream<Map<String, String>> observeRestaurantPhotoPaths({String? groupId}) =>
+      customSelect(
+        'SELECT restaurantId, path FROM photos WHERE restaurantId IS NOT NULL '
+        'AND deletedAt IS NULL AND groupId IS ? '
+        'ORDER BY restaurantId ASC, position ASC',
+        variables: <Variable<Object>>[Variable<String>(groupId)],
+        readsFrom: <ResultSetImplementation>{photos},
+      ).watch().map((List<QueryRow> rows) {
     final Map<String, String> byRestaurant = <String, String>{};
     for (final QueryRow row in rows) {
       byRestaurant.putIfAbsent(

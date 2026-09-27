@@ -156,7 +156,11 @@ class HomeWidgetService {
         }
       }
     }
-    return repository.getRandomWantToTry();
+    // Scoped to the group the user is in, so the widget draws from what the
+    // list is showing; Personal means the private rows only.
+    return repository.getRandomWantToTry(
+      groupId: preferences.current.selectedGroupId,
+    );
   }
 
   /// The language to draw the widget's labels in: the user's explicit choice,

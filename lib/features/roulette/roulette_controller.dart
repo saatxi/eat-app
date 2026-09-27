@@ -80,42 +80,9 @@ class RouletteController extends ChangeNotifier {
     Random? random,
   }) : random = random ?? Random() {
     _favoriteIds = preferences.current.favoriteIds;
+    _groupId = preferences.current.selectedGroupId;
     preferences.listenable.addListener(_onPreferencesChanged);
-    _latestVisitsSubscription = repository.observeLatestVisitByRestaurantId()
-        .listen((Map<String, Visit> value) {
-          _latestVisits = value;
-          _publish();
-        });
-    _photoPathsSubscription = repository.observeRestaurantPhotoPaths().listen(
-      (Map<String, String> value) {
-        _photoPaths = value;
-        _publish();
-      },
-    );
-    _availableCuisinesSubscription = repository.observeCuisineTypes().listen(
-      (List<String> value) {
-        _availableCuisines = value;
-        _publish();
-      },
-    );
-    _availableCitiesSubscription = repository.observeCities().listen(
-      (List<String> value) {
-        _availableCities = value;
-        _publish();
-      },
-    );
-    _availableRegionsSubscription = repository.observeRegions().listen(
-      (List<String> value) {
-        _availableRegions = value;
-        _publish();
-      },
-    );
-    _availableCountriesSubscription = repository.observeCountries().listen(
-      (List<String> value) {
-        _availableCountries = value;
-        _publish();
-      },
-    );
+    _subscribeData();
     _subscribe();
   }
 
@@ -140,6 +107,11 @@ class RouletteController extends ChangeNotifier {
   Map<String, Visit> _latestVisits = const <String, Visit>{};
   Map<String, String> _photoPaths = const <String, String>{};
   Set<String> _favoriteIds = const <String>{};
+
+  /// The scope the roulette draws from: a group id, or null for Personal. Kept
+  /// in step with the preference, and the collection subscriptions are rebuilt
+  /// when it moves (the roulette is a shell tab, alive while the selector moves).
+  String? _groupId;
   List<String> _availableCuisines = const <String>[];
   List<String> _availableCities = const <String>[];
   List<String> _availableRegions = const <String>[];
@@ -214,6 +186,7 @@ class RouletteController extends ChangeNotifier {
           city: _filters.city,
           region: _filters.region,
           country: _filters.country,
+          groupId: _groupId,
         )
         .listen((List<Restaurant> value) {
           _restaurants = value;
@@ -222,8 +195,62 @@ class RouletteController extends ChangeNotifier {
         });
   }
 
+  /// The five collection subscriptions, all scoped to the current group and
+  /// rebuilt whenever the scope changes.
+  void _subscribeData() {
+    unawaited(_latestVisitsSubscription?.cancel());
+    unawaited(_photoPathsSubscription?.cancel());
+    unawaited(_availableCuisinesSubscription?.cancel());
+    unawaited(_availableCitiesSubscription?.cancel());
+    unawaited(_availableRegionsSubscription?.cancel());
+    unawaited(_availableCountriesSubscription?.cancel());
+
+    _latestVisitsSubscription = repository
+        .observeLatestVisitByRestaurantId(groupId: _groupId)
+        .listen((Map<String, Visit> value) {
+          _latestVisits = value;
+          _publish();
+        });
+    _photoPathsSubscription = repository
+        .observeRestaurantPhotoPaths(groupId: _groupId)
+        .listen((Map<String, String> value) {
+          _photoPaths = value;
+          _publish();
+        });
+    _availableCuisinesSubscription = repository
+        .observeCuisineTypes(groupId: _groupId)
+        .listen((List<String> value) {
+          _availableCuisines = value;
+          _publish();
+        });
+    _availableCitiesSubscription = repository
+        .observeCities(groupId: _groupId)
+        .listen((List<String> value) {
+          _availableCities = value;
+          _publish();
+        });
+    _availableRegionsSubscription = repository
+        .observeRegions(groupId: _groupId)
+        .listen((List<String> value) {
+          _availableRegions = value;
+          _publish();
+        });
+    _availableCountriesSubscription = repository
+        .observeCountries(groupId: _groupId)
+        .listen((List<String> value) {
+          _availableCountries = value;
+          _publish();
+        });
+  }
+
   void _onPreferencesChanged() {
-    _favoriteIds = preferences.current.favoriteIds;
+    final UserPreferences prefs = preferences.current;
+    _favoriteIds = prefs.favoriteIds;
+    if (prefs.selectedGroupId != _groupId) {
+      _groupId = prefs.selectedGroupId;
+      _subscribeData();
+      _subscribe();
+    }
     _publish();
   }
 

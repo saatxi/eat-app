@@ -36,14 +36,18 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
 
   /// Every restaurant's most recent visit in one shot — backs the list,
   /// favorites and roulette rows.
-  Stream<List<Visit>> observeLatestVisitByRestaurantId() => customSelect(
-    'SELECT v.* FROM visits v '
-    'INNER JOIN (SELECT restaurantId, MAX(visitDate) AS maxDate FROM visits '
-    'WHERE deletedAt IS NULL GROUP BY restaurantId) latest '
-    'ON latest.restaurantId = v.restaurantId AND latest.maxDate = v.visitDate '
-    'WHERE v.deletedAt IS NULL',
-    readsFrom: <ResultSetImplementation>{visits},
-  ).watch().map(_mapVisits);
+  /// [groupId] scopes the rows the same way `RestaurantDao`'s collection
+  /// queries do: a group id shows that group's visits, null the private ones.
+  Stream<List<Visit>> observeLatestVisitByRestaurantId({String? groupId}) =>
+      customSelect(
+        'SELECT v.* FROM visits v '
+        'INNER JOIN (SELECT restaurantId, MAX(visitDate) AS maxDate FROM visits '
+        'WHERE deletedAt IS NULL GROUP BY restaurantId) latest '
+        'ON latest.restaurantId = v.restaurantId AND latest.maxDate = v.visitDate '
+        'WHERE v.deletedAt IS NULL AND v.groupId IS ?',
+        variables: <Variable<Object>>[Variable<String>(groupId)],
+        readsFrom: <ResultSetImplementation>{visits},
+      ).watch().map(_mapVisits);
 
   Future<void> insertVisit(Visit row) => into(visits).insert(row);
 
@@ -108,15 +112,18 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
     readsFrom: <ResultSetImplementation>{visits},
   ).get().then(_mapVisits);
 
-  Stream<int> observeVisitedCount() => customSelect(
+  Stream<int> observeVisitedCount({String? groupId}) => customSelect(
     'SELECT COUNT(DISTINCT restaurantId) AS count FROM visits '
-    'WHERE deletedAt IS NULL',
+    'WHERE deletedAt IS NULL AND groupId IS ?',
+    variables: <Variable<Object>>[Variable<String>(groupId)],
     readsFrom: <ResultSetImplementation>{visits},
   ).watchSingle().map((QueryRow row) => row.read<int>('count'));
 
   /// Null when nothing has a real visit yet.
-  Stream<double?> observeAverageRating() => customSelect(
-    'SELECT AVG(rating) AS average FROM visits WHERE deletedAt IS NULL',
+  Stream<double?> observeAverageRating({String? groupId}) => customSelect(
+    'SELECT AVG(rating) AS average FROM visits '
+    'WHERE deletedAt IS NULL AND groupId IS ?',
+    variables: <Variable<Object>>[Variable<String>(groupId)],
     readsFrom: <ResultSetImplementation>{visits},
   ).watchSingle().map((QueryRow row) => row.read<double?>('average'));
 
@@ -124,9 +131,10 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
   /// into months by the caller rather than in SQL, since month-of-epoch-millis
   /// isn't a portable single expression and this table is small enough that
   /// bucketing in Dart is simpler.
-  Stream<List<int>> observeAllVisitDates() => customSelect(
-    'SELECT visitDate AS visitDate FROM visits WHERE deletedAt IS NULL '
-    'ORDER BY visitDate ASC',
+  Stream<List<int>> observeAllVisitDates({String? groupId}) => customSelect(
+    'SELECT visitDate AS visitDate FROM visits '
+    'WHERE deletedAt IS NULL AND groupId IS ? ORDER BY visitDate ASC',
+    variables: <Variable<Object>>[Variable<String>(groupId)],
     readsFrom: <ResultSetImplementation>{visits},
   ).watch().map(
     (List<QueryRow> rows) => <int>[
@@ -136,10 +144,12 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
 
   /// Every visit's raw date and rating — bucketed into a monthly average by the
   /// caller, same rationale as [observeAllVisitDates].
-  Stream<List<VisitDateRating>> observeAllVisitDateRatings() => customSelect(
-    'SELECT visitDate AS visitDate, rating AS rating FROM visits '
-    'WHERE deletedAt IS NULL ORDER BY visitDate ASC',
-    readsFrom: <ResultSetImplementation>{visits},
+  Stream<List<VisitDateRating>> observeAllVisitDateRatings({String? groupId}) =>
+      customSelect(
+        'SELECT visitDate AS visitDate, rating AS rating FROM visits '
+        'WHERE deletedAt IS NULL AND groupId IS ? ORDER BY visitDate ASC',
+        variables: <Variable<Object>>[Variable<String>(groupId)],
+        readsFrom: <ResultSetImplementation>{visits},
   ).watch().map(
     (List<QueryRow> rows) => <VisitDateRating>[
       for (final QueryRow row in rows)

@@ -15,6 +15,7 @@ class UserPreferences {
     required this.themeMode,
     required this.language,
     required this.favoriteIds,
+    required this.selectedGroupId,
   });
 
   final AppThemeMode themeMode;
@@ -30,25 +31,38 @@ class UserPreferences {
   /// survives the move.
   final Set<String> favoriteIds;
 
+  /// The group the app is currently scoped to, or null for the personal list.
+  /// Only the id is kept here — the group's name and membership live on the
+  /// remote — so a relaunch reopens on the same group without a network round
+  /// trip.
+  final String? selectedGroupId;
+
   /// What the app shows before the stored values have been read back.
   static const UserPreferences defaults = UserPreferences(
     themeMode: AppThemeMode.fallback,
     language: null,
     favoriteIds: <String>{},
+    selectedGroupId: null,
   );
 
   /// [clearLanguage] exists because `language` itself is nullable: without it
   /// there would be no way to tell "leave the language alone" from "go back to
-  /// following the device".
+  /// following the device" — and [clearSelectedGroup] is the same idea for
+  /// [selectedGroupId].
   UserPreferences copyWith({
     AppThemeMode? themeMode,
     AppLanguage? language,
     bool clearLanguage = false,
     Set<String>? favoriteIds,
+    String? selectedGroupId,
+    bool clearSelectedGroup = false,
   }) => UserPreferences(
     themeMode: themeMode ?? this.themeMode,
     language: clearLanguage ? null : (language ?? this.language),
     favoriteIds: favoriteIds ?? this.favoriteIds,
+    selectedGroupId: clearSelectedGroup
+        ? null
+        : (selectedGroupId ?? this.selectedGroupId),
   );
 }
 
@@ -81,6 +95,7 @@ class UserPreferencesRepository {
   static const String _themeModeKey = 'theme_mode';
   static const String _languageKey = 'language';
   static const String _favoriteIdsKey = 'favorite_ids';
+  static const String _selectedGroupIdKey = 'selected_group_id';
 
   final SharedPreferences? _store;
   final ValueNotifier<UserPreferences> _value = ValueNotifier<UserPreferences>(
@@ -113,6 +128,20 @@ class UserPreferencesRepository {
     }
   }
 
+  /// Selects the group the app is scoped to, or null to go back to Personal.
+  /// Only the id is stored; the group's name is looked up from the gateway.
+  Future<void> setSelectedGroup(String? groupId) async {
+    final UserPreferences next = groupId == null
+        ? current.copyWith(clearSelectedGroup: true)
+        : current.copyWith(selectedGroupId: groupId);
+    _value.value = next;
+    if (groupId == null) {
+      await _store?.remove(_selectedGroupIdKey);
+    } else {
+      await _store?.setString(_selectedGroupIdKey, groupId);
+    }
+  }
+
   /// Adds the id if absent, removes it if present.
   Future<void> toggleFavorite(String restaurantId) async {
     final Set<String> next = <String>{...current.favoriteIds};
@@ -128,5 +157,6 @@ class UserPreferencesRepository {
     language: AppLanguage.tryFromLanguageCode(store.getString(_languageKey)),
     favoriteIds: (store.getStringList(_favoriteIdsKey) ?? const <String>[])
         .toSet(),
+    selectedGroupId: store.getString(_selectedGroupIdKey),
   );
 }

@@ -34,8 +34,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final AppScope scope = AppScope.of(context);
     _controller ??= StatisticsController(
-      repository: AppScope.of(context).restaurants,
+      repository: scope.restaurants,
+      groupId: scope.preferences.current.selectedGroupId,
     );
   }
 

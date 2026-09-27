@@ -363,5 +363,25 @@
   "widgetLabel": "EatApp · Want to try",
   "widgetDescription": "Shows a random restaurant you want to try, right on your home screen.",
   "widgetEmptyBody": "Mark a restaurant \"want to try\" to see it here.",
-  "widgetActionShuffle": "Shuffle"
+  "widgetActionShuffle": "Shuffle",
+
+  "groupsScopeLabel": "Group",
+  "groupsScopePersonal": "Personal",
+  "groupsErrorLoad": "Couldn't load your groups.",
+  "groupsActionCreate": "New group",
+  "groupsCreateTitle": "New group",
+  "groupsFieldName": "Group name",
+  "groupsCreateAction": "Create",
+  "groupsCreateErrorRequired": "Enter a group name",
+  "groupsCreateErrorFailed": "Couldn't create the group. Please try again.",
+  "groupsMembersTitle": "Members",
+  "groupsMembersError": "Couldn't load the members.",
+  "groupsMemberOwner": "Owner",
+  "groupsMemberYou": "You",
+  "groupsActionLeave": "Leave group",
+  "groupsLeaveConfirmTitle": "Leave this group?",
+  "groupsLeaveConfirmBody": "You'll stop seeing this group's restaurants. They stay with the other members.",
+  "groupsActionRemove": "Remove",
+  "groupsRemoveConfirmTitle": "Remove this member?",
+  "groupsRemoveConfirmBody": "They'll lose access to the group's restaurants."
 }
