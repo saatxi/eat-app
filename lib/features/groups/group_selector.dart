@@ -5,6 +5,7 @@ import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/groups/group_models.dart';
 import '../../data/sync/sync_service.dart';
 import 'groups_controller.dart';
+import 'join_screen.dart';
 
 /// The scope selector above the list: Personal, each of the user's groups, and
 /// a way to create a new one.
@@ -47,6 +48,16 @@ class GroupSelector extends StatelessWidget {
                 avatar: const Icon(Icons.add_rounded, size: 18),
                 label: Text(l10n.groupsActionCreate),
                 onPressed: () => _createGroup(context, l10n),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              ActionChip(
+                avatar: const Icon(Icons.qr_code_rounded, size: 18),
+                label: Text(l10n.groupsActionJoin),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (BuildContext context) => const JoinScreen(),
+                  ),
+                ),
               ),
               if (state.selectedGroupId != null && controller.sync != null) ...[
                 const SizedBox(width: AppSpacing.sm),

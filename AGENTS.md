@@ -83,9 +83,14 @@ Optional detailed explanation
   narrow exception: the launcher's widget picker reads
   `android/app/src/main/res/values*/strings.xml` (`widget_description`,
   `widget_action_shuffle`) before any Dart code has run.
-- **Networking**: none. The app makes no network calls — every restaurant is
-  entered, edited and deleted on-device via drift. Don't add a networking
-  package or a remote/file-based data source without discussing it first.
+- **Networking**: local-first. Every restaurant is entered, edited and deleted
+  on-device via drift, and nothing leaves the device unless a group is shared.
+  The one exception is the shared-groups backend (Supabase: `lib/data/supabase/`
+  for identity, `lib/data/sync/` for the sync layer, `lib/features/groups/` for
+  the UI), which stays dormant unless the build carries `SUPABASE_URL` and
+  `SUPABASE_ANON_KEY`. Personal mode still makes no call and is fully offline.
+  Don't add any *other* networking package or remote/file-based data source
+  without discussing it first.
 - **Build**: the Flutter tool over the Android project in `android/` (its own
   Gradle wrapper and `android/gradle.properties`) and the iOS project in
   `ios/`. There is no longer a root Gradle build to run.
@@ -255,12 +260,15 @@ lib/
 
 ## Security guidelines
 
-- The app makes no network calls at all — every restaurant is entered,
-  edited and deleted on-device. The only way data crosses into or out of the
-  app is the restaurant-sharing feature (`lib/data/share/`), which is local
-  IPC (Android `ACTION_SEND`/`ACTION_VIEW` through the `receive_sharing_intent`
-  and `share_plus` packages), never a network request. Don't add a networking
-  dependency or a remote data source without discussing it first.
+- The app is local-first — every restaurant is entered, edited and deleted
+  on-device, and nothing crosses into or out of the app in personal mode
+  except the restaurant-sharing feature (`lib/data/share/`), which is local IPC
+  (Android `ACTION_SEND`/`ACTION_VIEW` through the `receive_sharing_intent` and
+  `share_plus` packages), never a network request. The shared-groups backend
+  (Supabase, over `lib/data/supabase/`, `lib/data/sync/` and the
+  `create-invite`/`join-group` Edge Functions) is the one network path, and it
+  only runs when the build carries its configuration. Don't add any other
+  networking dependency or remote data source without discussing it first.
 - A file received through the sharing intent-filter is untrusted input:
   size-capped before parsing (`lib/data/share/content_files.dart`), parsed
   as JSON, gated on the `eatapp.restaurants.v2` `format` tag
@@ -271,11 +279,11 @@ lib/
   written until the user reviews and confirms. Don't relax any of this when
   touching the import path.
 - The Android manifest
-  (`android/app/src/main/AndroidManifest.xml`) declares no permissions at
-  all, and the sharing flow needs none (the plugins' own `FileProvider`
-  grants are per-Intent, not a permission). Don't add any permission
-  (network, location, contacts, storage, etc.) without an explicit, discussed
-  reason.
+  (`android/app/src/main/AndroidManifest.xml`) declares exactly one permission:
+  `CAMERA`, used only by the `mobile_scanner` QR reader on the join screen. The
+  sharing flow needs none of its own (the plugins' own `FileProvider` grants
+  are per-Intent, not a permission). Don't add any other permission (network,
+  location, contacts, storage, etc.) without an explicit, discussed reason.
 - The home-screen widget's data leaves the app through a platform store, not
   the network: an Android shared-preferences file and an iOS App Group. Its
   background `BroadcastReceiver` is `exported` (the `home_widget` plugin's

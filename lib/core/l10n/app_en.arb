@@ -385,5 +385,78 @@
   "groupsRemoveConfirmTitle": "Remove this member?",
   "groupsRemoveConfirmBody": "They'll lose access to the group's restaurants.",
   "groupsSyncNow": "Sync now",
+
+  "groupsInviteAction": "Invite",
+  "groupsInviteTitle": "Invite to {name}",
+  "@groupsInviteTitle": {
+    "description": "The invite screen's title, naming the group being invited to.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "groupsInviteLoading": "Creating an invitation…",
+  "groupsInviteCreateFailed": "Couldn't create an invitation. Please try again.",
+  "groupsInviteRetry": "Try again",
+  "groupsInviteNewLink": "New link",
+  "groupsInviteCodeLabel": "Code",
+  "groupsInviteShare": "Share link",
+  "groupsInviteCopyLink": "Copy link",
+  "groupsInviteCopied": "Copied to the clipboard",
+  "groupsInviteShareText": "Join the group \"{name}\" on EatApp:\n{link}",
+  "@groupsInviteShareText": {
+    "description": "The text the share sheet carries; name is the group, link the invitation link.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "groupsInviteDetails": "Valid for {days} days · up to {uses} people",
+  "@groupsInviteDetails": {
+    "description": "An invitation's validity shown under its QR code.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "uses": {
+        "type": "int"
+      }
+    }
+  },
+
+  "groupsActionJoin": "Join a group",
+  "groupsJoinTitle": "Join a group",
+  "groupsJoinAction": "Join",
+  "groupsJoinLoading": "Joining…",
+  "groupsJoinCodeLabel": "Invitation code",
+  "groupsJoinCodeHint": "Paste a link or type the code",
+  "groupsJoinNameLabel": "Your name",
+  "groupsJoinNameHint": "How other members will see you",
+  "groupsJoinScan": "Scan QR code",
+  "groupsJoinScannerTitle": "Scan invitation",
+  "groupsJoinScannerHint": "Point the camera at the QR code",
+  "groupsJoinScannerError": "Couldn't start the camera.",
+  "groupsJoinScannerPermission": "EatApp needs camera access to scan a code. Allow it in Settings, or type the code instead.",
+  "groupsJoinInvalidCode": "That code doesn't look right.",
+  "groupsJoinNameRequired": "Enter your name",
+  "groupsJoinNotFound": "That invitation is no longer valid.",
+  "groupsJoinAlreadyMember": "You're already in that group.",
+  "groupsJoinRateLimited": "Too many attempts. Please wait a few minutes.",
+  "groupsJoinNetwork": "Couldn't reach the server. Check your connection.",
+  "groupsJoinFailed": "Couldn't join the group. Please try again.",
+  "groupsJoinSuccess": "You joined {name}",
+  "@groupsJoinSuccess": {
+    "description": "Snackbar shown after a successful join; name is the group.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "groupsSyncFailed": "Sync failed — tap to retry"
 }

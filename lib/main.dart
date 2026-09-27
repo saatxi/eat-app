@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -21,6 +22,7 @@ import 'data/photo/photo_storage.dart';
 import 'data/repositories/restaurant_repository.dart';
 import 'data/repositories/user_preferences_repository.dart';
 import 'data/groups/group_gateway.dart';
+import 'data/groups/invite_gateway.dart';
 import 'data/share/backup_writer.dart';
 import 'data/sync/pending_sync_store.dart';
 import 'data/sync/photo_blob_store.dart';
@@ -28,6 +30,7 @@ import 'data/sync/supabase_transport.dart';
 import 'data/sync/sync_cursor_store.dart';
 import 'data/sync/sync_engine.dart';
 import 'data/sync/sync_service.dart';
+import 'features/groups/groups_controller.dart';
 import 'features/home/home_shell.dart';
 import 'widget/home_widget_service.dart';
 
@@ -114,6 +117,9 @@ Future<void> main() async {
   final GroupGateway? groupGateway = supabaseClient == null
       ? null
       : SupabaseGroupGateway(supabaseClient);
+  final InviteGateway? inviteGateway = supabaseClient == null
+      ? null
+      : SupabaseInviteGateway(supabaseClient);
   final SyncService? syncService = supabaseClient == null
       ? null
       : SyncService(
@@ -158,6 +164,20 @@ Future<void> main() async {
   // resolves a content:// Uri to a real path copied into the cache. The
   // cold-start file arrives once through getInitialMedia, every later one on
   // the stream; both land at the same review screen.
+  // Invitation links (eatapp://join/<token>) arrive the same way the widget's
+  // do: one URI on a cold start, a stream while the app runs. Resolved to a
+  // token by the shell, so a link that isn't ours is ignored rather than
+  // opening the join screen on nonsense.
+  final AppLinks appLinks = AppLinks();
+  Uri? initialInviteUri;
+  try {
+    initialInviteUri = await appLinks.getInitialLink();
+  } on Object {
+    // No platform link support (or nothing to report): stay in the app.
+    initialInviteUri = null;
+  }
+  final Stream<Uri> inviteLinkStream = appLinks.uriLinkStream;
+
   final ReceiveSharingIntent sharingIntent = ReceiveSharingIntent.instance;
   final String? initialSharedFilePath = _sharedFilePath(
     await sharingIntent.getInitialMedia(),
@@ -181,11 +201,14 @@ Future<void> main() async {
       appVersion: appVersion,
       identityGateway: identityGateway,
       groupGateway: groupGateway,
+      inviteGateway: inviteGateway,
       syncService: syncService,
       initialSharedFilePath: initialSharedFilePath,
       sharedFileStream: sharedFileStream,
       initialWidgetUri: initialWidgetUri,
       widgetClickStream: widgetClickStream,
+      initialInviteUri: initialInviteUri,
+      inviteLinkStream: inviteLinkStream,
     ),
   );
 }
@@ -218,11 +241,14 @@ class EatApp extends StatefulWidget {
     this.appVersion,
     this.identityGateway,
     this.groupGateway,
+    this.inviteGateway,
     this.syncService,
     this.initialSharedFilePath,
     this.sharedFileStream,
     this.initialWidgetUri,
     this.widgetClickStream,
+    this.initialInviteUri,
+    this.inviteLinkStream,
   });
 
   /// Null in tests and previews, where an in-memory repository keeps the widget
@@ -250,6 +276,10 @@ class EatApp extends StatefulWidget {
   final GroupGateway? groupGateway;
   final SyncService? syncService;
 
+  /// The invitation backend, over the `create-invite` / `join-group` Edge
+  /// Functions. Null under the same condition as [identityGateway].
+  final InviteGateway? inviteGateway;
+
   /// Null except on the cold start that opened the app via "Open with EatApp"
   /// on a shared restaurant file.
   final String? initialSharedFilePath;
@@ -267,6 +297,15 @@ class EatApp extends StatefulWidget {
   /// while the app is already running. Null in tests.
   final Stream<Uri?>? widgetClickStream;
 
+  /// The cold-start deep link that opened the app on an invitation
+  /// (`eatapp://join/<token>`), or null. Resolved to the join screen by the
+  /// shell.
+  final Uri? initialInviteUri;
+
+  /// The warm-start counterpart of [initialInviteUri] — an invitation link
+  /// arriving while the app is already running. Null in tests.
+  final Stream<Uri>? inviteLinkStream;
+
   @override
   State<EatApp> createState() => _EatAppState();
 }
@@ -280,6 +319,29 @@ class _EatAppState extends State<EatApp> {
 
   late final PhotoPicker _photoPicker =
       widget.photoPicker ?? ImagePickerPhotoPicker();
+
+  /// The one groups controller for the whole app, published through the scope
+  /// so the list's selector, the invite/join screens and a deep link all share
+  /// it. Built here (rather than by the Journal) because a pushed join screen,
+  /// and a link that opens one from anywhere, must reach the same instance.
+  late final GroupsController _groupsController;
+
+  @override
+  void initState() {
+    super.initState();
+    _groupsController = GroupsController(
+      preferences: _preferences,
+      gateway: widget.groupGateway,
+      identity: widget.identityGateway,
+      sync: widget.syncService,
+    );
+  }
+
+  @override
+  void dispose() {
+    _groupsController.dispose();
+    super.dispose();
+  }
 
   /// Resolves the device's preferred language to one we ship, falling back to
   /// English — without this, Flutter's default resolution picks the first
@@ -309,7 +371,9 @@ class _EatAppState extends State<EatApp> {
       appVersion: widget.appVersion,
       identity: widget.identityGateway,
       groups: widget.groupGateway,
+      invites: widget.inviteGateway,
       sync: widget.syncService,
+      groupsController: _groupsController,
       // Rebuilding from the repository rather than from local state is what makes
       // a change survive the widget being recreated, and what lets every stored
       // value be the single source of truth for what is on screen.
@@ -340,6 +404,8 @@ class _EatAppState extends State<EatApp> {
               sharedFileStream: widget.sharedFileStream,
               initialWidgetUri: widget.initialWidgetUri,
               widgetClickStream: widget.widgetClickStream,
+              initialInviteUri: widget.initialInviteUri,
+              inviteLinkStream: widget.inviteLinkStream,
             ),
           );
         },

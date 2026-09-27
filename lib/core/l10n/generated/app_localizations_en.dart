@@ -835,5 +835,116 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupsSyncNow => 'Sync now';
 
   @override
+  String get groupsInviteAction => 'Invite';
+
+  @override
+  String groupsInviteTitle(String name) {
+    return 'Invite to $name';
+  }
+
+  @override
+  String get groupsInviteLoading => 'Creating an invitation…';
+
+  @override
+  String get groupsInviteCreateFailed =>
+      'Couldn\'t create an invitation. Please try again.';
+
+  @override
+  String get groupsInviteRetry => 'Try again';
+
+  @override
+  String get groupsInviteNewLink => 'New link';
+
+  @override
+  String get groupsInviteCodeLabel => 'Code';
+
+  @override
+  String get groupsInviteShare => 'Share link';
+
+  @override
+  String get groupsInviteCopyLink => 'Copy link';
+
+  @override
+  String get groupsInviteCopied => 'Copied to the clipboard';
+
+  @override
+  String groupsInviteShareText(String name, String link) {
+    return 'Join the group \"$name\" on EatApp:\n$link';
+  }
+
+  @override
+  String groupsInviteDetails(int days, int uses) {
+    return 'Valid for $days days · up to $uses people';
+  }
+
+  @override
+  String get groupsActionJoin => 'Join a group';
+
+  @override
+  String get groupsJoinTitle => 'Join a group';
+
+  @override
+  String get groupsJoinAction => 'Join';
+
+  @override
+  String get groupsJoinLoading => 'Joining…';
+
+  @override
+  String get groupsJoinCodeLabel => 'Invitation code';
+
+  @override
+  String get groupsJoinCodeHint => 'Paste a link or type the code';
+
+  @override
+  String get groupsJoinNameLabel => 'Your name';
+
+  @override
+  String get groupsJoinNameHint => 'How other members will see you';
+
+  @override
+  String get groupsJoinScan => 'Scan QR code';
+
+  @override
+  String get groupsJoinScannerTitle => 'Scan invitation';
+
+  @override
+  String get groupsJoinScannerHint => 'Point the camera at the QR code';
+
+  @override
+  String get groupsJoinScannerError => 'Couldn\'t start the camera.';
+
+  @override
+  String get groupsJoinScannerPermission =>
+      'EatApp needs camera access to scan a code. Allow it in Settings, or type the code instead.';
+
+  @override
+  String get groupsJoinInvalidCode => 'That code doesn\'t look right.';
+
+  @override
+  String get groupsJoinNameRequired => 'Enter your name';
+
+  @override
+  String get groupsJoinNotFound => 'That invitation is no longer valid.';
+
+  @override
+  String get groupsJoinAlreadyMember => 'You\'re already in that group.';
+
+  @override
+  String get groupsJoinRateLimited =>
+      'Too many attempts. Please wait a few minutes.';
+
+  @override
+  String get groupsJoinNetwork =>
+      'Couldn\'t reach the server. Check your connection.';
+
+  @override
+  String get groupsJoinFailed => 'Couldn\'t join the group. Please try again.';
+
+  @override
+  String groupsJoinSuccess(String name) {
+    return 'You joined $name';
+  }
+
+  @override
   String get groupsSyncFailed => 'Sync failed — tap to retry';
 }

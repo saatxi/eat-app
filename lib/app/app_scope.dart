@@ -2,11 +2,13 @@ import 'package:flutter/widgets.dart';
 
 import '../core/app_version.dart';
 import '../data/groups/group_gateway.dart';
+import '../data/groups/invite_gateway.dart';
 import '../data/photo/photo_picker.dart';
 import '../data/repositories/restaurant_repository.dart';
 import '../data/repositories/user_preferences_repository.dart';
 import '../data/supabase/identity.dart';
 import '../data/sync/sync_service.dart';
+import '../features/groups/groups_controller.dart';
 
 /// Hands the app's long-lived collaborators to any screen that needs them.
 ///
@@ -30,7 +32,9 @@ class AppScope extends InheritedWidget {
     this.appVersion,
     this.identity,
     this.groups,
+    this.invites,
     this.sync,
+    this.groupsController,
     required super.child,
   });
 
@@ -48,6 +52,16 @@ class AppScope extends InheritedWidget {
   /// [identity]; personal mode never builds or touches them.
   final GroupGateway? groups;
   final SyncService? sync;
+
+  /// The invitation backend, over the `create-invite` / `join-group` Edge
+  /// Functions. Null under the same condition as [groups].
+  final InviteGateway? invites;
+
+  /// The one [GroupsController] for the whole app, so the list's selector, the
+  /// invite/join screens and a deep link all share the same selection and the
+  /// same loaded roster. Null only where the tree is built without one — the
+  /// bare widget tests that construct an [AppScope] directly.
+  final GroupsController? groupsController;
 
   /// What the platform reports for the running build, read once at startup.
   /// Null hides the settings screen's About section — the case in a bare widget
@@ -72,5 +86,7 @@ class AppScope extends InheritedWidget {
       oldWidget.appVersion != appVersion ||
       oldWidget.identity != identity ||
       oldWidget.groups != groups ||
-      oldWidget.sync != sync;
+      oldWidget.invites != invites ||
+      oldWidget.sync != sync ||
+      oldWidget.groupsController != groupsController;
 }

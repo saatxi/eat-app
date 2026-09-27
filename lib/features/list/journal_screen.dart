@@ -51,10 +51,6 @@ class JournalScreen extends StatefulWidget {
 class _JournalScreenState extends State<JournalScreen> {
   RestaurantListController? _controller;
 
-  /// The group scope selector's state. Built only when the app has a groups
-  /// backend — [GroupsController.canUseGroups] gates its widget.
-  GroupsController? _groupsController;
-
   /// Owned here rather than by the bar so the screen can push the active query
   /// back into it when a filter change resets it.
   final TextEditingController _searchController = TextEditingController();
@@ -67,19 +63,12 @@ class _JournalScreenState extends State<JournalScreen> {
       repository: scope.restaurants,
       preferences: scope.preferences,
     );
-    _groupsController ??= GroupsController(
-      preferences: scope.preferences,
-      gateway: scope.groups,
-      identity: scope.identity,
-      sync: scope.sync,
-    );
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     _controller?.dispose();
-    _groupsController?.dispose();
     super.dispose();
   }
 
@@ -108,8 +97,22 @@ class _JournalScreenState extends State<JournalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final GroupsController? groups = AppScope.of(context).groupsController;
+    // The app bar's "Members" action and the selector both read the groups
+    // selection, so rebuild the whole screen when it moves.
+    if (groups == null) {
+      return _scaffold(context);
+    }
+    return ListenableBuilder(
+      listenable: groups,
+      builder: (BuildContext context, Widget? child) => _scaffold(context),
+    );
+  }
+
+  Widget _scaffold(BuildContext context) {
     final RestaurantListController controller = _controller!;
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final GroupsController? groups = AppScope.of(context).groupsController;
 
     return Scaffold(
       appBar: AppBar(
@@ -123,9 +126,9 @@ class _JournalScreenState extends State<JournalScreen> {
             ),
           // Only meaningful inside a group: "Members" opens the roster of the
           // one currently selected.
-          if (_groupsController?.state.selected != null)
+          if (groups?.state.selected != null)
             IconButton(
-              onPressed: () => _openMembers(_groupsController!.state.selected!),
+              onPressed: () => _openMembers(groups!.state.selected!),
               tooltip: l10n.groupsMembersTitle,
               icon: const Icon(Icons.group_outlined),
             ),
@@ -161,8 +164,8 @@ class _JournalScreenState extends State<JournalScreen> {
           }
           return Column(
             children: <Widget>[
-              if (_groupsController != null && _groupsController!.canUseGroups)
-                GroupSelector(controller: _groupsController!),
+              if (groups != null && groups.canUseGroups)
+                GroupSelector(controller: groups),
               JournalFilterBar(
                 controller: controller,
                 state: state,

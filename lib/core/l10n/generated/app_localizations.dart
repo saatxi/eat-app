@@ -1600,6 +1600,204 @@ abstract class AppLocalizations {
   /// **'Sync now'**
   String get groupsSyncNow;
 
+  /// No description provided for @groupsInviteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite'**
+  String get groupsInviteAction;
+
+  /// The invite screen's title, naming the group being invited to.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite to {name}'**
+  String groupsInviteTitle(String name);
+
+  /// No description provided for @groupsInviteLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating an invitation…'**
+  String get groupsInviteLoading;
+
+  /// No description provided for @groupsInviteCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create an invitation. Please try again.'**
+  String get groupsInviteCreateFailed;
+
+  /// No description provided for @groupsInviteRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get groupsInviteRetry;
+
+  /// No description provided for @groupsInviteNewLink.
+  ///
+  /// In en, this message translates to:
+  /// **'New link'**
+  String get groupsInviteNewLink;
+
+  /// No description provided for @groupsInviteCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get groupsInviteCodeLabel;
+
+  /// No description provided for @groupsInviteShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share link'**
+  String get groupsInviteShare;
+
+  /// No description provided for @groupsInviteCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get groupsInviteCopyLink;
+
+  /// No description provided for @groupsInviteCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to the clipboard'**
+  String get groupsInviteCopied;
+
+  /// The text the share sheet carries; name is the group, link the invitation link.
+  ///
+  /// In en, this message translates to:
+  /// **'Join the group \"{name}\" on EatApp:\n{link}'**
+  String groupsInviteShareText(String name, String link);
+
+  /// An invitation's validity shown under its QR code.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid for {days} days · up to {uses} people'**
+  String groupsInviteDetails(int days, int uses);
+
+  /// No description provided for @groupsActionJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join a group'**
+  String get groupsActionJoin;
+
+  /// No description provided for @groupsJoinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Join a group'**
+  String get groupsJoinTitle;
+
+  /// No description provided for @groupsJoinAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get groupsJoinAction;
+
+  /// No description provided for @groupsJoinLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Joining…'**
+  String get groupsJoinLoading;
+
+  /// No description provided for @groupsJoinCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation code'**
+  String get groupsJoinCodeLabel;
+
+  /// No description provided for @groupsJoinCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a link or type the code'**
+  String get groupsJoinCodeHint;
+
+  /// No description provided for @groupsJoinNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get groupsJoinNameLabel;
+
+  /// No description provided for @groupsJoinNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'How other members will see you'**
+  String get groupsJoinNameHint;
+
+  /// No description provided for @groupsJoinScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR code'**
+  String get groupsJoinScan;
+
+  /// No description provided for @groupsJoinScannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan invitation'**
+  String get groupsJoinScannerTitle;
+
+  /// No description provided for @groupsJoinScannerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at the QR code'**
+  String get groupsJoinScannerHint;
+
+  /// No description provided for @groupsJoinScannerError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start the camera.'**
+  String get groupsJoinScannerError;
+
+  /// No description provided for @groupsJoinScannerPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'EatApp needs camera access to scan a code. Allow it in Settings, or type the code instead.'**
+  String get groupsJoinScannerPermission;
+
+  /// No description provided for @groupsJoinInvalidCode.
+  ///
+  /// In en, this message translates to:
+  /// **'That code doesn\'t look right.'**
+  String get groupsJoinInvalidCode;
+
+  /// No description provided for @groupsJoinNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your name'**
+  String get groupsJoinNameRequired;
+
+  /// No description provided for @groupsJoinNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'That invitation is no longer valid.'**
+  String get groupsJoinNotFound;
+
+  /// No description provided for @groupsJoinAlreadyMember.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re already in that group.'**
+  String get groupsJoinAlreadyMember;
+
+  /// No description provided for @groupsJoinRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Please wait a few minutes.'**
+  String get groupsJoinRateLimited;
+
+  /// No description provided for @groupsJoinNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the server. Check your connection.'**
+  String get groupsJoinNetwork;
+
+  /// No description provided for @groupsJoinFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t join the group. Please try again.'**
+  String get groupsJoinFailed;
+
+  /// Snackbar shown after a successful join; name is the group.
+  ///
+  /// In en, this message translates to:
+  /// **'You joined {name}'**
+  String groupsJoinSuccess(String name);
+
   /// No description provided for @groupsSyncFailed.
   ///
   /// In en, this message translates to:

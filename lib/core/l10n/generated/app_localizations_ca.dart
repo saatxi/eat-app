@@ -843,5 +843,116 @@ class AppLocalizationsCa extends AppLocalizations {
   String get groupsSyncNow => 'Sincronitza';
 
   @override
+  String get groupsInviteAction => 'Convida';
+
+  @override
+  String groupsInviteTitle(String name) {
+    return 'Convida a $name';
+  }
+
+  @override
+  String get groupsInviteLoading => 'S\'està creant la invitació…';
+
+  @override
+  String get groupsInviteCreateFailed =>
+      'No s\'ha pogut crear la invitació. Torna-ho a provar.';
+
+  @override
+  String get groupsInviteRetry => 'Torna-ho a provar';
+
+  @override
+  String get groupsInviteNewLink => 'Enllaç nou';
+
+  @override
+  String get groupsInviteCodeLabel => 'Codi';
+
+  @override
+  String get groupsInviteShare => 'Comparteix l\'enllaç';
+
+  @override
+  String get groupsInviteCopyLink => 'Copia l\'enllaç';
+
+  @override
+  String get groupsInviteCopied => 'Copiat al porta-retalls';
+
+  @override
+  String groupsInviteShareText(String name, String link) {
+    return 'Uneix-te al grup \"$name\" a EatApp:\n$link';
+  }
+
+  @override
+  String groupsInviteDetails(int days, int uses) {
+    return 'Vàlid durant $days dies · fins a $uses persones';
+  }
+
+  @override
+  String get groupsActionJoin => 'Uneix-te a un grup';
+
+  @override
+  String get groupsJoinTitle => 'Uneix-te a un grup';
+
+  @override
+  String get groupsJoinAction => 'Uneix-te';
+
+  @override
+  String get groupsJoinLoading => 'S\'està unint…';
+
+  @override
+  String get groupsJoinCodeLabel => 'Codi d\'invitació';
+
+  @override
+  String get groupsJoinCodeHint => 'Enganxa un enllaç o escriu el codi';
+
+  @override
+  String get groupsJoinNameLabel => 'El teu nom';
+
+  @override
+  String get groupsJoinNameHint => 'Com et veuran els altres membres';
+
+  @override
+  String get groupsJoinScan => 'Escaneja el codi QR';
+
+  @override
+  String get groupsJoinScannerTitle => 'Escaneja la invitació';
+
+  @override
+  String get groupsJoinScannerHint => 'Apunta la càmera al codi QR';
+
+  @override
+  String get groupsJoinScannerError => 'No s\'ha pogut iniciar la càmera.';
+
+  @override
+  String get groupsJoinScannerPermission =>
+      'EatApp necessita accés a la càmera per escanejar un codi. Activa\'l als Ajustos o escriu el codi.';
+
+  @override
+  String get groupsJoinInvalidCode => 'Aquest codi no sembla correcte.';
+
+  @override
+  String get groupsJoinNameRequired => 'Escriu el teu nom';
+
+  @override
+  String get groupsJoinNotFound => 'Aquesta invitació ja no és vàlida.';
+
+  @override
+  String get groupsJoinAlreadyMember => 'Ja ets en aquest grup.';
+
+  @override
+  String get groupsJoinRateLimited => 'Massa intents. Espera uns minuts.';
+
+  @override
+  String get groupsJoinNetwork =>
+      'No s\'ha pogut connectar amb el servidor. Comprova la connexió.';
+
+  @override
+  String get groupsJoinFailed =>
+      'No s\'ha pogut unir al grup. Torna-ho a provar.';
+
+  @override
+  String groupsJoinSuccess(String name) {
+    return 'T\'has unit a $name';
+  }
+
+  @override
   String get groupsSyncFailed => 'Error en sincronitzar: toca per reintentar';
 }

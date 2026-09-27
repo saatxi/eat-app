@@ -402,20 +402,22 @@ drift 15→16 amb les metadades de sincronització) i 3 (identitat i client
 Supabase) estan fetes i verificades; el seu registre viu a git, a `supabase/`
 i a `lib/data/supabase/`. Queden pendent:
 
-1. **Capa de sincronització** (`lib/data/sync/`) — avançada: la cua de
-   canvis pendents, el cursor de pull per grup, el motor (`SyncEngine`),
-   l'abstracció del transport (`SyncTransport`), el mapatge de files i la
-   implementació Supabase (`SupabaseSyncTransport`) ja hi són, amb fakes a
-   mà per als tests. Falta: la pujada/baixada de fotos amb Storage,
-   l'indicador d'estat a la UI, i el cablejat amb el repositori (marcar
-   files `dirty`, esborrat suau de les files compartides i el filtrat
-   `deletedAt` a les consultes).
-2. **Grups i UI** (`lib/features/groups/`): creació de grup, selector de grup
-   a la llista, pantalla de membres (expulsió/marxar), totes les cadenes als
+1. **Capa de sincronització** (`lib/data/sync/`) — feta: cua de canvis
+   pendents, cursor de pull per grup, `SyncEngine`, `SyncTransport`, mapatge de
+   files, `SupabaseSyncTransport`, pujada/baixada de fotos amb Storage, el
+   cablejat amb el repositori (files `dirty`, esborrat suau, filtrat
+   `deletedAt`) i l'indicador d'estat a la UI.
+2. **Grups i UI** (`lib/features/groups/`) — feta: creació de grup, selector a
+   la llista, pantalla de membres (expulsió/marxar) i totes les cadenes als
    tres fitxers ARB.
-3. **Invitacions**: QR (`qr_flutter` + `mobile_scanner`), enllaç profund
-   (`eatapp://join/<token>` + App Links/Universal Links), codi alfanumèric de
-   reserva, aprovació opcional del creador via `join-group`.
+3. **Invitacions** (`lib/features/groups/invite_screen.dart`,
+   `join_screen.dart`, `lib/data/groups/invite_*`) — feta la part de client:
+   QR (`qr_flutter`), escàner (`mobile_scanner`), enllaç profund
+   `eatapp://join/<token>` (`app_links`, amb intent-filter a Android i
+   `CFBundleURLTypes` a iOS) i el codi alfanumèric de reserva, sobre les Edge
+   Functions `create-invite` / `join-group`. Pendent: els App
+   Links/Universal Links `https://…/join/<token>` (cal un domini i el seu
+   `assetlinks.json`/AAC) i l'aprovació opcional del creador.
 4. **Enduriment**: RLS verificada amb tests SQL, rate-limit d'invitacions,
    política d'expulsió/dissolució, exportació com a xarxa de seguretat;
    `flutter analyze` + `flutter test` verds a cada fase.

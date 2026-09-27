@@ -100,6 +100,16 @@ dependencies:
   # never disagree.
   package_info_plus: ^10.2.1
 
+  # Invitations (phase 4 of plans/shared-groups-database.md). qr_flutter draws
+  # the invitation QR the owner shows; mobile_scanner reads one back on the
+  # joining side (its Android half needs the CAMERA permission declared in the
+  # manifest); app_links delivers the eatapp://join/<token> deep link on both a
+  # cold and a warm start. All three are presentation/deep-link only — the token
+  # itself is validated server-side by the join-group Edge Function.
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.4.2
+  app_links: ^7.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

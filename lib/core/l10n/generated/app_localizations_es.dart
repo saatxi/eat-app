@@ -843,5 +843,117 @@ class AppLocalizationsEs extends AppLocalizations {
   String get groupsSyncNow => 'Sincronizar';
 
   @override
+  String get groupsInviteAction => 'Invitar';
+
+  @override
+  String groupsInviteTitle(String name) {
+    return 'Invitar a $name';
+  }
+
+  @override
+  String get groupsInviteLoading => 'Creando una invitación…';
+
+  @override
+  String get groupsInviteCreateFailed =>
+      'No se pudo crear la invitación. Vuelve a intentarlo.';
+
+  @override
+  String get groupsInviteRetry => 'Reintentar';
+
+  @override
+  String get groupsInviteNewLink => 'Enlace nuevo';
+
+  @override
+  String get groupsInviteCodeLabel => 'Código';
+
+  @override
+  String get groupsInviteShare => 'Compartir enlace';
+
+  @override
+  String get groupsInviteCopyLink => 'Copiar enlace';
+
+  @override
+  String get groupsInviteCopied => 'Copiado al portapapeles';
+
+  @override
+  String groupsInviteShareText(String name, String link) {
+    return 'Únete al grupo \"$name\" en EatApp:\n$link';
+  }
+
+  @override
+  String groupsInviteDetails(int days, int uses) {
+    return 'Válido durante $days días · hasta $uses personas';
+  }
+
+  @override
+  String get groupsActionJoin => 'Unirse a un grupo';
+
+  @override
+  String get groupsJoinTitle => 'Unirse a un grupo';
+
+  @override
+  String get groupsJoinAction => 'Unirse';
+
+  @override
+  String get groupsJoinLoading => 'Uniéndose…';
+
+  @override
+  String get groupsJoinCodeLabel => 'Código de invitación';
+
+  @override
+  String get groupsJoinCodeHint => 'Pega un enlace o escribe el código';
+
+  @override
+  String get groupsJoinNameLabel => 'Tu nombre';
+
+  @override
+  String get groupsJoinNameHint => 'Cómo te verán los demás miembros';
+
+  @override
+  String get groupsJoinScan => 'Escanear código QR';
+
+  @override
+  String get groupsJoinScannerTitle => 'Escanear invitación';
+
+  @override
+  String get groupsJoinScannerHint => 'Apunta la cámara al código QR';
+
+  @override
+  String get groupsJoinScannerError => 'No se pudo iniciar la cámara.';
+
+  @override
+  String get groupsJoinScannerPermission =>
+      'EatApp necesita acceso a la cámara para escanear un código. Actívalo en Ajustes o escribe el código.';
+
+  @override
+  String get groupsJoinInvalidCode => 'Ese código no parece correcto.';
+
+  @override
+  String get groupsJoinNameRequired => 'Escribe tu nombre';
+
+  @override
+  String get groupsJoinNotFound => 'Esa invitación ya no es válida.';
+
+  @override
+  String get groupsJoinAlreadyMember => 'Ya estás en ese grupo.';
+
+  @override
+  String get groupsJoinRateLimited =>
+      'Demasiados intentos. Espera unos minutos.';
+
+  @override
+  String get groupsJoinNetwork =>
+      'No se pudo conectar con el servidor. Comprueba tu conexión.';
+
+  @override
+  String get groupsJoinFailed =>
+      'No se pudo unir al grupo. Vuelve a intentarlo.';
+
+  @override
+  String groupsJoinSuccess(String name) {
+    return 'Te has unido a $name';
+  }
+
+  @override
   String get groupsSyncFailed => 'Error al sincronizar: toca para reintentar';
 }

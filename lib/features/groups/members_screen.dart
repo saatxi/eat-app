@@ -6,6 +6,7 @@ import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/groups/group_models.dart';
+import 'invite_screen.dart';
 import 'members_controller.dart';
 
 /// One group's members: who is in it, an owner's power to remove someone, and
@@ -108,6 +109,19 @@ class _MembersScreenState extends State<MembersScreen> {
       appBar: AppBar(
         title: Text(widget.group.name),
         actions: <Widget>[
+          // Only an owner may invite, and the create-invite function re-checks
+          // it server-side.
+          if (widget.group.role == GroupRole.owner)
+            IconButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (BuildContext context) =>
+                      InviteScreen(group: widget.group),
+                ),
+              ),
+              tooltip: l10n.groupsInviteAction,
+              icon: const Icon(Icons.person_add_alt_1_rounded),
+            ),
           TextButton(
             onPressed: _leave,
             child: Text(l10n.groupsActionLeave),

@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 
 import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/widgets/empty_state.dart';
+import '../../data/groups/invite_link.dart';
 import '../../widget/home_widget_snapshot.dart';
 import '../detail/restaurant_detail_screen.dart';
 import '../edit/restaurant_edit_screen.dart';
+import '../groups/join_screen.dart';
 import '../import_export/import_screen.dart';
 import '../list/journal_screen.dart';
 import '../list/restaurant_ui_model.dart';
@@ -38,6 +40,8 @@ class HomeShell extends StatefulWidget {
     this.sharedFileStream,
     this.initialWidgetUri,
     this.widgetClickStream,
+    this.initialInviteUri,
+    this.inviteLinkStream,
   });
 
   /// Non-null only on the cold start that opened the app via "Open with
@@ -57,6 +61,15 @@ class HomeShell extends StatefulWidget {
   /// running.
   final Stream<Uri?>? widgetClickStream;
 
+  /// Non-null only on the cold start that opened the app via an invitation
+  /// link (`eatapp://join/<token>`). Resolved to a token, so a link that isn't
+  /// ours is ignored rather than pushed.
+  final Uri? initialInviteUri;
+
+  /// The warm-start counterpart: an invitation link arriving while the app is
+  /// already running.
+  final Stream<Uri>? inviteLinkStream;
+
   /// The width at which the shell stops looking like a phone. Material's
   /// "expanded" window class, and comfortably above a phone in landscape.
   static const double twoPaneBreakpoint = 840;
@@ -75,6 +88,7 @@ class _HomeShellState extends State<HomeShell> {
 
   StreamSubscription<String>? _sharedFiles;
   StreamSubscription<Uri?>? _widgetClicks;
+  StreamSubscription<Uri>? _inviteLinks;
 
   /// Read from `MediaQuery` rather than a `LayoutBuilder` so the callbacks below
   /// can ask the same question the build method did.
@@ -104,12 +118,22 @@ class _HomeShellState extends State<HomeShell> {
       );
     }
     _widgetClicks = widget.widgetClickStream?.listen(_openWidgetLink);
+
+    final Uri? initialInvite = widget.initialInviteUri;
+    if (initialInvite != null) {
+      // Same first-frame constraint as the cold-start import above.
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _openInviteLink(initialInvite),
+      );
+    }
+    _inviteLinks = widget.inviteLinkStream?.listen(_openInviteLink);
   }
 
   @override
   void dispose() {
     _sharedFiles?.cancel();
     _widgetClicks?.cancel();
+    _inviteLinks?.cancel();
     super.dispose();
   }
 
@@ -182,6 +206,20 @@ class _HomeShellState extends State<HomeShell> {
 
   /// Opens the review screen for a file handed over by another app. Pushed on
   /// top of whatever is showing, since "Open with" can arrive on any screen.
+  /// Opens the join screen named by an invitation link. A link that isn't one of
+  /// ours (or carries a malformed token) is ignored rather than pushed.
+  void _openInviteLink(Uri? uri) {
+    final String? token = uri == null ? null : inviteTokenFromUri(uri);
+    if (!mounted || token == null) {
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => JoinScreen(initialToken: token),
+      ),
+    );
+  }
+
   void _openImport(String filePath) {
     if (!mounted) {
       return;

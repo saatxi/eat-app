@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The QR scanner (mobile_scanner) is the app's only camera user, and
+         scanning an invitation QR is the only thing it does with it. This is
+         the app's single permission; the rest of the app still declares none,
+         and the sharing flow still needs none. -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <application
         android:label="eatapp"
         android:name="${applicationName}"
@@ -20,6 +25,13 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- Flutter's own deep linking is turned off so the app_links
+                 plugin (not the framework's route-by-name handling) receives
+                 the eatapp://join/<token> intent below and hands it to the
+                 shell. -->
+            <meta-data
+              android:name="flutter_deeplinking_enabled"
+              android:value="false" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -55,6 +67,16 @@
                     android:host="*"
                     android:mimeType="*/*"
                     android:pathPattern=".*\\.eatapp" />
+            </intent-filter>
+            <!-- Invitation links: eatapp://join/<token>. Delivered to the app
+                 by the app_links plugin, which hands the URI to the shell's
+                 join screen. BROWSABLE so a link tapped in a browser or chat
+                 reaches us. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="eatapp" android:host="join" />
             </intent-filter>
         </activity>
         <!-- The "Want to try" home-screen widget. The provider draws the card
