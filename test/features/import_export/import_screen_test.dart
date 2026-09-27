@@ -29,7 +29,6 @@ import '../../data/photo/photo_fakes.dart';
 /// one that fails.
 void main() {
   late AppDatabase db;
-  late AppDatabase sourceDb;
   late RestaurantRepository repository;
   late Directory temp;
   late File freshFile;
@@ -42,33 +41,42 @@ void main() {
 
   /// Writes the share file in `setUp`, outside the fake clock, using the real
   /// writer — so the bytes are exactly what the app would have sent.
+  ///
+  /// The source database it needs is its own, opened and closed here. Held open
+  /// for the rest of the test instead it would be a second live `AppDatabase`
+  /// beside the target `db`, which drift warns about — a false alarm for two
+  /// unrelated in-memory databases on separate executors, but easy to avoid.
   Future<File> writeShareFile(
     List<Restaurant> restaurants, {
     String name = 'shared.eatapp',
   }) async {
-    final RestaurantRepository source = RestaurantRepository(sourceDb);
-    for (final Restaurant row in restaurants) {
-      await source.insert(
-        restaurant(
-          id: row.id,
-          name: row.name,
-          cuisineType: row.cuisineType,
-          streetAddress: row.streetAddress,
-        ),
+    final AppDatabase sourceDb = createTestDatabase();
+    try {
+      final RestaurantRepository source = RestaurantRepository(sourceDb);
+      for (final Restaurant row in restaurants) {
+        await source.insert(
+          restaurant(
+            id: row.id,
+            name: row.name,
+            cuisineType: row.cuisineType,
+            streetAddress: row.streetAddress,
+          ),
+        );
+      }
+      return await writeRestaurantShareFile(
+        directory: temp,
+        restaurants: await source.exportRestaurants(),
       );
+    } finally {
+      await sourceDb.close();
     }
-    return writeRestaurantShareFile(
-      directory: temp,
-      restaurants: await source.exportRestaurants(),
-    );
   }
 
   setUp(() async {
-    db = createTestDatabase();
-    sourceDb = createTestDatabase();
-    repository = RestaurantRepository(db);
     temp = Directory.systemTemp.createTempSync('eatapp-import-test');
     done = false;
+    // Build the file first, so its throwaway source database has come and gone
+    // before the target `db` is opened below: the two never overlap.
     freshFile = await writeShareFile(<Restaurant>[
       restaurant(
         id: 'incoming',
@@ -77,11 +85,12 @@ void main() {
         streetAddress: sharedStreet,
       ),
     ]);
+    db = createTestDatabase();
+    repository = RestaurantRepository(db);
   });
 
   tearDown(() async {
     await db.close();
-    await sourceDb.close();
     // Windows can hold a just-released temp directory for a moment, and a
     // leftover directory is not worth failing a test over.
     try {
