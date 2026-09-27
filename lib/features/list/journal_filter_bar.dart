@@ -10,15 +10,11 @@ import '../../core/widgets/presentation_bounds.dart';
 import '../../data/models/restaurant_sort.dart';
 import 'restaurant_list_controller.dart';
 
-/// The Journal's top-of-screen controls: the prominent search field, the quick
-/// segments (All / Visited / Want to try / Favorites) and, folded underneath, the
-/// finer filter dimensions.
+/// The list's quick view: everything / visited / want-to-try / favourites.
 ///
-/// The segments are new: where the old design put "visited" in the filter panel
-/// and gave favourites a whole bottom tab, this one line of chips answers the
-/// question a journal user actually asks first — "what am I looking at right
-/// now?" — without opening a panel. Only the search field is always visible; the
-/// finer filters stay folded until asked for.
+/// Exclusive by nature — picking one clears the other — so it is drawn as a
+/// single dropdown chip like every other dimension rather than as a row of
+/// chips, which is what keeps the filter panel to one tidy grid.
 enum JournalSegment {
   all,
   visited,
@@ -37,6 +33,13 @@ enum JournalSegment {
   bool get favoritesOnly => this == JournalSegment.favorites;
 }
 
+/// The top of the list: the prominent search field and, folded underneath, the
+/// filter dimensions as a grid of dropdown chips — including the quick view
+/// (all / visited / want-to-try / favourites) and the three location dimensions,
+/// each its own chip rather than one sheet.
+///
+/// Only the search field is always visible; the chip grid stays folded until
+/// asked for, so the list gets the vertical space.
 class JournalFilterBar extends StatefulWidget {
   const JournalFilterBar({
     super.key,
@@ -55,7 +58,7 @@ class JournalFilterBar extends StatefulWidget {
 
   /// Hides the sort control and the filter panel while there is nothing to sort
   /// or filter yet (the initial load, or before any restaurant exists at all).
-  /// The search field and the segments stay.
+  /// The search field stays.
   final bool showFilters;
 
   @override
@@ -77,12 +80,25 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
   }
 
   int get _activeFilterCount =>
+      (_segment != JournalSegment.all ? 1 : 0) +
       (widget.state.minRating != null ? 1 : 0) +
       (widget.state.cuisineType != null ? 1 : 0) +
       (widget.state.city != null ? 1 : 0) +
       (widget.state.region != null ? 1 : 0) +
       (widget.state.country != null ? 1 : 0) +
       (widget.state.priceRange != null ? 1 : 0);
+
+  void _applySegment(JournalSegment segment) {
+    widget.controller.onFavoritesOnlyChange(segment.favoritesOnly);
+    widget.controller.onVisitedChange(segment.visitedFilter);
+  }
+
+  /// Clears every dimension, including the quick view — which lives outside
+  /// [RestaurantFilters], so the panel has to reset it separately.
+  void _clearAll() {
+    widget.controller.clearFilterDimensions();
+    widget.controller.onFavoritesOnlyChange(false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -160,32 +176,6 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
     );
   }
 
-  /// The quick segments, as a wrapping row: every segment stays on screen and,
-  /// at a large text size, the overflow flows onto a second line instead of
-  /// being clipped. Drawn inside the filter panel rather than above it, so the
-  /// search field and the list keep the vertical space.
-  Widget _segments(AppLocalizations l10n) {
-    final JournalSegment selected = _segment;
-    return Wrap(
-      spacing: AppSpacing.sm,
-      runSpacing: AppSpacing.sm,
-      children: <Widget>[
-        for (final JournalSegment segment in JournalSegment.values)
-          ChoiceChip(
-            label: Text(_segmentLabel(l10n, segment)),
-            selected: segment == selected,
-            onSelected: (_) {
-              if (segment == selected) {
-                return;
-              }
-              widget.controller.onFavoritesOnlyChange(segment.favoritesOnly);
-              widget.controller.onVisitedChange(segment.visitedFilter);
-            },
-          ),
-      ],
-    );
-  }
-
   Widget _filtersHeader(ThemeData theme, AppLocalizations l10n) {
     final int count = _activeFilterCount;
     return InkWell(
@@ -254,19 +244,11 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          // The quick segments lead the panel: "what am I looking at?" is the
-          // first question, the finer dimensions below are the refinement.
-          Text(
-            l10n.journalSegmentsLabel,
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _segments(l10n),
-          const SizedBox(height: AppSpacing.lg),
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: <Widget>[
+              _segmentChip(l10n),
               FilterDropdownChip(
                 selectedLabel: widget.state.minRating == null
                     ? l10n.listFilterMinRating
@@ -281,6 +263,9 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
                         );
                         close();
                       },
+                      trailingIcon: widget.state.minRating == rating
+                          ? const Icon(Icons.check_rounded)
+                          : null,
                       child: Text('$rating+'),
                     ),
                 ],
@@ -299,6 +284,9 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
                         );
                         close();
                       },
+                      trailingIcon: widget.state.priceRange == price
+                          ? const Icon(Icons.check_rounded)
+                          : null,
                       child: Text(priceRangeLabel(l10n, price)),
                     ),
                 ],
@@ -336,23 +324,34 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
                           close();
                         },
                         leadingIcon: Icon(cuisineIcon(entry.key)),
+                        trailingIcon: widget.state.cuisineType == entry.key
+                            ? const Icon(Icons.check_rounded)
+                            : null,
                         child: Text(entry.value),
                       ),
                   ],
                 ),
-              // City/region/country are unbounded free text, unlike the closed
-              // cuisine vocabulary above — a menu entry per value could run to
-              // dozens, so this one opens a sheet with all three groups instead.
-              if (widget.state.availableCities.isNotEmpty ||
-                  widget.state.availableRegions.isNotEmpty ||
-                  widget.state.availableCountries.isNotEmpty)
-                ActionChip(
-                  avatar: const Icon(Icons.location_on_outlined, size: 18),
-                  label: Text(
-                    _locationLabel(l10n),
-                  ),
-                  onPressed: _openLocationSheet,
-                ),
+              _locationChip(
+                l10n: l10n,
+                label: l10n.listFilterCity,
+                value: widget.state.city,
+                options: widget.state.availableCities,
+                onChanged: widget.controller.onCityChange,
+              ),
+              _locationChip(
+                l10n: l10n,
+                label: l10n.listFilterRegion,
+                value: widget.state.region,
+                options: widget.state.availableRegions,
+                onChanged: widget.controller.onRegionChange,
+              ),
+              _locationChip(
+                l10n: l10n,
+                label: l10n.listFilterCountry,
+                value: widget.state.country,
+                options: widget.state.availableCountries,
+                onChanged: widget.controller.onCountryChange,
+              ),
             ],
           ),
           // Only while there is something to clear, the same rule the header's
@@ -362,7 +361,7 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: widget.controller.clearFilterDimensions,
+                onPressed: _clearAll,
                 icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
                 label: Text(l10n.listActionClearFilters),
               ),
@@ -372,31 +371,67 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
     );
   }
 
-  String _locationLabel(AppLocalizations l10n) {
-    final int active =
-        (widget.state.city != null ? 1 : 0) +
-        (widget.state.region != null ? 1 : 0) +
-        (widget.state.country != null ? 1 : 0);
-    return active > 0
-        ? l10n.listFilterLocationActive(active)
-        : l10n.listFilterLocation;
+  /// The quick view as one dropdown, since its options are mutually exclusive.
+  Widget _segmentChip(AppLocalizations l10n) {
+    final JournalSegment selected = _segment;
+    return FilterDropdownChip(
+      selectedLabel: selected == JournalSegment.all
+          ? l10n.journalSegmentsLabel
+          : _segmentLabel(l10n, selected),
+      isActive: selected != JournalSegment.all,
+      menuBuilder: (VoidCallback close) => <Widget>[
+        for (final JournalSegment segment in JournalSegment.values)
+          MenuItemButton(
+            onPressed: () {
+              _applySegment(segment);
+              close();
+            },
+            trailingIcon: segment == selected
+                ? const Icon(Icons.check_rounded)
+                : null,
+            child: Text(_segmentLabel(l10n, segment)),
+          ),
+      ],
+    );
   }
 
-  Future<void> _openLocationSheet() => showModalBottomSheet<void>(
-        context: context,
-        builder: (BuildContext sheetContext) => _LocationSheet(
-          title: AppLocalizations.of(sheetContext).listFilterLocation,
-          city: widget.state.city,
-          availableCities: widget.state.availableCities,
-          onCityChange: widget.controller.onCityChange,
-          region: widget.state.region,
-          availableRegions: widget.state.availableRegions,
-          onRegionChange: widget.controller.onRegionChange,
-          country: widget.state.country,
-          availableCountries: widget.state.availableCountries,
-          onCountryChange: widget.controller.onCountryChange,
+  /// One location dimension as a dropdown chip: an "All" entry that clears the
+  /// dimension, then every value present in the data. Always drawn — even with
+  /// nothing to list — so the three dimensions read as a set rather than
+  /// appearing and disappearing with the data.
+  Widget _locationChip({
+    required AppLocalizations l10n,
+    required String label,
+    required String? value,
+    required List<String> options,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return FilterDropdownChip(
+      selectedLabel: value ?? label,
+      isActive: value != null,
+      menuBuilder: (VoidCallback close) => <Widget>[
+        MenuItemButton(
+          onPressed: () {
+            onChanged(null);
+            close();
+          },
+          trailingIcon:
+              value == null ? const Icon(Icons.check_rounded) : null,
+          child: Text(l10n.listFilterAll),
         ),
-      );
+        for (final String option in options)
+          MenuItemButton(
+            onPressed: () {
+              onChanged(value == option ? null : option);
+              close();
+            },
+            trailingIcon:
+                value == option ? const Icon(Icons.check_rounded) : null,
+            child: Text(option),
+          ),
+      ],
+    );
+  }
 
   static String _segmentLabel(AppLocalizations l10n, JournalSegment segment) =>
       switch (segment) {
@@ -417,148 +452,4 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
         RestaurantSort.name => l10n.listSortNameShort,
         RestaurantSort.rating => l10n.listSortRatingShort,
       };
-}
-
-/// The sheet the combined "Location" chip opens: city/region/country as three
-/// independent single-select groups, each with an "All" chip that clears that
-/// one dimension.
-class _LocationSheet extends StatefulWidget {
-  const _LocationSheet({
-    required this.title,
-    required this.city,
-    required this.availableCities,
-    required this.onCityChange,
-    required this.region,
-    required this.availableRegions,
-    required this.onRegionChange,
-    required this.country,
-    required this.availableCountries,
-    required this.onCountryChange,
-  });
-
-  final String title;
-  final String? city;
-  final List<String> availableCities;
-  final ValueChanged<String?> onCityChange;
-  final String? region;
-  final List<String> availableRegions;
-  final ValueChanged<String?> onRegionChange;
-  final String? country;
-  final List<String> availableCountries;
-  final ValueChanged<String?> onCountryChange;
-
-  @override
-  State<_LocationSheet> createState() => _LocationSheetState();
-}
-
-class _LocationSheetState extends State<_LocationSheet> {
-  // Mirrored locally: a modal route does not rebuild when the screen behind it
-  // changes, so the chips have to update themselves as they are tapped.
-  late String? _city = widget.city;
-  late String? _region = widget.region;
-  late String? _country = widget.country;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl,
-          AppSpacing.sm,
-          AppSpacing.xl,
-          AppSpacing.md,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(widget.title, style: Theme.of(context).textTheme.titleMedium),
-            _LocationGroup(
-              label: l10n.listFilterCity,
-              allLabel: l10n.listFilterAll,
-              selected: _city,
-              options: widget.availableCities,
-              onChanged: (String? value) {
-                setState(() => _city = value);
-                widget.onCityChange(value);
-              },
-              topPadding: AppSpacing.lg,
-            ),
-            _LocationGroup(
-              label: l10n.listFilterRegion,
-              allLabel: l10n.listFilterAll,
-              selected: _region,
-              options: widget.availableRegions,
-              onChanged: (String? value) {
-                setState(() => _region = value);
-                widget.onRegionChange(value);
-              },
-              topPadding: AppSpacing.lg,
-            ),
-            _LocationGroup(
-              label: l10n.listFilterCountry,
-              allLabel: l10n.listFilterAll,
-              selected: _country,
-              options: widget.availableCountries,
-              onChanged: (String? value) {
-                setState(() => _country = value);
-                widget.onCountryChange(value);
-              },
-              topPadding: AppSpacing.lg,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LocationGroup extends StatelessWidget {
-  const _LocationGroup({
-    required this.label,
-    required this.allLabel,
-    required this.selected,
-    required this.options,
-    required this.onChanged,
-    required this.topPadding,
-  });
-
-  final String label;
-  final String allLabel;
-  final String? selected;
-  final List<String> options;
-  final ValueChanged<String?> onChanged;
-  final double topPadding;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(top: topPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(label, style: Theme.of(context).textTheme.labelLarge),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: <Widget>[
-              ChoiceChip(
-                label: Text(allLabel),
-                selected: selected == null,
-                onSelected: (_) => onChanged(null),
-              ),
-              for (final String option in options)
-                ChoiceChip(
-                  label: Text(option),
-                  selected: selected == option,
-                  onSelected: (_) => onChanged(option),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }

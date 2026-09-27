@@ -1,0 +1,7 @@
+Refine the restaurants screen's filters, title and add action
+
+- Rename the section to Restaurants in every locale, so the app-bar title and the tab label match.
+- Draw the exclusive quick view (all / visited / want-to-try / favourites) as one dropdown chip like the other dimensions, instead of a row of chips that took a line of its own.
+- Give city, region and country a dropdown chip each, replacing the combined location sheet so every dimension is filtered the same way.
+- Move the add action from a floating button into the app bar, so it no longer covers the last cards in the list.
+- Drop the floating Cuina label from the cuisine picker, which an InputDecorator always floated over the filled field.
