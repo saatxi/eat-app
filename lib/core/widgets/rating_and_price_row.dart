@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../theme/tokens/app_radius.dart';
+import '../theme/tokens/app_spacing.dart';
 import 'presentation_bounds.dart';
 
 /// The stars-plus-"N/5"-plus-price-pill markup shared by the list row, the
@@ -96,7 +97,14 @@ class RatingAndPriceRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: mainAxisAlignment,
       mainAxisSize: MainAxisSize.min,
-      children: <Widget>[stars, price],
+      children: <Widget>[
+        stars,
+        // A breath between the stars and the price pill, so the two do not read
+        // as one run-together cluster. Skipped when there is no pill to space
+        // from.
+        if (priceLabel.isNotEmpty) const SizedBox(width: AppSpacing.sm),
+        price,
+      ],
     );
   }
 }
