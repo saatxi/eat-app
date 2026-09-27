@@ -161,7 +161,6 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                     ),
                     _CuisineField(
                       cuisineKey: state.cuisineType,
-                      label: l10n.editFieldCuisine,
                       placeholder: l10n.editCuisinePlaceholder,
                       errorText:
                           state.cuisineError ? l10n.editErrorCuisineRequired : null,
@@ -303,14 +302,12 @@ class _SectionLabel extends StatelessWidget {
 class _CuisineField extends StatelessWidget {
   const _CuisineField({
     required this.cuisineKey,
-    required this.label,
     required this.placeholder,
     required this.errorText,
     required this.onTap,
   });
 
   final String? cuisineKey;
-  final String label;
   final String placeholder;
   final String? errorText;
   final VoidCallback onTap;
@@ -326,8 +323,10 @@ class _CuisineField extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(4),
         child: InputDecorator(
+          // No `labelText`: on a filled field the label floats above it and
+          // overlaps the rounded corner, and the placeholder ("Select a
+          // cuisine") already says what the field is for.
           decoration: InputDecoration(
-            labelText: label,
             errorText: errorText,
             border: const OutlineInputBorder(),
           ),

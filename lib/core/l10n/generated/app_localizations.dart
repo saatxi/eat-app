@@ -493,7 +493,7 @@ abstract class AppLocalizations {
   /// No description provided for @navJournal.
   ///
   /// In en, this message translates to:
-  /// **'Journal'**
+  /// **'Restaurants'**
   String get navJournal;
 
   /// No description provided for @navRoulette.

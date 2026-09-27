@@ -122,7 +122,6 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
             onSubmitted: (_) => FocusScope.of(context).unfocus(),
           ),
         ),
-        _segments(l10n),
         if (widget.showFilters) ...<Widget>[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -161,31 +160,29 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
     );
   }
 
+  /// The quick segments, as a wrapping row: every segment stays on screen and,
+  /// at a large text size, the overflow flows onto a second line instead of
+  /// being clipped. Drawn inside the filter panel rather than above it, so the
+  /// search field and the list keep the vertical space.
   Widget _segments(AppLocalizations l10n) {
     final JournalSegment selected = _segment;
-    return SizedBox(
-      height: 40,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        children: <Widget>[
-          for (final JournalSegment segment in JournalSegment.values)
-            Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.sm),
-              child: ChoiceChip(
-                label: Text(_segmentLabel(l10n, segment)),
-                selected: segment == selected,
-                onSelected: (_) {
-                  if (segment == selected) {
-                    return;
-                  }
-                  widget.controller.onFavoritesOnlyChange(segment.favoritesOnly);
-                  widget.controller.onVisitedChange(segment.visitedFilter);
-                },
-              ),
-            ),
-        ],
-      ),
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: <Widget>[
+        for (final JournalSegment segment in JournalSegment.values)
+          ChoiceChip(
+            label: Text(_segmentLabel(l10n, segment)),
+            selected: segment == selected,
+            onSelected: (_) {
+              if (segment == selected) {
+                return;
+              }
+              widget.controller.onFavoritesOnlyChange(segment.favoritesOnly);
+              widget.controller.onVisitedChange(segment.visitedFilter);
+            },
+          ),
+      ],
     );
   }
 
@@ -257,6 +254,15 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          // The quick segments lead the panel: "what am I looking at?" is the
+          // first question, the finer dimensions below are the refinement.
+          Text(
+            l10n.journalSegmentsLabel,
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _segments(l10n),
+          const SizedBox(height: AppSpacing.lg),
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,

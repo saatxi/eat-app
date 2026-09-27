@@ -5,7 +5,6 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/empty_state.dart';
-import '../../core/widgets/pressable_scale.dart';
 import '../../core/widgets/staggered_entrance.dart';
 import '../import_export/share_service.dart';
 import 'journal_filter_bar.dart';
@@ -104,18 +103,17 @@ class _JournalScreenState extends State<JournalScreen> {
             tooltip: l10n.listActionShareAll,
             icon: const Icon(Icons.share_outlined),
           ),
+          // The add action lives in the app bar rather than in a floating
+          // button: a FAB floats over the very cards it is about and hides the
+          // last rows, which is exactly what it did here.
+          if (widget.onAddRestaurant != null)
+            IconButton(
+              onPressed: widget.onAddRestaurant,
+              tooltip: l10n.listActionAddRestaurant,
+              icon: const Icon(Icons.add_rounded),
+            ),
         ],
       ),
-      floatingActionButton: widget.onAddRestaurant == null
-          ? null
-          : PressableScale(
-              child: FloatingActionButton.extended(
-                onPressed: widget.onAddRestaurant,
-                tooltip: l10n.listActionAddRestaurant,
-                icon: const Icon(Icons.add_rounded),
-                label: Text(l10n.listActionAddRestaurant),
-              ),
-            ),
       body: ListenableBuilder(
         listenable: controller,
         builder: (BuildContext context, Widget? child) {
@@ -137,9 +135,13 @@ class _JournalScreenState extends State<JournalScreen> {
                 state: state,
                 searchController: _searchController,
                 // Nothing to sort or filter yet during the first load, or before
-                // any restaurant has ever been added.
+                // any restaurant has ever been added. The Favorites segment also
+                // keeps the panel open even when it matches nothing, so the way
+                // back to "All" is not hidden along with the empty list.
                 showFilters: !state.isInitialLoad &&
-                    (state.restaurants.isNotEmpty || state.hasActiveFilter),
+                    (state.restaurants.isNotEmpty ||
+                        state.hasActiveFilter ||
+                        state.favoritesOnly),
               ),
               Expanded(
                 child: RefreshIndicator(
@@ -171,7 +173,7 @@ class _JournalScreenState extends State<JournalScreen> {
           AppSpacing.lg,
           AppSpacing.sm,
           AppSpacing.lg,
-          AppSpacing.xxxl,
+          AppSpacing.xl,
         ),
         itemCount: skeletonRowCount,
         separatorBuilder: (BuildContext context, int index) =>
@@ -232,7 +234,7 @@ class _JournalScreenState extends State<JournalScreen> {
         AppSpacing.lg,
         AppSpacing.sm,
         AppSpacing.lg,
-        AppSpacing.xxxl,
+        AppSpacing.xl,
       ),
       itemCount: headerCount + (noResults ? 1 : state.restaurants.length),
       separatorBuilder: (BuildContext context, int index) =>

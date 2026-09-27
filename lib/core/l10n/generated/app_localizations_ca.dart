@@ -236,7 +236,7 @@ class AppLocalizationsCa extends AppLocalizations {
   String get priceRange6 => '50 € o més';
 
   @override
-  String get navJournal => 'Diari';
+  String get navJournal => 'Restaurants';
 
   @override
   String get navRoulette => 'Ruleta';

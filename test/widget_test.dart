@@ -43,13 +43,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   }
 
-  testWidgets('the app opens on the journal', (
+  testWidgets('the app opens on the restaurants list', (
     WidgetTester tester,
   ) async {
     await pumpApp(tester);
 
-    // The app-bar title and the bottom bar's label both read "Journal".
-    expect(find.text('Journal'), findsWidgets);
+    // The app-bar title and the bottom bar's label both read "Restaurants".
+    expect(find.text('Restaurants'), findsWidgets);
     expect(find.text('No restaurants yet'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
 
