@@ -94,7 +94,7 @@ struct EatAppWidgetView: View {
       Text(entry.label)
         .font(.caption2)
         .fontWeight(.bold)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Color.widgetAccent)
         .lineLimit(1)
 
       if entry.hasRestaurant {
@@ -137,10 +137,11 @@ struct EatAppWidgetView: View {
         Image(systemName: "shuffle")
       }
       .buttonStyle(.plain)
+      .tint(Color.widgetAccent)
     } else {
       // Before iOS 17 a widget can't run code on a button tap at all, so the
       // icon is drawn purely as a hint; tapping the card opens the app instead.
-      Image(systemName: "shuffle").foregroundStyle(.secondary)
+      Image(systemName: "shuffle").foregroundStyle(Color.widgetAccent)
     }
   }
 
@@ -153,9 +154,13 @@ struct EatAppWidgetView: View {
 }
 
 private extension Color {
-  /// Mercado Fresco's light surface (neutral t98), the same paper the Android
+  /// Terracota's light surface (neutral t98), the same cream paper the Android
   /// widget uses.
-  static let widgetSurface = Color(red: 1.0, green: 0.992, blue: 0.968)
+  static let widgetSurface = Color(red: 0.992, green: 0.973, blue: 0.949)
+
+  /// Terracota's clay primary (t40), used for the small header and the shuffle
+  /// glyph so the widget carries the app's accent.
+  static let widgetAccent = Color(red: 0.690, green: 0.333, blue: 0.188)
 }
 
 @main
