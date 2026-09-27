@@ -331,27 +331,25 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
                       ),
                   ],
                 ),
-              _locationChip(
-                l10n: l10n,
-                label: l10n.listFilterCity,
-                value: widget.state.city,
-                options: widget.state.availableCities,
-                onChanged: widget.controller.onCityChange,
-              ),
-              _locationChip(
-                l10n: l10n,
-                label: l10n.listFilterRegion,
-                value: widget.state.region,
-                options: widget.state.availableRegions,
-                onChanged: widget.controller.onRegionChange,
-              ),
-              _locationChip(
-                l10n: l10n,
-                label: l10n.listFilterCountry,
-                value: widget.state.country,
-                options: widget.state.availableCountries,
-                onChanged: widget.controller.onCountryChange,
-              ),
+              // Only the dimensions that actually have values are offered, the
+              // same rule the cuisine chip follows: an empty dropdown whose menu
+              // can only say "All" is noise.
+              if (widget.state.availableRegions.isNotEmpty)
+                _locationChip(
+                  l10n: l10n,
+                  label: l10n.listFilterRegion,
+                  value: widget.state.region,
+                  options: widget.state.availableRegions,
+                  onChanged: widget.controller.onRegionChange,
+                ),
+              if (widget.state.availableCountries.isNotEmpty)
+                _locationChip(
+                  l10n: l10n,
+                  label: l10n.listFilterCountry,
+                  value: widget.state.country,
+                  options: widget.state.availableCountries,
+                  onChanged: widget.controller.onCountryChange,
+                ),
             ],
           ),
           // Only while there is something to clear, the same rule the header's
@@ -396,9 +394,9 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
   }
 
   /// One location dimension as a dropdown chip: an "All" entry that clears the
-  /// dimension, then every value present in the data. Always drawn — even with
-  /// nothing to list — so the three dimensions read as a set rather than
-  /// appearing and disappearing with the data.
+  /// dimension, then every value present in the data. Only drawn when there is
+  /// something to list, so a dimension with no values never opens an
+  /// all-but-empty menu.
   Widget _locationChip({
     required AppLocalizations l10n,
     required String label,
