@@ -418,9 +418,13 @@ i a `lib/data/supabase/`. Queden pendent:
    Functions `create-invite` / `join-group`. Pendent: els App
    Links/Universal Links `https://…/join/<token>` (cal un domini i el seu
    `assetlinks.json`/AAC) i l'aprovació opcional del creador.
-4. **Enduriment**: RLS verificada amb tests SQL, rate-limit d'invitacions,
-   política d'expulsió/dissolució, exportació com a xarxa de seguretat;
-   `flutter analyze` + `flutter test` verds a cada fase.
+4. **Enduriment** — feta: RLS verificada per
+   `supabase/tests/rls_smoke_test.sql` (tres rols, totes les taules,
+   rollback); rate-limit de creació d'invitacions (20/hora) i de `join-group`
+   (10 per 10 minuts); guarda del darrer propietari
+   (`group_members_keep_owner`) amb dissolució del grup per part de l'amo; i
+   exportació d'un grup com a xarxa de seguretat. `flutter analyze` +
+   `flutter test` verds.
 
 Cada fase és independent i l'app continua sent plenament funcional en mode
 personal després de cadascuna.

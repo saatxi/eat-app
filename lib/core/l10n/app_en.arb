@@ -385,6 +385,11 @@
   "groupsRemoveConfirmTitle": "Remove this member?",
   "groupsRemoveConfirmBody": "They'll lose access to the group's restaurants.",
   "groupsSyncNow": "Sync now",
+  "groupsActionMore": "More actions",
+  "groupsActionExport": "Export group data",
+  "groupsActionDelete": "Delete group",
+  "groupsDeleteConfirmTitle": "Delete this group?",
+  "groupsDeleteConfirmBody": "The group and its restaurants are removed for everyone. This can't be undone — export the data first if you want to keep a copy.",
 
   "groupsInviteAction": "Invite",
   "groupsInviteTitle": "Invite to {name}",

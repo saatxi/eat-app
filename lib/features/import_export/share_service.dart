@@ -48,6 +48,7 @@ Future<void> exportAndShareRestaurants(
   required RestaurantRepository repository,
   List<String>? restaurantIds,
   String? singleName,
+  String? groupId,
 }) async {
   // Read everything off the context before the first await, so no async gap
   // leaves these lookups dangling.
@@ -64,6 +65,7 @@ Future<void> exportAndShareRestaurants(
     final List<RestaurantExport> exports = await repository.exportRestaurants(
       restaurantIds: restaurantIds,
       includeVisits: includeVisits,
+      groupId: groupId,
     );
     await shareRestaurants(
       restaurants: exports,

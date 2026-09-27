@@ -1,6 +1,7 @@
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/models/restaurant_sort.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
+import 'package:eatapp/data/share/restaurant_share_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../db/db_test_utils.dart';
@@ -176,6 +177,40 @@ void main() {
       await repository.deleteAll();
 
       expect(await repository.observeTotalCount().first, 0);
+    });
+  });
+
+  group('export', () {
+    test('carries every restaurant by default', () async {
+      await repository.insert(restaurant(id: 'personal', name: 'Personal'));
+      await repository.insert(
+        restaurant(id: 'shared', name: 'Shared', groupId: 'g1', createdBy: 'u1'),
+      );
+
+      final List<RestaurantExport> exports = await repository.exportRestaurants();
+
+      expect(
+        exports.map((RestaurantExport e) => e.name).toSet(),
+        <String>{'Personal', 'Shared'},
+      );
+    });
+
+    test('narrowed to a group, only that group comes back, with its visits', () async {
+      await repository.insert(restaurant(id: 'personal', name: 'Personal'));
+      await repository.insert(
+        restaurant(id: 'shared', name: 'Shared', groupId: 'g1', createdBy: 'u1'),
+      );
+      await repository.insert(
+        restaurant(id: 'other', name: 'Other', groupId: 'g2', createdBy: 'u1'),
+      );
+      await repository.addVisit(restaurantId: 'shared', visitDate: 1, rating: 5);
+
+      final List<RestaurantExport> exports = await repository.exportRestaurants(
+        groupId: 'g1',
+      );
+
+      expect(exports.map((RestaurantExport e) => e.name), <String>['Shared']);
+      expect(exports.single.visits, hasLength(1));
     });
   });
 

@@ -835,6 +835,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupsSyncNow => 'Sync now';
 
   @override
+  String get groupsActionMore => 'More actions';
+
+  @override
+  String get groupsActionExport => 'Export group data';
+
+  @override
+  String get groupsActionDelete => 'Delete group';
+
+  @override
+  String get groupsDeleteConfirmTitle => 'Delete this group?';
+
+  @override
+  String get groupsDeleteConfirmBody =>
+      'The group and its restaurants are removed for everyone. This can\'t be undone — export the data first if you want to keep a copy.';
+
+  @override
   String get groupsInviteAction => 'Invite';
 
   @override

@@ -136,6 +136,39 @@ the add/edit form) before it ever reaches the database — a row that fails is
 dropped rather than failing the whole file. See
 [`lib/data/share/`](lib/data/share) for the implementation.
 
+## Shared groups
+
+Sharing (above) sends a one-off copy. A **group** is the other half: a small
+set of people whose restaurants live in one shared list, kept in step through
+Supabase. It stays entirely off unless the build carries the backend
+configuration (see "Building and running"), so a personal install never talks
+to a server.
+
+Creating a group signs the device in anonymously; from then on, picking a
+group in the list's scope selector shows that group's restaurants instead of
+the personal ones, and every write there is attributed and syncs. Inviting
+someone (an owner only) opens a screen with a QR code, a link
+(`eatapp://join/<token>`) and a short code to read out; the other side scans,
+pastes or types it and joins. The token is minted and redeemed exclusively by
+the `create-invite` / `join-group` Edge Functions, so the `invites` table has
+no client write path at all.
+
+The backend's guarantees — enforced in SQL, not only in the app — are:
+
+- Every shared row belongs to a group and is attributed to whoever inserted
+  it; a member sees only their groups' rows and may not forge authorship.
+- A group always keeps at least one owner while it has members: the last owner
+  cannot leave, only dissolve the group, which removes everything for everyone.
+  The members screen offers an export first, as the safety net.
+- Invitations are rate-limited per user on both ends: 20 minted per hour by
+  `create-invite`, and 10 redemption attempts per 10 minutes by `join-group`.
+
+The schema, policies, triggers and functions live in
+[`supabase/`](supabase), and the policies are covered by
+[`supabase/tests/rls_smoke_test.sql`](supabase/tests/rls_smoke_test.sql),
+which drives an owner, a member and a stranger against a real project and rolls
+back.
+
 ## Backups and switching phones
 
 Sharing (above) is the manual, explicit way to move data around, and

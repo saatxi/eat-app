@@ -1600,6 +1600,36 @@ abstract class AppLocalizations {
   /// **'Sync now'**
   String get groupsSyncNow;
 
+  /// No description provided for @groupsActionMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get groupsActionMore;
+
+  /// No description provided for @groupsActionExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export group data'**
+  String get groupsActionExport;
+
+  /// No description provided for @groupsActionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete group'**
+  String get groupsActionDelete;
+
+  /// No description provided for @groupsDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this group?'**
+  String get groupsDeleteConfirmTitle;
+
+  /// No description provided for @groupsDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The group and its restaurants are removed for everyone. This can\'t be undone — export the data first if you want to keep a copy.'**
+  String get groupsDeleteConfirmBody;
+
   /// No description provided for @groupsInviteAction.
   ///
   /// In en, this message translates to:

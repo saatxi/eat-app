@@ -12,6 +12,10 @@ class _FakeGroupGateway implements GroupGateway {
   List<GroupMember> members;
   final List<String> removed = <String>[];
   final List<String> left = <String>[];
+  final List<String> deleted = <String>[];
+
+  /// Throw to simulate a backend failure on [deleteGroup].
+  Object? deleteError;
 
   @override
   Future<List<GroupMember>> listMembers(String groupId) async => members;
@@ -28,6 +32,16 @@ class _FakeGroupGateway implements GroupGateway {
   @override
   Future<void> leaveGroup(String groupId, String userId) async {
     left.add(userId);
+  }
+
+  @override
+  Future<void> deleteGroup(String groupId) async {
+    final Object? failure = deleteError;
+    if (failure != null) {
+      throw failure;
+    }
+    deleted.add(groupId);
+    members = <GroupMember>[];
   }
 
   @override
@@ -97,6 +111,44 @@ void main() {
     expect(await controller.leave(), isTrue);
 
     expect(gateway.left, <String>['u1']);
+  });
+
+  test('an owner can dissolve the group', () async {
+    final _FakeGroupGateway gateway = _FakeGroupGateway(
+      members: const <GroupMember>[
+        GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.owner),
+        GroupMember(userId: 'u2', displayName: 'Maria', role: GroupRole.member),
+      ],
+    );
+    final MembersController controller = MembersController(
+      groupId: 'g1',
+      gateway: gateway,
+      identity: FakeIdentityGateway(existingUserId: 'u1'),
+    );
+    addTearDown(controller.dispose);
+    await controller.load();
+
+    expect(await controller.deleteGroup(), isTrue);
+
+    expect(gateway.deleted, <String>['g1']);
+    expect(controller.state.members, isEmpty);
+  });
+
+  test('a failed dissolution leaves the roster and reports it', () async {
+    final _FakeGroupGateway gateway = _FakeGroupGateway()
+      ..deleteError = Exception('offline');
+    final MembersController controller = MembersController(
+      groupId: 'g1',
+      gateway: gateway,
+      identity: FakeIdentityGateway(existingUserId: 'u1'),
+    );
+    addTearDown(controller.dispose);
+    await controller.load();
+
+    expect(await controller.deleteGroup(), isFalse);
+
+    expect(gateway.deleted, isEmpty);
+    expect(controller.state.error, isNotNull);
   });
 
   test('with no backend it is idle', () async {

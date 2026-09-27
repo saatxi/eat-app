@@ -30,6 +30,11 @@ abstract class GroupGateway {
 
   /// Removes [userId]'s membership — an owner expels a member.
   Future<void> removeMember(String groupId, String userId);
+
+  /// Dissolves the group entirely. Only an owner may call this; the delete
+  /// cascades every member, invite and shared row away. There is no undo, which
+  /// is why the members screen offers an export first.
+  Future<void> deleteGroup(String groupId);
 }
 
 /// The real [GroupGateway], over the Supabase client.
@@ -98,6 +103,14 @@ class SupabaseGroupGateway implements GroupGateway {
         .delete()
         .eq('group_id', groupId)
         .eq('user_id', userId);
+  }
+
+  @override
+  Future<void> deleteGroup(String groupId) async {
+    // Allowed by the groups_delete_owner policy; the foreign keys cascade every
+    // member, invite and shared row. The last-owner guard trigger never fires
+    // here, since the whole group goes at once.
+    await _client.from('groups').delete().eq('id', groupId);
   }
 }
 

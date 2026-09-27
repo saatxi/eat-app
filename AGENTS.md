@@ -91,6 +91,24 @@ Optional detailed explanation
   `SUPABASE_ANON_KEY`. Personal mode still makes no call and is fully offline.
   Don't add any *other* networking package or remote/file-based data source
   without discussing it first.
+- **Invitations**: `qr_flutter` draws the QR an owner shows, `mobile_scanner`
+  reads one back on the joining side, and `app_links` delivers the
+  `eatapp://join/<token>` deep link (the scheme is registered in the Android
+  manifest's intent-filter and iOS's `CFBundleURLTypes`). The token's shape and
+  parsing live in `lib/data/groups/invite_link.dart`; minting and redeeming go
+  through the `create-invite` / `join-group` Edge Functions
+  (`supabase/functions/`), never a client write to `invites`. The scanner is
+  the app's only camera user — see the CAMERA permission in the security
+  section.
+- **Shared-groups backend**: the Supabase schema, RLS policies, triggers and
+  the two Edge Functions live in `supabase/`. Three invariants are enforced in
+  SQL and must not be relaxed: every shared row is group-scoped and attributed
+  to its inserter; a group always keeps at least one owner while it has members
+  (the `group_members_keep_owner` trigger — the last owner dissolves the group
+  instead of leaving); and invitations are rate-limited per user on both mint
+  (`record_invite_attempt`) and redemption (`record_join_attempt`). A new
+  policy or migration should extend `supabase/tests/rls_smoke_test.sql`, which
+  drives an owner, a member and a stranger through every table and rolls back.
 - **Build**: the Flutter tool over the Android project in `android/` (its own
   Gradle wrapper and `android/gradle.properties`) and the iOS project in
   `ios/`. There is no longer a root Gradle build to run.

@@ -195,15 +195,23 @@ class RestaurantRepository {
   /// Both the shared/exported file and the automatic `backup.json` snapshot are
   /// built from this one method, so the two can't drift apart in what they
   /// consider a restaurant's data.
+  ///
+  /// [groupId] narrows the pool to one group's restaurants (the safety-net
+  /// export offered before leaving or dissolving a group); left null, every
+  /// restaurant is included, groups and personal alike.
   Future<List<RestaurantExport>> exportRestaurants({
     List<String>? restaurantIds,
     bool includeVisits = true,
+    String? groupId,
   }) async {
-    final List<Restaurant> all = await _restaurants.getAll();
+    Iterable<Restaurant> pool = await _restaurants.getAll();
+    if (groupId != null) {
+      pool = pool.where((Restaurant r) => r.groupId == groupId);
+    }
     final List<Restaurant> selected = restaurantIds == null
-        ? all
+        ? pool.toList()
         : <Restaurant>[
-            for (final Restaurant restaurant in all)
+            for (final Restaurant restaurant in pool)
               if (restaurantIds.contains(restaurant.id)) restaurant,
           ];
 

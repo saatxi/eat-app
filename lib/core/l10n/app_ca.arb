@@ -274,6 +274,11 @@
   "groupsRemoveConfirmTitle": "Vols expulsar aquest membre?",
   "groupsRemoveConfirmBody": "Perdrà l'accés als restaurants del grup.",
   "groupsSyncNow": "Sincronitza",
+  "groupsActionMore": "Més accions",
+  "groupsActionExport": "Exporta les dades del grup",
+  "groupsActionDelete": "Elimina el grup",
+  "groupsDeleteConfirmTitle": "Vols eliminar aquest grup?",
+  "groupsDeleteConfirmBody": "El grup i els seus restaurants s'eliminaran per a tothom. Això no es pot desfer: exporta'n les dades abans si vols conservar una còpia.",
 
   "groupsInviteAction": "Convida",
   "groupsInviteTitle": "Convida a {name}",

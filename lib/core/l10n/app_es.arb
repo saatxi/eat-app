@@ -274,6 +274,11 @@
   "groupsRemoveConfirmTitle": "¿Expulsar a este miembro?",
   "groupsRemoveConfirmBody": "Perderá el acceso a los restaurantes del grupo.",
   "groupsSyncNow": "Sincronizar",
+  "groupsActionMore": "Más acciones",
+  "groupsActionExport": "Exportar los datos del grupo",
+  "groupsActionDelete": "Eliminar el grupo",
+  "groupsDeleteConfirmTitle": "¿Eliminar este grupo?",
+  "groupsDeleteConfirmBody": "El grupo y sus restaurantes se eliminarán para todos. Esto no se puede deshacer: exporta antes los datos si quieres conservar una copia.",
 
   "groupsInviteAction": "Invitar",
   "groupsInviteTitle": "Invitar a {name}",

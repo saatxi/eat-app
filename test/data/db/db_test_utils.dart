@@ -17,6 +17,8 @@ Restaurant restaurant({
   String? city,
   String? region,
   String? country,
+  String? groupId,
+  String? createdBy,
 }) => Restaurant(
   id: id,
   name: name,
@@ -37,6 +39,8 @@ Restaurant restaurant({
     country: country,
   ),
   updatedAt: 0,
+  groupId: groupId,
+  createdBy: createdBy,
 );
 
 Visit visit({

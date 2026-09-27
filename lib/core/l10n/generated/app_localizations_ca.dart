@@ -843,6 +843,22 @@ class AppLocalizationsCa extends AppLocalizations {
   String get groupsSyncNow => 'Sincronitza';
 
   @override
+  String get groupsActionMore => 'Més accions';
+
+  @override
+  String get groupsActionExport => 'Exporta les dades del grup';
+
+  @override
+  String get groupsActionDelete => 'Elimina el grup';
+
+  @override
+  String get groupsDeleteConfirmTitle => 'Vols eliminar aquest grup?';
+
+  @override
+  String get groupsDeleteConfirmBody =>
+      'El grup i els seus restaurants s\'eliminaran per a tothom. Això no es pot desfer: exporta\'n les dades abans si vols conservar una còpia.';
+
+  @override
   String get groupsInviteAction => 'Convida';
 
   @override
