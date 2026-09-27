@@ -1593,6 +1593,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'They\'ll lose access to the group\'s restaurants.'**
   String get groupsRemoveConfirmBody;
+
+  /// No description provided for @groupsSyncNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get groupsSyncNow;
+
+  /// No description provided for @groupsSyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync failed — tap to retry'**
+  String get groupsSyncFailed;
 }
 
 class _AppLocalizationsDelegate

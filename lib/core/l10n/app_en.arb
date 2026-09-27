@@ -383,5 +383,7 @@
   "groupsLeaveConfirmBody": "You'll stop seeing this group's restaurants. They stay with the other members.",
   "groupsActionRemove": "Remove",
   "groupsRemoveConfirmTitle": "Remove this member?",
-  "groupsRemoveConfirmBody": "They'll lose access to the group's restaurants."
+  "groupsRemoveConfirmBody": "They'll lose access to the group's restaurants.",
+  "groupsSyncNow": "Sync now",
+  "groupsSyncFailed": "Sync failed — tap to retry"
 }

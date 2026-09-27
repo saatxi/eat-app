@@ -830,4 +830,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get groupsRemoveConfirmBody =>
       'They\'ll lose access to the group\'s restaurants.';
+
+  @override
+  String get groupsSyncNow => 'Sync now';
+
+  @override
+  String get groupsSyncFailed => 'Sync failed — tap to retry';
 }

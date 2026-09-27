@@ -7,6 +7,7 @@ import '../../data/groups/group_gateway.dart';
 import '../../data/groups/group_models.dart';
 import '../../data/repositories/user_preferences_repository.dart';
 import '../../data/supabase/identity.dart';
+import '../../data/sync/sync_service.dart';
 
 /// The user's groups and which one is selected, as the selector and the members
 /// screen read them.
@@ -55,6 +56,7 @@ class GroupsController extends ChangeNotifier {
     required this.preferences,
     this.gateway,
     this.identity,
+    this.sync,
   }) {
     _selectedGroupId = preferences.current.selectedGroupId;
     preferences.listenable.addListener(_onPreferencesChanged);
@@ -64,6 +66,10 @@ class GroupsController extends ChangeNotifier {
   final UserPreferencesRepository preferences;
   final GroupGateway? gateway;
   final IdentityGateway? identity;
+
+  /// The sync driver, when the build has one. Selecting a group (and loading a
+  /// selection that already existed) kicks a sync through it.
+  final SyncService? sync;
 
   static const Uuid _uuid = Uuid();
 
@@ -102,6 +108,7 @@ class GroupsController extends ChangeNotifier {
       _setState(
         GroupsState(selectedGroupId: _selectedGroupId, groups: loaded),
       );
+      _syncSelected();
     } catch (error) {
       _setState(
         GroupsState(selectedGroupId: _selectedGroupId, error: error),
@@ -110,8 +117,26 @@ class GroupsController extends ChangeNotifier {
   }
 
   /// Selects a scope (a group id, or null for Personal) and persists it. The
-  /// list, stats and roulette controllers all react to the preference change.
-  Future<void> select(String? groupId) => preferences.setSelectedGroup(groupId);
+  /// list, stats and roulette controllers all react to the preference change,
+  /// and selecting a group pulls it once so the list has fresh rows.
+  Future<void> select(String? groupId) async {
+    await preferences.setSelectedGroup(groupId);
+    await syncNow();
+  }
+
+  /// Pushes and pulls the selected group now, if there is one to sync and a
+  /// service to do it. [SyncService] records the outcome on its own notifier
+  /// rather than throwing, so callers can fire and forget.
+  Future<void> syncNow() async {
+    final SyncService? service = sync;
+    final String? groupId = _selectedGroupId;
+    if (service == null || groupId == null) {
+      return;
+    }
+    await service.syncGroup(groupId);
+  }
+
+  void _syncSelected() => unawaited(syncNow());
 
   /// Creates a group — signing in anonymously first when the device has never
   /// signed in, since a group needs an owner — then selects it. Returns whether

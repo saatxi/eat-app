@@ -71,6 +71,7 @@ class _JournalScreenState extends State<JournalScreen> {
       preferences: scope.preferences,
       gateway: scope.groups,
       identity: scope.identity,
+      sync: scope.sync,
     );
   }
 

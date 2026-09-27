@@ -272,5 +272,7 @@
   "groupsLeaveConfirmBody": "Deixaràs de veure els restaurants d'aquest grup. Es quedaran amb els altres membres.",
   "groupsActionRemove": "Expulsa",
   "groupsRemoveConfirmTitle": "Vols expulsar aquest membre?",
-  "groupsRemoveConfirmBody": "Perdrà l'accés als restaurants del grup."
+  "groupsRemoveConfirmBody": "Perdrà l'accés als restaurants del grup.",
+  "groupsSyncNow": "Sincronitza",
+  "groupsSyncFailed": "Error en sincronitzar: toca per reintentar"
 }

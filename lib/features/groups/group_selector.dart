@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/groups/group_models.dart';
+import '../../data/sync/sync_service.dart';
 import 'groups_controller.dart';
 
 /// The scope selector above the list: Personal, each of the user's groups, and
@@ -47,6 +48,10 @@ class GroupSelector extends StatelessWidget {
                 label: Text(l10n.groupsActionCreate),
                 onPressed: () => _createGroup(context, l10n),
               ),
+              if (state.selectedGroupId != null && controller.sync != null) ...[
+                const SizedBox(width: AppSpacing.sm),
+                _SyncIndicator(controller: controller),
+              ],
             ],
           ),
         );
@@ -98,5 +103,50 @@ class GroupSelector extends StatelessWidget {
       return;
     }
     await controller.createGroup(result);
+  }
+}
+
+/// The selected group's sync state: a spinner while it runs, a retry when it
+/// fails, and a "sync now" otherwise. Only ever built inside a selected group.
+class _SyncIndicator extends StatelessWidget {
+  const _SyncIndicator({required this.controller});
+
+  final GroupsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final SyncService sync = controller.sync!;
+    return ValueListenableBuilder<SyncStatus>(
+      valueListenable: sync.status,
+      builder: (BuildContext context, SyncStatus status, Widget? child) {
+        switch (status) {
+          case SyncStatus.syncing:
+            return const Padding(
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            );
+          case SyncStatus.failed:
+            return IconButton(
+              onPressed: controller.syncNow,
+              tooltip: l10n.groupsSyncFailed,
+              icon: const Icon(Icons.cloud_off_rounded),
+            );
+          case SyncStatus.idle:
+          case SyncStatus.succeeded:
+            return IconButton(
+              onPressed: controller.syncNow,
+              tooltip: l10n.groupsSyncNow,
+              icon: const Icon(Icons.sync_rounded),
+            );
+        }
+      },
+    );
   }
 }

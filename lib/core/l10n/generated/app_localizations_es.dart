@@ -838,4 +838,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get groupsRemoveConfirmBody =>
       'Perderá el acceso a los restaurantes del grupo.';
+
+  @override
+  String get groupsSyncNow => 'Sincronizar';
+
+  @override
+  String get groupsSyncFailed => 'Error al sincronizar: toca para reintentar';
 }
