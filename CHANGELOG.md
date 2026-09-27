@@ -9,6 +9,42 @@ tagged at release time. Versioning follows the `vMAJOR.MINOR.PATCH` scheme
 described in [README.md](README.md#versioning) — `versionName`/`versionCode`
 are always derived from git, never hand-edited.
 
+## [3.5.0] - 2026-09-27
+
+Add shared groups: a synced, group-scoped restaurant list with invitations
+
+- Add the shared-groups backend — a Supabase schema with Row Level Security,
+  the two Edge Functions that mint and redeem invitations, and the private
+  Storage bucket photos travel through — wired so the whole feature stays
+  dormant unless the build carries SUPABASE_URL and SUPABASE_ANON_KEY, leaving
+  personal mode fully offline
+- Bump the drift schema to 17 with real, purely additive migrations: 16 added
+  the sync metadata (groupId, createdBy, updatedAt, deletedAt) to every shared
+  table and 17 added the pending-change queue and the per-group pull cursor, so
+  existing rows stay private without a backfill
+- Add the sync layer: an anonymous Supabase identity, a queue of pending
+  changes and per-group pull cursors, a SyncEngine over a transport abstraction
+  with its Supabase implementation, soft deletes that travel as tombstones, and
+  photo binaries carried through Storage
+- Scope every read to the selected group behind a selector over the journal,
+  so the list, the statistics, the roulette and the home-screen widget all
+  follow the chosen group, and attribute every shared write to whoever made it
+- Add group management: create a group, see its members, expel someone or
+  leave, and follow the sync state from the journal
+- Add invitations: an owner shows a QR drawn with qr_flutter, the joining side
+  scans it with mobile_scanner or types the short code, and app_links delivers
+  the eatapp://join/… deep link — the scanner is the app's only camera user and
+  the manifest's single permission
+- Harden the backend: rate-limit both minting and redeeming invitations, keep
+  every non-empty group with at least one owner by refusing the last owner's
+  leave and offering dissolution instead, verify every policy with the
+  owner/member/stranger RLS test, and let a group's data be exported before it
+  is left or dissolved
+- Compile the backend configuration through the release build — bundle.ps1
+  resolves SUPABASE_URL and SUPABASE_ANON_KEY like the signing keys — and add a
+  gitignored dart_defines.json plus launch configurations so a debug run can
+  switch the backend on without editing code
+
 ## [3.3.0] - 2026-09-27
 
 Redesign the app as a warm humanist journal and drop the tag feature
