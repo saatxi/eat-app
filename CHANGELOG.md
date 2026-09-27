@@ -9,6 +9,224 @@ tagged at release time. Versioning follows the `vMAJOR.MINOR.PATCH` scheme
 described in [README.md](README.md#versioning) — `versionName`/`versionCode`
 are always derived from git, never hand-edited.
 
+## [3.3.0] - 2026-09-27
+
+Redesign the app as a warm humanist journal and drop the tag feature
+
+- Rebuild the UI around a new terracotta, olive and berry palette that
+  replaces the verd scheme, with its own radius and motion tokens and the
+  Lora and Nunito fonts, and rebuild the theme assembly and every shared
+  widget on top of it
+- Make the journal the app's main surface under a Restaurants / Roulette /
+  Settings bottom bar, with a prominent search, the visited / want-to-try /
+  favourites segments folded into a dropdown chip, and the add action moved
+  into the app bar
+- Migrate every screen — restaurants, detail, add/edit, log-visit, roulette,
+  statistics, settings and the import review — onto the new design system
+- Give the restaurants filters a region and country dropdown, hide the
+  location dimensions that have no values, and give the roulette the same
+  filter set behind a collapsible Filtres header
+- Re-skin the home-screen widget's Android resources and iOS extension to
+  match the new palette
+- Remove the tag feature end to end: drop the tags and restaurant_tags
+  tables and bump the drift schema to 15 with a real migration, take tags
+  out of the repository, the UI models, the share format and every screen,
+  and drop the column from the CSV converter
+- Tolerate a leading UTF-8 BOM when importing a share file, and space the
+  rating apart from the price pill
+
+## [3.2.0] - 2026-09-26
+
+Redesign the app's appearance around a single verd colour scheme
+
+- Replace the three selectable palettes and their picker with one hand-tuned
+  verd scheme — a forest primary, a citrus secondary and a berry tertiary
+  over leaf-tinted neutrals — so the app reads as a single identity rather
+  than three variants of itself
+- Keep only the light/dark toggle, drop the palette names from the ARB files
+  and the pickers from Settings and the dev gallery, and treat a stale stored
+  palette id as ignored rather than throwing so an upgrade from the previous
+  build cannot crash on startup
+- Add the redesign's motion: a spring press on the add button and the
+  roulette reveal, a reveal that settles instead of popping, a count-up on
+  the statistics tiles, and a leaf-to-citrus wash behind the list header
+- Stand every new animation down when the platform asks for reduced motion,
+  and keep each one-shot so it always settles rather than holding a frame
+  source open
+- Hold the accessibility line for the new scheme, with the light and dark
+  on-colours and the eight cuisine accents clearing WCAG AA in
+  color_contrast_test and the 2× dynamic-type and semantics tests kept green
+- Add the Java null-analysis mode to the workspace's editor settings
+
+## [3.1.0] - 2026-09-26
+
+Add the home-screen widget, restore the app's own icon and splash, and fix
+the screens' rough edges
+
+- Add the home-screen widget on both platforms: a Kotlin AppWidgetProvider
+  with its layout for Android, a WidgetKit extension for iOS, and the
+  restaurant, the language and every string it shows decided in Dart
+- Make the shell adapt at 840 logical pixels — a bottom bar below that, a
+  NavigationRail with the detail beside the list above it — and add motion,
+  empty states and paired hero images to the list and the detail
+- Follow each platform's own behaviour instead of restating it (iOS keeps the
+  framework's edge swipe-back) and support large system text rather than
+  clamping it
+- Restore the launcher icon and splash screen the rewrite had left as
+  templates: one fork-and-knife artwork living in the Android vectors, with
+  every raster Android below 26 and iOS need generated from them
+- Show the app's own version in Settings again, read back off the platform so
+  it cannot disagree with the build it is running in
+- Fix the rough edges: a rating trend chart that painted nothing, a language
+  picker that was a four-row list, a bottom bar carrying labels, a filter
+  panel with no way to clear it, a visits action floating over the visits it
+  was about, and a roulette reveal that was clipped — it is scaled to fit
+  now, with its filters wrapping instead of running off the edge
+- Widget-test the four screens that had none, cover the photo pipeline and
+  the filter bundle, and drop the migration planning docs that had outlived
+  their job
+
+## [3.0.1] - 2026-09-26
+
+Add sharing, importing and photos to the Flutter app
+
+- Add the share sheet and the export options dialog, so one restaurant or the
+  whole list can be sent as an .eatapp file
+- Add the import review screen, which lists a shared file's restaurants,
+  flags likely duplicates against the current list and writes nothing until
+  the user confirms
+- Add photo storage and picking: copy each picked image into the app's own
+  store with its EXIF orientation baked in and its longest side bounded,
+  delete the file whenever its row goes, and show the photo on the list,
+  roulette, detail and edit screens
+- Carry a visit's photos onto the log-visit form and the detail timeline
+- Trim the release bundle by obfuscating Dart, dropping the x86_64 ABI and
+  archiving the Dart symbols
+- Fix the CSV helper's stale price scale and a dead Gradle path left over
+  from the native build
+- Remove the legacy native Android app and the last Claude Code-specific
+  directory now that the Flutter rewrite is the only codebase
+- Silence JEP 472 native-access warnings by setting GRADLE_OPTS
+
+## [3.0.0] - 2026-09-25
+
+Rewrite EatApp in Flutter
+
+- Add a complete Flutter implementation at the repository root, keeping the
+  same applicationId, git-derived versioning and release keystore as the app
+  it replaces
+- Port the data layer to drift (schema, DAOs and search helpers) and add a
+  Room-to-drift importer so existing installs migrate their restaurants
+- Rebuild the localization layer for English, Spanish and Catalan from ARB
+  files with flutter gen-l10n
+- Recreate the theme and design-token layer (palettes, typography, spacing,
+  radii and cuisine accents) with the bundled Manrope and Newsreader fonts
+- Port every screen: restaurant list with search and filters, add/edit form,
+  detail with visit history, favourites, log-visit, statistics, roulette and
+  settings
+- Extract the shared presentation widgets and the list model, filters and
+  controller those screens build on
+- Re-implement the .eatapp share format, its reader and writer, and the
+  on-device backup snapshot
+- Move git-tag versioning and release signing into the Flutter Android module
+  and make scripts/bundle.ps1 build the signed bundle with flutter build
+  appbundle
+- Pin local builds and the VS Code Java extension to Temurin 21, fix UTF-8
+  reading of .eatapp files, and drop the CI workflow configuration
+
+## [2.6.1] - 2026-09-24
+
+Include visits in restaurant exports and fix the average-rating label
+wrapping
+
+- Add an "Include visits" switch to every export path (share from Detail,
+  "share all" from List, "export my data" from Settings), backed by
+  RestaurantRepository.exportRestaurants so all three agree on what a file
+  contains; the detail screen's single share now carries the real visit
+  history instead of only the latest visit
+- Name a single restaurant's export file after the restaurant
+  (cal-ferran-20260924_1246.eatapp) while bulk exports keep
+  restaurants-YYYYMMDD_HHmm.eatapp
+- Shorten the average-rating stat tile label so it no longer wraps onto two
+  lines on narrow phones or larger font scales, keeping it level with the
+  other tiles
+- Bump the minor-and-patch dependency group with 10 updates
+
+## [2.6.0] - 2026-09-13
+
+Collapsible price range filtering and a clearer import review screen
+
+- Revert the Google Maps share-link import added in v2.5.4: the
+  redirect-resolution approach proved unreliable in practice
+- Collapse already-imported restaurants into their own section on the import
+  review screen instead of interleaving them with new ones
+- Add a price range filter to the restaurant list and collapse the filter
+  chips into dropdowns to make room for it
+- Replace the "$"-tier price range with six euro-band tiers for finer-grained
+  filtering and display
+
+## [2.5.4] - 2026-09-13
+
+Add importing a restaurant from a Google Maps share link
+
+- Resolve a share.google/maps.app.goo.gl link's redirect chain to recover a
+  place name, the app's one deliberate exception to its zero-network design,
+  scoped to an allowlist of Google Maps hosts with no API key and silent
+  fallback on failure
+- Add a share-sheet entry point so EatApp can receive a shared Google Maps
+  link directly, and an "Import from a link" button on the add-restaurant
+  screen for pasting one manually
+
+## [2.5.3] - 2026-09-13
+
+Add an in-app help screen explaining how to use EatApp
+
+- Add a "How to use EatApp" screen, reached from Settings, covering adding a
+  restaurant, favorites vs. want-to-try, the roulette picker, sharing a
+  restaurant, the home-screen widget, and exporting your data
+
+## [2.5.2] - 2026-09-13
+
+Fix restaurant import/export bugs found after the CSV converter release
+
+- Always write the format field when exporting or backing up restaurants, so
+  exported files show their actual on-disk format
+- Retry reading a shared file's content Uri up to three times before giving
+  up, so opening a Gmail attachment right after receiving it no longer fails
+  with a false "can't read this file" error
+- Don't let a missing street address block duplicate detection on import, so
+  a restaurant already in the list is flagged instead of silently duplicated
+- Timestamp the exported restaurant file's name
+  (restaurants-YYYYMMDD_HHmm.eatapp) instead of reusing a fixed name
+- Fix the three-way import decision buttons overflowing on long translations
+  like "Reemplaça"
+
+## [2.5.1] - 2026-09-12
+
+Stop wiping user data on app updates with a schema version bump
+
+- Fix destructive Room migrations silently wiping user data on schema version
+  bumps; only a downgrade still falls back destructively
+- Replace csv-to-eatapp.ps1 with a bidirectional eatapp/CSV converter matching
+  the current v2 share schema
+
+## [2.5.0] - 2026-09-12
+
+Multi-visit restaurant model with photo carousel, rating trends, and a
+visual refresh
+
+- Split Restaurant into Restaurant/Visit/Photo with UUID ids, enabling
+  multiple logged visits per restaurant
+- Build the real visit-timeline UI and log-visit flow, and simplify Edit to
+  place-level data
+- Replace the single restaurant photo with a multi-photo carousel in Edit
+- Add a per-visit price range and extract a shared PriceRangePicker
+- Add a per-restaurant rating trend and a global average-rating trend to
+  Statistics
+- Replace the manual ViewModel factory with Hilt dependency injection
+- Replace the default palette and type scale with the approved "mercado
+  fresco" visual identity
+
 ## [2.4.1] - 2026-09-06
 
 Remove the System theme option from Settings.
