@@ -9,6 +9,7 @@ import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/price_range_picker.dart';
 import '../../data/models/cuisine.dart';
+import '../../data/sync/shared_writes.dart';
 import 'restaurant_edit_controller.dart';
 import 'restaurant_edit_state.dart';
 
@@ -45,10 +46,15 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final AppScope scope = AppScope.of(context);
     _controller ??= RestaurantEditController(
-      repository: AppScope.of(context).restaurants,
+      repository: scope.restaurants,
       restaurantId: widget.restaurantId,
-      photoPicker: AppScope.of(context).photoPicker,
+      photoPicker: scope.photoPicker,
+      sharedWrites: SharedWrites(
+        preferences: scope.preferences,
+        identity: scope.identity,
+      ),
     )..addListener(_prefillOnce);
   }
 

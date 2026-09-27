@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 
 import '../../core/widgets/presentation_bounds.dart';
+import '../../data/db/app_database.dart';
 import '../../data/photo/photo_picker.dart';
 import '../../data/repositories/restaurant_repository.dart';
+import '../../data/sync/shared_write.dart';
+import '../../data/sync/shared_writes.dart';
 
 /// The log-visit form's fields.
 ///
@@ -65,6 +68,7 @@ class LogVisitController extends ChangeNotifier {
     required this.repository,
     required this.restaurantId,
     this.photoPicker,
+    this.sharedWrites,
     DateTime? now,
   }) : _state = LogVisitState(
          visitDate: (now ?? DateTime.now()).millisecondsSinceEpoch,
@@ -76,6 +80,11 @@ class LogVisitController extends ChangeNotifier {
   /// Opens the system picker for a visit photo. Null in a unit test that never
   /// picks one, in which case [pickPhoto] is a no-op.
   final PhotoPicker? photoPicker;
+
+  /// Resolves the group a new visit should carry, or null in Personal mode. The
+  /// visit's group comes from its restaurant, so a visit never widens a private
+  /// restaurant's reach.
+  final SharedWrites? sharedWrites;
 
   LogVisitState _state;
   bool _disposed = false;
@@ -123,6 +132,10 @@ class LogVisitController extends ChangeNotifier {
     }
     _set(_state.copyWith(isSaving: true));
     final String notes = _state.notes.trim();
+    // The visit belongs to whatever group its restaurant is in — a private
+    // restaurant's visit stays private even while a group is selected.
+    final Restaurant? parent = await repository.observeById(restaurantId).first;
+    final SharedWrite? shared = await sharedWrites?.forChildOf(parent?.groupId);
     await repository.addVisit(
       restaurantId: restaurantId,
       visitDate: _state.visitDate,
@@ -130,6 +143,7 @@ class LogVisitController extends ChangeNotifier {
       notes: notes.isEmpty ? null : notes,
       priceRange: _state.priceRange,
       photoSourcePaths: _state.photoSourcePaths,
+      shared: shared,
     );
   }
 

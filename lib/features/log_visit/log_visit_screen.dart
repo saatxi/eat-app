@@ -9,6 +9,7 @@ import '../../core/theme/tokens/app_radius.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/price_range_picker.dart';
 import '../../core/widgets/rating_picker.dart';
+import '../../data/sync/shared_writes.dart';
 import 'log_visit_controller.dart';
 
 /// The "log a visit" form: date, rating, price band and a note.
@@ -34,10 +35,15 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_controller == null) {
+      final AppScope scope = AppScope.of(context);
       _controller = LogVisitController(
-        repository: AppScope.of(context).restaurants,
+        repository: scope.restaurants,
         restaurantId: widget.restaurantId,
-        photoPicker: AppScope.of(context).photoPicker,
+        photoPicker: scope.photoPicker,
+        sharedWrites: SharedWrites(
+          preferences: scope.preferences,
+          identity: scope.identity,
+        ),
       )..addListener(_syncDate);
       _syncDate();
     }

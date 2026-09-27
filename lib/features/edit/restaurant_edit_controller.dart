@@ -9,6 +9,8 @@ import '../../core/widgets/presentation_bounds.dart';
 import '../../data/db/app_database.dart';
 import '../../data/photo/photo_picker.dart';
 import '../../data/repositories/restaurant_repository.dart';
+import '../../data/sync/shared_write.dart';
+import '../../data/sync/shared_writes.dart';
 import 'restaurant_edit_state.dart';
 
 /// Backs both "add" ([restaurantId] null) and "edit" ([restaurantId] set) — the
@@ -26,6 +28,7 @@ class RestaurantEditController extends ChangeNotifier {
     required this.repository,
     this.restaurantId,
     this.photoPicker,
+    this.sharedWrites,
   }) {
     _state = RestaurantEditState(isLoading: restaurantId != null);
     _subscriptions.addAll(<StreamSubscription<Object>>[
@@ -56,6 +59,10 @@ class RestaurantEditController extends ChangeNotifier {
   /// that never picks one, in which case [pickPhoto] is a no-op.
   final PhotoPicker? photoPicker;
 
+  /// Resolves the group a save should carry, or null in Personal mode. Without
+  /// it (every unit test, and every personal install) writes stay private.
+  final SharedWrites? sharedWrites;
+
   bool get isEditingExisting => restaurantId != null;
 
   static const Uuid _uuid = Uuid();
@@ -69,6 +76,10 @@ class RestaurantEditController extends ChangeNotifier {
   List<String> _citySuggestions = const <String>[];
   List<String> _regionSuggestions = const <String>[];
   List<String> _countrySuggestions = const <String>[];
+
+  /// The sharing of the row being edited, captured when it loads, so an edit
+  /// keeps the row's group *and its original author* instead of blanking them.
+  SharedWrite? _loadedShared;
   bool _disposed = false;
 
   RestaurantEditState get state => _state;
@@ -157,6 +168,13 @@ class RestaurantEditController extends ChangeNotifier {
     final String? region = _nonBlank(state.region);
     final String? country = _nonBlank(state.country);
 
+    // A new row takes the selected group and the current user; an edit keeps the
+    // row's own sharing and author untouched, so editing a shared restaurant
+    // never quietly makes it private (or reassigns who created it).
+    final SharedWrite? shared = restaurantId == null
+        ? await sharedWrites?.forNewRow()
+        : _loadedShared;
+
     final String id = restaurantId ?? _uuid.v4();
     final Restaurant restaurant = Restaurant(
       id: id,
@@ -179,6 +197,8 @@ class RestaurantEditController extends ChangeNotifier {
         region: region,
         country: country,
       ),
+      groupId: shared?.groupId,
+      createdBy: shared?.createdBy,
       // Every save is a write, so it stamps the sync timestamp — the same
       // moment the repository would, but here is where the values are in hand.
       updatedAt: DateTime.now().millisecondsSinceEpoch,
@@ -195,9 +215,9 @@ class RestaurantEditController extends ChangeNotifier {
     // must not rewrite (and re-encode) the photo that is already there.
     final String? picked = state.pickedPhotoPath;
     if (picked != null) {
-      await repository.setRestaurantPhoto(id, picked);
+      await repository.setRestaurantPhoto(id, picked, shared: shared);
     } else if (state.photoRemoved && state.existingPhotoPath != null) {
-      await repository.setRestaurantPhoto(id, null);
+      await repository.setRestaurantPhoto(id, null, shared: shared);
     }
     return true;
   }
@@ -221,6 +241,12 @@ class RestaurantEditController extends ChangeNotifier {
       _set(_state.copyWith(isLoading: false));
       return;
     }
+    _loadedShared = (restaurant.groupId != null && restaurant.createdBy != null)
+        ? SharedWrite(
+            groupId: restaurant.groupId!,
+            createdBy: restaurant.createdBy!,
+          )
+        : null;
     final String? photoPath = await repository.getRestaurantPhotoPath(id);
     if (_disposed) {
       return;
