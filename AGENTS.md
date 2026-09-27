@@ -157,6 +157,11 @@ flutter build apk --release          # release APK
 flutter build appbundle --release    # release AAB (Play Store)
 ```
 
+Release builds need the shared-groups configuration compiled in: pass
+`--dart-define=SUPABASE_URL=… --dart-define=SUPABASE_ANON_KEY=…`, or let
+`scripts/bundle.ps1` resolve them like the signing keys. Without them the
+shipped app has groups dormant.
+
 Always run `flutter analyze` and `flutter test` after a code change before
 reporting it as done. After editing `lib/data/db/tables.dart` or any DAO,
 regenerate the drift code with:

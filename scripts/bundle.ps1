@@ -18,6 +18,12 @@
 
     This script does not tag anything -- run scripts/release.ps1 first.
 
+    The shared-groups backend needs its SUPABASE_URL and SUPABASE_ANON_KEY at
+    build time -- lib/main.dart reads them through String.fromEnvironment, so
+    they are compiled in, not read at runtime. This script resolves them the
+    same way as the signing keys and passes them through as --dart-define
+    flags; a release built without them ships with the feature dormant.
+
 .PARAMETER AllowUnsigned
     Proceed even though release signing isn't configured. Produces a .aab
     that Play Console will reject on upload; useful only for a local check
@@ -26,6 +32,11 @@
 .PARAMETER SkipCleanCheck
     Don't warn about / prompt for an uncommitted working tree or a HEAD
     that isn't exactly on a release tag.
+
+.PARAMETER AllowNoGroups
+    Build without the Supabase configuration, shipping an app with the
+    shared-groups feature dormant. Use only when a personal-only release is
+    actually intended.
 
 .EXAMPLE
     ./scripts/bundle.ps1
@@ -36,7 +47,8 @@
 [CmdletBinding()]
 param(
     [switch] $AllowUnsigned,
-    [switch] $SkipCleanCheck
+    [switch] $SkipCleanCheck,
+    [switch] $AllowNoGroups
 )
 
 $ErrorActionPreference = 'Stop'
@@ -135,6 +147,28 @@ if (-not $hasSigning) {
     Write-Step "Release signing configured: keystore=$keystoreResolved alias=$keyAlias"
 }
 
+# --- shared-groups backend ----------------------------------------------------
+# Resolved the same way as the signing keys -- local.properties first, then the
+# environment -- so a machine that can cut a signed release can also cut a
+# networked one. The anon key is a public client key: the server's row-level
+# security decides what it may do, so embedding it is safe. The service_role key
+# is not -- it belongs only to the edge functions and must never reach the app.
+
+$supabaseUrl     = Get-LocalOrEnv 'eatapp.supabase.url' 'SUPABASE_URL'
+$supabaseAnonKey = Get-LocalOrEnv 'eatapp.supabase.anon.key' 'SUPABASE_ANON_KEY'
+
+if (-not $supabaseUrl -or -not $supabaseAnonKey) {
+    if ($AllowNoGroups) {
+        Write-Warn 'No SUPABASE_URL/SUPABASE_ANON_KEY; building with the shared-groups feature dormant (per -AllowNoGroups).'
+    } else {
+        Fail ('The shared-groups backend needs SUPABASE_URL and SUPABASE_ANON_KEY. Set eatapp.supabase.url and ' +
+              'eatapp.supabase.anon.key in local.properties, or the SUPABASE_URL/SUPABASE_ANON_KEY environment ' +
+              'variables, or pass -AllowNoGroups to build a personal-only release.')
+    }
+} else {
+    Write-Step "Shared-groups backend configured: $supabaseUrl"
+}
+
 # --- version ------------------------------------------------------------------
 # Mirrors the git-derived versioning in android/app/build.gradle.kts, so the
 # mapping/symbol archives below are stamped with exactly what the bundle carries.
@@ -172,8 +206,19 @@ if ($env:GRADLE_OPTS -notmatch [regex]::Escape($nativeAccessFlag)) {
 # The symbols land under build/ (gitignored) and are archived further below.
 $dartSymbolsDir = Join-Path $repoRoot 'build\app\outputs\symbols'
 
+# The Supabase values are build-time constants, so they ride along as defines --
+# and only when both are present, since a half-configured backend would build a
+# client that could never authenticate.
+$dartDefines = @()
+if ($supabaseUrl -and $supabaseAnonKey) {
+    $dartDefines = @(
+        "--dart-define=SUPABASE_URL=$supabaseUrl",
+        "--dart-define=SUPABASE_ANON_KEY=$supabaseAnonKey"
+    )
+}
+
 Write-Step 'Building release App Bundle (flutter build appbundle --release --obfuscate --split-debug-info)...'
-& flutter build appbundle --release --obfuscate --split-debug-info=$dartSymbolsDir
+& flutter build appbundle --release --obfuscate --split-debug-info=$dartSymbolsDir @dartDefines
 if ($LASTEXITCODE -ne 0) {
     Fail 'flutter build appbundle failed.'
 }

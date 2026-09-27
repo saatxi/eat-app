@@ -222,6 +222,15 @@ flutter build apk --release          # release APK
 flutter build appbundle --release    # release AAB (Play Store)
 ```
 
+Release builds compile in the shared-groups backend configuration —
+[`lib/main.dart`](lib/main.dart) reads `SUPABASE_URL` and `SUPABASE_ANON_KEY`
+through `String.fromEnvironment` — so the build commands above, and
+`flutter build ipa` for iOS, need
+`--dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`; without
+them the shipped app simply has groups dormant. The anon key is public by
+design — the server's row-level security protects the data — but the
+`service_role` key must never be embedded.
+
 If you edit `lib/data/db/tables.dart` or a DAO, regenerate the drift code:
 
 ```powershell
@@ -362,7 +371,9 @@ saying so.
    ```
 
    Pass `-AllowUnsigned` to build anyway for a local inspection, or
-   `-SkipCleanCheck` to bypass the clean-tree/tag prompts.
+   `-SkipCleanCheck` to bypass the clean-tree/tag prompts. It also resolves
+   `SUPABASE_URL`/`SUPABASE_ANON_KEY` like the signing keys and passes them in
+   as defines; pass `-AllowNoGroups` to ship a personal-only build instead.
 4. Because release builds are minified and shrunk while debug builds are not,
    install the release artifact on a device and smoke-test it — open the
    list, search, filter, add/edit/delete a restaurant, open its detail screen,
