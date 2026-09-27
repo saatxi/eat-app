@@ -17,6 +17,14 @@ class RouletteState {
     this.favoritesOnly = false,
     this.visited,
     this.priceRange,
+    this.cuisineType,
+    this.city,
+    this.region,
+    this.country,
+    this.availableCuisines = const <String>[],
+    this.availableCities = const <String>[],
+    this.availableRegions = const <String>[],
+    this.availableCountries = const <String>[],
     this.candidates = const <RestaurantUiModel>[],
     this.picked,
     this.pickCount = 0,
@@ -27,6 +35,17 @@ class RouletteState {
   final bool favoritesOnly;
   final bool? visited;
   final int? priceRange;
+  final String? cuisineType;
+  final String? city;
+  final String? region;
+  final String? country;
+
+  /// The values present in the data, so the screen offers only the cuisines,
+  /// regions and countries that actually exist — the same rule the list uses.
+  final List<String> availableCuisines;
+  final List<String> availableCities;
+  final List<String> availableRegions;
+  final List<String> availableCountries;
 
   final List<RestaurantUiModel> candidates;
 
@@ -43,13 +62,17 @@ class RouletteState {
   bool get isEmpty => !isInitialLoad && candidates.isEmpty;
 }
 
-/// Picks at random among the restaurants passing the screen's own light filters,
+/// Picks at random among the restaurants passing the screen's own filters,
 /// reusing the shared list query rather than adding another one.
 ///
 /// The Flutter counterpart of the Android `RouletteViewModel`. The candidate
 /// pool and the pick are both recomputed from one place ([_publish]) rather than
 /// from two streams, which is what keeps a filter change from ever leaving a
 /// stale pick on screen.
+///
+/// The filter dimensions mirror the restaurants list — quick view, rating,
+/// price, cuisine, region, country — so the two screens answer "which places?"
+/// the same way.
 class RouletteController extends ChangeNotifier {
   RouletteController({
     required this.repository,
@@ -58,16 +81,38 @@ class RouletteController extends ChangeNotifier {
   }) : random = random ?? Random() {
     _favoriteIds = preferences.current.favoriteIds;
     preferences.listenable.addListener(_onPreferencesChanged);
-    _latestVisitsSubscription =
-        repository.observeLatestVisitByRestaurantId().listen(
-      (Map<String, Visit> value) {
-        _latestVisits = value;
-        _publish();
-      },
-    );
+    _latestVisitsSubscription = repository.observeLatestVisitByRestaurantId()
+        .listen((Map<String, Visit> value) {
+          _latestVisits = value;
+          _publish();
+        });
     _photoPathsSubscription = repository.observeRestaurantPhotoPaths().listen(
       (Map<String, String> value) {
         _photoPaths = value;
+        _publish();
+      },
+    );
+    _availableCuisinesSubscription = repository.observeCuisineTypes().listen(
+      (List<String> value) {
+        _availableCuisines = value;
+        _publish();
+      },
+    );
+    _availableCitiesSubscription = repository.observeCities().listen(
+      (List<String> value) {
+        _availableCities = value;
+        _publish();
+      },
+    );
+    _availableRegionsSubscription = repository.observeRegions().listen(
+      (List<String> value) {
+        _availableRegions = value;
+        _publish();
+      },
+    );
+    _availableCountriesSubscription = repository.observeCountries().listen(
+      (List<String> value) {
+        _availableCountries = value;
         _publish();
       },
     );
@@ -84,6 +129,10 @@ class RouletteController extends ChangeNotifier {
   StreamSubscription<List<Restaurant>>? _restaurantsSubscription;
   StreamSubscription<Map<String, Visit>>? _latestVisitsSubscription;
   StreamSubscription<Map<String, String>>? _photoPathsSubscription;
+  StreamSubscription<List<String>>? _availableCuisinesSubscription;
+  StreamSubscription<List<String>>? _availableCitiesSubscription;
+  StreamSubscription<List<String>>? _availableRegionsSubscription;
+  StreamSubscription<List<String>>? _availableCountriesSubscription;
 
   List<Restaurant> _restaurants = const <Restaurant>[];
   List<Restaurant> _candidates = const <Restaurant>[];
@@ -91,6 +140,10 @@ class RouletteController extends ChangeNotifier {
   Map<String, Visit> _latestVisits = const <String, Visit>{};
   Map<String, String> _photoPaths = const <String, String>{};
   Set<String> _favoriteIds = const <String>{};
+  List<String> _availableCuisines = const <String>[];
+  List<String> _availableCities = const <String>[];
+  List<String> _availableRegions = const <String>[];
+  List<String> _availableCountries = const <String>[];
   int _pickCount = 0;
   bool _loaded = false;
   bool _disposed = false;
@@ -109,6 +162,19 @@ class RouletteController extends ChangeNotifier {
   void onPriceRangeChange(int? priceRange) =>
       _setFilters(_filters.withPriceRange(priceRange));
 
+  void onCuisineChange(String? cuisineType) =>
+      _setFilters(_filters.withCuisineType(cuisineType));
+
+  void onCityChange(String? city) => _setFilters(_filters.withCity(city));
+
+  void onRegionChange(String? region) => _setFilters(_filters.withRegion(region));
+
+  void onCountryChange(String? country) =>
+      _setFilters(_filters.withCountry(country));
+
+  /// Every dimension back to "any" at once, including the quick view.
+  void clearFilters() => _setFilters(const RouletteFilters());
+
   void pick() {
     _picked = pickRouletteCandidate(_candidates, random);
     _pickCount++;
@@ -122,6 +188,10 @@ class RouletteController extends ChangeNotifier {
     unawaited(_restaurantsSubscription?.cancel());
     unawaited(_latestVisitsSubscription?.cancel());
     unawaited(_photoPathsSubscription?.cancel());
+    unawaited(_availableCuisinesSubscription?.cancel());
+    unawaited(_availableCitiesSubscription?.cancel());
+    unawaited(_availableRegionsSubscription?.cancel());
+    unawaited(_availableCountriesSubscription?.cancel());
     super.dispose();
   }
 
@@ -139,7 +209,11 @@ class RouletteController extends ChangeNotifier {
     _restaurantsSubscription = repository
         .observeFiltered(
           minRating: _filters.minRating,
+          cuisineType: _filters.cuisineType,
           visited: _filters.visited,
+          city: _filters.city,
+          region: _filters.region,
+          country: _filters.country,
         )
         .listen((List<Restaurant> value) {
           _restaurants = value;
@@ -187,6 +261,14 @@ class RouletteController extends ChangeNotifier {
       favoritesOnly: _filters.favoritesOnly,
       visited: _filters.visited,
       priceRange: _filters.priceRange,
+      cuisineType: _filters.cuisineType,
+      city: _filters.city,
+      region: _filters.region,
+      country: _filters.country,
+      availableCuisines: _availableCuisines,
+      availableCities: _availableCities,
+      availableRegions: _availableRegions,
+      availableCountries: _availableCountries,
       candidates: models,
       picked: pickedModel,
       pickCount: _pickCount,

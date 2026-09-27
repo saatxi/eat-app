@@ -4,14 +4,17 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/db/app_database.dart';
 
-/// The roulette screen's own light filters, applied on top of the shared list
-/// query.
+/// The roulette screen's own filters, applied on top of the shared list query.
 ///
-/// `minRating` and `visited` are pushed into SQL because the visits table has
-/// to be consulted for them; `favoritesOnly` and `priceRange` are applied here
-/// instead, since favourites live in the preference file rather than the
-/// database and the price band is a plain column compare that isn't worth a
-/// second query variant.
+/// `minRating`, `visited`, `cuisineType`, `city`, `region` and `country` are
+/// pushed into SQL, because the visits table has to be consulted for the first
+/// two and the rest are plain column compares against the shared list query;
+/// `favoritesOnly` and `priceRange` are applied here instead, since favourites
+/// live in the preference file rather than the database.
+///
+/// Deliberately the same dimensions the restaurants list offers, so "which
+/// places can a spin land on?" is answered the same way as "which places does
+/// the list show?".
 @immutable
 class RouletteFilters {
   const RouletteFilters({
@@ -19,6 +22,10 @@ class RouletteFilters {
     this.favoritesOnly = false,
     this.visited,
     this.priceRange,
+    this.cuisineType,
+    this.city,
+    this.region,
+    this.country,
   });
 
   /// Minimum rating a visit has to reach. Null means no rating filter.
@@ -31,15 +38,24 @@ class RouletteFilters {
 
   final int? priceRange;
 
-  /// The four `with…` methods exist instead of a `copyWith`, because every
-  /// field here is nullable for a reason — clearing one is a real operation, and
-  /// a `copyWith` that can't tell "leave it" from "clear it" would silently make
+  final String? cuisineType;
+  final String? city;
+  final String? region;
+  final String? country;
+
+  /// The `with…` methods exist instead of a `copyWith`, because every field
+  /// here is nullable for a reason — clearing one is a real operation, and a
+  /// `copyWith` that can't tell "leave it" from "clear it" would silently make
   /// that impossible.
   RouletteFilters withMinRating(int? value) => RouletteFilters(
     minRating: value,
     favoritesOnly: favoritesOnly,
     visited: visited,
     priceRange: priceRange,
+    cuisineType: cuisineType,
+    city: city,
+    region: region,
+    country: country,
   );
 
   RouletteFilters withFavoritesOnly(bool value) => RouletteFilters(
@@ -47,6 +63,10 @@ class RouletteFilters {
     favoritesOnly: value,
     visited: visited,
     priceRange: priceRange,
+    cuisineType: cuisineType,
+    city: city,
+    region: region,
+    country: country,
   );
 
   RouletteFilters withVisited(bool? value) => RouletteFilters(
@@ -54,6 +74,10 @@ class RouletteFilters {
     favoritesOnly: favoritesOnly,
     visited: value,
     priceRange: priceRange,
+    cuisineType: cuisineType,
+    city: city,
+    region: region,
+    country: country,
   );
 
   RouletteFilters withPriceRange(int? value) => RouletteFilters(
@@ -61,6 +85,54 @@ class RouletteFilters {
     favoritesOnly: favoritesOnly,
     visited: visited,
     priceRange: value,
+    cuisineType: cuisineType,
+    city: city,
+    region: region,
+    country: country,
+  );
+
+  RouletteFilters withCuisineType(String? value) => RouletteFilters(
+    minRating: minRating,
+    favoritesOnly: favoritesOnly,
+    visited: visited,
+    priceRange: priceRange,
+    cuisineType: value,
+    city: city,
+    region: region,
+    country: country,
+  );
+
+  RouletteFilters withCity(String? value) => RouletteFilters(
+    minRating: minRating,
+    favoritesOnly: favoritesOnly,
+    visited: visited,
+    priceRange: priceRange,
+    cuisineType: cuisineType,
+    city: value,
+    region: region,
+    country: country,
+  );
+
+  RouletteFilters withRegion(String? value) => RouletteFilters(
+    minRating: minRating,
+    favoritesOnly: favoritesOnly,
+    visited: visited,
+    priceRange: priceRange,
+    cuisineType: cuisineType,
+    city: city,
+    region: value,
+    country: country,
+  );
+
+  RouletteFilters withCountry(String? value) => RouletteFilters(
+    minRating: minRating,
+    favoritesOnly: favoritesOnly,
+    visited: visited,
+    priceRange: priceRange,
+    cuisineType: cuisineType,
+    city: city,
+    region: region,
+    country: value,
   );
 }
 

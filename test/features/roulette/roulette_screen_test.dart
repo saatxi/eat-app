@@ -100,18 +100,24 @@ void main() {
     tester.view.physicalSize = smallPhone;
     addTearDown(tester.view.reset);
 
-    await repository.insert(restaurant(id: 'a', name: 'Cal Ferran'));
+    await repository.insert(
+      restaurant(id: 'a', name: 'Cal Ferran', cuisineType: 'catalan'),
+    );
     await tester.pumpWidget(host(const RouletteScreen()));
+    await pump(tester);
+
+    // The chips live behind the collapsible header, so open it first.
+    await tester.tap(find.text('Filters'));
     await pump(tester);
 
     // A wrapping row never clips a chip at the right edge: each one is fully on
     // screen, at whatever line it landed on.
     final double rightEdge = tester.view.physicalSize.width;
     for (final String label in <String>[
-      'Favorites only',
-      'Status',
+      'Show',
       'Rating',
       'Price',
+      'Cuisine',
       '1 restaurant',
     ]) {
       final Rect rect = tester.getRect(find.text(label));
