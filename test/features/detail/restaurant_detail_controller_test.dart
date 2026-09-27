@@ -79,26 +79,21 @@ void main() {
     expect(controller.state, isA<DetailNotFound>());
   });
 
-  test('folds the restaurant, its tags and its favourite state', () async {
+  test('folds the restaurant and its favourite state', () async {
     await repository.insert(
       restaurant(id: 'a', name: 'Cal Ferran', cuisineType: 'mediterranean'),
-      tags: <String>['Terraza', 'Grupos'],
     );
     await preferences.toggleFavorite('a');
 
     final RestaurantDetailController controller = buildController('a');
     await waitFor(
-      () => tryLoaded(controller)?.restaurant.tags.length == 2,
-      description: 'the loaded restaurant and its tags',
+      () => tryLoaded(controller) != null,
+      description: 'the loaded restaurant',
     );
 
     final DetailLoaded loaded = loadedOf(controller);
     expect(loaded.restaurant.name, 'Cal Ferran');
     expect(loaded.restaurant.isFavorite, isTrue);
-    expect(
-      loaded.restaurant.tags,
-      unorderedEquals(<String>['Terraza', 'Grupos']),
-    );
   });
 
   test('turns into not-found once the restaurant is gone', () async {

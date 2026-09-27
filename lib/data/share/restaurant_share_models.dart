@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import '../../core/utils/link_validation.dart';
 import '../../core/utils/search_normalizer.dart';
-import '../../core/utils/tag_validation.dart';
 import '../db/app_database.dart';
 
 /// The marker every share file carries.
@@ -71,7 +70,6 @@ class RestaurantExport {
     this.streetAddress,
     this.website,
     this.instagram,
-    this.tags = const <String>[],
     this.city,
     this.region,
     this.country,
@@ -87,7 +85,6 @@ class RestaurantExport {
 
   final String? website;
   final String? instagram;
-  final List<String> tags;
   final String? city;
   final String? region;
   final String? country;
@@ -100,7 +97,6 @@ class RestaurantExport {
     'priceRange': priceRange,
     'website': website,
     'instagram': instagram,
-    'tags': tags,
     'city': city,
     'region': region,
     'country': country,
@@ -117,10 +113,6 @@ class RestaurantExport {
     priceRange: (json['priceRange'] as num).toInt(),
     website: json['website'] as String?,
     instagram: json['instagram'] as String?,
-    tags: <String>[
-      for (final Object? tag in json['tags'] as List<Object?>? ?? const <Object?>[])
-        if (tag is String) tag,
-    ],
     city: json['city'] as String?,
     region: json['region'] as String?,
     country: json['country'] as String?,
@@ -150,12 +142,10 @@ class RestaurantShareFile {
 String encodeRestaurantShareFile(List<RestaurantExport> restaurants) =>
     jsonEncode(RestaurantShareFile(restaurants: restaurants).toJson());
 
-/// The exportable shape of one [Restaurant], with the tags and visits that
-/// live in their own tables passed in — neither is derivable from the entity
-/// alone.
+/// The exportable shape of one [Restaurant], with the visits that live in their
+/// own table passed in — they are not derivable from the entity alone.
 RestaurantExport exportRestaurant(
   Restaurant restaurant, {
-  List<String> tags = const <String>[],
   List<Visit> visits = const <Visit>[],
 }) => RestaurantExport(
   name: restaurant.name,
@@ -164,7 +154,6 @@ RestaurantExport exportRestaurant(
   priceRange: restaurant.priceRange,
   website: restaurant.website,
   instagram: restaurant.instagram,
-  tags: tags,
   city: restaurant.city,
   region: restaurant.region,
   country: restaurant.country,
@@ -229,12 +218,6 @@ Restaurant? restaurantFromExport(RestaurantExport export, String id) {
 /// The row's visits, already validated as a set by [restaurantFromExport].
 List<VisitExport> validatedVisits(RestaurantExport export) =>
     List<VisitExport>.unmodifiable(export.visits);
-
-/// The row's tags, validated the same per-item-lenient way: a blank, over-long
-/// or comma-carrying tag is dropped rather than failing the row, duplicates
-/// fold together case-insensitively, and the list is capped.
-List<String> validatedTagNames(RestaurantExport export) =>
-    normalizeTagNames(export.tags);
 
 /// Whether [candidate] looks like [existing] — the same name, and the same
 /// address unless either side has none recorded.

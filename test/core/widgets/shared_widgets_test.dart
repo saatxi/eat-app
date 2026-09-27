@@ -4,7 +4,6 @@ import 'package:eatapp/core/widgets/empty_state.dart';
 import 'package:eatapp/core/widgets/rating_and_price_row.dart';
 import 'package:eatapp/core/widgets/rating_trend_chart.dart';
 import 'package:eatapp/core/widgets/shimmer_box.dart';
-import 'package:eatapp/core/widgets/tag_pill_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -52,35 +51,6 @@ void main() {
       expect(find.text('0/5'), findsOneWidget);
       // No price label means no pill at all, rather than an empty one.
       expect(find.text('10-20 €'), findsNothing);
-    });
-  });
-
-  group('TagPillRow', () {
-    testWidgets('collapses the overflow into a +N pill', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        _host(
-          const TagPillRow(
-            tags: <String>['Terraza', 'Grupos', 'Niños', 'Brunch', 'Vegano'],
-            maxVisible: 3,
-          ),
-        ),
-      );
-
-      expect(find.text('Terraza'), findsOneWidget);
-      expect(find.text('Brunch'), findsNothing);
-      expect(find.text('+2'), findsOneWidget);
-    });
-
-    testWidgets('draws nothing when there are no tags', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        _host(const TagPillRow(tags: <String>[], maxVisible: 3)),
-      );
-
-      expect(find.byType(TagPill), findsNothing);
     });
   });
 

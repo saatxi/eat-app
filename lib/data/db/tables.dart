@@ -60,49 +60,6 @@ class Restaurants extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
-/// A free-form, user-invented label — "Terraza", "para grupos" — as opposed to
-/// the closed `Cuisine` vocabulary. `COLLATE NOCASE` plus the unique index on
-/// [name] gives case-insensitive uniqueness at the SQLite level: inserting
-/// "terraza" when "Terraza" already exists conflicts against the same row
-/// instead of creating a near-duplicate.
-@DataClassName('Tag')
-@TableIndex(name: 'index_tags_name', columns: {#name}, unique: true)
-class Tags extends Table {
-  @override
-  String get tableName => 'tags';
-
-  TextColumn get id => text().named('id')();
-
-  TextColumn get name =>
-      text().named('name').customConstraint('NOT NULL COLLATE NOCASE')();
-
-  @override
-  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
-}
-
-/// Join row linking a [Restaurants] row to a [Tags] row. Both foreign keys
-/// cascade on delete: removing a restaurant or a tag cleans up the links
-/// pointing at it without leaving orphaned rows in this table.
-@DataClassName('RestaurantTag')
-@TableIndex(name: 'index_restaurant_tags_tagId', columns: {#tagId})
-class RestaurantTags extends Table {
-  @override
-  String get tableName => 'restaurant_tags';
-
-  TextColumn get restaurantId => text()
-      .named('restaurantId')
-      .references(Restaurants, #id, onDelete: KeyAction.cascade)();
-
-  // Without this index, deleting a tag (or any tagId-keyed lookup) forces a
-  // full scan of this table: the composite primary key only covers lookups
-  // that lead with restaurantId.
-  TextColumn get tagId =>
-      text().named('tagId').references(Tags, #id, onDelete: KeyAction.cascade)();
-
-  @override
-  Set<Column<Object>> get primaryKey => <Column<Object>>{restaurantId, tagId};
-}
-
 /// One visit to a restaurant: when, how it rated, and any free-text note about
 /// that specific visit. A restaurant with zero visits is a "want to try" entry;
 /// one or more is "visited". Cascades on delete when its restaurant is removed.

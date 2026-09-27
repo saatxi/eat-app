@@ -136,8 +136,6 @@ class RoomToDriftImporter {
       'country',
       'searchText',
     ]),
-    _TableCopy('tags', <String>['id', 'name']),
-    _TableCopy('restaurant_tags', <String>['restaurantId', 'tagId']),
     _TableCopy('visits', <String>[
       'id',
       'restaurantId',

@@ -11,16 +11,14 @@ const int maxImportBytes = 5 * 1024 * 1024;
 enum ImportFailureReason { tooLarge, invalidFile, ioError }
 
 /// One validated import row: the [Restaurant] itself paired with its own
-/// validated tags and visits.
+/// validated visits.
 class ImportedRestaurant {
   const ImportedRestaurant({
     required this.restaurant,
-    required this.tags,
     required this.visits,
   });
 
   final Restaurant restaurant;
-  final List<String> tags;
   final List<VisitExport> visits;
 }
 
@@ -105,7 +103,6 @@ ImportedRestaurant? _readRow(Object? entry) {
   }
   return ImportedRestaurant(
     restaurant: restaurant,
-    tags: validatedTagNames(export),
     visits: validatedVisits(export),
   );
 }

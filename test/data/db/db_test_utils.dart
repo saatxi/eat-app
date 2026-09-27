@@ -54,8 +54,6 @@ Visit visit({
   priceRange: priceRange,
 );
 
-Tag tag({required String id, required String name}) => Tag(id: id, name: name);
-
 Photo photo({
   required String id,
   required String path,

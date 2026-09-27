@@ -37,10 +37,6 @@ class RestaurantDetailController extends ChangeNotifier {
         _restaurantEmitted = true;
         _publish();
       }),
-      repository.observeTagNames(restaurantId).listen((List<String> value) {
-        _tags = value;
-        _publish();
-      }),
       repository.observePhotosForRestaurant(restaurantId).listen(
         (List<Photo> photos) {
           _restaurantPhotoPath = photos.isEmpty ? null : photos.first.path;
@@ -65,7 +61,6 @@ class RestaurantDetailController extends ChangeNotifier {
   DetailState _state = const DetailLoading();
   Restaurant? _restaurant;
   List<Visit> _visits = const <Visit>[];
-  List<String> _tags = const <String>[];
   Set<String> _favoriteIds = const <String>{};
   String? _restaurantPhotoPath;
   final Map<String, List<String>> _photosByVisitId = <String, List<String>>{};
@@ -149,7 +144,6 @@ class RestaurantDetailController extends ChangeNotifier {
       DetailLoaded(
         restaurant: restaurant.toUiModel(
           isFavorite: _favoriteIds.contains(restaurant.id),
-          tags: _tags,
           latestVisit: visits.isEmpty ? null : visits.first,
           photoPath: _restaurantPhotoPath,
         ),

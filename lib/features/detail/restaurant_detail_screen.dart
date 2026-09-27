@@ -18,7 +18,6 @@ import '../../core/widgets/rating_and_price_row.dart';
 import '../../core/widgets/rating_trend_chart.dart';
 import '../../core/widgets/restaurant_thumbnail.dart';
 import '../../core/widgets/shimmer_box.dart';
-import '../../core/widgets/tag_pill_row.dart';
 import '../import_export/share_service.dart';
 import '../list/restaurant_ui_model.dart';
 import 'detail_state.dart';
@@ -339,11 +338,6 @@ class _OverviewCard extends StatelessWidget {
                   onTap: () =>
                       onOpen('geo:0,0?q=${Uri.encodeComponent(address!)}'),
                 ),
-              ),
-            if (restaurant.tagsLabel.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.sm),
-                child: TagPillRow(tags: restaurant.tags),
               ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),

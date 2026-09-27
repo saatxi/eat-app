@@ -85,7 +85,6 @@ void main() {
         city: 'Barcelona',
         priceRange: 3,
       ),
-      tags: <String>['Terraza'],
     );
     await repository.insert(restaurant(id: 'b', name: 'B', cuisineType: 'italian'));
     await repository.insert(restaurant(id: 'c', name: 'C', cuisineType: 'italian'));
@@ -115,7 +114,6 @@ void main() {
     expect(find.text('Price range'), findsOneWidget);
     expect(find.text('Visits per month'), findsOneWidget);
     expect(find.text('Average rating over time'), findsOneWidget);
-    expect(find.text('Top tags'), findsOneWidget);
 
     await disposeApp(tester);
   });
@@ -123,9 +121,9 @@ void main() {
   testWidgets('drops the sections with nothing behind them', (
     WidgetTester tester,
   ) async {
-    // One restaurant, never visited and with no tags: the total tile and the
-    // cuisine/price breakdowns have something to say, the monthly bars, the
-    // rating trend and the top tags do not.
+    // One restaurant, never visited: the total tile and the cuisine/price
+    // breakdowns have something to say, the monthly bars and the rating trend
+    // do not.
     await repository.insert(
       restaurant(id: 'a', name: 'Cal Ferran', cuisineType: 'catalan', priceRange: 3),
     );
@@ -136,7 +134,6 @@ void main() {
     expect(find.text('Price range'), findsOneWidget);
     expect(find.text('Visits per month'), findsNothing);
     expect(find.text('Average rating over time'), findsNothing);
-    expect(find.text('Top tags'), findsNothing);
 
     await disposeApp(tester);
   });

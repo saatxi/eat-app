@@ -17,7 +17,6 @@ class StatisticsState {
     this.averageRating,
     this.cuisineCounts = const <CuisineCount>[],
     this.priceRangeCounts = const <PriceRangeCount>[],
-    this.tagCounts = const <TagCount>[],
     this.monthlyVisitCounts = const <MonthlyVisitCount>[],
     this.monthlyRatingTrend = const <MonthlyAverageRating>[],
   });
@@ -34,7 +33,6 @@ class StatisticsState {
 
   final List<CuisineCount> cuisineCounts;
   final List<PriceRangeCount> priceRangeCounts;
-  final List<TagCount> tagCounts;
   final List<MonthlyVisitCount> monthlyVisitCounts;
   final List<MonthlyAverageRating> monthlyRatingTrend;
 }
@@ -73,10 +71,6 @@ class StatisticsController extends ChangeNotifier {
         _priceRangeCounts = value;
         _publish();
       }),
-      repository.observeTagCounts().listen((List<TagCount> value) {
-        _tagCounts = value;
-        _publish();
-      }),
       repository.observeAllVisitDates().listen((List<int> value) {
         _visitDates = value;
         _publish();
@@ -105,7 +99,6 @@ class StatisticsController extends ChangeNotifier {
   double? _averageRating;
   List<CuisineCount> _cuisineCounts = const <CuisineCount>[];
   List<PriceRangeCount> _priceRangeCounts = const <PriceRangeCount>[];
-  List<TagCount> _tagCounts = const <TagCount>[];
   List<int> _visitDates = const <int>[];
   List<VisitDateRating> _visitDateRatings = const <VisitDateRating>[];
   bool _loaded = false;
@@ -136,7 +129,6 @@ class StatisticsController extends ChangeNotifier {
       averageRating: _averageRating,
       cuisineCounts: _cuisineCounts,
       priceRangeCounts: _priceRangeCounts,
-      tagCounts: _tagCounts,
       monthlyVisitCounts: bucketVisitsByMonth(_visitDates, now: now),
       monthlyRatingTrend: bucketRatingsByMonth(_visitDateRatings, now: now),
     );

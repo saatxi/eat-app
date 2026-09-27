@@ -139,44 +139,22 @@ void main() {
   });
 
   group('writes', () {
-    test('insert stores the row and its tags in one transaction', () async {
-      await repository.insert(
-        restaurant(id: 'a', name: 'First'),
-        tags: <String>['Terraza', 'Para grupos'],
-      );
+    test('insert stores the row', () async {
+      await repository.insert(restaurant(id: 'a', name: 'First'));
 
       expect(await repository.observeById('a').first, isNotNull);
-      expect(
-        await repository.observeTagNames('a').first,
-        <String>['Para grupos', 'Terraza'],
-      );
     });
 
-    test('update replaces the tags rather than adding to them', () async {
-      await repository.insert(
-        restaurant(id: 'a', name: 'First'),
-        tags: <String>['Terraza'],
-      );
+    test('update rewrites the row', () async {
+      await repository.insert(restaurant(id: 'a', name: 'First'));
 
-      await repository.update(
-        restaurant(id: 'a', name: 'Renamed'),
-        <String>['Coeliac'],
-      );
+      await repository.update(restaurant(id: 'a', name: 'Renamed'));
 
       expect((await repository.observeById('a').first)!.name, 'Renamed');
-      expect(await repository.observeTagNames('a').first, <String>['Coeliac']);
-      // The vocabulary is shared, so the tag that is no longer used survives.
-      expect(await repository.observeAllTagNames().first, <String>[
-        'Coeliac',
-        'Terraza',
-      ]);
     });
 
-    test('delete cascades to the visits and photos and drops the links', () async {
-      await repository.insert(
-        restaurant(id: 'a', name: 'First'),
-        tags: <String>['Terraza'],
-      );
+    test('delete cascades to the visits and photos', () async {
+      await repository.insert(restaurant(id: 'a', name: 'First'));
       await repository.addVisit(
         restaurantId: 'a',
         visitDate: 1,
@@ -190,19 +168,14 @@ void main() {
       expect(await repository.observeById('a').first, isNull);
       expect(await repository.observeVisitsForRestaurant('a').first, isEmpty);
       expect(await repository.observePhotosForRestaurant('a').first, isEmpty);
-      expect(await repository.observeTagNames('a').first, isEmpty);
     });
 
-    test('deleteAll also clears the tag vocabulary', () async {
-      await repository.insert(
-        restaurant(id: 'a', name: 'First'),
-        tags: <String>['Terraza'],
-      );
+    test('deleteAll clears every restaurant', () async {
+      await repository.insert(restaurant(id: 'a', name: 'First'));
 
       await repository.deleteAll();
 
       expect(await repository.observeTotalCount().first, 0);
-      expect(await repository.observeAllTagNames().first, isEmpty);
     });
   });
 
@@ -398,33 +371,6 @@ void main() {
     });
   });
 
-  group('tags', () {
-    test('observeTagsByRestaurantId groups the links by restaurant', () async {
-      await repository.insert(
-        restaurant(id: 'a', name: 'First'),
-        tags: <String>['Terraza', 'Coeliac'],
-      );
-      await repository.insert(
-        restaurant(id: 'b', name: 'Second'),
-        tags: <String>['Terraza'],
-      );
-
-      final Map<String, List<String>> byRestaurant = await repository
-          .observeTagsByRestaurantId()
-          .first;
-
-      // The underlying query has no ORDER BY, so only the grouping is defined.
-      expect(byRestaurant['a'], unorderedEquals(<String>['Terraza', 'Coeliac']));
-      expect(byRestaurant['b'], <String>['Terraza']);
-    });
-
-    test('a restaurant with no tags is simply absent from the map', () async {
-      await repository.insert(restaurant(id: 'a', name: 'First'));
-
-      expect(await repository.observeTagsByRestaurantId().first, isEmpty);
-    });
-  });
-
   group('statistics', () {
     test('counts and averages only the visited restaurants', () async {
       await repository.insert(restaurant(id: 'a', name: 'First'));
@@ -481,21 +427,6 @@ void main() {
         <int, int>{for (final p in prices) p.priceRange: p.count},
         <int, int>{1: 2, 2: 1},
       );
-    });
-
-    test('the tag counts rank the most-used tag first', () async {
-      await repository.insert(
-        restaurant(id: 'a', name: 'First'),
-        tags: <String>['Terraza', 'Coeliac'],
-      );
-      await repository.insert(
-        restaurant(id: 'b', name: 'Second'),
-        tags: <String>['Terraza'],
-      );
-
-      final tags = await repository.observeTagCounts().first;
-      expect(tags.first.name, 'Terraza');
-      expect(tags.first.count, 2);
     });
 
     test('the visit dates and their ratings come back paired, oldest first', () async {

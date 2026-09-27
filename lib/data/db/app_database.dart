@@ -8,7 +8,6 @@ import 'package:path_provider/path_provider.dart';
 
 import 'daos/photo_dao.dart';
 import 'daos/restaurant_dao.dart';
-import 'daos/tag_dao.dart';
 import 'daos/visit_dao.dart';
 import 'tables.dart';
 
@@ -16,12 +15,14 @@ part 'app_database.g.dart';
 
 /// The app's SQLite database, carried over from the Android app's Room schema.
 ///
-/// [schemaVersion] is 14 — Room's frozen baseline — so that the Room→drift
-/// import can adopt an existing install's file without a version bump. Every
-/// future bump must ship a real drift migration; see [migration].
+/// [schemaVersion] began at 14 — Room's frozen baseline — so the Room→drift
+/// import could adopt an existing install's file without a version bump. It is
+/// now 15: the free-form tag feature was removed, taking its `tags` and
+/// `restaurant_tags` tables with it, and the migration below drops them for an
+/// install that already had them.
 @DriftDatabase(
-  tables: <Type>[Restaurants, Tags, RestaurantTags, Visits, Photos],
-  daos: <Type>[RestaurantDao, TagDao, VisitDao, PhotoDao],
+  tables: <Type>[Restaurants, Visits, Photos],
+  daos: <Type>[RestaurantDao, VisitDao, PhotoDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -30,21 +31,22 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (Migrator m) => m.createAll(),
-    // Version 14 is the frozen baseline Room left behind, so there is nothing
-    // to migrate *from* yet: a bump that reaches this callback is a bug, and
-    // failing loudly is much better than silently leaving the user's rows
-    // behind a schema their app no longer understands.
-    onUpgrade: (Migrator m, int from, int to) => throw UnsupportedError(
-      'No drift migration from schema $from to $to. Add one to '
-      'AppDatabase.migration before bumping schemaVersion past 14.',
-    ),
+    onUpgrade: (Migrator m, int from, int to) async {
+      // 14 -> 15: the tag feature is gone, so its two tables go with it.
+      // Dropping them discards any rows a user had entered — deliberately,
+      // since nothing in the app reads them any more.
+      if (from < 15) {
+        await customStatement('DROP TABLE IF EXISTS restaurant_tags');
+        await customStatement('DROP TABLE IF EXISTS tags');
+      }
+    },
     // SQLite requires this per connection, and every cascade delete the schema
-    // declares (tags, visits, photos) only fires with foreign keys on.
+    // declares (visits, photos) only fires with foreign keys on.
     beforeOpen: (OpeningDetails details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },

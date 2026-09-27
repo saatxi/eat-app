@@ -206,22 +206,6 @@ class _Loaded extends StatelessWidget {
             ],
           ),
         ],
-        if (state.tagCounts.isNotEmpty) ...<Widget>[
-          const SizedBox(height: AppSpacing.lg),
-          _StatsCard(
-            title: l10n.statsSectionTopTags,
-            children: <Widget>[
-              for (final TagCount count in state.tagCounts)
-                _BarRow(
-                  label: count.name,
-                  count: count.count,
-                  maxCount: state.tagCounts
-                      .map((TagCount row) => row.count)
-                      .reduce((int a, int b) => a > b ? a : b),
-                ),
-            ],
-          ),
-        ],
       ],
     );
   }

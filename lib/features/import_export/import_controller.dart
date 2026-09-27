@@ -9,20 +9,18 @@ import '../../data/share/restaurant_share_models.dart';
 /// What the user chose to do with one row of a shared file.
 enum ImportDecision { add, skip, replace }
 
-/// One validated import row: the restaurant itself, its own validated tags and
-/// visits, the existing restaurant it looks like a duplicate of (if any), and
-/// the decision currently applied to it.
+/// One validated import row: the restaurant itself, its own validated visits,
+/// the existing restaurant it looks like a duplicate of (if any), and the
+/// decision currently applied to it.
 class ImportCandidate {
   ImportCandidate({
     required this.restaurant,
-    required this.tags,
     required this.visits,
     required this.duplicateOf,
     required this.decision,
   });
 
   final Restaurant restaurant;
-  final List<String> tags;
   final List<VisitExport> visits;
 
   /// The existing row this looks like a duplicate of, by name and address, or
@@ -33,7 +31,6 @@ class ImportCandidate {
 
   ImportCandidate withDecision(ImportDecision decision) => ImportCandidate(
     restaurant: restaurant,
-    tags: tags,
     visits: visits,
     duplicateOf: duplicateOf,
     decision: decision,
@@ -156,7 +153,6 @@ class ImportController extends ChangeNotifier {
     }
     return ImportCandidate(
       restaurant: imported.restaurant,
-      tags: imported.tags,
       visits: imported.visits,
       duplicateOf: duplicate,
       // A likely duplicate defaults to Skip, so the safe path is the one the
@@ -201,7 +197,7 @@ class ImportController extends ChangeNotifier {
   Future<String?> _apply(ImportCandidate candidate) async {
     switch (candidate.decision) {
       case ImportDecision.add:
-        await repository.insert(candidate.restaurant, tags: candidate.tags);
+        await repository.insert(candidate.restaurant);
         return candidate.restaurant.id;
       case ImportDecision.replace:
         final Restaurant? duplicate = candidate.duplicateOf;
@@ -212,7 +208,6 @@ class ImportController extends ChangeNotifier {
         // the duplicate's id so the replacement lands on the existing row.
         await repository.update(
           candidate.restaurant.copyWith(id: duplicate.id),
-          candidate.tags,
         );
         return duplicate.id;
       case ImportDecision.skip:

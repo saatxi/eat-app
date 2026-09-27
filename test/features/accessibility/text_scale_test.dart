@@ -66,7 +66,6 @@ void main() {
         country: 'Espanya',
         priceRange: 5,
       ),
-      tags: <String>['Terraza', 'Para grupos'],
     );
     await repository.saveSingleVisit(
       restaurantId: 'a',

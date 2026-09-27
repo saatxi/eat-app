@@ -4,7 +4,6 @@ import '../../core/utils/search_normalizer.dart';
 import '../db/app_database.dart';
 import '../db/daos/photo_dao.dart';
 import '../db/daos/restaurant_dao.dart';
-import '../db/daos/tag_dao.dart';
 import '../db/daos/visit_dao.dart';
 import '../models/restaurant_sort.dart';
 import '../models/stats_projections.dart';
@@ -23,8 +22,8 @@ import '../share/restaurant_share_models.dart';
 /// What it adds on top of the four DAOs is exactly what those deliberately
 /// leave out: query folding (a typed search term has to be normalized and its
 /// `LIKE` metacharacters escaped before it reaches SQL), the multi-table writes
-/// that have to be atomic (a restaurant plus its tags, a visit plus its photos),
-/// and the id/timestamp generation that makes those writes complete.
+/// that have to be atomic (a visit plus its photos), and the id/timestamp
+/// generation that makes those writes complete.
 ///
 /// The `backup.json` snapshot the Android repository wrote after every change
 /// is written here too, through the optional [BackupWriter] a real app passes
@@ -59,7 +58,6 @@ class RestaurantRepository {
   static const Uuid _uuid = Uuid();
 
   late final RestaurantDao _restaurants = _database.restaurantDao;
-  late final TagDao _tags = _database.tagDao;
   late final VisitDao _visits = _database.visitDao;
   late final PhotoDao _photos = _database.photoDao;
 
@@ -118,31 +116,18 @@ class RestaurantRepository {
   /// `searchText` already built with `buildSearchText` — both are the caller's
   /// contract on the Android side too, and the edit screen owns them because it
   /// is the only place that has the untrimmed form values in hand.
-  ///
-  /// [tags] replaces any the restaurant already had, in the same transaction as
-  /// the row itself: a half-saved restaurant with the old tags is not a state
-  /// worth being able to observe.
-  Future<void> insert(
-    Restaurant restaurant, {
-    List<String> tags = const <String>[],
-  }) async {
-    await _database.transaction(() async {
-      await _restaurants.insertRestaurant(restaurant);
-      await _tags.setTags(restaurant.id, tags);
-    });
+  Future<void> insert(Restaurant restaurant) async {
+    await _restaurants.insertRestaurant(restaurant);
     await _afterWrite();
   }
 
   /// Same contract as [insert]; the row must already exist.
-  Future<void> update(Restaurant restaurant, List<String> tags) async {
-    await _database.transaction(() async {
-      await _restaurants.updateRestaurant(restaurant);
-      await _tags.setTags(restaurant.id, tags);
-    });
+  Future<void> update(Restaurant restaurant) async {
+    await _restaurants.updateRestaurant(restaurant);
     await _afterWrite();
   }
 
-  /// The tag/visit/photo rows all cascade on delete; only their photo *files*
+  /// The visit/photo rows all cascade on delete; only their photo *files*
   /// are read back first, since the cascade knows nothing about the disk.
   Future<void> delete(String id) async {
     final List<Photo> photos = await _photos.getAllPhotosForRestaurant(id);
@@ -153,12 +138,7 @@ class RestaurantRepository {
 
   Future<void> deleteAll() async {
     final List<Photo> photos = await _photos.getAllPhotos();
-    await _database.transaction(() async {
-      await _restaurants.deleteAllRestaurants();
-      // The cascade only clears restaurant_tags when restaurants are deleted —
-      // the tags table itself needs its own wipe.
-      await _tags.deleteAllTags();
-    });
+    await _restaurants.deleteAllRestaurants();
     await _deleteFiles(photos);
     await _afterWrite();
   }
@@ -166,7 +146,7 @@ class RestaurantRepository {
   // --- Sharing --------------------------------------------------------------
 
   /// The exportable shape of every restaurant (or just [restaurantIds]),
-  /// carrying each one's tags and — when [includeVisits] is set — its visits.
+  /// carrying each one's visits when [includeVisits] is set.
   ///
   /// Both the shared/exported file and the automatic `backup.json` snapshot are
   /// built from this one method, so the two can't drift apart in what they
@@ -183,9 +163,6 @@ class RestaurantRepository {
               if (restaurantIds.contains(restaurant.id)) restaurant,
           ];
 
-    final Map<String, List<String>> tagsByRestaurant = _groupTagNames(
-      await _tags.getAllRestaurantTagLinks(),
-    );
     final Map<String, List<Visit>> visitsByRestaurant = includeVisits
         ? _groupVisits(await _visits.getAllVisits())
         : const <String, List<Visit>>{};
@@ -194,7 +171,6 @@ class RestaurantRepository {
       for (final Restaurant restaurant in selected)
         exportRestaurant(
           restaurant,
-          tags: tagsByRestaurant[restaurant.id] ?? const <String>[],
           visits: visitsByRestaurant[restaurant.id] ?? const <Visit>[],
         ),
     ];
@@ -212,26 +188,6 @@ class RestaurantRepository {
     await onChanged?.call();
   }
 
-  // --- Tags -----------------------------------------------------------------
-
-  Stream<List<String>> observeAllTagNames() => _tags.observeAllTagNames();
-
-  Stream<List<String>> observeTagNames(String restaurantId) =>
-      _tags.observeTagNames(restaurantId);
-
-  /// Keyed by restaurant id, for the list rows that show a restaurant's tags.
-  Stream<Map<String, List<String>>> observeTagsByRestaurantId() =>
-      _tags.observeAllRestaurantTagLinks().map(
-        (List<RestaurantTagName> links) {
-          final Map<String, List<String>> byRestaurant =
-              <String, List<String>>{};
-          for (final RestaurantTagName link in links) {
-            (byRestaurant[link.restaurantId] ??= <String>[]).add(link.name);
-          }
-          return byRestaurant;
-        },
-      );
-
   // --- Statistics -----------------------------------------------------------
 
   Stream<int> observeTotalCount() => _restaurants.observeTotalCount();
@@ -245,8 +201,6 @@ class RestaurantRepository {
 
   Stream<List<PriceRangeCount>> observePriceRangeCounts() =>
       _restaurants.observePriceRangeCounts();
-
-  Stream<List<TagCount>> observeTagCounts() => _tags.observeTagCounts();
 
   /// Every visit's raw epoch-millis date, across every restaurant — bucketed
   /// into months by the statistics screen, which is why this is the raw list.
@@ -462,16 +416,6 @@ class RestaurantRepository {
 
   static String? _blankToNull(String? value) =>
       value == null || value.trim().isEmpty ? null : value;
-
-  static Map<String, List<String>> _groupTagNames(
-    List<RestaurantTagName> links,
-  ) {
-    final Map<String, List<String>> byRestaurant = <String, List<String>>{};
-    for (final RestaurantTagName link in links) {
-      (byRestaurant[link.restaurantId] ??= <String>[]).add(link.name);
-    }
-    return byRestaurant;
-  }
 
   static Map<String, List<Visit>> _groupVisits(List<Visit> visits) {
     final Map<String, List<Visit>> byRestaurant = <String, List<Visit>>{};

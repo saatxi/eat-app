@@ -7,7 +7,6 @@ import '../../core/theme/tokens/cuisine_accents.dart';
 import '../../core/utils/address_formatter.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/empty_state.dart';
-import '../../core/widgets/tag_pill_row.dart';
 import '../../data/share/restaurant_import_reader.dart';
 import 'import_controller.dart';
 
@@ -323,11 +322,6 @@ class _ImportCandidateCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (candidate.tags.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.sm),
-                child: TagPillRow(tags: candidate.tags),
-              ),
             if (candidate.duplicateOf != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),

@@ -77,14 +77,12 @@ void main() {
     expect(controller.state.averageRating, 4);
   });
 
-  test('counts cuisines, price bands and tags', () async {
+  test('counts cuisines and price bands', () async {
     await repository.insert(
       restaurant(id: 'a', name: 'Cal Ferran', cuisineType: 'mediterranean', priceRange: 2),
-      tags: <String>['Terraza'],
     );
     await repository.insert(
       restaurant(id: 'b', name: 'Kebab House', cuisineType: 'mediterranean', priceRange: 1),
-      tags: <String>['Terraza'],
     );
 
     final StatisticsController controller = buildController();
@@ -95,8 +93,6 @@ void main() {
 
     expect(controller.state.cuisineCounts.single.cuisineType, 'mediterranean');
     expect(controller.state.cuisineCounts.single.count, 2);
-    expect(controller.state.tagCounts.single.name, 'Terraza');
-    expect(controller.state.tagCounts.single.count, 2);
     expect(controller.state.priceRangeCounts, hasLength(2));
   });
 

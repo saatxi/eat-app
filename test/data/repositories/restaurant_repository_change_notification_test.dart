@@ -33,7 +33,7 @@ void main() {
     final RestaurantRepository repository = build();
 
     await repository.insert(restaurant(id: 'a', name: 'A'));
-    await repository.update(restaurant(id: 'a', name: 'B'), const <String>[]);
+    await repository.update(restaurant(id: 'a', name: 'B'));
     await repository.delete('a');
 
     expect(changes, 3);

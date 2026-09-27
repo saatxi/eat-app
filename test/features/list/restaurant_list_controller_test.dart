@@ -87,11 +87,8 @@ void main() {
     expect(idsOf(controller), <String>['a', 'b']);
   });
 
-  test('folds the favourites, the tags and the latest visit into the rows', () async {
-    await repository.insert(
-      restaurant(id: 'a', name: 'Kebab'),
-      tags: <String>['Terraza'],
-    );
+  test('folds the favourites and the latest visit into the rows', () async {
+    await repository.insert(restaurant(id: 'a', name: 'Kebab'));
     await repository.saveSingleVisit(
       restaurantId: 'a',
       visited: true,
@@ -111,7 +108,6 @@ void main() {
     final RestaurantUiModel row = controller.state.restaurants.single;
     expect(row.isFavorite, isTrue);
     expect(row.visited, isTrue);
-    expect(row.tags, <String>['Terraza']);
     expect(row.notes, 'Bones');
   });
 

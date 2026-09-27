@@ -132,12 +132,6 @@ class RestaurantListController extends ChangeNotifier {
     preferences.listenable.addListener(_onPreferencesChanged);
 
     _dataSubscriptions.addAll(<StreamSubscription<Object>>[
-      repository.observeTagsByRestaurantId().listen(
-        (Map<String, List<String>> value) {
-          _tagsByRestaurantId = value;
-          _publish();
-        },
-      ),
       repository.observeLatestVisitByRestaurantId().listen(
         (Map<String, Visit> value) {
           _latestVisitByRestaurantId = value;
@@ -206,7 +200,6 @@ class RestaurantListController extends ChangeNotifier {
   Timer? _debounce;
 
   List<Restaurant> _restaurants = const <Restaurant>[];
-  Map<String, List<String>> _tagsByRestaurantId = const <String, List<String>>{};
   Map<String, Visit> _latestVisitByRestaurantId = const <String, Visit>{};
   Map<String, String> _photoPathsByRestaurantId = const <String, String>{};
   Set<String> _favoriteIds = const <String>{};
@@ -390,7 +383,6 @@ class RestaurantListController extends ChangeNotifier {
           if (!_favoritesOnly || _favoriteIds.contains(restaurant.id))
             restaurant.toUiModel(
               isFavorite: _favoriteIds.contains(restaurant.id),
-              tags: _tagsByRestaurantId[restaurant.id] ?? const <String>[],
               latestVisit: _latestVisitByRestaurantId[restaurant.id],
               photoPath: _photoPathsByRestaurantId[restaurant.id],
             ),

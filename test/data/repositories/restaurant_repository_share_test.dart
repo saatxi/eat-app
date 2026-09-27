@@ -28,10 +28,9 @@ void main() {
   tearDown(() => db.close());
 
   group('exportRestaurants', () {
-    test('carries each restaurant\'s tags and visits', () async {
+    test('carries each restaurant\'s visits', () async {
       await repository.insert(
         restaurant(id: 'a', name: 'Cal Ferran', cuisineType: 'mediterranean'),
-        tags: const <String>['Terraza'],
       );
       await repository.addVisit(
         restaurantId: 'a',
@@ -44,7 +43,6 @@ void main() {
 
       expect(exports, hasLength(1));
       expect(exports.single.name, 'Cal Ferran');
-      expect(exports.single.tags, <String>['Terraza']);
       expect(exports.single.visits.single.rating, 4);
     });
 

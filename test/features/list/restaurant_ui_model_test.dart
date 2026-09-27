@@ -103,24 +103,6 @@ void main() {
     });
   });
 
-  group('the tags', () {
-    test('are joined for drawing and split back apart for the widgets', () {
-      final RestaurantUiModel model = restaurant(id: 'a', name: 'Kebab')
-          .toUiModel(tags: <String>['Terraza', 'Coeliac']);
-
-      expect(model.tagsLabel, 'Terraza, Coeliac');
-      expect(model.tags, <String>['Terraza', 'Coeliac']);
-    });
-
-    test('leave both the label and the list empty when there are none', () {
-      final RestaurantUiModel model = restaurant(id: 'a', name: 'Kebab')
-          .toUiModel();
-
-      expect(model.tagsLabel, '');
-      expect(model.tags, isEmpty);
-    });
-  });
-
   group('the links', () {
     test('count as present only when there is at least one', () {
       expect(restaurant(id: 'a', name: 'Kebab').toUiModel().hasLinks, isFalse);
@@ -134,7 +116,6 @@ void main() {
   test('two rows built from the same data are equal, and one differing field is not', () {
     final RestaurantUiModel one = restaurant(id: 'a', name: 'Kebab').toUiModel(
       isFavorite: true,
-      tags: <String>['Terraza'],
       latestVisit: visit(
         id: 'v',
         restaurantId: 'a',
@@ -144,7 +125,6 @@ void main() {
     );
     final RestaurantUiModel same = restaurant(id: 'a', name: 'Kebab').toUiModel(
       isFavorite: true,
-      tags: <String>['Terraza'],
       latestVisit: visit(
         id: 'v',
         restaurantId: 'a',

@@ -698,436 +698,6 @@ class RestaurantsCompanion extends UpdateCompanion<Restaurant> {
   }
 }
 
-class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $TagsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _nameMeta = const VerificationMeta('name');
-  @override
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-    'name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL COLLATE NOCASE',
-  );
-  @override
-  List<GeneratedColumn> get $columns => [id, name];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'tags';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<Tag> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('name')) {
-      context.handle(
-        _nameMeta,
-        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_nameMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  Tag map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Tag(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      name: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}name'],
-      )!,
-    );
-  }
-
-  @override
-  $TagsTable createAlias(String alias) {
-    return $TagsTable(attachedDatabase, alias);
-  }
-}
-
-class Tag extends DataClass implements Insertable<Tag> {
-  final String id;
-  final String name;
-  const Tag({required this.id, required this.name});
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['name'] = Variable<String>(name);
-    return map;
-  }
-
-  TagsCompanion toCompanion(bool nullToAbsent) {
-    return TagsCompanion(id: Value(id), name: Value(name));
-  }
-
-  factory Tag.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Tag(
-      id: serializer.fromJson<String>(json['id']),
-      name: serializer.fromJson<String>(json['name']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'name': serializer.toJson<String>(name),
-    };
-  }
-
-  Tag copyWith({String? id, String? name}) =>
-      Tag(id: id ?? this.id, name: name ?? this.name);
-  Tag copyWithCompanion(TagsCompanion data) {
-    return Tag(
-      id: data.id.present ? data.id.value : this.id,
-      name: data.name.present ? data.name.value : this.name,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('Tag(')
-          ..write('id: $id, ')
-          ..write('name: $name')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(id, name);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Tag && other.id == this.id && other.name == this.name);
-}
-
-class TagsCompanion extends UpdateCompanion<Tag> {
-  final Value<String> id;
-  final Value<String> name;
-  final Value<int> rowid;
-  const TagsCompanion({
-    this.id = const Value.absent(),
-    this.name = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  TagsCompanion.insert({
-    required String id,
-    required String name,
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       name = Value(name);
-  static Insertable<Tag> custom({
-    Expression<String>? id,
-    Expression<String>? name,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (name != null) 'name': name,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  TagsCompanion copyWith({
-    Value<String>? id,
-    Value<String>? name,
-    Value<int>? rowid,
-  }) {
-    return TagsCompanion(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (name.present) {
-      map['name'] = Variable<String>(name.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('TagsCompanion(')
-          ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $RestaurantTagsTable extends RestaurantTags
-    with TableInfo<$RestaurantTagsTable, RestaurantTag> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $RestaurantTagsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _restaurantIdMeta = const VerificationMeta(
-    'restaurantId',
-  );
-  @override
-  late final GeneratedColumn<String> restaurantId = GeneratedColumn<String>(
-    'restaurantId',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES restaurants (id) ON DELETE CASCADE',
-    ),
-  );
-  static const VerificationMeta _tagIdMeta = const VerificationMeta('tagId');
-  @override
-  late final GeneratedColumn<String> tagId = GeneratedColumn<String>(
-    'tagId',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES tags (id) ON DELETE CASCADE',
-    ),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [restaurantId, tagId];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'restaurant_tags';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<RestaurantTag> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('restaurantId')) {
-      context.handle(
-        _restaurantIdMeta,
-        restaurantId.isAcceptableOrUnknown(
-          data['restaurantId']!,
-          _restaurantIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_restaurantIdMeta);
-    }
-    if (data.containsKey('tagId')) {
-      context.handle(
-        _tagIdMeta,
-        tagId.isAcceptableOrUnknown(data['tagId']!, _tagIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_tagIdMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {restaurantId, tagId};
-  @override
-  RestaurantTag map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return RestaurantTag(
-      restaurantId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}restaurantId'],
-      )!,
-      tagId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}tagId'],
-      )!,
-    );
-  }
-
-  @override
-  $RestaurantTagsTable createAlias(String alias) {
-    return $RestaurantTagsTable(attachedDatabase, alias);
-  }
-}
-
-class RestaurantTag extends DataClass implements Insertable<RestaurantTag> {
-  final String restaurantId;
-  final String tagId;
-  const RestaurantTag({required this.restaurantId, required this.tagId});
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['restaurantId'] = Variable<String>(restaurantId);
-    map['tagId'] = Variable<String>(tagId);
-    return map;
-  }
-
-  RestaurantTagsCompanion toCompanion(bool nullToAbsent) {
-    return RestaurantTagsCompanion(
-      restaurantId: Value(restaurantId),
-      tagId: Value(tagId),
-    );
-  }
-
-  factory RestaurantTag.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return RestaurantTag(
-      restaurantId: serializer.fromJson<String>(json['restaurantId']),
-      tagId: serializer.fromJson<String>(json['tagId']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'restaurantId': serializer.toJson<String>(restaurantId),
-      'tagId': serializer.toJson<String>(tagId),
-    };
-  }
-
-  RestaurantTag copyWith({String? restaurantId, String? tagId}) =>
-      RestaurantTag(
-        restaurantId: restaurantId ?? this.restaurantId,
-        tagId: tagId ?? this.tagId,
-      );
-  RestaurantTag copyWithCompanion(RestaurantTagsCompanion data) {
-    return RestaurantTag(
-      restaurantId: data.restaurantId.present
-          ? data.restaurantId.value
-          : this.restaurantId,
-      tagId: data.tagId.present ? data.tagId.value : this.tagId,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('RestaurantTag(')
-          ..write('restaurantId: $restaurantId, ')
-          ..write('tagId: $tagId')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(restaurantId, tagId);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is RestaurantTag &&
-          other.restaurantId == this.restaurantId &&
-          other.tagId == this.tagId);
-}
-
-class RestaurantTagsCompanion extends UpdateCompanion<RestaurantTag> {
-  final Value<String> restaurantId;
-  final Value<String> tagId;
-  final Value<int> rowid;
-  const RestaurantTagsCompanion({
-    this.restaurantId = const Value.absent(),
-    this.tagId = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  RestaurantTagsCompanion.insert({
-    required String restaurantId,
-    required String tagId,
-    this.rowid = const Value.absent(),
-  }) : restaurantId = Value(restaurantId),
-       tagId = Value(tagId);
-  static Insertable<RestaurantTag> custom({
-    Expression<String>? restaurantId,
-    Expression<String>? tagId,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (restaurantId != null) 'restaurantId': restaurantId,
-      if (tagId != null) 'tagId': tagId,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  RestaurantTagsCompanion copyWith({
-    Value<String>? restaurantId,
-    Value<String>? tagId,
-    Value<int>? rowid,
-  }) {
-    return RestaurantTagsCompanion(
-      restaurantId: restaurantId ?? this.restaurantId,
-      tagId: tagId ?? this.tagId,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (restaurantId.present) {
-      map['restaurantId'] = Variable<String>(restaurantId.value);
-    }
-    if (tagId.present) {
-      map['tagId'] = Variable<String>(tagId.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('RestaurantTagsCompanion(')
-          ..write('restaurantId: $restaurantId, ')
-          ..write('tagId: $tagId, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -1929,21 +1499,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $RestaurantsTable restaurants = $RestaurantsTable(this);
-  late final $TagsTable tags = $TagsTable(this);
-  late final $RestaurantTagsTable restaurantTags = $RestaurantTagsTable(this);
   late final $VisitsTable visits = $VisitsTable(this);
   late final $PhotosTable photos = $PhotosTable(this);
   late final Index indexRestaurantsName = Index(
     'index_restaurants_name',
     'CREATE INDEX index_restaurants_name ON restaurants (name)',
-  );
-  late final Index indexTagsName = Index(
-    'index_tags_name',
-    'CREATE UNIQUE INDEX index_tags_name ON tags (name)',
-  );
-  late final Index indexRestaurantTagsTagId = Index(
-    'index_restaurant_tags_tagId',
-    'CREATE INDEX index_restaurant_tags_tagId ON restaurant_tags (tagId)',
   );
   late final Index indexVisitsRestaurantId = Index(
     'index_visits_restaurantId',
@@ -1958,7 +1518,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'CREATE INDEX index_photos_visitId ON photos (visitId)',
   );
   late final RestaurantDao restaurantDao = RestaurantDao(this as AppDatabase);
-  late final TagDao tagDao = TagDao(this as AppDatabase);
   late final VisitDao visitDao = VisitDao(this as AppDatabase);
   late final PhotoDao photoDao = PhotoDao(this as AppDatabase);
   @override
@@ -1967,33 +1526,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     restaurants,
-    tags,
-    restaurantTags,
     visits,
     photos,
     indexRestaurantsName,
-    indexTagsName,
-    indexRestaurantTagsTagId,
     indexVisitsRestaurantId,
     indexPhotosRestaurantId,
     indexPhotosVisitId,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'restaurants',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('restaurant_tags', kind: UpdateKind.delete)],
-    ),
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'tags',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('restaurant_tags', kind: UpdateKind.delete)],
-    ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'restaurants',
@@ -2052,24 +1593,6 @@ typedef $$RestaurantsTableUpdateCompanionBuilder =
 final class $$RestaurantsTableReferences
     extends BaseReferences<_$AppDatabase, $RestaurantsTable, Restaurant> {
   $$RestaurantsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<$RestaurantTagsTable, List<RestaurantTag>>
-  _restaurantTagsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.restaurantTags,
-    aliasName: 'restaurants__id__restaurant_tags__restaurantId',
-  );
-
-  $$RestaurantTagsTableProcessedTableManager get restaurantTagsRefs {
-    final manager = $$RestaurantTagsTableTableManager(
-      $_db,
-      $_db.restaurantTags,
-    ).filter((f) => f.restaurantId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_restaurantTagsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
 
   static MultiTypedResultKey<$VisitsTable, List<Visit>> _visitsRefsTable(
     _$AppDatabase db,
@@ -2173,31 +1696,6 @@ class $$RestaurantsTableFilterComposer
     column: $table.searchText,
     builder: (column) => ColumnFilters(column),
   );
-
-  Expression<bool> restaurantTagsRefs(
-    Expression<bool> Function($$RestaurantTagsTableFilterComposer f) f,
-  ) {
-    final $$RestaurantTagsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.restaurantTags,
-      getReferencedColumn: (t) => t.restaurantId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RestaurantTagsTableFilterComposer(
-            $db: $db,
-            $table: $db.restaurantTags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 
   Expression<bool> visitsRefs(
     Expression<bool> Function($$VisitsTableFilterComposer f) f,
@@ -2365,31 +1863,6 @@ class $$RestaurantsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  Expression<T> restaurantTagsRefs<T extends Object>(
-    Expression<T> Function($$RestaurantTagsTableAnnotationComposer a) f,
-  ) {
-    final $$RestaurantTagsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.restaurantTags,
-      getReferencedColumn: (t) => t.restaurantId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RestaurantTagsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.restaurantTags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
   Expression<T> visitsRefs<T extends Object>(
     Expression<T> Function($$VisitsTableAnnotationComposer a) f,
   ) {
@@ -2454,11 +1927,7 @@ class $$RestaurantsTableTableManager
           $$RestaurantsTableUpdateCompanionBuilder,
           (Restaurant, $$RestaurantsTableReferences),
           Restaurant,
-          PrefetchHooks Function({
-            bool restaurantTagsRefs,
-            bool visitsRefs,
-            bool photosRefs,
-          })
+          PrefetchHooks Function({bool visitsRefs, bool photosRefs})
         > {
   $$RestaurantsTableTableManager(_$AppDatabase db, $RestaurantsTable table)
     : super(
@@ -2535,89 +2004,62 @@ class $$RestaurantsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback:
-              ({
-                restaurantTagsRefs = false,
-                visitsRefs = false,
-                photosRefs = false,
-              }) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (restaurantTagsRefs) db.restaurantTags,
-                    if (visitsRefs) db.visits,
-                    if (photosRefs) db.photos,
-                  ],
-                  addJoins: null,
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (restaurantTagsRefs)
-                        await $_getPrefetchedData<
-                          Restaurant,
-                          $RestaurantsTable,
-                          RestaurantTag
-                        >(
-                          currentTable: table,
-                          referencedTable: $$RestaurantsTableReferences
-                              ._restaurantTagsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$RestaurantsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).restaurantTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.restaurantId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (visitsRefs)
-                        await $_getPrefetchedData<
-                          Restaurant,
-                          $RestaurantsTable,
-                          Visit
-                        >(
-                          currentTable: table,
-                          referencedTable: $$RestaurantsTableReferences
-                              ._visitsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$RestaurantsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).visitsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.restaurantId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (photosRefs)
-                        await $_getPrefetchedData<
-                          Restaurant,
-                          $RestaurantsTable,
-                          Photo
-                        >(
-                          currentTable: table,
-                          referencedTable: $$RestaurantsTableReferences
-                              ._photosRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$RestaurantsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).photosRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.restaurantId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
+          prefetchHooksCallback: ({visitsRefs = false, photosRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (visitsRefs) db.visits,
+                if (photosRefs) db.photos,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (visitsRefs)
+                    await $_getPrefetchedData<
+                      Restaurant,
+                      $RestaurantsTable,
+                      Visit
+                    >(
+                      currentTable: table,
+                      referencedTable: $$RestaurantsTableReferences
+                          ._visitsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$RestaurantsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).visitsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.restaurantId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                  if (photosRefs)
+                    await $_getPrefetchedData<
+                      Restaurant,
+                      $RestaurantsTable,
+                      Photo
+                    >(
+                      currentTable: table,
+                      referencedTable: $$RestaurantsTableReferences
+                          ._photosRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$RestaurantsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).photosRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.restaurantId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
               },
+            );
+          },
         ),
       );
 }
@@ -2634,587 +2076,7 @@ typedef $$RestaurantsTableProcessedTableManager =
       $$RestaurantsTableUpdateCompanionBuilder,
       (Restaurant, $$RestaurantsTableReferences),
       Restaurant,
-      PrefetchHooks Function({
-        bool restaurantTagsRefs,
-        bool visitsRefs,
-        bool photosRefs,
-      })
-    >;
-typedef $$TagsTableCreateCompanionBuilder = TagsCompanion Function({
-  required String id,
-  required String name,
-  Value<int> rowid,
-});
-typedef $$TagsTableUpdateCompanionBuilder = TagsCompanion Function({
-  Value<String> id,
-  Value<String> name,
-  Value<int> rowid,
-});
-
-final class $$TagsTableReferences
-    extends BaseReferences<_$AppDatabase, $TagsTable, Tag> {
-  $$TagsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<$RestaurantTagsTable, List<RestaurantTag>>
-  _restaurantTagsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.restaurantTags,
-    aliasName: 'tags__id__restaurant_tags__tagId',
-  );
-
-  $$RestaurantTagsTableProcessedTableManager get restaurantTagsRefs {
-    final manager = $$RestaurantTagsTableTableManager(
-      $_db,
-      $_db.restaurantTags,
-    ).filter((f) => f.tagId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_restaurantTagsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
-class $$TagsTableFilterComposer extends Composer<_$AppDatabase, $TagsTable> {
-  $$TagsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  Expression<bool> restaurantTagsRefs(
-    Expression<bool> Function($$RestaurantTagsTableFilterComposer f) f,
-  ) {
-    final $$RestaurantTagsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.restaurantTags,
-      getReferencedColumn: (t) => t.tagId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RestaurantTagsTableFilterComposer(
-            $db: $db,
-            $table: $db.restaurantTags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$TagsTableOrderingComposer extends Composer<_$AppDatabase, $TagsTable> {
-  $$TagsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$TagsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $TagsTable> {
-  $$TagsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  Expression<T> restaurantTagsRefs<T extends Object>(
-    Expression<T> Function($$RestaurantTagsTableAnnotationComposer a) f,
-  ) {
-    final $$RestaurantTagsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.restaurantTags,
-      getReferencedColumn: (t) => t.tagId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RestaurantTagsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.restaurantTags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$TagsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $TagsTable,
-          Tag,
-          $$TagsTableFilterComposer,
-          $$TagsTableOrderingComposer,
-          $$TagsTableAnnotationComposer,
-          $$TagsTableCreateCompanionBuilder,
-          $$TagsTableUpdateCompanionBuilder,
-          (Tag, $$TagsTableReferences),
-          Tag,
-          PrefetchHooks Function({bool restaurantTagsRefs})
-        > {
-  $$TagsTableTableManager(_$AppDatabase db, $TagsTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$TagsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$TagsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$TagsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) => TagsCompanion(id: id, name: name, rowid: rowid),
-          createCompanionCallback: ({
-            required String id,
-            required String name,
-            Value<int> rowid = const Value.absent(),
-          }) => TagsCompanion.insert(id: id, name: name, rowid: rowid),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable<$TagsTable, Tag>(table),
-                  $$TagsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({restaurantTagsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (restaurantTagsRefs) db.restaurantTags,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (restaurantTagsRefs)
-                    await $_getPrefetchedData<Tag, $TagsTable, RestaurantTag>(
-                      currentTable: table,
-                      referencedTable: $$TagsTableReferences
-                          ._restaurantTagsRefsTable(db),
-                      managerFromTypedResult: (p0) => $$TagsTableReferences(
-                        db,
-                        table,
-                        p0,
-                      ).restaurantTagsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.tagId == item.id),
-                      typedResults: items,
-                    ),
-                ];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$TagsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $TagsTable,
-      Tag,
-      $$TagsTableFilterComposer,
-      $$TagsTableOrderingComposer,
-      $$TagsTableAnnotationComposer,
-      $$TagsTableCreateCompanionBuilder,
-      $$TagsTableUpdateCompanionBuilder,
-      (Tag, $$TagsTableReferences),
-      Tag,
-      PrefetchHooks Function({bool restaurantTagsRefs})
-    >;
-typedef $$RestaurantTagsTableCreateCompanionBuilder =
-    RestaurantTagsCompanion Function({
-      required String restaurantId,
-      required String tagId,
-      Value<int> rowid,
-    });
-typedef $$RestaurantTagsTableUpdateCompanionBuilder =
-    RestaurantTagsCompanion Function({
-      Value<String> restaurantId,
-      Value<String> tagId,
-      Value<int> rowid,
-    });
-
-final class $$RestaurantTagsTableReferences
-    extends BaseReferences<_$AppDatabase, $RestaurantTagsTable, RestaurantTag> {
-  $$RestaurantTagsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $RestaurantsTable _restaurantIdTable(_$AppDatabase db) => db
-      .restaurants
-      .createAlias('restaurant_tags__restaurantId__restaurants__id');
-
-  $$RestaurantsTableProcessedTableManager get restaurantId {
-    final $_column = $_itemColumn<String>('restaurantId')!;
-
-    final manager = $$RestaurantsTableTableManager(
-      $_db,
-      $_db.restaurants,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_restaurantIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $TagsTable _tagIdTable(_$AppDatabase db) =>
-      db.tags.createAlias('restaurant_tags__tagId__tags__id');
-
-  $$TagsTableProcessedTableManager get tagId {
-    final $_column = $_itemColumn<String>('tagId')!;
-
-    final manager = $$TagsTableTableManager(
-      $_db,
-      $_db.tags,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_tagIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$RestaurantTagsTableFilterComposer
-    extends Composer<_$AppDatabase, $RestaurantTagsTable> {
-  $$RestaurantTagsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  $$RestaurantsTableFilterComposer get restaurantId {
-    final $$RestaurantsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.restaurantId,
-      referencedTable: $db.restaurants,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RestaurantsTableFilterComposer(
-            $db: $db,
-            $table: $db.restaurants,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$TagsTableFilterComposer get tagId {
-    final $$TagsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.tagId,
-      referencedTable: $db.tags,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TagsTableFilterComposer(
-            $db: $db,
-            $table: $db.tags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$RestaurantTagsTableOrderingComposer
-    extends Composer<_$AppDatabase, $RestaurantTagsTable> {
-  $$RestaurantTagsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  $$RestaurantsTableOrderingComposer get restaurantId {
-    final $$RestaurantsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.restaurantId,
-      referencedTable: $db.restaurants,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RestaurantsTableOrderingComposer(
-            $db: $db,
-            $table: $db.restaurants,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$TagsTableOrderingComposer get tagId {
-    final $$TagsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.tagId,
-      referencedTable: $db.tags,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TagsTableOrderingComposer(
-            $db: $db,
-            $table: $db.tags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$RestaurantTagsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $RestaurantTagsTable> {
-  $$RestaurantTagsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  $$RestaurantsTableAnnotationComposer get restaurantId {
-    final $$RestaurantsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.restaurantId,
-      referencedTable: $db.restaurants,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RestaurantsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.restaurants,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$TagsTableAnnotationComposer get tagId {
-    final $$TagsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.tagId,
-      referencedTable: $db.tags,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TagsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.tags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$RestaurantTagsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $RestaurantTagsTable,
-          RestaurantTag,
-          $$RestaurantTagsTableFilterComposer,
-          $$RestaurantTagsTableOrderingComposer,
-          $$RestaurantTagsTableAnnotationComposer,
-          $$RestaurantTagsTableCreateCompanionBuilder,
-          $$RestaurantTagsTableUpdateCompanionBuilder,
-          (RestaurantTag, $$RestaurantTagsTableReferences),
-          RestaurantTag,
-          PrefetchHooks Function({bool restaurantId, bool tagId})
-        > {
-  $$RestaurantTagsTableTableManager(
-    _$AppDatabase db,
-    $RestaurantTagsTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$RestaurantTagsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$RestaurantTagsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$RestaurantTagsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> restaurantId = const Value.absent(),
-                Value<String> tagId = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => RestaurantTagsCompanion(
-                restaurantId: restaurantId,
-                tagId: tagId,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String restaurantId,
-                required String tagId,
-                Value<int> rowid = const Value.absent(),
-              }) => RestaurantTagsCompanion.insert(
-                restaurantId: restaurantId,
-                tagId: tagId,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable<$RestaurantTagsTable, RestaurantTag>(table),
-                  $$RestaurantTagsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({restaurantId = false, tagId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (restaurantId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.restaurantId,
-                        referencedTable: $$RestaurantTagsTableReferences
-                            ._restaurantIdTable(db),
-                        referencedColumn: $$RestaurantTagsTableReferences
-                            ._restaurantIdTable(db)
-                            .id,
-                      ) as T;
-                    }
-                    if (tagId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.tagId,
-                        referencedTable: $$RestaurantTagsTableReferences
-                            ._tagIdTable(db),
-                        referencedColumn: $$RestaurantTagsTableReferences
-                            ._tagIdTable(db)
-                            .id,
-                      ) as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$RestaurantTagsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $RestaurantTagsTable,
-      RestaurantTag,
-      $$RestaurantTagsTableFilterComposer,
-      $$RestaurantTagsTableOrderingComposer,
-      $$RestaurantTagsTableAnnotationComposer,
-      $$RestaurantTagsTableCreateCompanionBuilder,
-      $$RestaurantTagsTableUpdateCompanionBuilder,
-      (RestaurantTag, $$RestaurantTagsTableReferences),
-      RestaurantTag,
-      PrefetchHooks Function({bool restaurantId, bool tagId})
+      PrefetchHooks Function({bool visitsRefs, bool photosRefs})
     >;
 typedef $$VisitsTableCreateCompanionBuilder = VisitsCompanion Function({
   required String id,
@@ -4036,9 +2898,6 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$RestaurantsTableTableManager get restaurants =>
       $$RestaurantsTableTableManager(_db, _db.restaurants);
-  $$TagsTableTableManager get tags => $$TagsTableTableManager(_db, _db.tags);
-  $$RestaurantTagsTableTableManager get restaurantTags =>
-      $$RestaurantTagsTableTableManager(_db, _db.restaurantTags);
   $$VisitsTableTableManager get visits =>
       $$VisitsTableTableManager(_db, _db.visits);
   $$PhotosTableTableManager get photos =>

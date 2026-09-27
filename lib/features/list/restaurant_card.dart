@@ -9,7 +9,6 @@ import '../../core/widgets/price_range_label.dart';
 import '../../core/widgets/rating_and_price_row.dart';
 import '../../core/widgets/restaurant_thumbnail.dart';
 import '../../core/widgets/shimmer_box.dart';
-import '../../core/widgets/tag_pill_row.dart';
 import 'restaurant_ui_model.dart';
 
 /// The thumbnail's edge, in logical pixels.
@@ -253,11 +252,6 @@ class _Details extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        if (restaurant.tagsLabel.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.sm),
-            child: TagPillRow(tags: restaurant.tags, maxVisible: 3),
           ),
         const SizedBox(height: AppSpacing.sm),
         RatingAndPriceRow(

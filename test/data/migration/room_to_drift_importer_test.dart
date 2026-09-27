@@ -143,7 +143,6 @@ void main() {
         await db.restaurantDao.insertRestaurant(
           restaurant(id: 'r2', name: 'Thai Place', cuisineType: 'thai'),
         );
-        await db.tagDao.setTags('r1', <String>['Terraza', 'Coeliac']);
         await db.visitDao.insertVisit(
           visit(id: 'v1', restaurantId: 'r1', visitDate: 1000, rating: 5),
         );
@@ -187,10 +186,6 @@ void main() {
       ),
     );
 
-    expect(
-      await target.tagDao.observeTagNames('r1').first,
-      <String>['Coeliac', 'Terraza'],
-    );
     expect(
       await target.visitDao.observeVisitsForRestaurant('r1').first,
       hasLength(1),

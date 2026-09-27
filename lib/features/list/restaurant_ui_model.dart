@@ -52,7 +52,6 @@ class RestaurantUiModel {
     this.isFavorite = false,
     this.photoPath,
     this.notes,
-    this.tagsLabel = '',
   });
 
   final String id;
@@ -95,17 +94,6 @@ class RestaurantUiModel {
   /// the detail screen can just skip the card.
   final String? notes;
 
-  /// Comma-and-space-joined tag names, e.g. `"Terraza, Para grupos"`; empty
-  /// when there are none.
-  ///
-  /// A `List<String>` field here would make every instance unequal to the next
-  /// one built from the same data (list identity), and the controller's
-  /// "did anything change?" check would then never be able to skip a rebuild.
-  /// [tags] splits it back apart for the widgets that need the parts; tag names
-  /// are validated (`normalizeTagName`) to never contain a comma, so the split
-  /// is unambiguous.
-  final String tagsLabel;
-
   /// True when there is at least one link worth drawing a section for.
   bool get hasLinks => website != null || instagram != null;
 
@@ -117,10 +105,6 @@ class RestaurantUiModel {
     region: region,
     country: country,
   );
-
-  /// The tag names [tagsLabel] was built from.
-  List<String> get tags =>
-      tagsLabel.isEmpty ? const <String>[] : tagsLabel.split(', ');
 
   @override
   bool operator ==(Object other) =>
@@ -140,8 +124,7 @@ class RestaurantUiModel {
           other.instagram == instagram &&
           other.isFavorite == isFavorite &&
           other.photoPath == photoPath &&
-          other.notes == notes &&
-          other.tagsLabel == tagsLabel;
+          other.notes == notes;
 
   @override
   int get hashCode => Object.hash(
@@ -160,7 +143,6 @@ class RestaurantUiModel {
     isFavorite,
     photoPath,
     notes,
-    tagsLabel,
   );
 
   @override
@@ -175,7 +157,6 @@ class RestaurantUiModel {
 extension RestaurantToUiModel on Restaurant {
   RestaurantUiModel toUiModel({
     bool isFavorite = false,
-    List<String> tags = const <String>[],
     Visit? latestVisit,
     String? photoPath,
   }) => RestaurantUiModel(
@@ -198,7 +179,6 @@ extension RestaurantToUiModel on Restaurant {
     isFavorite: isFavorite,
     photoPath: photoPath,
     notes: _nonBlank(latestVisit?.notes),
-    tagsLabel: tags.join(', '),
   );
 
   static String? _nonBlank(String? value) =>

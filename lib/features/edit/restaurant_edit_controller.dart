@@ -5,7 +5,6 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/utils/link_validation.dart';
 import '../../core/utils/search_normalizer.dart';
-import '../../core/utils/tag_validation.dart';
 import '../../core/widgets/presentation_bounds.dart';
 import '../../data/db/app_database.dart';
 import '../../data/photo/photo_picker.dart';
@@ -17,9 +16,9 @@ import 'restaurant_edit_state.dart';
 /// saving inserts or updates.
 ///
 /// The Flutter counterpart of the Android `RestaurantEditViewModel`. It also
-/// holds the four "suggestions" streams the form offers while typing (existing
-/// tags, cities, regions and countries), which is why it is a controller rather
-/// than a plain form object. A photo is picked through [photoPicker] (optional,
+/// holds the three "suggestions" streams the form offers while typing (cities,
+/// regions and countries), which is why it is a controller rather than a plain
+/// form object. A photo is picked through [photoPicker] (optional,
 /// so a unit test can build a controller with none) and written through the
 /// repository, which owns the storage.
 class RestaurantEditController extends ChangeNotifier {
@@ -30,10 +29,6 @@ class RestaurantEditController extends ChangeNotifier {
   }) {
     _state = RestaurantEditState(isLoading: restaurantId != null);
     _subscriptions.addAll(<StreamSubscription<Object>>[
-      repository.observeAllTagNames().listen((List<String> value) {
-        _tagSuggestions = value;
-        _notify();
-      }),
       repository.observeCities().listen((List<String> value) {
         _citySuggestions = value;
         _notify();
@@ -71,7 +66,6 @@ class RestaurantEditController extends ChangeNotifier {
   /// Initialised in the constructor body: an edit starts loading the row it is
   /// going to prefill, while an add is ready immediately.
   late RestaurantEditState _state;
-  List<String> _tagSuggestions = const <String>[];
   List<String> _citySuggestions = const <String>[];
   List<String> _regionSuggestions = const <String>[];
   List<String> _countrySuggestions = const <String>[];
@@ -79,7 +73,6 @@ class RestaurantEditController extends ChangeNotifier {
 
   RestaurantEditState get state => _state;
 
-  List<String> get tagSuggestions => _tagSuggestions;
   List<String> get citySuggestions => _citySuggestions;
   List<String> get regionSuggestions => _regionSuggestions;
   List<String> get countrySuggestions => _countrySuggestions;
@@ -108,30 +101,6 @@ class RestaurantEditController extends ChangeNotifier {
 
   void onInstagramChange(String value) =>
       _set(_state.copyWith(instagram: value, instagramError: false));
-
-  /// Ignored when [raw] fails validation or already matches a tag already
-  /// added, case-insensitively.
-  void addTag(String raw) {
-    final String? normalized = normalizeTagName(raw);
-    if (normalized == null) {
-      return;
-    }
-    if (_state.tags.any(
-      (String tag) => tag.toLowerCase() == normalized.toLowerCase(),
-    )) {
-      return;
-    }
-    _set(_state.copyWith(tags: <String>[..._state.tags, normalized]));
-  }
-
-  void removeTag(String name) => _set(
-        _state.copyWith(
-          tags: <String>[
-            for (final String tag in _state.tags)
-              if (tag != name) tag,
-          ],
-        ),
-      );
 
   /// Opens the picker and stages whatever comes back. Nothing is written until
   /// [save]: a back-out leaves the form, and the database, untouched.
@@ -213,9 +182,9 @@ class RestaurantEditController extends ChangeNotifier {
     );
 
     if (restaurantId == null) {
-      await repository.insert(restaurant, tags: state.tags);
+      await repository.insert(restaurant);
     } else {
-      await repository.update(restaurant, state.tags);
+      await repository.update(restaurant);
     }
 
     // The photo is written after the row, so a new restaurant has an id to hang
@@ -249,10 +218,6 @@ class RestaurantEditController extends ChangeNotifier {
       _set(_state.copyWith(isLoading: false));
       return;
     }
-    final List<String> tags = await repository.observeTagNames(id).first;
-    if (_disposed) {
-      return;
-    }
     final String? photoPath = await repository.getRestaurantPhotoPath(id);
     if (_disposed) {
       return;
@@ -269,7 +234,6 @@ class RestaurantEditController extends ChangeNotifier {
         priceRange: restaurant.priceRange,
         website: restaurant.website ?? '',
         instagram: restaurant.instagram ?? '',
-        tags: tags,
         existingPhotoPath: photoPath,
       ),
     );

@@ -18,7 +18,6 @@ class RestaurantEditState {
     this.priceRange = 0,
     this.website = '',
     this.instagram = '',
-    this.tags = const <String>[],
     this.existingPhotoPath,
     this.pickedPhotoPath,
     this.photoRemoved = false,
@@ -46,7 +45,6 @@ class RestaurantEditState {
 
   final String website;
   final String instagram;
-  final List<String> tags;
 
   /// The photo already stored for an edited restaurant; null for an add, or when
   /// it has none. Never changes after the load — the two fields below record what
@@ -91,7 +89,6 @@ class RestaurantEditState {
     int? priceRange,
     String? website,
     String? instagram,
-    List<String>? tags,
     String? existingPhotoPath,
     String? pickedPhotoPath,
     bool clearPickedPhoto = false,
@@ -111,7 +108,6 @@ class RestaurantEditState {
     priceRange: priceRange ?? this.priceRange,
     website: website ?? this.website,
     instagram: instagram ?? this.instagram,
-    tags: tags ?? this.tags,
     existingPhotoPath: existingPhotoPath ?? this.existingPhotoPath,
     pickedPhotoPath: clearPickedPhoto
         ? null

@@ -16,15 +16,6 @@ class PriceRangeCount {
   final int count;
 }
 
-/// One row of `TagDao.observeTagCounts()` — how many restaurants carry a given
-/// tag.
-class TagCount {
-  const TagCount({required this.name, required this.count});
-
-  final String name;
-  final int count;
-}
-
 /// One visit's date and rating, projected for the global rating-trend chart —
 /// see `VisitDao.observeAllVisitDateRatings()`.
 class VisitDateRating {
@@ -33,14 +24,4 @@ class VisitDateRating {
   /// Epoch millis.
   final int visitDate;
   final int rating;
-}
-
-/// One restaurant/tag-name pair, projected for
-/// `TagDao.observeAllRestaurantTagLinks()` — the caller groups them by
-/// restaurant id.
-class RestaurantTagName {
-  const RestaurantTagName({required this.restaurantId, required this.name});
-
-  final String restaurantId;
-  final String name;
 }

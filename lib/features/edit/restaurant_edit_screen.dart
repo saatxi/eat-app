@@ -37,7 +37,6 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
   final TextEditingController _country = TextEditingController();
   final TextEditingController _website = TextEditingController();
   final TextEditingController _instagram = TextEditingController();
-  final TextEditingController _tagInput = TextEditingController();
 
   /// Set once the fields have taken their starting values, so a later rebuild
   /// never overwrites what the user is typing.
@@ -65,7 +64,6 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
       _country,
       _website,
       _instagram,
-      _tagInput,
     ]) {
       field.dispose();
     }
@@ -221,42 +219,6 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                           : null,
                       onChanged: controller.onInstagramChange,
                     ),
-                    const SizedBox(height: AppSpacing.xl),
-                    _SectionLabel(l10n.editSectionTags),
-                    if (state.tags.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: Wrap(
-                          spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.xs,
-                          children: <Widget>[
-                            for (final String tag in state.tags)
-                              InputChip(
-                                label: Text(tag),
-                                onDeleted: () => controller.removeTag(tag),
-                                deleteButtonTooltipMessage:
-                                    l10n.editActionRemoveTag(tag),
-                              ),
-                          ],
-                        ),
-                      ),
-                    TextField(
-                      controller: _tagInput,
-                      decoration: InputDecoration(
-                        labelText: l10n.editFieldTags,
-                        border: const OutlineInputBorder(),
-                      ),
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (String value) {
-                        controller.addTag(value);
-                        _tagInput.clear();
-                      },
-                    ),
-                    _TagSuggestions(
-                      controller: controller,
-                      input: _tagInput,
-                      addedTags: state.tags,
-                    ),
                   ],
                 ),
         );
@@ -351,58 +313,6 @@ class _CuisineField extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Existing tag names matching what is being typed, offered as one-tap chips —
-/// nothing on this screen forces a tag to be retyped when it already exists.
-class _TagSuggestions extends StatelessWidget {
-  const _TagSuggestions({
-    required this.controller,
-    required this.input,
-    required this.addedTags,
-  });
-
-  final RestaurantEditController controller;
-  final TextEditingController input;
-  final List<String> addedTags;
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<TextEditingValue>(
-      valueListenable: input,
-      builder: (BuildContext context, TextEditingValue value, Widget? child) {
-        final String query = value.text.trim().toLowerCase();
-        final List<String> suggestions = <String>[
-          for (final String suggestion in controller.tagSuggestions)
-            if (!addedTags.any(
-                  (String tag) => tag.toLowerCase() == suggestion.toLowerCase(),
-                ) &&
-                (query.isEmpty || suggestion.toLowerCase().contains(query)))
-              suggestion,
-        ];
-        if (suggestions.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.sm),
-          child: Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.xs,
-            children: <Widget>[
-              for (final String suggestion in suggestions.take(8))
-                ActionChip(
-                  label: Text(suggestion),
-                  onPressed: () {
-                    controller.addTag(suggestion);
-                    input.clear();
-                  },
-                ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

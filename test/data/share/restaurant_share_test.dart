@@ -33,7 +33,6 @@ void main() {
       final List<RestaurantExport> exports = <RestaurantExport>[
         exportRestaurant(
           source,
-          tags: const <String>['Terraza'],
           visits: <Visit>[
             visit(
               id: 'v',
@@ -65,7 +64,6 @@ void main() {
       // Both links go through the same whitelist the edit form uses.
       expect(imported.restaurant.website, 'https://example.com');
       expect(imported.restaurant.instagram, 'calferran');
-      expect(imported.tags, <String>['Terraza']);
       expect(imported.visits.single.rating, 4);
       expect(imported.visits.single.notes, 'bona');
       expect(imported.visits.single.priceRange, 2);
@@ -83,7 +81,6 @@ void main() {
           (json['restaurants']! as List<Object?>).single! as Map<String, Object?>;
       expect(row.containsKey('streetAddress'), isTrue);
       expect(row['streetAddress'], isNull);
-      expect(row['tags'], isEmpty);
       expect(row['visits'], isEmpty);
     });
   });
@@ -169,22 +166,6 @@ void main() {
       final ImportSuccess success = outcome as ImportSuccess;
       expect(success.restaurants, isEmpty);
       expect(success.skippedCount, 1);
-    });
-
-    test('validating tags the same per-item-lenient way the form does', () {
-      final ImportOutcome outcome = readRestaurantImport(
-        _file(<Object?>[
-          <String, Object?>{
-            'name': 'Tagged',
-            'cuisineType': 'italian',
-            'priceRange': 1,
-            'tags': <Object?>['Terraza', 'terraza', 'bad,tag', '', '  '],
-          },
-        ]),
-      );
-
-      final ImportSuccess success = outcome as ImportSuccess;
-      expect(success.restaurants.single.tags, <String>['Terraza']);
     });
 
     test('dropping an unsafe website rather than passing it through', () {

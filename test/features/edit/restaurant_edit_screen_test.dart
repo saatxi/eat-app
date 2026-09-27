@@ -163,7 +163,6 @@ void main() {
         cuisineType: 'catalan',
         streetAddress: 'Carrer 1',
       ),
-      tags: const <String>['Terraza'],
     );
 
     await pumpForm(tester, restaurantId: 'a');
@@ -173,7 +172,6 @@ void main() {
       tester.widget<TextField>(find.byType(TextField).first).controller!.text,
       'Cal Ferran',
     );
-    expect(find.text('Terraza'), findsOneWidget, reason: 'the tags come back too');
 
     await tester.enterText(find.byType(TextField).first, 'Cal Ferran Nou');
     await tester.pump();

@@ -56,23 +56,17 @@ void main() {
     expect(await repository.observeFiltered().first, isEmpty);
   });
 
-  test('inserts a new restaurant with its tags and a searchable column',
-      () async {
+  test('inserts a new restaurant with a searchable column', () async {
     final RestaurantEditController controller = buildController();
     controller.onNameChange('  Kebab House  ');
     controller.onCuisineChange('turkish');
     controller.onCityChange('Mataró');
-    controller.addTag('Terraza');
 
     expect(await controller.save(), isTrue);
 
     final List<Restaurant> rows = await db.restaurantDao.getAll();
     expect(rows, hasLength(1));
     expect(rows.single.name, 'Kebab House', reason: 'the name is trimmed');
-    expect(
-      await repository.observeTagNames(rows.single.id).first,
-      <String>['Terraza'],
-    );
     expect(
       await filteredIds(db, query: 'kebab'),
       <String>[rows.single.id],
@@ -105,18 +99,6 @@ void main() {
     expect(await repository.observeFiltered().first, isEmpty);
   });
 
-  test('a tag that is blank, comma-carrying or a duplicate is not added',
-      () async {
-    final RestaurantEditController controller = buildController();
-
-    controller.addTag('   ');
-    controller.addTag('Terraza, Grupos');
-    controller.addTag('Terraza');
-    controller.addTag('terraza');
-
-    expect(controller.state.tags, <String>['Terraza']);
-  });
-
   test('preloads an existing restaurant and updates it', () async {
     await repository.insert(
       restaurant(
@@ -125,7 +107,6 @@ void main() {
         cuisineType: 'mediterranean',
         city: 'Mataró',
       ),
-      tags: <String>['Terraza'],
     );
 
     final RestaurantEditController controller = buildController(restaurantId: 'a');
@@ -137,7 +118,6 @@ void main() {
     expect(controller.state.name, 'Cal Ferran');
     expect(controller.state.cuisineType, 'mediterranean');
     expect(controller.state.city, 'Mataró');
-    expect(controller.state.tags, <String>['Terraza']);
 
     controller.onNameChange('Cal Ferran Nou');
     expect(await controller.save(), isTrue);
