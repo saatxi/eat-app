@@ -404,11 +404,12 @@ i a `lib/data/supabase/`. Queden pendent:
 
 1. **Capa de sincronització** (`lib/data/sync/`) — avançada: la cua de
    canvis pendents, el cursor de pull per grup, el motor (`SyncEngine`),
-   l'abstracció del transport (`SyncTransport`) i el mapatge de files ja hi
-   són, amb fakes a mà per als tests. Falta: la implementació Supabase del
-   transport, la pujada/baixada de fotos amb Storage, l'indicador d'estat
-   a la UI, i el cablejat amb el repositori (marcar files `dirty`, esborrat
-   suau de les files compartides i el filtrat `deletedAt` a les consultes).
+   l'abstracció del transport (`SyncTransport`), el mapatge de files i la
+   implementació Supabase (`SupabaseSyncTransport`) ja hi són, amb fakes a
+   mà per als tests. Falta: la pujada/baixada de fotos amb Storage,
+   l'indicador d'estat a la UI, i el cablejat amb el repositori (marcar
+   files `dirty`, esborrat suau de les files compartides i el filtrat
+   `deletedAt` a les consultes).
 2. **Grups i UI** (`lib/features/groups/`): creació de grup, selector de grup
    a la llista, pantalla de membres (expulsió/marxar), totes les cadenes als
    tres fitxers ARB.
