@@ -119,27 +119,17 @@ flutter:
   assets:
     - assets/licenses/
 
-  # Fraunces carries the editorial display/headline/title styles, Manrope the
-  # body/label ones — the same serif/sans split the Android app uses.
+  # Lora carries the humanist display/headline/title styles, Nunito the
+  # body/label ones — a warm serif over a friendly rounded sans.
   #
-  # Fraunces ships as a single variable font (axes SOFT, WONK, opsz, wght), so
-  # it is registered once with no `weight`; the exact weight and optical size
-  # are chosen per style via `fontVariations` in the typography tokens rather
-  # than by bundling a static file per weight. Manrope is not variable, so each
-  # static instance is registered under its own weight.
+  # Both ship as single variable fonts (one `wght` axis each), so each is
+  # registered once with no `weight`; the exact weight is chosen per style via
+  # `fontVariations` in the typography tokens rather than by bundling a static
+  # file per weight.
   fonts:
-    - family: Fraunces
+    - family: Lora
       fonts:
-        - asset: assets/fonts/fraunces_variable.ttf
-    - family: Manrope
+        - asset: assets/fonts/lora_variable.ttf
+    - family: Nunito
       fonts:
-        - asset: assets/fonts/manrope_regular.ttf
-          weight: 400
-        - asset: assets/fonts/manrope_medium.ttf
-          weight: 500
-        - asset: assets/fonts/manrope_semibold.ttf
-          weight: 600
-        - asset: assets/fonts/manrope_bold.ttf
-          weight: 700
-        - asset: assets/fonts/manrope_extrabold.ttf
-          weight: 800
+        - asset: assets/fonts/nunito_variable.ttf

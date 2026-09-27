@@ -1,5 +1,5 @@
 import 'package:eatapp/core/l10n/generated/app_localizations.dart';
-import 'package:eatapp/core/theme/palettes/verd_palette.dart';
+import 'package:eatapp/core/theme/palettes/terracotta_palette.dart';
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
@@ -43,12 +43,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   }
 
-  testWidgets('the app opens on the restaurant list', (
+  testWidgets('the app opens on the journal', (
     WidgetTester tester,
   ) async {
     await pumpApp(tester);
 
-    expect(find.text('My Restaurants'), findsOneWidget);
+    // The app-bar title and the bottom bar's label both read "Journal".
+    expect(find.text('Journal'), findsWidgets);
     expect(find.text('No restaurants yet'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
 
@@ -71,7 +72,7 @@ void main() {
 
     expect(
       tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
-      3,
+      2,
     );
 
     await disposeApp(tester);
@@ -84,7 +85,7 @@ void main() {
 
     final MaterialApp app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.themeMode, ThemeMode.light);
-    expect(app.theme!.colorScheme.primary, verdTones.primary.t40);
+    expect(app.theme!.colorScheme.primary, terracottaTones.primary.t40);
 
     await disposeApp(tester);
   });

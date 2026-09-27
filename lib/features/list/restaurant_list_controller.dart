@@ -26,6 +26,7 @@ class RestaurantListUiState {
     this.availableRegions = const <String>[],
     this.availableCountries = const <String>[],
     this.restaurants = const <RestaurantUiModel>[],
+    this.favoritesOnly = false,
     this.isInitialLoad = true,
   });
 
@@ -35,6 +36,12 @@ class RestaurantListUiState {
   final List<String> availableRegions;
   final List<String> availableCountries;
   final List<RestaurantUiModel> restaurants;
+
+  /// True while the Journal's "Favorites" quick-segment is selected, which
+  /// narrows the list to the hearted places after the query rather than in it.
+  /// Kept beside [filters] rather than inside it because it never reaches the
+  /// database query — it is applied to the rows the query already returned.
+  final bool favoritesOnly;
 
   /// True until the database has emitted for the first time.
   final bool isInitialLoad;
@@ -73,6 +80,7 @@ class RestaurantListUiState {
           listEquals(other.availableRegions, availableRegions) &&
           listEquals(other.availableCountries, availableCountries) &&
           listEquals(other.restaurants, restaurants) &&
+          other.favoritesOnly == favoritesOnly &&
           other.isInitialLoad == isInitialLoad;
 
   @override
@@ -83,6 +91,7 @@ class RestaurantListUiState {
     Object.hashAll(availableRegions),
     Object.hashAll(availableCountries),
     Object.hashAll(restaurants),
+    favoritesOnly,
     isInitialLoad,
   );
 
@@ -116,8 +125,9 @@ class RestaurantListController extends ChangeNotifier {
     required this.repository,
     required this.preferences,
     this.searchDebounce = const Duration(milliseconds: 250),
-    this.favouritesOnly = false,
+    bool favoritesOnly = false,
   }) {
+    _favoritesOnly = favoritesOnly;
     _favoriteIds = preferences.current.favoriteIds;
     preferences.listenable.addListener(_onPreferencesChanged);
 
@@ -175,10 +185,13 @@ class RestaurantListController extends ChangeNotifier {
   final Duration searchDebounce;
 
   /// Narrows the published list to favourites, after the query rather than in
-  /// it: the favourites screen is the same list — same search, sort and filters
-  /// — just cut down to the ids the preferences hold, exactly as the Android
-  /// app's `FavoritesViewModel` does.
-  final bool favouritesOnly;
+  /// it: the Journal's Favorites segment is the same list — same search, sort
+  /// and filters — just cut down to the ids the preferences hold.
+  ///
+  /// Mutable rather than final: the segment is part of the Journal screen's
+  /// single controller, so the user can move between the segments without
+  /// rebuilding the controller.
+  late bool _favoritesOnly;
 
   final List<StreamSubscription<Object>> _dataSubscriptions =
       <StreamSubscription<Object>>[];
@@ -238,6 +251,17 @@ class RestaurantListController extends ChangeNotifier {
 
   Future<void> toggleFavorite(String restaurantId) =>
       preferences.toggleFavorite(restaurantId);
+
+  /// Turns the Journal's Favorites segment on or off. Only republishes: the
+  /// restaurant query is unaffected, since the narrowing happens on the rows it
+  /// already returned.
+  void onFavoritesOnlyChange(bool value) {
+    if (value == _favoritesOnly) {
+      return;
+    }
+    _favoritesOnly = value;
+    _publish();
+  }
 
   /// The caller has already shown a confirmation dialog before calling this.
   Future<void> deleteRestaurant(String restaurantId) =>
@@ -363,7 +387,7 @@ class RestaurantListController extends ChangeNotifier {
       availableCountries: _availableCountries,
       restaurants: <RestaurantUiModel>[
         for (final Restaurant restaurant in _restaurants)
-          if (!favouritesOnly || _favoriteIds.contains(restaurant.id))
+          if (!_favoritesOnly || _favoriteIds.contains(restaurant.id))
             restaurant.toUiModel(
               isFavorite: _favoriteIds.contains(restaurant.id),
               tags: _tagsByRestaurantId[restaurant.id] ?? const <String>[],
@@ -371,6 +395,7 @@ class RestaurantListController extends ChangeNotifier {
               photoPath: _photoPathsByRestaurantId[restaurant.id],
             ),
       ],
+      favoritesOnly: _favoritesOnly,
       isInitialLoad: !_loaded,
     );
     if (next == _state) {

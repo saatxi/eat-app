@@ -1,6 +1,6 @@
 import 'package:eatapp/core/theme/app_theme.dart';
 import 'package:eatapp/core/theme/app_theme_mode.dart';
-import 'package:eatapp/core/theme/palettes/verd_palette.dart';
+import 'package:eatapp/core/theme/palettes/terracotta_palette.dart';
 import 'package:eatapp/core/theme/tokens/app_typography.dart';
 import 'package:eatapp/core/theme/tokens/cuisine_accents.dart';
 import 'package:eatapp/core/theme/tokens/palette_tones.dart';
@@ -15,11 +15,11 @@ const List<Brightness> _bothBrightnesses = <Brightness>[
 void main() {
   group('tokens', () {
     test('the palette defines exactly the required number of accents', () {
-      expect(verdTones.accents.length, cuisineAccentCount);
+      expect(terracottaTones.accents.length, cuisineAccentCount);
     });
 
     test('cuisine accents wrap, so any index is valid', () {
-      final CuisineAccents accents = CuisineAccents.light(verdTones);
+      final CuisineAccents accents = CuisineAccents.light(terracottaTones);
       expect(accents[0].container, accents[cuisineAccentCount].container);
       expect(
         accents[cuisineAccentCount + 3].container,
@@ -36,15 +36,14 @@ void main() {
       expect(text.labelLarge!.fontFamily, AppTypography.bodyFamily);
     });
 
-    test('the variable serif carries weight and optical-size variations', () {
+    test('the variable serif carries a weight variation', () {
       final TextStyle display = AppTypography.textTheme.displayLarge!;
       final Map<String, double> axes = <String, double>{
         for (final FontVariation variation in display.fontVariations!)
           variation.axis: variation.value,
       };
-      expect(axes.keys, containsAll(<String>['wght', 'opsz']));
+      expect(axes.keys, contains('wght'));
       expect(axes['wght'], 400);
-      expect(axes['opsz'], 57);
     });
   });
 
@@ -60,7 +59,7 @@ void main() {
   group('AppTheme', () {
     test('publishes the cuisine accents as a theme extension', () {
       for (final Brightness brightness in _bothBrightnesses) {
-        final ThemeData theme = AppTheme.build(verdTones, brightness);
+        final ThemeData theme = AppTheme.build(terracottaTones, brightness);
         final CuisineAccents? accents = theme.extension<CuisineAccents>();
         expect(accents, isNotNull, reason: '$brightness');
         expect(accents!.slots.length, cuisineAccentCount);
@@ -69,7 +68,7 @@ void main() {
 
     test('is Material 3 and matches the requested brightness', () {
       for (final Brightness brightness in _bothBrightnesses) {
-        final ThemeData theme = AppTheme.build(verdTones, brightness);
+        final ThemeData theme = AppTheme.build(terracottaTones, brightness);
         expect(theme.useMaterial3, isTrue);
         expect(theme.colorScheme.brightness, brightness);
         expect(theme.textTheme.displayLarge, isNotNull);
@@ -77,12 +76,12 @@ void main() {
     });
 
     test('light and dark accents swap the container and on-colour', () {
-      final CuisineAccents light = CuisineAccents.light(verdTones);
-      final CuisineAccents dark = CuisineAccents.dark(verdTones);
-      expect(light[0].container, verdTones.accents[0].t90);
-      expect(light[0].onContainer, verdTones.accents[0].t10);
-      expect(dark[0].container, verdTones.accents[0].t30);
-      expect(dark[0].onContainer, verdTones.accents[0].t90);
+      final CuisineAccents light = CuisineAccents.light(terracottaTones);
+      final CuisineAccents dark = CuisineAccents.dark(terracottaTones);
+      expect(light[0].container, terracottaTones.accents[0].t90);
+      expect(light[0].onContainer, terracottaTones.accents[0].t10);
+      expect(dark[0].container, terracottaTones.accents[0].t30);
+      expect(dark[0].onContainer, terracottaTones.accents[0].t90);
     });
   });
 }

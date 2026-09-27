@@ -1,101 +1,88 @@
 import 'package:flutter/material.dart';
 
 import '../../core/l10n/generated/app_localizations.dart';
+import '../../core/theme/tokens/app_motion.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/filter_dropdown_chip.dart';
-import '../../core/widgets/presentation_bounds.dart';
 import '../../core/widgets/price_range_label.dart';
+import '../../core/widgets/presentation_bounds.dart';
 import '../../data/models/restaurant_sort.dart';
+import 'restaurant_list_controller.dart';
 
-/// The search field, sort control and filter-chip panel — everything above the
-/// list itself.
+/// The Journal's top-of-screen controls: the prominent search field, the quick
+/// segments (All / Visited / Want to try / Favorites) and, folded underneath, the
+/// finer filter dimensions.
 ///
-/// Reused whole by the favourites screen, which shows the same kind of list
-/// rather than a second copy of this block, the same way it reuses
-/// `RestaurantRow` and `EmptyState`.
-///
-/// [showSortAndFilters] hides the sort/filter section — but never the search
-/// field itself — while there is nothing to sort or filter yet (the initial
-/// load, or before any restaurant exists at all); each screen computes that
-/// condition itself.
-///
-/// Ported from `ui/list/SearchAndFilterBar.kt`. The chip dropdowns use
-/// [FilterDropdownChip], and the location sheet keeps local state while it is
-/// open, since a modal route does not rebuild with the screen behind it.
-class SearchAndFilterBar extends StatefulWidget {
-  const SearchAndFilterBar({
-    super.key,
-    required this.searchController,
-    required this.onSearchQueryChange,
-    required this.showSortAndFilters,
-    required this.sort,
-    required this.onSortChange,
-    required this.minRating,
-    required this.onMinRatingChange,
-    required this.cuisineType,
-    required this.availableCuisines,
-    required this.onCuisineChange,
-    required this.visited,
-    required this.onVisitedChange,
-    required this.city,
-    required this.availableCities,
-    required this.onCityChange,
-    required this.region,
-    required this.availableRegions,
-    required this.onRegionChange,
-    required this.country,
-    required this.availableCountries,
-    required this.onCountryChange,
-    required this.priceRange,
-    required this.onPriceRangeChange,
-    required this.onClearFilters,
-  });
+/// The segments are new: where the old design put "visited" in the filter panel
+/// and gave favourites a whole bottom tab, this one line of chips answers the
+/// question a journal user actually asks first — "what am I looking at right
+/// now?" — without opening a panel. Only the search field is always visible; the
+/// finer filters stay folded until asked for.
+enum JournalSegment {
+  all,
+  visited,
+  wantToTry,
+  favorites;
 
-  final TextEditingController searchController;
-  final ValueChanged<String> onSearchQueryChange;
-  final bool showSortAndFilters;
-  final RestaurantSort sort;
-  final ValueChanged<RestaurantSort> onSortChange;
-  final int? minRating;
-  final ValueChanged<int?> onMinRatingChange;
-  final String? cuisineType;
-  final List<String> availableCuisines;
-  final ValueChanged<String?> onCuisineChange;
-  final bool? visited;
-  final ValueChanged<bool?> onVisitedChange;
-  final String? city;
-  final List<String> availableCities;
-  final ValueChanged<String?> onCityChange;
-  final String? region;
-  final List<String> availableRegions;
-  final ValueChanged<String?> onRegionChange;
-  final String? country;
-  final List<String> availableCountries;
-  final ValueChanged<String?> onCountryChange;
-  final int? priceRange;
-  final ValueChanged<int?> onPriceRangeChange;
+  /// The visited / want-to-try dimension this segment maps onto in the query.
+  /// `favorites` leaves it open and narrows on the favourite flag instead.
+  bool? get visitedFilter => switch (this) {
+    JournalSegment.all => null,
+    JournalSegment.visited => true,
+    JournalSegment.wantToTry => false,
+    JournalSegment.favorites => null,
+  };
 
-  /// Puts every dimension above back to "any" at once, so a stack of them does
-  /// not have to be unpicked chip by chip. The search query is not one of them,
-  /// and is left alone.
-  final VoidCallback onClearFilters;
-
-  @override
-  State<SearchAndFilterBar> createState() => _SearchAndFilterBarState();
+  bool get favoritesOnly => this == JournalSegment.favorites;
 }
 
-class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
+class JournalFilterBar extends StatefulWidget {
+  const JournalFilterBar({
+    super.key,
+    required this.controller,
+    required this.state,
+    required this.searchController,
+    required this.showFilters,
+  });
+
+  final RestaurantListController controller;
+  final RestaurantListUiState state;
+
+  /// Owned by the screen, so a filter change that resets the query can push the
+  /// empty string back into the field.
+  final TextEditingController searchController;
+
+  /// Hides the sort control and the filter panel while there is nothing to sort
+  /// or filter yet (the initial load, or before any restaurant exists at all).
+  /// The search field and the segments stay.
+  final bool showFilters;
+
+  @override
+  State<JournalFilterBar> createState() => _JournalFilterBarState();
+}
+
+class _JournalFilterBarState extends State<JournalFilterBar> {
   bool _filtersExpanded = false;
 
+  JournalSegment get _segment {
+    if (widget.state.favoritesOnly) {
+      return JournalSegment.favorites;
+    }
+    return switch (widget.state.visited) {
+      true => JournalSegment.visited,
+      false => JournalSegment.wantToTry,
+      null => JournalSegment.all,
+    };
+  }
+
   int get _activeFilterCount =>
-      (widget.minRating != null ? 1 : 0) +
-      (widget.cuisineType != null ? 1 : 0) +
-      (widget.visited != null ? 1 : 0) +
-      (widget.city != null ? 1 : 0) +
-      (widget.region != null ? 1 : 0) +
-      (widget.country != null ? 1 : 0) +
-      (widget.priceRange != null ? 1 : 0);
+      (widget.state.minRating != null ? 1 : 0) +
+      (widget.state.cuisineType != null ? 1 : 0) +
+      (widget.state.city != null ? 1 : 0) +
+      (widget.state.region != null ? 1 : 0) +
+      (widget.state.country != null ? 1 : 0) +
+      (widget.state.priceRange != null ? 1 : 0);
 
   @override
   Widget build(BuildContext context) {
@@ -106,27 +93,28 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
           child: TextField(
             controller: widget.searchController,
-            onChanged: widget.onSearchQueryChange,
-            // A hint rather than a label: the label would float above the text
-            // for good once the field has content, costing height for a field
-            // whose purpose the icon already states.
+            onChanged: widget.controller.onSearchQueryChange,
             decoration: InputDecoration(
               hintText: l10n.listSearchPlaceholder,
-              prefixIcon: const Icon(Icons.search),
+              prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: widget.searchController.text.isEmpty
                   ? null
                   : IconButton(
                       onPressed: () {
                         widget.searchController.clear();
-                        widget.onSearchQueryChange('');
+                        widget.controller.onSearchQueryChange('');
                       },
                       tooltip: l10n.listSearchClear,
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close_rounded),
                     ),
-              border: const OutlineInputBorder(),
             ),
             textInputAction: TextInputAction.search,
             // Results already follow every keystroke, so the Search key has
@@ -134,7 +122,8 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
             onSubmitted: (_) => FocusScope.of(context).unfocus(),
           ),
         ),
-        if (widget.showSortAndFilters) ...<Widget>[
+        _segments(l10n),
+        if (widget.showFilters) ...<Widget>[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: SizedBox(
@@ -148,9 +137,9 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
                       tooltip: _sortLabel(l10n, option),
                     ),
                 ],
-                selected: <RestaurantSort>{widget.sort},
+                selected: <RestaurantSort>{widget.state.sort},
                 onSelectionChanged: (Set<RestaurantSort> selection) =>
-                    widget.onSortChange(selection.first),
+                    widget.controller.onSortChange(selection.first),
                 showSelectedIcon: false,
               ),
             ),
@@ -159,16 +148,44 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
           // AnimatedSize rather than a hard swap: the section folds open and
           // shut instead of appearing at full height in one frame.
           AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
+            duration: AppMotion.short,
+            curve: AppMotion.entering,
             alignment: Alignment.topCenter,
             child: _filtersExpanded
                 ? _filterSection(l10n)
                 : const SizedBox(width: double.infinity),
           ),
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
+          Divider(color: theme.colorScheme.outlineVariant),
         ],
       ],
+    );
+  }
+
+  Widget _segments(AppLocalizations l10n) {
+    final JournalSegment selected = _segment;
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        children: <Widget>[
+          for (final JournalSegment segment in JournalSegment.values)
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.sm),
+              child: ChoiceChip(
+                label: Text(_segmentLabel(l10n, segment)),
+                selected: segment == selected,
+                onSelected: (_) {
+                  if (segment == selected) {
+                    return;
+                  }
+                  widget.controller.onFavoritesOnlyChange(segment.favoritesOnly);
+                  widget.controller.onVisitedChange(segment.visitedFilter);
+                },
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -183,14 +200,14 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
         ),
         child: Row(
           children: <Widget>[
-            Icon(Icons.filter_list, color: theme.colorScheme.onSurfaceVariant),
+            Icon(Icons.tune_rounded, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(width: AppSpacing.sm),
             Text(l10n.listFiltersTitle, style: theme.textTheme.labelLarge),
             if (count > 0)
               Padding(
                 padding: const EdgeInsets.only(left: AppSpacing.sm),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary,
                     borderRadius: BorderRadius.circular(10),
@@ -209,9 +226,9 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
             const Spacer(),
             AnimatedRotation(
               turns: _filtersExpanded ? 0.5 : 0,
-              duration: const Duration(milliseconds: 200),
+              duration: AppMotion.short,
               child: Icon(
-                Icons.expand_more,
+                Icons.expand_more_rounded,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -223,16 +240,12 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
 
   Widget _filterSection(AppLocalizations l10n) {
     final List<MapEntry<String, String>> cuisines = <MapEntry<String, String>>[
-      for (final String key in widget.availableCuisines)
+      for (final String key in widget.state.availableCuisines)
         MapEntry<String, String>(key, cuisineLabel(l10n, key)),
     ]..sort(
         (MapEntry<String, String> a, MapEntry<String, String> b) =>
             a.value.toLowerCase().compareTo(b.value.toLowerCase()),
       );
-    final int activeLocationCount =
-        (widget.city != null ? 1 : 0) +
-        (widget.region != null ? 1 : 0) +
-        (widget.country != null ? 1 : 0);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -249,44 +262,16 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
             runSpacing: AppSpacing.sm,
             children: <Widget>[
               FilterDropdownChip(
-                selectedLabel: switch (widget.visited) {
-                  false => l10n.visitStatusWantToTry,
-                  true => l10n.visitStatusVisited,
-                  null => l10n.listFilterVisitStatus,
-                },
-                isActive: widget.visited != null,
-                menuBuilder: (VoidCallback close) => <Widget>[
-                  MenuItemButton(
-                    onPressed: () {
-                      widget.onVisitedChange(
-                        widget.visited == false ? null : false,
-                      );
-                      close();
-                    },
-                    child: Text(l10n.visitStatusWantToTry),
-                  ),
-                  MenuItemButton(
-                    onPressed: () {
-                      widget.onVisitedChange(
-                        widget.visited == true ? null : true,
-                      );
-                      close();
-                    },
-                    child: Text(l10n.visitStatusVisited),
-                  ),
-                ],
-              ),
-              FilterDropdownChip(
-                selectedLabel: widget.minRating == null
+                selectedLabel: widget.state.minRating == null
                     ? l10n.listFilterMinRating
-                    : '${widget.minRating}+',
-                isActive: widget.minRating != null,
+                    : '${widget.state.minRating}+',
+                isActive: widget.state.minRating != null,
                 menuBuilder: (VoidCallback close) => <Widget>[
                   for (int rating = 1; rating <= maxRating; rating++)
                     MenuItemButton(
                       onPressed: () {
-                        widget.onMinRatingChange(
-                          widget.minRating == rating ? null : rating,
+                        widget.controller.onMinRatingChange(
+                          widget.state.minRating == rating ? null : rating,
                         );
                         close();
                       },
@@ -295,16 +280,16 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
                 ],
               ),
               FilterDropdownChip(
-                selectedLabel: widget.priceRange == null
+                selectedLabel: widget.state.priceRange == null
                     ? l10n.listFilterPrice
-                    : priceRangeLabel(l10n, widget.priceRange!),
-                isActive: widget.priceRange != null,
+                    : priceRangeLabel(l10n, widget.state.priceRange!),
+                isActive: widget.state.priceRange != null,
                 menuBuilder: (VoidCallback close) => <Widget>[
                   for (int price = 1; price <= maxPriceRange; price++)
                     MenuItemButton(
                       onPressed: () {
-                        widget.onPriceRangeChange(
-                          widget.priceRange == price ? null : price,
+                        widget.controller.onPriceRangeChange(
+                          widget.state.priceRange == price ? null : price,
                         );
                         close();
                       },
@@ -317,28 +302,30 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
               // entries.
               if (cuisines.isNotEmpty)
                 FilterDropdownChip(
-                  selectedLabel: widget.cuisineType == null
+                  selectedLabel: widget.state.cuisineType == null
                       ? l10n.listFilterCuisine
                       : cuisines
                             .firstWhere(
                               (MapEntry<String, String> entry) =>
-                                  entry.key == widget.cuisineType,
+                                  entry.key == widget.state.cuisineType,
                               orElse: () => MapEntry<String, String>(
-                                widget.cuisineType!,
-                                cuisineLabel(l10n, widget.cuisineType!),
+                                widget.state.cuisineType!,
+                                cuisineLabel(l10n, widget.state.cuisineType!),
                               ),
                             )
                             .value,
-                  isActive: widget.cuisineType != null,
-                  leading: widget.cuisineType == null
+                  isActive: widget.state.cuisineType != null,
+                  leading: widget.state.cuisineType == null
                       ? null
-                      : Icon(cuisineIcon(widget.cuisineType!), size: 18),
+                      : Icon(cuisineIcon(widget.state.cuisineType!), size: 18),
                   menuBuilder: (VoidCallback close) => <Widget>[
                     for (final MapEntry<String, String> entry in cuisines)
                       MenuItemButton(
                         onPressed: () {
-                          widget.onCuisineChange(
-                            widget.cuisineType == entry.key ? null : entry.key,
+                          widget.controller.onCuisineChange(
+                            widget.state.cuisineType == entry.key
+                                ? null
+                                : entry.key,
                           );
                           close();
                         },
@@ -349,17 +336,14 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
                 ),
               // City/region/country are unbounded free text, unlike the closed
               // cuisine vocabulary above — a menu entry per value could run to
-              // dozens, so this one opens a sheet with all three groups
-              // instead.
-              if (widget.availableCities.isNotEmpty ||
-                  widget.availableRegions.isNotEmpty ||
-                  widget.availableCountries.isNotEmpty)
+              // dozens, so this one opens a sheet with all three groups instead.
+              if (widget.state.availableCities.isNotEmpty ||
+                  widget.state.availableRegions.isNotEmpty ||
+                  widget.state.availableCountries.isNotEmpty)
                 ActionChip(
                   avatar: const Icon(Icons.location_on_outlined, size: 18),
                   label: Text(
-                    activeLocationCount > 0
-                        ? l10n.listFilterLocationActive(activeLocationCount)
-                        : l10n.listFilterLocation,
+                    _locationLabel(l10n),
                   ),
                   onPressed: _openLocationSheet,
                 ),
@@ -367,14 +351,13 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
           ),
           // Only while there is something to clear, the same rule the header's
           // count badge follows. On a line of its own rather than inside the
-          // wrap, so it reads as the panel's action instead of as one more
-          // filter to pick.
+          // wrap, so it reads as the panel's action instead of one more filter.
           if (_activeFilterCount > 0)
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: widget.onClearFilters,
-                icon: const Icon(Icons.filter_alt_off, size: 18),
+                onPressed: widget.controller.clearFilterDimensions,
+                icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
                 label: Text(l10n.listActionClearFilters),
               ),
             ),
@@ -383,22 +366,39 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
     );
   }
 
+  String _locationLabel(AppLocalizations l10n) {
+    final int active =
+        (widget.state.city != null ? 1 : 0) +
+        (widget.state.region != null ? 1 : 0) +
+        (widget.state.country != null ? 1 : 0);
+    return active > 0
+        ? l10n.listFilterLocationActive(active)
+        : l10n.listFilterLocation;
+  }
+
   Future<void> _openLocationSheet() => showModalBottomSheet<void>(
         context: context,
-        showDragHandle: true,
         builder: (BuildContext sheetContext) => _LocationSheet(
           title: AppLocalizations.of(sheetContext).listFilterLocation,
-          city: widget.city,
-          availableCities: widget.availableCities,
-          onCityChange: widget.onCityChange,
-          region: widget.region,
-          availableRegions: widget.availableRegions,
-          onRegionChange: widget.onRegionChange,
-          country: widget.country,
-          availableCountries: widget.availableCountries,
-          onCountryChange: widget.onCountryChange,
+          city: widget.state.city,
+          availableCities: widget.state.availableCities,
+          onCityChange: widget.controller.onCityChange,
+          region: widget.state.region,
+          availableRegions: widget.state.availableRegions,
+          onRegionChange: widget.controller.onRegionChange,
+          country: widget.state.country,
+          availableCountries: widget.state.availableCountries,
+          onCountryChange: widget.controller.onCountryChange,
         ),
       );
+
+  static String _segmentLabel(AppLocalizations l10n, JournalSegment segment) =>
+      switch (segment) {
+        JournalSegment.all => l10n.journalSegmentAll,
+        JournalSegment.visited => l10n.journalSegmentVisited,
+        JournalSegment.wantToTry => l10n.journalSegmentWantToTry,
+        JournalSegment.favorites => l10n.journalSegmentFavorites,
+      };
 
   static String _sortLabel(AppLocalizations l10n, RestaurantSort sort) =>
       switch (sort) {
@@ -501,16 +501,6 @@ class _LocationSheetState extends State<_LocationSheet> {
               },
               topPadding: AppSpacing.lg,
             ),
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.md),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(l10n.actionDone),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -537,92 +527,32 @@ class _LocationGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (options.isEmpty) {
-      return const SizedBox.shrink();
-    }
     return Padding(
       padding: EdgeInsets.only(top: topPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(label, style: Theme.of(context).textTheme.labelMedium),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: Row(
-              children: <Widget>[
+          Text(label, style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: <Widget>[
+              ChoiceChip(
+                label: Text(allLabel),
+                selected: selected == null,
+                onSelected: (_) => onChanged(null),
+              ),
+              for (final String option in options)
                 ChoiceChip(
-                  label: Text(allLabel),
-                  selected: selected == null,
-                  onSelected: (_) => onChanged(null),
+                  label: Text(option),
+                  selected: selected == option,
+                  onSelected: (_) => onChanged(option),
                 ),
-                for (final String option in options)
-                  Padding(
-                    padding: const EdgeInsets.only(left: AppSpacing.sm),
-                    child: ChoiceChip(
-                      label: Text(option),
-                      selected: selected == option,
-                      onSelected: (_) => onChanged(option),
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
         ],
       ),
-    );
-  }
-}
-
-/// What "top rated" means for the shortcut — the same threshold the rating
-/// filter's own "4+" entry offers.
-const int topRatedMinRating = 4;
-
-/// A starting point for browsing, shown in place of the (otherwise blank) space
-/// above the list once there is nothing to search or filter by yet. Each chip is
-/// a shortcut into the bar's own filters, not a separate feature.
-class SearchSuggestionsRow extends StatelessWidget {
-  const SearchSuggestionsRow({
-    super.key,
-    required this.onMinRatingChange,
-    required this.onVisitedChange,
-  });
-
-  final ValueChanged<int?> onMinRatingChange;
-  final ValueChanged<bool?> onVisitedChange;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          l10n.listSuggestionsTitle,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.xs),
-          child: Wrap(
-            spacing: AppSpacing.sm,
-            children: <Widget>[
-              ActionChip(
-                avatar: const Icon(Icons.star, size: 18),
-                label: Text(l10n.listSuggestionTopRated),
-                onPressed: () => onMinRatingChange(topRatedMinRating),
-              ),
-              ActionChip(
-                avatar: const Icon(Icons.schedule_outlined, size: 18),
-                label: Text(l10n.visitStatusWantToTry),
-                onPressed: () => onVisitedChange(false),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

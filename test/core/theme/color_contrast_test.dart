@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:eatapp/core/theme/app_theme.dart';
-import 'package:eatapp/core/theme/palettes/verd_palette.dart';
+import 'package:eatapp/core/theme/palettes/terracotta_palette.dart';
 import 'package:eatapp/core/theme/tokens/cuisine_accents.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,8 +28,8 @@ void main() {
   ];
 
   for (final Brightness brightness in brightnesses) {
-    final String label = 'verd / ${brightness.name}';
-    final ThemeData theme = AppTheme.build(verdTones, brightness);
+    final String label = 'terracota / ${brightness.name}';
+    final ThemeData theme = AppTheme.build(terracottaTones, brightness);
     final ColorScheme scheme = theme.colorScheme;
 
     test('$label — brand on-colours clear AA', () {

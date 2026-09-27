@@ -4,7 +4,7 @@ import 'package:eatapp/core/theme/app_theme.dart';
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
-import 'package:eatapp/features/list/restaurant_list_screen.dart';
+import 'package:eatapp/features/list/journal_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -62,7 +62,7 @@ void main() {
   testWidgets('the empty state announces its title as a heading', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(host(const RestaurantListScreen()));
+    await tester.pumpWidget(host(const JournalScreen()));
     await pump(tester);
 
     final Semantics semantics = tester.widget<Semantics>(
@@ -83,7 +83,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await repository.insert(restaurant(id: 'a', name: 'Cal Ferran'));
-    await tester.pumpWidget(host(const RestaurantListScreen()));
+    await tester.pumpWidget(host(const JournalScreen()));
     await pump(tester);
 
     // Nothing is filtered yet, so there is no count to announce.

@@ -490,17 +490,11 @@ abstract class AppLocalizations {
   /// **'50 € or more'**
   String get priceRange6;
 
-  /// No description provided for @navRestaurants.
+  /// No description provided for @navJournal.
   ///
   /// In en, this message translates to:
-  /// **'Restaurants'**
-  String get navRestaurants;
-
-  /// No description provided for @navFavorites.
-  ///
-  /// In en, this message translates to:
-  /// **'Favorites'**
-  String get navFavorites;
+  /// **'Journal'**
+  String get navJournal;
 
   /// No description provided for @navRoulette.
   ///
@@ -513,6 +507,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get navSettings;
+
+  /// No description provided for @journalSegmentsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get journalSegmentsLabel;
+
+  /// No description provided for @journalSegmentAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get journalSegmentAll;
+
+  /// No description provided for @journalSegmentVisited.
+  ///
+  /// In en, this message translates to:
+  /// **'Visited'**
+  String get journalSegmentVisited;
+
+  /// No description provided for @journalSegmentWantToTry.
+  ///
+  /// In en, this message translates to:
+  /// **'Want to try'**
+  String get journalSegmentWantToTry;
+
+  /// No description provided for @journalSegmentFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites'**
+  String get journalSegmentFavorites;
 
   /// No description provided for @favoritesTitle.
   ///

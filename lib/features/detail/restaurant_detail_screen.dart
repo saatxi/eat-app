@@ -229,18 +229,19 @@ class _LoadedContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          // The other end of the row's [restaurantHeroTag]: the photo when there
-          // is one, and the same cuisine badge the row fell back to otherwise,
-          // so the shared element always has a counterpart on both screens.
+          // The other end of the journal card's [restaurantHeroTag]: the photo
+          // when there is one, and the same cuisine badge the card fell back to
+          // otherwise, so the shared element always has a counterpart on both
+          // screens.
           Hero(
             tag: restaurantHeroTag(restaurant.id),
             child: restaurant.photoPath != null
                 ? ClipRRect(
-                    borderRadius: AppRadius.mediumAll,
+                    borderRadius: AppRadius.largeAll,
                     child: Image.file(
                       File(restaurant.photoPath!),
                       width: double.infinity,
-                      height: 220,
+                      height: 240,
                       fit: BoxFit.cover,
                       semanticLabel: l10n.detailPhotoDescription,
                       errorBuilder:
@@ -252,54 +253,16 @@ class _LoadedContent extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: RestaurantThumbnail(
                       cuisineKey: restaurant.cuisineKey,
-                      size: 72,
+                      size: 88,
                     ),
                   ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          _SectionLabel(l10n.detailSectionOverview),
-          _InfoRow(
-            icon: cuisineIcon(restaurant.cuisineKey),
-            text: cuisineLabel(l10n, restaurant.cuisineKey),
-            textStyle: Theme.of(context).textTheme.titleMedium,
-          ),
-          if (!restaurant.visited)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: _InfoRow(
-                icon: Icons.schedule_outlined,
-                text: l10n.visitStatusWantToTry,
-              ),
-            ),
-          if (address != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: _InfoRow(
-                icon: Icons.location_on_outlined,
-                text: address,
-                onTap: () => onOpen('geo:0,0?q=${Uri.encodeComponent(address)}'),
-              ),
-            ),
-          if (restaurant.tagsLabel.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: TagPillRow(tags: restaurant.tags),
-            ),
-          const SizedBox(height: AppSpacing.lg),
-          _SectionLabel(l10n.detailSectionRating),
-          RatingAndPriceRow(
-            rating: restaurant.rating,
+          _OverviewCard(
+            restaurant: restaurant,
             priceLabel: priceLabel,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            pricePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            ratingContentDescription: l10n.restaurantRatingDescription(
-              restaurant.rating,
-            ),
-            priceContentDescription: priceLabel.isEmpty
-                ? null
-                : l10n.restaurantPriceDescription(priceLabel),
-            priceContainerColor: Theme.of(context).colorScheme.primaryContainer,
-            priceContentColor: Theme.of(context).colorScheme.onPrimaryContainer,
+            address: address,
+            onOpen: onOpen,
           ),
           if (restaurant.hasLinks) ...<Widget>[
             const SizedBox(height: AppSpacing.lg),
@@ -323,6 +286,89 @@ class _LoadedContent extends StatelessWidget {
                 : () => onLogVisit!(restaurant.id),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The restaurant's overview and its rating/price, folded into one soft card so
+/// the detail screen reads as a stack of cards rather than a flat column.
+class _OverviewCard extends StatelessWidget {
+  const _OverviewCard({
+    required this.restaurant,
+    required this.priceLabel,
+    required this.address,
+    required this.onOpen,
+  });
+
+  final RestaurantUiModel restaurant;
+  final String priceLabel;
+  final String? address;
+  final ValueChanged<String> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            _SectionLabel(l10n.detailSectionOverview),
+            _InfoRow(
+              icon: cuisineIcon(restaurant.cuisineKey),
+              text: cuisineLabel(l10n, restaurant.cuisineKey),
+              textStyle: theme.textTheme.titleMedium,
+            ),
+            if (!restaurant.visited)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.sm),
+                child: _InfoRow(
+                  icon: Icons.schedule_outlined,
+                  text: l10n.visitStatusWantToTry,
+                ),
+              ),
+            if (address != null)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.sm),
+                child: _InfoRow(
+                  icon: Icons.location_on_outlined,
+                  text: address!,
+                  onTap: () =>
+                      onOpen('geo:0,0?q=${Uri.encodeComponent(address!)}'),
+                ),
+              ),
+            if (restaurant.tagsLabel.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.sm),
+                child: TagPillRow(tags: restaurant.tags),
+              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              child: Divider(color: theme.colorScheme.outlineVariant),
+            ),
+            _SectionLabel(l10n.detailSectionRating),
+            RatingAndPriceRow(
+              rating: restaurant.rating,
+              priceLabel: priceLabel,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              pricePadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 5,
+              ),
+              ratingContentDescription: l10n.restaurantRatingDescription(
+                restaurant.rating,
+              ),
+              priceContentDescription: priceLabel.isEmpty
+                  ? null
+                  : l10n.restaurantPriceDescription(priceLabel),
+              priceContainerColor: theme.colorScheme.primaryContainer,
+              priceContentColor: theme.colorScheme.onPrimaryContainer,
+            ),
+          ],
+        ),
       ),
     );
   }

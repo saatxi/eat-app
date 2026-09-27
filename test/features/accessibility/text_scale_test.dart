@@ -5,7 +5,7 @@ import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
 import 'package:eatapp/features/detail/restaurant_detail_screen.dart';
-import 'package:eatapp/features/list/restaurant_list_screen.dart';
+import 'package:eatapp/features/list/journal_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -101,7 +101,7 @@ void main() {
     ) async {
       await seed();
       await tester.pumpWidget(
-        host(const RestaurantListScreen(), scale: scale),
+        host(const JournalScreen(), scale: scale),
       );
       await pump(tester);
 
@@ -128,7 +128,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        host(const RestaurantListScreen(), scale: scale),
+        host(const JournalScreen(), scale: scale),
       );
       await pump(tester);
 

@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 
-/// The editorial type scale.
+/// The humanist type scale.
 ///
-/// [displayFamily] (Fraunces, a contemporary "wonky" serif) carries
-/// display/headline/title; [bodyFamily] (Manrope, a geometric sans) carries
-/// body/label. That split is the same one the Android app's `Type.kt` uses, so
-/// the Flutter rewrite keeps the app's voice rather than re-opening the type
-/// question.
+/// [displayFamily] (Lora, a warm contemporary serif) carries
+/// display/headline/title; [bodyFamily] (Nunito, a rounded humanist sans)
+/// carries body/label. A friendly serif over a soft sans is what gives the app
+/// its notebook feel — warmer than a geometric sans alone, and easier to read
+/// at length than a wonky display serif.
 ///
-/// Fraunces is bundled as a single **variable** font, so weights and the
-/// optical-size axis are selected per style through `fontVariations` instead
-/// of by shipping a file per weight. Manrope is not variable, so its static
-/// instances are selected by `fontWeight` alone.
+/// Both families ship as single **variable** fonts (one `wght` axis each), so
+/// the weight is selected per style through `fontVariations` — and mirrored on
+/// `fontWeight` for the platforms that read that first — rather than by
+/// bundling a static file per weight.
 abstract final class AppTypography {
   /// Display/headline/title family — bundled at
-  /// `assets/fonts/fraunces_variable.ttf`.
-  static const String displayFamily = 'Fraunces';
+  /// `assets/fonts/lora_variable.ttf`.
+  static const String displayFamily = 'Lora';
 
-  /// Body/label family — bundled at `assets/fonts/manrope_*.ttf`.
-  static const String bodyFamily = 'Manrope';
+  /// Body/label family — bundled at `assets/fonts/nunito_variable.ttf`.
+  static const String bodyFamily = 'Nunito';
 
   /// Tabular numerals, so digits keep a constant width as counts change.
   ///
@@ -28,23 +28,24 @@ abstract final class AppTypography {
     FontFeature.tabularFigures(),
   ];
 
-  /// The M3 type scale, spelled out in full.
+  /// The M3 type scale, spelled out in full, tuned a touch larger and looser
+  /// than the stock scale for the humanist read.
   static final TextTheme textTheme = TextTheme(
-    displayLarge: _display(size: 57, lineHeight: 64, weight: 400, letterSpacing: -0.25),
-    displayMedium: _display(size: 45, lineHeight: 52, weight: 400),
+    displayLarge: _display(size: 56, lineHeight: 64, weight: 400, letterSpacing: -0.5),
+    displayMedium: _display(size: 44, lineHeight: 52, weight: 400),
     displaySmall: _display(size: 36, lineHeight: 44, weight: 400),
-    headlineLarge: _display(size: 32, lineHeight: 40, weight: 600),
-    headlineMedium: _display(size: 28, lineHeight: 36, weight: 600),
+    headlineLarge: _display(size: 32, lineHeight: 40, weight: 500),
+    headlineMedium: _display(size: 28, lineHeight: 36, weight: 500),
     headlineSmall: _display(size: 24, lineHeight: 32, weight: 600),
     titleLarge: _display(size: 22, lineHeight: 28, weight: 600),
-    titleMedium: _body(size: 18, lineHeight: 24, weight: 600, letterSpacing: 0.15),
-    titleSmall: _body(size: 14, lineHeight: 20, weight: 500, letterSpacing: 0.1),
-    bodyLarge: _body(size: 16, lineHeight: 24, weight: 400, letterSpacing: 0.5),
-    bodyMedium: _body(size: 14, lineHeight: 20, weight: 400, letterSpacing: 0.25),
-    bodySmall: _body(size: 12, lineHeight: 16, weight: 400, letterSpacing: 0.4),
-    labelLarge: _body(size: 14, lineHeight: 20, weight: 600, letterSpacing: 0.1),
-    labelMedium: _body(size: 12, lineHeight: 16, weight: 600, letterSpacing: 0.5),
-    labelSmall: _body(size: 11, lineHeight: 16, weight: 500, letterSpacing: 0.5),
+    titleMedium: _body(size: 17, lineHeight: 24, weight: 600, letterSpacing: 0.1),
+    titleSmall: _body(size: 15, lineHeight: 20, weight: 600, letterSpacing: 0.1),
+    bodyLarge: _body(size: 16, lineHeight: 26, weight: 400, letterSpacing: 0.15),
+    bodyMedium: _body(size: 14, lineHeight: 22, weight: 400, letterSpacing: 0.2),
+    bodySmall: _body(size: 12, lineHeight: 18, weight: 400, letterSpacing: 0.3),
+    labelLarge: _body(size: 15, lineHeight: 20, weight: 700, letterSpacing: 0.1),
+    labelMedium: _body(size: 12, lineHeight: 16, weight: 700, letterSpacing: 0.4),
+    labelSmall: _body(size: 11, lineHeight: 16, weight: 600, letterSpacing: 0.5),
   );
 
   static TextStyle _display({
@@ -59,12 +60,7 @@ abstract final class AppTypography {
       fontSize: size,
       height: lineHeight / size,
       letterSpacing: letterSpacing,
-      fontVariations: <FontVariation>[
-        FontVariation('wght', weight),
-        // Keep the optical-size axis in step with the rendered size, which is
-        // what lets the serif hold up at 57px and stay legible at 22px.
-        FontVariation('opsz', size),
-      ],
+      fontVariations: <FontVariation>[FontVariation('wght', weight)],
     );
   }
 
@@ -80,6 +76,7 @@ abstract final class AppTypography {
       fontSize: size,
       height: lineHeight / size,
       letterSpacing: letterSpacing,
+      fontVariations: <FontVariation>[FontVariation('wght', weight)],
     );
   }
 

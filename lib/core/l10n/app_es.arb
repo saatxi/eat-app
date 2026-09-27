@@ -75,10 +75,15 @@
   "priceRange5": "40-50 €",
   "priceRange6": "50 € o más",
 
-  "navRestaurants": "Restaurantes",
-  "navFavorites": "Favoritos",
+  "navJournal": "Diario",
   "navRoulette": "Ruleta",
   "navSettings": "Ajustes",
+
+  "journalSegmentsLabel": "Mostrar",
+  "journalSegmentAll": "Todos",
+  "journalSegmentVisited": "Visitados",
+  "journalSegmentWantToTry": "Por probar",
+  "journalSegmentFavorites": "Favoritos",
 
   "favoritesTitle": "Favoritos",
   "favoritesEmptyTitle": "Aún no hay favoritos",

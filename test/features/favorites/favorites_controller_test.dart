@@ -32,7 +32,7 @@ void main() {
     final RestaurantListController controller = RestaurantListController(
       repository: repository,
       preferences: preferences,
-      favouritesOnly: true,
+      favoritesOnly: true,
       searchDebounce: const Duration(milliseconds: 5),
     );
     controllers.add(controller);

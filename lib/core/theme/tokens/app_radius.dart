@@ -2,21 +2,21 @@ import 'package:flutter/widgets.dart';
 
 /// The corner-radius scale.
 ///
-/// Rounded further than Material's defaults, per the mockup's ~16-24dp card
-/// corners: the "medium" radius (what most cards and surfaces pick up) is
-/// 20dp rather than 16dp, and "large" is 28dp. Port of the Android app's
-/// `Shape.kt`, kept as named tokens so call sites stop guessing at a literal.
+/// Generously rounded for the soft, organic direction: chip-sized controls
+/// round at 14, most cards and surfaces at the "medium" 20, and the large
+/// feature surfaces (a hero card, a bottom sheet, a dialog) at 28. Kept as
+/// named tokens so call sites stop guessing at a literal.
 abstract final class AppRadius {
-  /// 8 — small controls, chips' inner shapes.
-  static const double extraSmall = 8;
+  /// 10 — the smallest rounding: inner shapes, tight tiles.
+  static const double extraSmall = 10;
 
-  /// 12 — text fields and smaller surfaces.
-  static const double small = 12;
+  /// 14 — text fields, chips' inner shapes, small controls.
+  static const double small = 14;
 
   /// 20 — the default card/surface radius.
   static const double medium = 20;
 
-  /// 28 — large feature surfaces (a hero card, a bottom sheet).
+  /// 28 — large feature surfaces (a hero card, a bottom sheet, a dialog).
   static const double large = 28;
 
   /// 36 — the largest rounding the scale offers.

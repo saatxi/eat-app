@@ -235,16 +235,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get priceRange6 => '50 € or more';
 
   @override
-  String get navRestaurants => 'Restaurants';
-
-  @override
-  String get navFavorites => 'Favorites';
+  String get navJournal => 'Journal';
 
   @override
   String get navRoulette => 'Roulette';
 
   @override
   String get navSettings => 'Settings';
+
+  @override
+  String get journalSegmentsLabel => 'Show';
+
+  @override
+  String get journalSegmentAll => 'All';
+
+  @override
+  String get journalSegmentVisited => 'Visited';
+
+  @override
+  String get journalSegmentWantToTry => 'Want to try';
+
+  @override
+  String get journalSegmentFavorites => 'Favorites';
 
   @override
   String get favoritesTitle => 'Favorites';

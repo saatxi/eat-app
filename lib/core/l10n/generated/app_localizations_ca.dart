@@ -236,16 +236,28 @@ class AppLocalizationsCa extends AppLocalizations {
   String get priceRange6 => '50 € o més';
 
   @override
-  String get navRestaurants => 'Restaurants';
-
-  @override
-  String get navFavorites => 'Preferits';
+  String get navJournal => 'Diari';
 
   @override
   String get navRoulette => 'Ruleta';
 
   @override
   String get navSettings => 'Configuració';
+
+  @override
+  String get journalSegmentsLabel => 'Mostra';
+
+  @override
+  String get journalSegmentAll => 'Tots';
+
+  @override
+  String get journalSegmentVisited => 'Visitats';
+
+  @override
+  String get journalSegmentWantToTry => 'Per provar';
+
+  @override
+  String get journalSegmentFavorites => 'Preferits';
 
   @override
   String get favoritesTitle => 'Preferits';

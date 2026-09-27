@@ -8,29 +8,29 @@ import '../../widget/home_widget_snapshot.dart';
 import '../detail/restaurant_detail_screen.dart';
 import '../edit/restaurant_edit_screen.dart';
 import '../import_export/import_screen.dart';
-import '../list/restaurant_list_screen.dart';
+import '../list/journal_screen.dart';
 import '../list/restaurant_ui_model.dart';
 import '../log_visit/log_visit_screen.dart';
 import '../roulette/roulette_screen.dart';
 import '../settings/settings_screen.dart';
 import '../stats/statistics_screen.dart';
 
-/// The app's root: the four top-level sections, laid out for the window they are
-/// given.
+/// The app's root: the three top-level sections, laid out for the window they
+/// are given.
 ///
 /// On a phone that is a bottom navigation bar over one section at a time. On a
 /// tablet-width window it becomes a `NavigationRail` beside the sections, and
-/// while a list section is showing, the selected restaurant's detail sits beside
+/// while the Journal is showing, the selected restaurant's detail sits beside
 /// the list rather than being pushed as a route.
 ///
-/// The sections themselves are one `IndexedStack` in both shapes, so a screen's
-/// state survives a tab switch and the window crossing the breakpoint. The
-/// detail pane sits outside it, though, since it belongs to whichever list
-/// section is on screen rather than to the stack.
+/// Three sections, not four: Favorites folded into the Journal as a quick
+/// segment, so the shell is Journal, Roulette and Settings. The sections are one
+/// `IndexedStack` in both shapes, so a screen's state survives a tab switch and
+/// the window crossing the breakpoint. The detail pane sits outside it, since it
+/// belongs to the Journal rather than to the stack.
 ///
-/// Plain `Navigator` rather than a router package — the app has four tabs and a
-/// handful of pushed screens, which is well inside what `Navigator` handles, and
-/// adding `go_router` for that would buy nothing a personal notebook needs.
+/// Plain `Navigator` rather than a router package — three tabs and a handful of
+/// pushed screens is well inside what `Navigator` handles.
 class HomeShell extends StatefulWidget {
   const HomeShell({
     super.key,
@@ -81,9 +81,9 @@ class _HomeShellState extends State<HomeShell> {
   bool get _isTwoPane =>
       MediaQuery.sizeOf(context).width >= HomeShell.twoPaneBreakpoint;
 
-  /// True for the two sections that are restaurant lists, and so the only ones
-  /// the detail pane has anything to say about.
-  bool get _isListSection => _index <= 1;
+  /// True only for the Journal, the one section the detail pane has anything to
+  /// say about.
+  bool get _showsDetailPane => _index == 0;
 
   @override
   void initState() {
@@ -116,13 +116,13 @@ class _HomeShellState extends State<HomeShell> {
   void _selectTab(int index) => setState(() => _index = index);
 
   /// Opens a restaurant, in whichever way the current window wants: the detail
-  /// pane beside the list when there is room for two, a pushed route when there
-  /// isn't.
+  /// pane beside the Journal when there is room for two, a pushed route when
+  /// there isn't.
   void _openRestaurant(RestaurantUiModel restaurant) =>
       _openRestaurantById(restaurant.id);
 
   void _openRestaurantById(String restaurantId) {
-    if (_isTwoPane) {
+    if (_isTwoPane && _showsDetailPane) {
       setState(() => _selectedRestaurantId = restaurantId);
     } else {
       _pushDetailById(restaurantId);
@@ -210,9 +210,9 @@ class _HomeShellState extends State<HomeShell> {
   Widget _twoPanes(AppLocalizations l10n) {
     return HeroMode(
       // One route holds the list and the detail pane at once, so the selected
-      // row and the detail header would carry the same Hero tag — which a flight
-      // rejects. Nothing needs to fly between them anyway: both are already on
-      // screen.
+      // card and the detail header would carry the same Hero tag — which a
+      // flight rejects. Nothing needs to fly between them anyway: both are
+      // already on screen.
       enabled: false,
       child: Row(
         children: <Widget>[
@@ -224,7 +224,7 @@ class _HomeShellState extends State<HomeShell> {
           ),
           const VerticalDivider(width: 1),
           Expanded(child: _sections(l10n)),
-          if (_isListSection) ...<Widget>[
+          if (_showsDetailPane) ...<Widget>[
             const VerticalDivider(width: 1),
             Expanded(child: _detailPane()),
           ],
@@ -233,19 +233,16 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  /// The four sections, stacked so their state survives a tab switch — and a
+  /// The three sections, stacked so their state survives a tab switch — and a
   /// window crossing the two-pane breakpoint.
   Widget _sections(AppLocalizations l10n) {
     return IndexedStack(
       index: _index,
       children: <Widget>[
-        RestaurantListScreen(
+        JournalScreen(
           onOpenRestaurant: _openRestaurant,
           onAddRestaurant: _pushEdit,
-        ),
-        RestaurantListScreen(
-          favouritesOnly: true,
-          onOpenRestaurant: _openRestaurant,
+          onViewStatistics: _pushStatistics,
         ),
         RouletteScreen(onOpenRestaurant: _openRestaurant),
         SettingsScreen(onViewStatistics: _pushStatistics),
@@ -276,61 +273,48 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  /// The phone shape's navigation bar. Its labels stay off: the four icons are
-  /// distinct enough to read on their own, and the destinations still carry
-  /// their label as a tooltip and as semantics, so screen readers and long-press
-  /// both still announce the section. The rail keeps its labels — there they sit
-  /// beside the icon rather than under it, and a rail is tall enough to afford
-  /// them.
+  /// The phone shape's navigation bar. The three destinations carry their label
+  /// under the icon; the rail keeps its labels beside the icon.
   NavigationBar _bottomBar(AppLocalizations l10n) => NavigationBar(
-    selectedIndex: _index,
-    onDestinationSelected: _selectTab,
-    labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-    destinations: <NavigationDestination>[
-      NavigationDestination(
-        icon: const Icon(Icons.restaurant_menu),
-        label: l10n.navRestaurants,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.favorite_border),
-        selectedIcon: const Icon(Icons.favorite),
-        label: l10n.navFavorites,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.casino_outlined),
-        selectedIcon: const Icon(Icons.casino),
-        label: l10n.navRoulette,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.settings_outlined),
-        selectedIcon: const Icon(Icons.settings),
-        label: l10n.navSettings,
-      ),
-    ],
-  );
+        selectedIndex: _index,
+        onDestinationSelected: _selectTab,
+        destinations: <NavigationDestination>[
+          NavigationDestination(
+            icon: const Icon(Icons.menu_book_outlined),
+            selectedIcon: const Icon(Icons.menu_book_rounded),
+            label: l10n.navJournal,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.casino_outlined),
+            selectedIcon: const Icon(Icons.casino_rounded),
+            label: l10n.navRoulette,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings_rounded),
+            label: l10n.navSettings,
+          ),
+        ],
+      );
 
-  /// The rail's own copy of the same four destinations: a rail takes
+  /// The rail's own copy of the same three destinations: a rail takes
   /// `NavigationRailDestination`s, which are a different type from the bottom
   /// bar's, so the icons and labels have to be listed twice.
   List<NavigationRailDestination> _railDestinations(AppLocalizations l10n) =>
       <NavigationRailDestination>[
         NavigationRailDestination(
-          icon: const Icon(Icons.restaurant_menu),
-          label: Text(l10n.navRestaurants),
-        ),
-        NavigationRailDestination(
-          icon: const Icon(Icons.favorite_border),
-          selectedIcon: const Icon(Icons.favorite),
-          label: Text(l10n.navFavorites),
+          icon: const Icon(Icons.menu_book_outlined),
+          selectedIcon: const Icon(Icons.menu_book_rounded),
+          label: Text(l10n.navJournal),
         ),
         NavigationRailDestination(
           icon: const Icon(Icons.casino_outlined),
-          selectedIcon: const Icon(Icons.casino),
+          selectedIcon: const Icon(Icons.casino_rounded),
           label: Text(l10n.navRoulette),
         ),
         NavigationRailDestination(
           icon: const Icon(Icons.settings_outlined),
-          selectedIcon: const Icon(Icons.settings),
+          selectedIcon: const Icon(Icons.settings_rounded),
           label: Text(l10n.navSettings),
         ),
       ];
