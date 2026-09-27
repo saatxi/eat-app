@@ -17,9 +17,11 @@ part 'app_database.g.dart';
 ///
 /// [schemaVersion] began at 14 — Room's frozen baseline — so the Room→drift
 /// import could adopt an existing install's file without a version bump. It is
-/// now 15: the free-form tag feature was removed, taking its `tags` and
-/// `restaurant_tags` tables with it, and the migration below drops them for an
-/// install that already had them.
+/// now 16: 15 dropped the removed tag feature's two tables, and 16 added the
+/// shared-group sync metadata (`groupId`, `createdBy`, `updatedAt`,
+/// `deletedAt`) to every shared table — all nullable or defaulted, so the
+/// migration is purely additive and existing rows stay private
+/// (`groupId` NULL) without backfill.
 @DriftDatabase(
   tables: <Type>[Restaurants, Visits, Photos],
   daos: <Type>[RestaurantDao, VisitDao, PhotoDao],
@@ -31,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -43,6 +45,24 @@ class AppDatabase extends _$AppDatabase {
       if (from < 15) {
         await customStatement('DROP TABLE IF EXISTS restaurant_tags');
         await customStatement('DROP TABLE IF EXISTS tags');
+      }
+      // 15 -> 16: shared-group sync metadata, additive only. Every existing
+      // row keeps groupId NULL (private) and gets updatedAt 0, which the sync
+      // layer treats as "never written since the upgrade" — the first real
+      // write stamps it properly.
+      if (from < 16) {
+        await m.addColumn(restaurants, restaurants.groupId);
+        await m.addColumn(restaurants, restaurants.createdBy);
+        await m.addColumn(restaurants, restaurants.updatedAt);
+        await m.addColumn(restaurants, restaurants.deletedAt);
+        await m.addColumn(visits, visits.groupId);
+        await m.addColumn(visits, visits.createdBy);
+        await m.addColumn(visits, visits.updatedAt);
+        await m.addColumn(visits, visits.deletedAt);
+        await m.addColumn(photos, photos.groupId);
+        await m.addColumn(photos, photos.createdBy);
+        await m.addColumn(photos, photos.updatedAt);
+        await m.addColumn(photos, photos.deletedAt);
       }
     },
     // SQLite requires this per connection, and every cascade delete the schema

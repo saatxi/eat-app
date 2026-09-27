@@ -44,7 +44,10 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   drift: ^2.35.0
-  drift_flutter: ^0.3.1
+  drift_flutter: 0.3.1
+  # Directly used by test/data/db/migration_v16_test.dart to build a real v15
+  # database file the migration runs against.
+  sqlite3: 3.5.0
   diacritic: ^0.1.6
   path: ^1.9.1
   path_provider: ^2.1.6

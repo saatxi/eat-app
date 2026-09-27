@@ -201,6 +201,9 @@ Restaurant? restaurantFromExport(RestaurantExport export, String id) {
     priceRange: export.priceRange,
     website: normalizeWebsite(export.website),
     instagram: normalizeInstagramHandle(export.instagram),
+    // 0 = "not stamped yet": an import lands as a private local row and the
+    // repository stamps updatedAt on its next real write.
+    updatedAt: 0,
     city: city,
     region: region,
     country: country,

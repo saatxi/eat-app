@@ -8,12 +8,39 @@ import 'package:drift/drift.dart';
 /// `@DataClassName` annotations keep the generated row classes named the same
 /// as the Room entities they replace.
 
+/// Sync metadata shared by every table that can belong to a group.
+///
+/// These four columns are what the sync layer (phase 2) pushes and pulls on:
+/// `groupId` NULL means the row is private to this device and never leaves
+/// it; `createdBy` records who made the row once it is shared; `updatedAt`
+/// is the last-write-wins arbiter; and `deletedAt` marks tombstones, because
+/// shared rows are never hard-deleted — a pull has to be able to deliver the
+/// deletion to every member.
+///
+/// Column names match the Supabase schema in `supabase/migrations/` so the
+/// sync layer maps rows without a translation table.
+mixin GroupSyncColumns on Table {
+  /// The group this row belongs to, or null for a private, never-synced row.
+  TextColumn get groupId => text().named('groupId').nullable()();
+
+  /// Auth user id of whoever created the row; null while the row is private.
+  TextColumn get createdBy => text().named('createdBy').nullable()();
+
+  /// Epoch millis of the last write, set by the repository on every change.
+  /// Defaults to 0 ("never written since the 15→16 upgrade"); the repository
+  /// stamps the real value on every insert and update.
+  IntColumn get updatedAt => integer().named('updatedAt').withDefault(const Constant(0))();
+
+  /// Epoch millis of the soft delete, or null while the row is alive.
+  IntColumn get deletedAt => integer().named('deletedAt').nullable()();
+}
+
 /// A restaurant's own, place-level facts. Per-visit data (rating, notes, date)
 /// lives in [Visits]; whether a place has been visited at all is derived from
 /// whether it has any [Visits] rows, not stored here.
 @DataClassName('Restaurant')
 @TableIndex(name: 'index_restaurants_name', columns: {#name})
-class Restaurants extends Table {
+class Restaurants extends Table with GroupSyncColumns {
   @override
   String get tableName => 'restaurants';
 
@@ -65,7 +92,7 @@ class Restaurants extends Table {
 /// one or more is "visited". Cascades on delete when its restaurant is removed.
 @DataClassName('Visit')
 @TableIndex(name: 'index_visits_restaurantId', columns: {#restaurantId})
-class Visits extends Table {
+class Visits extends Table with GroupSyncColumns {
   @override
   String get tableName => 'visits';
 
@@ -98,7 +125,7 @@ class Visits extends Table {
 @DataClassName('Photo')
 @TableIndex(name: 'index_photos_restaurantId', columns: {#restaurantId})
 @TableIndex(name: 'index_photos_visitId', columns: {#visitId})
-class Photos extends Table {
+class Photos extends Table with GroupSyncColumns {
   @override
   String get tableName => 'photos';
 

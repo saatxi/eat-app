@@ -262,6 +262,7 @@ class RestaurantRepository {
             // Carried over rather than taken from the form, which doesn't ask:
             // dropping it would silently lose the price band on every re-save.
             priceRange: existing?.priceRange ?? 0,
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
           ),
         );
       }
@@ -302,11 +303,18 @@ class RestaurantRepository {
           rating: rating,
           notes: notes,
           priceRange: priceRange,
+          updatedAt: DateTime.now().millisecondsSinceEpoch,
         ),
       );
       for (final (int index, String path) in storedPaths.indexed) {
         await _photos.insertPhoto(
-          Photo(id: _uuid.v4(), visitId: visitId, path: path, position: index),
+          Photo(
+            id: _uuid.v4(),
+            visitId: visitId,
+            path: path,
+            position: index,
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
+          ),
         );
       }
     });
@@ -361,6 +369,7 @@ class RestaurantRepository {
             restaurantId: restaurantId,
             path: storedPath,
             position: 0,
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
           ),
         );
       }
@@ -388,6 +397,7 @@ class RestaurantRepository {
             restaurantId: restaurantId,
             path: path,
             position: startPosition + index,
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
           ),
         );
       }

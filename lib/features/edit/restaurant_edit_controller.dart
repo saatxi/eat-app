@@ -179,6 +179,9 @@ class RestaurantEditController extends ChangeNotifier {
         region: region,
         country: country,
       ),
+      // Every save is a write, so it stamps the sync timestamp — the same
+      // moment the repository would, but here is where the values are in hand.
+      updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
 
     if (restaurantId == null) {

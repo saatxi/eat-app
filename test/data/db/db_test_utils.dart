@@ -36,6 +36,7 @@ Restaurant restaurant({
     region: region,
     country: country,
   ),
+  updatedAt: 0,
 );
 
 Visit visit({
@@ -52,6 +53,7 @@ Visit visit({
   rating: rating,
   notes: notes,
   priceRange: priceRange,
+  updatedAt: 0,
 );
 
 Photo photo({
@@ -66,6 +68,7 @@ Photo photo({
   visitId: visitId,
   path: path,
   position: position,
+  updatedAt: 0,
 );
 
 /// Runs the list query and returns just the ids, which is what most of the

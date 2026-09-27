@@ -9,6 +9,51 @@ class $RestaurantsTable extends Restaurants
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $RestaurantsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+    'groupId',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'createdBy',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updatedAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deletedAt',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -124,6 +169,10 @@ class $RestaurantsTable extends Restaurants
   );
   @override
   List<GeneratedColumn> get $columns => [
+    groupId,
+    createdBy,
+    updatedAt,
+    deletedAt,
     id,
     name,
     cuisineType,
@@ -148,6 +197,30 @@ class $RestaurantsTable extends Restaurants
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('groupId')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['groupId']!, _groupIdMeta),
+      );
+    }
+    if (data.containsKey('createdBy')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['createdBy']!, _createdByMeta),
+      );
+    }
+    if (data.containsKey('updatedAt')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updatedAt']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deletedAt')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deletedAt']!, _deletedAtMeta),
+      );
+    }
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
@@ -236,6 +309,22 @@ class $RestaurantsTable extends Restaurants
   Restaurant map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Restaurant(
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}groupId'],
+      ),
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}createdBy'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updatedAt'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deletedAt'],
+      ),
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -290,6 +379,20 @@ class $RestaurantsTable extends Restaurants
 }
 
 class Restaurant extends DataClass implements Insertable<Restaurant> {
+  /// The group this row belongs to, or null for a private, never-synced row.
+  final String? groupId;
+
+  /// Auth user id of whoever created the row; null while the row is private.
+  final String? createdBy;
+
+  /// Epoch millis of the last write, set by the repository on every change.
+  /// Defaults to 0 ("never written since the 15→16 upgrade"); the repository
+  /// stamps the real value on every insert and update.
+  final int updatedAt;
+
+  /// Epoch millis of the soft delete, or null while the row is alive.
+  final int? deletedAt;
+
   /// Client-generated UUID string, assigned by the repository at insert time —
   /// never an autoincrement.
   final String id;
@@ -327,6 +430,10 @@ class Restaurant extends DataClass implements Insertable<Restaurant> {
   /// built by `buildSearchText`, which is what keeps it from drifting.
   final String searchText;
   const Restaurant({
+    this.groupId,
+    this.createdBy,
+    required this.updatedAt,
+    this.deletedAt,
     required this.id,
     required this.name,
     required this.cuisineType,
@@ -342,6 +449,16 @@ class Restaurant extends DataClass implements Insertable<Restaurant> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (!nullToAbsent || groupId != null) {
+      map['groupId'] = Variable<String>(groupId);
+    }
+    if (!nullToAbsent || createdBy != null) {
+      map['createdBy'] = Variable<String>(createdBy);
+    }
+    map['updatedAt'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deletedAt'] = Variable<int>(deletedAt);
+    }
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['cuisineType'] = Variable<String>(cuisineType);
@@ -370,6 +487,16 @@ class Restaurant extends DataClass implements Insertable<Restaurant> {
 
   RestaurantsCompanion toCompanion(bool nullToAbsent) {
     return RestaurantsCompanion(
+      groupId: groupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupId),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
       id: Value(id),
       name: Value(name),
       cuisineType: Value(cuisineType),
@@ -400,6 +527,10 @@ class Restaurant extends DataClass implements Insertable<Restaurant> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Restaurant(
+      groupId: serializer.fromJson<String?>(json['groupId']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       cuisineType: serializer.fromJson<String>(json['cuisineType']),
@@ -417,6 +548,10 @@ class Restaurant extends DataClass implements Insertable<Restaurant> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'groupId': serializer.toJson<String?>(groupId),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'cuisineType': serializer.toJson<String>(cuisineType),
@@ -432,6 +567,10 @@ class Restaurant extends DataClass implements Insertable<Restaurant> {
   }
 
   Restaurant copyWith({
+    Value<String?> groupId = const Value.absent(),
+    Value<String?> createdBy = const Value.absent(),
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
     String? id,
     String? name,
     String? cuisineType,
@@ -444,6 +583,10 @@ class Restaurant extends DataClass implements Insertable<Restaurant> {
     Value<String?> country = const Value.absent(),
     String? searchText,
   }) => Restaurant(
+    groupId: groupId.present ? groupId.value : this.groupId,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     id: id ?? this.id,
     name: name ?? this.name,
     cuisineType: cuisineType ?? this.cuisineType,
@@ -460,6 +603,10 @@ class Restaurant extends DataClass implements Insertable<Restaurant> {
   );
   Restaurant copyWithCompanion(RestaurantsCompanion data) {
     return Restaurant(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       cuisineType: data.cuisineType.present
@@ -485,6 +632,10 @@ class Restaurant extends DataClass implements Insertable<Restaurant> {
   @override
   String toString() {
     return (StringBuffer('Restaurant(')
+          ..write('groupId: $groupId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('cuisineType: $cuisineType, ')
@@ -502,6 +653,10 @@ class Restaurant extends DataClass implements Insertable<Restaurant> {
 
   @override
   int get hashCode => Object.hash(
+    groupId,
+    createdBy,
+    updatedAt,
+    deletedAt,
     id,
     name,
     cuisineType,
@@ -518,6 +673,10 @@ class Restaurant extends DataClass implements Insertable<Restaurant> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Restaurant &&
+          other.groupId == this.groupId &&
+          other.createdBy == this.createdBy &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
           other.id == this.id &&
           other.name == this.name &&
           other.cuisineType == this.cuisineType &&
@@ -532,6 +691,10 @@ class Restaurant extends DataClass implements Insertable<Restaurant> {
 }
 
 class RestaurantsCompanion extends UpdateCompanion<Restaurant> {
+  final Value<String?> groupId;
+  final Value<String?> createdBy;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
   final Value<String> id;
   final Value<String> name;
   final Value<String> cuisineType;
@@ -545,6 +708,10 @@ class RestaurantsCompanion extends UpdateCompanion<Restaurant> {
   final Value<String> searchText;
   final Value<int> rowid;
   const RestaurantsCompanion({
+    this.groupId = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.cuisineType = const Value.absent(),
@@ -559,6 +726,10 @@ class RestaurantsCompanion extends UpdateCompanion<Restaurant> {
     this.rowid = const Value.absent(),
   });
   RestaurantsCompanion.insert({
+    this.groupId = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     required String id,
     required String name,
     required String cuisineType,
@@ -577,6 +748,10 @@ class RestaurantsCompanion extends UpdateCompanion<Restaurant> {
        priceRange = Value(priceRange),
        searchText = Value(searchText);
   static Insertable<Restaurant> custom({
+    Expression<String>? groupId,
+    Expression<String>? createdBy,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? cuisineType,
@@ -591,6 +766,10 @@ class RestaurantsCompanion extends UpdateCompanion<Restaurant> {
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (groupId != null) 'groupId': groupId,
+      if (createdBy != null) 'createdBy': createdBy,
+      if (updatedAt != null) 'updatedAt': updatedAt,
+      if (deletedAt != null) 'deletedAt': deletedAt,
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (cuisineType != null) 'cuisineType': cuisineType,
@@ -607,6 +786,10 @@ class RestaurantsCompanion extends UpdateCompanion<Restaurant> {
   }
 
   RestaurantsCompanion copyWith({
+    Value<String?>? groupId,
+    Value<String?>? createdBy,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
     Value<String>? id,
     Value<String>? name,
     Value<String>? cuisineType,
@@ -621,6 +804,10 @@ class RestaurantsCompanion extends UpdateCompanion<Restaurant> {
     Value<int>? rowid,
   }) {
     return RestaurantsCompanion(
+      groupId: groupId ?? this.groupId,
+      createdBy: createdBy ?? this.createdBy,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
       id: id ?? this.id,
       name: name ?? this.name,
       cuisineType: cuisineType ?? this.cuisineType,
@@ -639,6 +826,18 @@ class RestaurantsCompanion extends UpdateCompanion<Restaurant> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (groupId.present) {
+      map['groupId'] = Variable<String>(groupId.value);
+    }
+    if (createdBy.present) {
+      map['createdBy'] = Variable<String>(createdBy.value);
+    }
+    if (updatedAt.present) {
+      map['updatedAt'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deletedAt'] = Variable<int>(deletedAt.value);
+    }
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
@@ -681,6 +880,10 @@ class RestaurantsCompanion extends UpdateCompanion<Restaurant> {
   @override
   String toString() {
     return (StringBuffer('RestaurantsCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('cuisineType: $cuisineType, ')
@@ -703,6 +906,51 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $VisitsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+    'groupId',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'createdBy',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updatedAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deletedAt',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -768,6 +1016,10 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
   );
   @override
   List<GeneratedColumn> get $columns => [
+    groupId,
+    createdBy,
+    updatedAt,
+    deletedAt,
     id,
     restaurantId,
     visitDate,
@@ -787,6 +1039,30 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('groupId')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['groupId']!, _groupIdMeta),
+      );
+    }
+    if (data.containsKey('createdBy')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['createdBy']!, _createdByMeta),
+      );
+    }
+    if (data.containsKey('updatedAt')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updatedAt']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deletedAt')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deletedAt']!, _deletedAtMeta),
+      );
+    }
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
@@ -842,6 +1118,22 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
   Visit map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Visit(
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}groupId'],
+      ),
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}createdBy'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updatedAt'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deletedAt'],
+      ),
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -876,6 +1168,19 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
 }
 
 class Visit extends DataClass implements Insertable<Visit> {
+  /// The group this row belongs to, or null for a private, never-synced row.
+  final String? groupId;
+
+  /// Auth user id of whoever created the row; null while the row is private.
+  final String? createdBy;
+
+  /// Epoch millis of the last write, set by the repository on every change.
+  /// Defaults to 0 ("never written since the 15→16 upgrade"); the repository
+  /// stamps the real value on every insert and update.
+  final int updatedAt;
+
+  /// Epoch millis of the soft delete, or null while the row is alive.
+  final int? deletedAt;
   final String id;
   final String restaurantId;
 
@@ -890,6 +1195,10 @@ class Visit extends DataClass implements Insertable<Visit> {
   /// `Restaurants.priceRange`); 0 means "not set".
   final int priceRange;
   const Visit({
+    this.groupId,
+    this.createdBy,
+    required this.updatedAt,
+    this.deletedAt,
     required this.id,
     required this.restaurantId,
     required this.visitDate,
@@ -900,6 +1209,16 @@ class Visit extends DataClass implements Insertable<Visit> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (!nullToAbsent || groupId != null) {
+      map['groupId'] = Variable<String>(groupId);
+    }
+    if (!nullToAbsent || createdBy != null) {
+      map['createdBy'] = Variable<String>(createdBy);
+    }
+    map['updatedAt'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deletedAt'] = Variable<int>(deletedAt);
+    }
     map['id'] = Variable<String>(id);
     map['restaurantId'] = Variable<String>(restaurantId);
     map['visitDate'] = Variable<int>(visitDate);
@@ -913,6 +1232,16 @@ class Visit extends DataClass implements Insertable<Visit> {
 
   VisitsCompanion toCompanion(bool nullToAbsent) {
     return VisitsCompanion(
+      groupId: groupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupId),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
       id: Value(id),
       restaurantId: Value(restaurantId),
       visitDate: Value(visitDate),
@@ -930,6 +1259,10 @@ class Visit extends DataClass implements Insertable<Visit> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Visit(
+      groupId: serializer.fromJson<String?>(json['groupId']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       id: serializer.fromJson<String>(json['id']),
       restaurantId: serializer.fromJson<String>(json['restaurantId']),
       visitDate: serializer.fromJson<int>(json['visitDate']),
@@ -942,6 +1275,10 @@ class Visit extends DataClass implements Insertable<Visit> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'groupId': serializer.toJson<String?>(groupId),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
       'id': serializer.toJson<String>(id),
       'restaurantId': serializer.toJson<String>(restaurantId),
       'visitDate': serializer.toJson<int>(visitDate),
@@ -952,6 +1289,10 @@ class Visit extends DataClass implements Insertable<Visit> {
   }
 
   Visit copyWith({
+    Value<String?> groupId = const Value.absent(),
+    Value<String?> createdBy = const Value.absent(),
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
     String? id,
     String? restaurantId,
     int? visitDate,
@@ -959,6 +1300,10 @@ class Visit extends DataClass implements Insertable<Visit> {
     Value<String?> notes = const Value.absent(),
     int? priceRange,
   }) => Visit(
+    groupId: groupId.present ? groupId.value : this.groupId,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     id: id ?? this.id,
     restaurantId: restaurantId ?? this.restaurantId,
     visitDate: visitDate ?? this.visitDate,
@@ -968,6 +1313,10 @@ class Visit extends DataClass implements Insertable<Visit> {
   );
   Visit copyWithCompanion(VisitsCompanion data) {
     return Visit(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       id: data.id.present ? data.id.value : this.id,
       restaurantId: data.restaurantId.present
           ? data.restaurantId.value
@@ -984,6 +1333,10 @@ class Visit extends DataClass implements Insertable<Visit> {
   @override
   String toString() {
     return (StringBuffer('Visit(')
+          ..write('groupId: $groupId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('id: $id, ')
           ..write('restaurantId: $restaurantId, ')
           ..write('visitDate: $visitDate, ')
@@ -995,12 +1348,26 @@ class Visit extends DataClass implements Insertable<Visit> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, restaurantId, visitDate, rating, notes, priceRange);
+  int get hashCode => Object.hash(
+    groupId,
+    createdBy,
+    updatedAt,
+    deletedAt,
+    id,
+    restaurantId,
+    visitDate,
+    rating,
+    notes,
+    priceRange,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Visit &&
+          other.groupId == this.groupId &&
+          other.createdBy == this.createdBy &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
           other.id == this.id &&
           other.restaurantId == this.restaurantId &&
           other.visitDate == this.visitDate &&
@@ -1010,6 +1377,10 @@ class Visit extends DataClass implements Insertable<Visit> {
 }
 
 class VisitsCompanion extends UpdateCompanion<Visit> {
+  final Value<String?> groupId;
+  final Value<String?> createdBy;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
   final Value<String> id;
   final Value<String> restaurantId;
   final Value<int> visitDate;
@@ -1018,6 +1389,10 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
   final Value<int> priceRange;
   final Value<int> rowid;
   const VisitsCompanion({
+    this.groupId = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.id = const Value.absent(),
     this.restaurantId = const Value.absent(),
     this.visitDate = const Value.absent(),
@@ -1027,6 +1402,10 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     this.rowid = const Value.absent(),
   });
   VisitsCompanion.insert({
+    this.groupId = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     required String id,
     required String restaurantId,
     required int visitDate,
@@ -1040,6 +1419,10 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
        rating = Value(rating),
        priceRange = Value(priceRange);
   static Insertable<Visit> custom({
+    Expression<String>? groupId,
+    Expression<String>? createdBy,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
     Expression<String>? id,
     Expression<String>? restaurantId,
     Expression<int>? visitDate,
@@ -1049,6 +1432,10 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (groupId != null) 'groupId': groupId,
+      if (createdBy != null) 'createdBy': createdBy,
+      if (updatedAt != null) 'updatedAt': updatedAt,
+      if (deletedAt != null) 'deletedAt': deletedAt,
       if (id != null) 'id': id,
       if (restaurantId != null) 'restaurantId': restaurantId,
       if (visitDate != null) 'visitDate': visitDate,
@@ -1060,6 +1447,10 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
   }
 
   VisitsCompanion copyWith({
+    Value<String?>? groupId,
+    Value<String?>? createdBy,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
     Value<String>? id,
     Value<String>? restaurantId,
     Value<int>? visitDate,
@@ -1069,6 +1460,10 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     Value<int>? rowid,
   }) {
     return VisitsCompanion(
+      groupId: groupId ?? this.groupId,
+      createdBy: createdBy ?? this.createdBy,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
       id: id ?? this.id,
       restaurantId: restaurantId ?? this.restaurantId,
       visitDate: visitDate ?? this.visitDate,
@@ -1082,6 +1477,18 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (groupId.present) {
+      map['groupId'] = Variable<String>(groupId.value);
+    }
+    if (createdBy.present) {
+      map['createdBy'] = Variable<String>(createdBy.value);
+    }
+    if (updatedAt.present) {
+      map['updatedAt'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deletedAt'] = Variable<int>(deletedAt.value);
+    }
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
@@ -1109,6 +1516,10 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
   @override
   String toString() {
     return (StringBuffer('VisitsCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('id: $id, ')
           ..write('restaurantId: $restaurantId, ')
           ..write('visitDate: $visitDate, ')
@@ -1126,6 +1537,51 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $PhotosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+    'groupId',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'createdBy',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updatedAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deletedAt',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -1185,6 +1641,10 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
   );
   @override
   List<GeneratedColumn> get $columns => [
+    groupId,
+    createdBy,
+    updatedAt,
+    deletedAt,
     id,
     restaurantId,
     visitId,
@@ -1203,6 +1663,30 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('groupId')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['groupId']!, _groupIdMeta),
+      );
+    }
+    if (data.containsKey('createdBy')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['createdBy']!, _createdByMeta),
+      );
+    }
+    if (data.containsKey('updatedAt')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updatedAt']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deletedAt')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deletedAt']!, _deletedAtMeta),
+      );
+    }
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
@@ -1248,6 +1732,22 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
   Photo map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Photo(
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}groupId'],
+      ),
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}createdBy'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updatedAt'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deletedAt'],
+      ),
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -1278,6 +1778,19 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, Photo> {
 }
 
 class Photo extends DataClass implements Insertable<Photo> {
+  /// The group this row belongs to, or null for a private, never-synced row.
+  final String? groupId;
+
+  /// Auth user id of whoever created the row; null while the row is private.
+  final String? createdBy;
+
+  /// Epoch millis of the last write, set by the repository on every change.
+  /// Defaults to 0 ("never written since the 15→16 upgrade"); the repository
+  /// stamps the real value on every insert and update.
+  final int updatedAt;
+
+  /// Epoch millis of the soft delete, or null while the row is alive.
+  final int? deletedAt;
   final String id;
   final String? restaurantId;
   final String? visitId;
@@ -1286,6 +1799,10 @@ class Photo extends DataClass implements Insertable<Photo> {
   final String path;
   final int position;
   const Photo({
+    this.groupId,
+    this.createdBy,
+    required this.updatedAt,
+    this.deletedAt,
     required this.id,
     this.restaurantId,
     this.visitId,
@@ -1295,6 +1812,16 @@ class Photo extends DataClass implements Insertable<Photo> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (!nullToAbsent || groupId != null) {
+      map['groupId'] = Variable<String>(groupId);
+    }
+    if (!nullToAbsent || createdBy != null) {
+      map['createdBy'] = Variable<String>(createdBy);
+    }
+    map['updatedAt'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deletedAt'] = Variable<int>(deletedAt);
+    }
     map['id'] = Variable<String>(id);
     if (!nullToAbsent || restaurantId != null) {
       map['restaurantId'] = Variable<String>(restaurantId);
@@ -1309,6 +1836,16 @@ class Photo extends DataClass implements Insertable<Photo> {
 
   PhotosCompanion toCompanion(bool nullToAbsent) {
     return PhotosCompanion(
+      groupId: groupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupId),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
       id: Value(id),
       restaurantId: restaurantId == null && nullToAbsent
           ? const Value.absent()
@@ -1327,6 +1864,10 @@ class Photo extends DataClass implements Insertable<Photo> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Photo(
+      groupId: serializer.fromJson<String?>(json['groupId']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       id: serializer.fromJson<String>(json['id']),
       restaurantId: serializer.fromJson<String?>(json['restaurantId']),
       visitId: serializer.fromJson<String?>(json['visitId']),
@@ -1338,6 +1879,10 @@ class Photo extends DataClass implements Insertable<Photo> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'groupId': serializer.toJson<String?>(groupId),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
       'id': serializer.toJson<String>(id),
       'restaurantId': serializer.toJson<String?>(restaurantId),
       'visitId': serializer.toJson<String?>(visitId),
@@ -1347,12 +1892,20 @@ class Photo extends DataClass implements Insertable<Photo> {
   }
 
   Photo copyWith({
+    Value<String?> groupId = const Value.absent(),
+    Value<String?> createdBy = const Value.absent(),
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
     String? id,
     Value<String?> restaurantId = const Value.absent(),
     Value<String?> visitId = const Value.absent(),
     String? path,
     int? position,
   }) => Photo(
+    groupId: groupId.present ? groupId.value : this.groupId,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     id: id ?? this.id,
     restaurantId: restaurantId.present ? restaurantId.value : this.restaurantId,
     visitId: visitId.present ? visitId.value : this.visitId,
@@ -1361,6 +1914,10 @@ class Photo extends DataClass implements Insertable<Photo> {
   );
   Photo copyWithCompanion(PhotosCompanion data) {
     return Photo(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       id: data.id.present ? data.id.value : this.id,
       restaurantId: data.restaurantId.present
           ? data.restaurantId.value
@@ -1374,6 +1931,10 @@ class Photo extends DataClass implements Insertable<Photo> {
   @override
   String toString() {
     return (StringBuffer('Photo(')
+          ..write('groupId: $groupId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('id: $id, ')
           ..write('restaurantId: $restaurantId, ')
           ..write('visitId: $visitId, ')
@@ -1384,11 +1945,25 @@ class Photo extends DataClass implements Insertable<Photo> {
   }
 
   @override
-  int get hashCode => Object.hash(id, restaurantId, visitId, path, position);
+  int get hashCode => Object.hash(
+    groupId,
+    createdBy,
+    updatedAt,
+    deletedAt,
+    id,
+    restaurantId,
+    visitId,
+    path,
+    position,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Photo &&
+          other.groupId == this.groupId &&
+          other.createdBy == this.createdBy &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
           other.id == this.id &&
           other.restaurantId == this.restaurantId &&
           other.visitId == this.visitId &&
@@ -1397,6 +1972,10 @@ class Photo extends DataClass implements Insertable<Photo> {
 }
 
 class PhotosCompanion extends UpdateCompanion<Photo> {
+  final Value<String?> groupId;
+  final Value<String?> createdBy;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
   final Value<String> id;
   final Value<String?> restaurantId;
   final Value<String?> visitId;
@@ -1404,6 +1983,10 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
   final Value<int> position;
   final Value<int> rowid;
   const PhotosCompanion({
+    this.groupId = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.id = const Value.absent(),
     this.restaurantId = const Value.absent(),
     this.visitId = const Value.absent(),
@@ -1412,6 +1995,10 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
     this.rowid = const Value.absent(),
   });
   PhotosCompanion.insert({
+    this.groupId = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     required String id,
     this.restaurantId = const Value.absent(),
     this.visitId = const Value.absent(),
@@ -1422,6 +2009,10 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
        path = Value(path),
        position = Value(position);
   static Insertable<Photo> custom({
+    Expression<String>? groupId,
+    Expression<String>? createdBy,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
     Expression<String>? id,
     Expression<String>? restaurantId,
     Expression<String>? visitId,
@@ -1430,6 +2021,10 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (groupId != null) 'groupId': groupId,
+      if (createdBy != null) 'createdBy': createdBy,
+      if (updatedAt != null) 'updatedAt': updatedAt,
+      if (deletedAt != null) 'deletedAt': deletedAt,
       if (id != null) 'id': id,
       if (restaurantId != null) 'restaurantId': restaurantId,
       if (visitId != null) 'visitId': visitId,
@@ -1440,6 +2035,10 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
   }
 
   PhotosCompanion copyWith({
+    Value<String?>? groupId,
+    Value<String?>? createdBy,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
     Value<String>? id,
     Value<String?>? restaurantId,
     Value<String?>? visitId,
@@ -1448,6 +2047,10 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
     Value<int>? rowid,
   }) {
     return PhotosCompanion(
+      groupId: groupId ?? this.groupId,
+      createdBy: createdBy ?? this.createdBy,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
       id: id ?? this.id,
       restaurantId: restaurantId ?? this.restaurantId,
       visitId: visitId ?? this.visitId,
@@ -1460,6 +2063,18 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (groupId.present) {
+      map['groupId'] = Variable<String>(groupId.value);
+    }
+    if (createdBy.present) {
+      map['createdBy'] = Variable<String>(createdBy.value);
+    }
+    if (updatedAt.present) {
+      map['updatedAt'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deletedAt'] = Variable<int>(deletedAt.value);
+    }
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
@@ -1484,6 +2099,10 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
   @override
   String toString() {
     return (StringBuffer('PhotosCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('id: $id, ')
           ..write('restaurantId: $restaurantId, ')
           ..write('visitId: $visitId, ')
@@ -1561,6 +2180,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 
 typedef $$RestaurantsTableCreateCompanionBuilder =
     RestaurantsCompanion Function({
+      Value<String?> groupId,
+      Value<String?> createdBy,
+      Value<int> updatedAt,
+      Value<int?> deletedAt,
       required String id,
       required String name,
       required String cuisineType,
@@ -1576,6 +2199,10 @@ typedef $$RestaurantsTableCreateCompanionBuilder =
     });
 typedef $$RestaurantsTableUpdateCompanionBuilder =
     RestaurantsCompanion Function({
+      Value<String?> groupId,
+      Value<String?> createdBy,
+      Value<int> updatedAt,
+      Value<int?> deletedAt,
       Value<String> id,
       Value<String> name,
       Value<String> cuisineType,
@@ -1642,6 +2269,26 @@ class $$RestaurantsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
@@ -1757,6 +2404,26 @@ class $$RestaurantsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -1822,6 +2489,18 @@ class $$RestaurantsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
@@ -1942,6 +2621,10 @@ class $$RestaurantsTableTableManager
               $$RestaurantsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<String?> groupId = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> cuisineType = const Value.absent(),
@@ -1955,6 +2638,10 @@ class $$RestaurantsTableTableManager
                 Value<String> searchText = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RestaurantsCompanion(
+                groupId: groupId,
+                createdBy: createdBy,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 id: id,
                 name: name,
                 cuisineType: cuisineType,
@@ -1970,6 +2657,10 @@ class $$RestaurantsTableTableManager
               ),
           createCompanionCallback:
               ({
+                Value<String?> groupId = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
                 required String id,
                 required String name,
                 required String cuisineType,
@@ -1983,6 +2674,10 @@ class $$RestaurantsTableTableManager
                 required String searchText,
                 Value<int> rowid = const Value.absent(),
               }) => RestaurantsCompanion.insert(
+                groupId: groupId,
+                createdBy: createdBy,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 id: id,
                 name: name,
                 cuisineType: cuisineType,
@@ -2079,6 +2774,10 @@ typedef $$RestaurantsTableProcessedTableManager =
       PrefetchHooks Function({bool visitsRefs, bool photosRefs})
     >;
 typedef $$VisitsTableCreateCompanionBuilder = VisitsCompanion Function({
+  Value<String?> groupId,
+  Value<String?> createdBy,
+  Value<int> updatedAt,
+  Value<int?> deletedAt,
   required String id,
   required String restaurantId,
   required int visitDate,
@@ -2088,6 +2787,10 @@ typedef $$VisitsTableCreateCompanionBuilder = VisitsCompanion Function({
   Value<int> rowid,
 });
 typedef $$VisitsTableUpdateCompanionBuilder = VisitsCompanion Function({
+  Value<String?> groupId,
+  Value<String?> createdBy,
+  Value<int> updatedAt,
+  Value<int?> deletedAt,
   Value<String> id,
   Value<String> restaurantId,
   Value<int> visitDate,
@@ -2147,6 +2850,26 @@ class $$VisitsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
@@ -2230,6 +2953,26 @@ class $$VisitsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -2288,6 +3031,18 @@ class $$VisitsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
@@ -2382,6 +3137,10 @@ class $$VisitsTableTableManager
               $$VisitsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<String?> groupId = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
                 Value<String> id = const Value.absent(),
                 Value<String> restaurantId = const Value.absent(),
                 Value<int> visitDate = const Value.absent(),
@@ -2390,6 +3149,10 @@ class $$VisitsTableTableManager
                 Value<int> priceRange = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VisitsCompanion(
+                groupId: groupId,
+                createdBy: createdBy,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 id: id,
                 restaurantId: restaurantId,
                 visitDate: visitDate,
@@ -2400,6 +3163,10 @@ class $$VisitsTableTableManager
               ),
           createCompanionCallback:
               ({
+                Value<String?> groupId = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
                 required String id,
                 required String restaurantId,
                 required int visitDate,
@@ -2408,6 +3175,10 @@ class $$VisitsTableTableManager
                 required int priceRange,
                 Value<int> rowid = const Value.absent(),
               }) => VisitsCompanion.insert(
+                groupId: groupId,
+                createdBy: createdBy,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 id: id,
                 restaurantId: restaurantId,
                 visitDate: visitDate,
@@ -2495,6 +3266,10 @@ typedef $$VisitsTableProcessedTableManager =
       PrefetchHooks Function({bool restaurantId, bool photosRefs})
     >;
 typedef $$PhotosTableCreateCompanionBuilder = PhotosCompanion Function({
+  Value<String?> groupId,
+  Value<String?> createdBy,
+  Value<int> updatedAt,
+  Value<int?> deletedAt,
   required String id,
   Value<String?> restaurantId,
   Value<String?> visitId,
@@ -2503,6 +3278,10 @@ typedef $$PhotosTableCreateCompanionBuilder = PhotosCompanion Function({
   Value<int> rowid,
 });
 typedef $$PhotosTableUpdateCompanionBuilder = PhotosCompanion Function({
+  Value<String?> groupId,
+  Value<String?> createdBy,
+  Value<int> updatedAt,
+  Value<int?> deletedAt,
   Value<String> id,
   Value<String?> restaurantId,
   Value<String?> visitId,
@@ -2559,6 +3338,26 @@ class $$PhotosTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
@@ -2630,6 +3429,26 @@ class $$PhotosTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -2701,6 +3520,18 @@ class $$PhotosTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
@@ -2785,6 +3616,10 @@ class $$PhotosTableTableManager
               $$PhotosTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<String?> groupId = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
                 Value<String> id = const Value.absent(),
                 Value<String?> restaurantId = const Value.absent(),
                 Value<String?> visitId = const Value.absent(),
@@ -2792,6 +3627,10 @@ class $$PhotosTableTableManager
                 Value<int> position = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PhotosCompanion(
+                groupId: groupId,
+                createdBy: createdBy,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 id: id,
                 restaurantId: restaurantId,
                 visitId: visitId,
@@ -2801,6 +3640,10 @@ class $$PhotosTableTableManager
               ),
           createCompanionCallback:
               ({
+                Value<String?> groupId = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
                 required String id,
                 Value<String?> restaurantId = const Value.absent(),
                 Value<String?> visitId = const Value.absent(),
@@ -2808,6 +3651,10 @@ class $$PhotosTableTableManager
                 required int position,
                 Value<int> rowid = const Value.absent(),
               }) => PhotosCompanion.insert(
+                groupId: groupId,
+                createdBy: createdBy,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 id: id,
                 restaurantId: restaurantId,
                 visitId: visitId,
