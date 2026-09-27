@@ -57,6 +57,15 @@ dependencies:
   # detail screen.
   url_launcher: ^6.3.1
 
+  # The shared-groups backend (phase 3 of plans/shared-groups-database.md):
+  # anonymous sign-in is the default identity, the sync layer talks to
+  # Postgres through it, and photos go to its Storage bucket. The URL and the
+  # anon key arrive via --dart-define, never hardcoded. The plain `supabase`
+  # client (not `supabase_flutter`) on purpose: session persistence is wired
+  # through shared_preferences by our own identity gateway, so the Flutter
+  # plugin's deep-link OAuth machinery — unused, anonymous-only — stays out.
+  supabase: ^2.16.1
+
   # Opens the system share sheet with the restaurant file written by
   # data/share/restaurant_share_writer.dart — from the detail screen (one
   # restaurant), the list's "share all" and Settings' "export my data".

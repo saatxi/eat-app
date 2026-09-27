@@ -395,82 +395,23 @@ de sync pròpia sobre drift).
   substituir drift (trencant la importació Room→drift i tota la capa de dades)
   i l'ecosistema Dart és feble.
 
-### Estat de la fase 1 (implementada i verificada)
-
-La fase 1 (projecte Supabase + esquema remot + invitacions) està **completa
-i verificada contra el projecte real**. Tot el codi del remot viu al repo
-sota `supabase/`:
-
-- **Migracions** (`supabase/migrations/`, aplicades amb `supabase db push`):
-  - `20260927100000_groups_initial_schema.sql` — taules (`profiles`,
-    `groups`, `group_members`, `invites`, `restaurants`, `visits`, `photos`),
-    bucket privat `photos` amb regles de Storage, trigger `updated_at`.
-  - `20260927101000_join_rate_limit.sql` — taula `private.join_attempts` i
-    RPC `record_join_attempt()` (10 intents / 10 minuts per usuari).
-  - `20260927102000_fix_rls_recursion.sql` — helpers `is_group_member()` /
-    `is_group_owner()` SECURITY DEFINER i totes les polítiques reescrites.
-  - `20260927103000_grant_client_roles.sql` — grants per a `anon`/`authenticated`.
-  - `20260927104000_group_creator_membership.sql` i
-    `20260927105000_group_creator_helper.sql` — bootstrap del creador.
-  - `20260927106000_grant_service_role.sql` — grants per a `service_role`.
-- **Edge Functions** (`supabase/functions/`, desplegades):
-  - `join-group` — valida el token (hash SHA-256, expiració, usos), fa el
-    rate-limit, insereix la pertinença amb service role i sincronitza el nom.
-  - `create-invite` — només per a owners; genera un token de 128 bits en
-    alfabet base32 sense ambigüitats, en guarda el hash i retorna el token
-    cru una única vegada.
-- **Tests** (`supabase/tests/`):
-  - `rls_smoke_test.sql` — simula dues sessions (Alice/Bob) amb
-    `set_config('request.jwt.claims')` i verifica aïllament complet.
-  - `join_group_e2e_test.ps1` — flux real contra l'API: dos usuaris anònims,
-    grup, invitació, join, lectura RLS i rebuig de token fals. **Passat.**
-  - `cleanup_test_data.sql` — neteja les dades de prova.
-
-**Bugs reals que el test va destapar i que estan corregits** (raó per la qual
-el smoke test es va escriure abans de donar la fase per bona):
-
-1. **Recursió infinita a RLS**: la política de `group_members` es consultava
-   a si mateixa. Fix estàndard: helpers `SECURITY DEFINER`
-   (`is_group_member`/`is_group_owner`) que trenquen la recursió.
-2. **Ou-i-gallina del creador**: el creador no podia inserir la seva pròpia
-   fila d'owner (la política exigia ser owner per insertar). Fix: el creador
-   del grup pot autoinscriure's com a owner (`is_group_creator`).
-3. **Cerca d'invitació filtrada per RLS**: `join-group` consultava `invites`
-   amb les credencials del cridant, que encara no és membre — 404 sempre.
-   Fix: la cerca del hash es fa amb el client service-role (no filtra res:
-   compara un hash opac).
-4. **Grants absents**: les taules creades per migració no hereten els default
-   privileges del tauler; calien grants explícits per a `anon`,
-   `authenticated` i `service_role` (RLS bypass no implica privilegis de
-   taula).
-5. **Anonymous sign-ins deshabilitats** al projecte: activats via l'API de
-   gestió (`external_anonymous_users_enabled: true`).
-
-Configuració del projecte: `supabase link` ja fet (`.temp/` ignorat per git);
-l'app Flutter llegirà URL i clau anon via `--dart-define`, mai hardcodejades.
-
 ### Plànol d'implementació amb Supabase (fases)
 
-1. **Projecte Supabase + esquema remot**: crear el projecte, migracions SQL
-   versionades al repo (taules `users`/`groups`/`group_members`/`invites` +
-   metadades de sync a les taules compartides), polítiques RLS a tot, bucket
-   privat `photos`, i l'Edge Function `join-group` per validar invitacions.
-2. **Migració drift 15→16**: afegir `group_id`, `created_by`, `updated_at`,
-   `deleted_at` a les taules compartides; `group_id NULL` = dades privades;
-   regenerar amb build_runner; tests de DAO amb el filtre de grup.
-3. **Identitat i client Supabase** (`lib/data/supabase/`): `supabase_flutter`
-   instanciat a `main()` i publicat via `AppScope`; `signInAnonymously()` amb
-   vinculación d'email opcional; sessió a `shared_preferences`.
-4. **Capa de sincronització** (`lib/data/sync/`): cua de canvis pendents,
+Les fases 1 (projecte Supabase + esquema remot + invitacions), 2 (migració
+drift 15→16 amb les metadades de sincronització) i 3 (identitat i client
+Supabase) estan fetes i verificades; el seu registre viu a git, a `supabase/`
+i a `lib/data/supabase/`. Queden pendent:
+
+1. **Capa de sincronització** (`lib/data/sync/`): cua de canvis pendents,
    push/pull incremental per `updated_at`, gestió de fotos amb Storage,
    indicador d'estat a la UI; fakes a mà per als tests.
-5. **Grups i UI** (`lib/features/groups/`): creació de grup, selector de grup
+2. **Grups i UI** (`lib/features/groups/`): creació de grup, selector de grup
    a la llista, pantalla de membres (expulsió/marxar), totes les cadenes als
    tres fitxers ARB.
-6. **Invitacions**: QR (`qr_flutter` + `mobile_scanner`), enllaç profund
+3. **Invitacions**: QR (`qr_flutter` + `mobile_scanner`), enllaç profund
    (`eatapp://join/<token>` + App Links/Universal Links), codi alfanumèric de
    reserva, aprovació opcional del creador via `join-group`.
-7. **Enduriment**: RLS verificada amb tests SQL, rate-limit d'invitacions,
+4. **Enduriment**: RLS verificada amb tests SQL, rate-limit d'invitacions,
    política d'expulsió/dissolució, exportació com a xarxa de seguretat;
    `flutter analyze` + `flutter test` verds a cada fase.
 

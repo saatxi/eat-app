@@ -4,6 +4,7 @@ import '../core/app_version.dart';
 import '../data/photo/photo_picker.dart';
 import '../data/repositories/restaurant_repository.dart';
 import '../data/repositories/user_preferences_repository.dart';
+import '../data/supabase/identity.dart';
 
 /// Hands the app's long-lived collaborators to any screen that needs them.
 ///
@@ -25,12 +26,18 @@ class AppScope extends InheritedWidget {
     required this.preferences,
     required this.photoPicker,
     this.appVersion,
+    this.identity,
     required super.child,
   });
 
   final RestaurantRepository restaurants;
   final UserPreferencesRepository preferences;
   final PhotoPicker photoPicker;
+
+  /// The remote identity behind the shared-groups features. Null in every
+  /// mode where groups are off — including every widget test that builds a
+  /// bare tree — and every screen must cope with that rather than assume it.
+  final IdentityGateway? identity;
 
   /// What the platform reports for the running build, read once at startup.
   /// Null hides the settings screen's About section — the case in a bare widget
@@ -52,5 +59,6 @@ class AppScope extends InheritedWidget {
       oldWidget.restaurants != restaurants ||
       oldWidget.preferences != preferences ||
       oldWidget.photoPicker != photoPicker ||
-      oldWidget.appVersion != appVersion;
+      oldWidget.appVersion != appVersion ||
+      oldWidget.identity != identity;
 }

@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase/supabase.dart';
 
 import 'app/app_scope.dart';
+import 'data/supabase/identity.dart';
 import 'core/app_version.dart';
 import 'core/l10n/app_language.dart';
 import 'core/l10n/generated/app_localizations.dart';
@@ -21,6 +23,27 @@ import 'data/repositories/user_preferences_repository.dart';
 import 'data/share/backup_writer.dart';
 import 'features/home/home_shell.dart';
 import 'widget/home_widget_service.dart';
+
+/// The --dart-define keys the shared-groups backend reads. Never hardcoded:
+/// the URL and the anon key are project configuration, not source. Both are
+/// null in tests and previews, where the whole Supabase side stays unwired.
+const String _supabaseUrlKey = 'SUPABASE_URL';
+const String _supabaseAnonKeyKey = 'SUPABASE_ANON_KEY';
+
+/// ({String url, String anonKey})? — null when either define is missing,
+/// which leaves the app in the fully-offline personal mode it has always had.
+({String url, String anonKey})? _supabaseConfig() {
+  const String? url = bool.hasEnvironment(_supabaseUrlKey)
+      ? String.fromEnvironment(_supabaseUrlKey)
+      : null;
+  const String? anonKey = bool.hasEnvironment(_supabaseAnonKeyKey)
+      ? String.fromEnvironment(_supabaseAnonKeyKey)
+      : null;
+  if (url == null || anonKey == null) {
+    return null;
+  }
+  return (url: url, anonKey: anonKey);
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,6 +83,22 @@ Future<void> main() async {
 
   final UserPreferencesRepository userPreferences =
       UserPreferencesRepository(store: preferences);
+
+  // The shared-groups backend, wired only when the build carries its
+  // configuration. The client is built once here and the identity gateway —
+  // the only piece the rest of the app touches in this phase — is published
+  // through AppScope alongside the repositories. The sync layer (phase 4)
+  // will take the client itself.
+  final ({String url, String anonKey})? supabaseConfig = _supabaseConfig();
+  final IdentityGateway? identityGateway = supabaseConfig == null
+      ? null
+      : SupabaseIdentityGateway(
+          client: SupabaseClient(
+            supabaseConfig.url,
+            supabaseConfig.anonKey,
+          ),
+          preferences: preferences,
+        );
 
   // `late` breaks the one cycle there is: the repository has to exist before
   // the widget service (which holds it) and the service has to exist before the
@@ -111,6 +150,7 @@ Future<void> main() async {
       repository: restaurantRepository,
       photoPicker: ImagePickerPhotoPicker(),
       appVersion: appVersion,
+      identityGateway: identityGateway,
       initialSharedFilePath: initialSharedFilePath,
       sharedFileStream: sharedFileStream,
       initialWidgetUri: initialWidgetUri,
@@ -145,6 +185,7 @@ class EatApp extends StatefulWidget {
     this.repository,
     this.photoPicker,
     this.appVersion,
+    this.identityGateway,
     this.initialSharedFilePath,
     this.sharedFileStream,
     this.initialWidgetUri,
@@ -166,6 +207,10 @@ class EatApp extends StatefulWidget {
   /// Null in tests, which have no platform to ask. Settings hides its About
   /// section when it is.
   final AppVersion? appVersion;
+
+  /// Null whenever the build carries no Supabase configuration — the default
+  /// for tests and previews — and the whole groups feature stays dormant.
+  final IdentityGateway? identityGateway;
 
   /// Null except on the cold start that opened the app via "Open with EatApp"
   /// on a shared restaurant file.
@@ -224,6 +269,7 @@ class _EatAppState extends State<EatApp> {
       preferences: _preferences,
       photoPicker: _photoPicker,
       appVersion: widget.appVersion,
+      identity: widget.identityGateway,
       // Rebuilding from the repository rather than from local state is what makes
       // a change survive the widget being recreated, and what lets every stored
       // value be the single source of truth for what is on screen.
