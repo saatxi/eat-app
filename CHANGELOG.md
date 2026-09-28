@@ -9,6 +9,38 @@ tagged at release time. Versioning follows the `vMAJOR.MINOR.PATCH` scheme
 described in [README.md](README.md#versioning) — `versionName`/`versionCode`
 are always derived from git, never hand-edited.
 
+## [3.5.1] - 2026-09-28
+
+Fix the shared groups' rough edges and a handful of smaller issues
+
+- Creating a group did nothing and said nothing, because a device that had
+  already signed in never handed its stored session to the client; the stored
+  session now seeds the client, and a failure reaches the screen as a message
+  instead of silence
+- Keep the create-group dialog's text controller alive until the dialog itself
+  is torn down, rather than disposing it the moment the caller resumes, which
+  the framework rejected as a build in the wrong scope during the exit
+  transition
+- No group's member list ever loaded: the roster embedded profiles in
+  group_members, but both tables key off auth.users rather than each other, so
+  PostgREST refused the embed — the two are now fetched separately and joined
+- A fresh anonymous account has no display name, so the roster listed a bare
+  user id; a member can now set their own name from their row, written to
+  profiles.display_name
+- The group scope was a chip row over the journal that could strand the user on
+  Personal with no way back; it is now one labelled drop-down in the app bar of
+  the journal, the roulette and the statistics, naming the scope in force and
+  keeping every group reachable from wherever you are
+- Group management — creating a group, joining one and seeing its members —
+  moved out of the journal and into Settings, so the journal's app bar dropped
+  its statistics and share actions, both already offered in Settings
+- The launcher now shows EatApp rather than the package name it had been
+  shipping as
+- The detail header shows the restaurant's name where the cuisine badge used to
+  sit, so a long name is no longer truncated beside it, and the roulette card
+  shows a compact region-and-country line instead of the whole address
+- Sharing a restaurant carries its favourite mark now, and importing restores it
+
 ## [3.5.0] - 2026-09-27
 
 Add shared groups: a synced, group-scoped restaurant list with invitations
