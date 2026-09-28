@@ -158,7 +158,14 @@ class GroupsController extends ChangeNotifier {
       await load();
       await select(created.id);
       return true;
-    } catch (error) {
+    } catch (error, stackTrace) {
+      // The UI can only offer "try again", so the actual cause — a lost or
+      // refused session, no network, a policy rejection — is logged where a
+      // developer can see it.
+      debugPrint('Creating a group failed: $error');
+      if (kDebugMode) {
+        debugPrintStack(stackTrace: stackTrace);
+      }
       _setState(
         GroupsState(
           groups: _state.groups,

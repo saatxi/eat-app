@@ -82,6 +82,8 @@ class GroupSelector extends StatelessWidget {
   /// inconsistent (surfacing as a "dirty widget in the wrong build scope"
   /// assertion on the following frame).
   Future<void> _createGroup(BuildContext context) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final String? result = await showDialog<String>(
       context: context,
       builder: (BuildContext dialogContext) => const _CreateGroupDialog(),
@@ -89,7 +91,14 @@ class GroupSelector extends StatelessWidget {
     if (result == null) {
       return;
     }
-    await controller.createGroup(result);
+    // A failure used to vanish here: the controller records it on its state,
+    // but this screen had nowhere to show it, so the dialog closing with
+    // nothing created looked like the tap had done nothing at all.
+    if (!await controller.createGroup(result)) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.groupsCreateErrorFailed)),
+      );
+    }
   }
 }
 

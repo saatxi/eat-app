@@ -54,8 +54,11 @@ const String identityPrefsKey = 'identity.supabase.session';
 /// The session is persisted as its JSON form under [identityPrefsKey] in the
 /// same `SharedPreferences` file the rest of the app's preferences live in —
 /// one store, no extra plugin. `SupabaseClient` itself keeps nothing on disk,
-/// which is why the restore happens in the constructor's [_restore] step,
-/// before anything can ask for [IdentityGateway.current].
+/// so [_restore] reads the JSON back in the constructor — but that only tells
+/// the app who it is. The client stays unauthenticated until
+/// [_ensureClientSession] hands the same JSON to the client's own
+/// `recoverSession`, which every path that carries the session reaches through
+/// [current].
 class SupabaseIdentityGateway implements IdentityGateway {
   SupabaseIdentityGateway({
     required SupabaseClient client,
@@ -75,6 +78,12 @@ class SupabaseIdentityGateway implements IdentityGateway {
   /// Restored at construction, so [current] never has to touch disk.
   Session? _restoredSession;
 
+  /// The stored JSON still to be handed to the client, or null once it has been
+  /// recovered — or when there was nothing to recover. Kept as the raw string
+  /// because the client's `recoverSession` takes the serialized session, not a
+  /// `Session`.
+  String? _pendingSessionJson;
+
   void _restore() {
     final String? stored = _preferences.getString(identityPrefsKey);
     if (stored == null) {
@@ -86,6 +95,7 @@ class SupabaseIdentityGateway implements IdentityGateway {
         throw const FormatException('not a JSON object');
       }
       _restoredSession = Session.fromJson(decoded.cast<String, dynamic>());
+      _pendingSessionJson = stored;
     } on FormatException {
       // A corrupt blob must never block the app from starting: drop it and
       // let the next sign-in mint a fresh session.
@@ -96,11 +106,40 @@ class SupabaseIdentityGateway implements IdentityGateway {
 
   @override
   Future<Identity?> current() async {
+    if (_restoredSession == null) {
+      return null;
+    }
+    // Re-establish the client's session before reporting an identity, since
+    // every later request carries it.
+    await _ensureClientSession();
     final Session? session = _restoredSession;
     if (session == null) {
       return null;
     }
     return Identity(userId: session.user.id, isSignedIn: true);
+  }
+
+  /// Hands the stored session to the client, once.
+  ///
+  /// The client is built fresh on every launch and keeps nothing on disk, so
+  /// restoring the JSON into [_restoredSession] alone would leave its auth
+  /// unauthenticated: every request it then makes — creating a group, syncing —
+  /// would be anonymous and refused by row-level security. A token that can no
+  /// longer be recovered (expired or revoked) is dropped here instead, so the
+  /// next `signInAnonymously` mints a fresh identity rather than the app
+  /// carrying a dead one.
+  Future<void> _ensureClientSession() async {
+    final String? pending = _pendingSessionJson;
+    if (pending == null) {
+      return;
+    }
+    _pendingSessionJson = null;
+    try {
+      await _client.auth.recoverSession(pending);
+    } on Object {
+      _restoredSession = null;
+      await _preferences.remove(identityPrefsKey);
+    }
   }
 
   @override
@@ -120,13 +159,25 @@ class SupabaseIdentityGateway implements IdentityGateway {
 
   @override
   Future<void> signOut() async {
-    await _client.auth.signOut();
+    try {
+      await _client.auth.signOut();
+    } on Object {
+      // The client drops its own session before it reaches the server, so a
+      // round-trip that cannot complete — offline, a server it can't reach —
+      // must not leave this device still holding a session the client has
+      // already forgotten. There is nothing sensitive to revoke (the account
+      // is anonymous and the remote row stays either way), so the local forget
+      // is what the app actually needs.
+    }
     _restoredSession = null;
+    _pendingSessionJson = null;
     await _preferences.remove(identityPrefsKey);
   }
 
   Future<void> _store(Session session) async {
     _restoredSession = session;
+    // The client already holds this session; nothing is left to recover.
+    _pendingSessionJson = null;
     await _preferences.setString(
       identityPrefsKey,
       jsonEncode(session.toJson()),

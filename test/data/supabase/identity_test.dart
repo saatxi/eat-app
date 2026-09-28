@@ -29,6 +29,32 @@ void main() {
       },
     );
 
+    test('the stored session is handed to the client', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        identityPrefsKey: jsonEncode(_sessionJson(userId: 'u-123')),
+      });
+      final SharedPreferences preferences = await SharedPreferences
+          .getInstance();
+      final SupabaseClient client = SupabaseClient(
+        'https://example.supabase.co',
+        'anon-key',
+      );
+      final SupabaseIdentityGateway gateway = SupabaseIdentityGateway(
+        client: client,
+        preferences: preferences,
+      );
+
+      // A fresh client keeps nothing on disk, so reading the session back into
+      // the app is not enough on its own: until it reaches the client, every
+      // request the client makes is anonymous and refused by row-level
+      // security.
+      expect(client.auth.currentSession, isNull);
+
+      await gateway.current();
+
+      expect(client.auth.currentSession?.user.id, 'u-123');
+    });
+
     test('a corrupt stored blob is dropped, not fatal', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{
         identityPrefsKey: 'not json at all',
