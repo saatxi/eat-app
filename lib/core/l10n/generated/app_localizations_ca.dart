@@ -364,6 +364,9 @@ class AppLocalizationsCa extends AppLocalizations {
   String get settingsSectionLanguage => 'Idioma';
 
   @override
+  String get settingsSectionGroups => 'Grups';
+
+  @override
   String get languageEnglish => 'Anglès';
 
   @override

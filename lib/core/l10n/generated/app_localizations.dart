@@ -736,6 +736,12 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get settingsSectionLanguage;
 
+  /// No description provided for @settingsSectionGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get settingsSectionGroups;
+
   /// No description provided for @languageEnglish.
   ///
   /// In en, this message translates to:

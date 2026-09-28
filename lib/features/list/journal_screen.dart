@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
-import '../../data/groups/group_models.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/staggered_entrance.dart';
 import '../groups/group_selector.dart';
 import '../groups/groups_controller.dart';
-import '../groups/members_screen.dart';
 import '../import_export/share_service.dart';
 import 'journal_filter_bar.dart';
 import 'restaurant_card.dart';
@@ -87,26 +85,12 @@ class _JournalScreenState extends State<JournalScreen> {
         repository: AppScope.of(context).restaurants,
       );
 
-  void _openMembers(Group group) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) => MembersScreen(group: group),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final GroupsController? groups = AppScope.of(context).groupsController;
-    // The app bar's "Members" action and the selector both read the groups
-    // selection, so rebuild the whole screen when it moves.
-    if (groups == null) {
-      return _scaffold(context);
-    }
-    return ListenableBuilder(
-      listenable: groups,
-      builder: (BuildContext context, Widget? child) => _scaffold(context),
-    );
+    // The scope selector listens to the groups controller itself, so the screen
+    // no longer has to rebuild when the selection moves — and the Members
+    // action it used to drive from the app bar now lives in Settings.
+    return _scaffold(context);
   }
 
   Widget _scaffold(BuildContext context) {
@@ -123,14 +107,6 @@ class _JournalScreenState extends State<JournalScreen> {
               onPressed: widget.onViewStatistics,
               tooltip: l10n.settingsActionViewStatistics,
               icon: const Icon(Icons.insights_rounded),
-            ),
-          // Only meaningful inside a group: "Members" opens the roster of the
-          // one currently selected.
-          if (groups?.state.selected != null)
-            IconButton(
-              onPressed: () => _openMembers(groups!.state.selected!),
-              tooltip: l10n.groupsMembersTitle,
-              icon: const Icon(Icons.group_outlined),
             ),
           IconButton(
             onPressed: _shareAll,

@@ -7,6 +7,7 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme_mode.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/repositories/user_preferences_repository.dart';
+import '../groups/group_settings_section.dart';
 import '../import_export/share_service.dart';
 
 /// Settings: the appearance choices, the data actions, and which build this is.
@@ -110,6 +111,14 @@ class SettingsScreen extends StatelessWidget {
                     _languageLabel(l10n, language),
                 onChanged: preferences.setLanguage,
               ),
+              // Groups: the scope list and the management actions, moved here
+              // from the journal's chip row. Hidden entirely when the build
+              // carries no backend, so personal mode shows no group surface at
+              // all.
+              if (scope.groupsController?.canUseGroups ?? false) ...<Widget>[
+                _SectionHeader(l10n.settingsSectionGroups),
+                GroupSettingsSection(controller: scope.groupsController!),
+              ],
               _SectionHeader(l10n.settingsSectionData),
               if (onViewStatistics != null)
                 ListTile(

@@ -360,6 +360,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionLanguage => 'Language';
 
   @override
+  String get settingsSectionGroups => 'Groups';
+
+  @override
   String get languageEnglish => 'English';
 
   @override
