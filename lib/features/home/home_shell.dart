@@ -280,7 +280,6 @@ class _HomeShellState extends State<HomeShell> {
         JournalScreen(
           onOpenRestaurant: _openRestaurant,
           onAddRestaurant: _pushEdit,
-          onViewStatistics: _pushStatistics,
         ),
         RouletteScreen(onOpenRestaurant: _openRestaurant),
         SettingsScreen(onViewStatistics: _pushStatistics),

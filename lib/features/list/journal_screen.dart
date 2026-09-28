@@ -8,7 +8,6 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/staggered_entrance.dart';
 import '../groups/group_scope_button.dart';
 import '../groups/groups_controller.dart';
-import '../import_export/share_service.dart';
 import 'journal_filter_bar.dart';
 import 'restaurant_card.dart';
 import 'restaurant_list_controller.dart';
@@ -31,16 +30,11 @@ class JournalScreen extends StatefulWidget {
     super.key,
     this.onOpenRestaurant,
     this.onAddRestaurant,
-    this.onViewStatistics,
   });
 
   /// Null leaves the cards untappable — the case in a bare widget test.
   final ValueChanged<RestaurantUiModel>? onOpenRestaurant;
   final VoidCallback? onAddRestaurant;
-
-  /// Opens the statistics screen from the app bar's chart action. Null hides the
-  /// action — the case in a bare widget test.
-  final VoidCallback? onViewStatistics;
 
   @override
   State<JournalScreen> createState() => _JournalScreenState();
@@ -80,11 +74,6 @@ class _JournalScreenState extends State<JournalScreen> {
     await _controller?.deleteRestaurant(restaurant.id);
   }
 
-  Future<void> _shareAll() => exportAndShareRestaurants(
-        context,
-        repository: AppScope.of(context).restaurants,
-      );
-
   @override
   Widget build(BuildContext context) {
     // The scope selector listens to the groups controller itself, so the screen
@@ -108,17 +97,10 @@ class _JournalScreenState extends State<JournalScreen> {
           // three.
           if (groups != null && groups.canUseGroups)
             GroupScopeButton(controller: groups),
-          if (widget.onViewStatistics != null)
-            IconButton(
-              onPressed: widget.onViewStatistics,
-              tooltip: l10n.settingsActionViewStatistics,
-              icon: const Icon(Icons.insights_rounded),
-            ),
-          IconButton(
-            onPressed: _shareAll,
-            tooltip: l10n.listActionShareAll,
-            icon: const Icon(Icons.share_outlined),
-          ),
+          // Statistics and "share/export all" used to sit here as well; both are
+          // reached from Settings now, which leaves the title and the scope
+          // switch their room on a narrow phone.
+          //
           // The add action lives in the app bar rather than in a floating
           // button: a FAB floats over the very cards it is about and hides the
           // last rows, which is exactly what it did here.
