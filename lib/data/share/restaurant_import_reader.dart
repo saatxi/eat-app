@@ -11,15 +11,21 @@ const int maxImportBytes = 5 * 1024 * 1024;
 enum ImportFailureReason { tooLarge, invalidFile, ioError }
 
 /// One validated import row: the [Restaurant] itself paired with its own
-/// validated visits.
+/// validated visits and its exported favourite flag.
+///
+/// The flag is kept here rather than on [Restaurant] because it is not a
+/// restaurant column — it lives in the user's preferences, so the writer has to
+/// re-apply it by id once the row lands.
 class ImportedRestaurant {
   const ImportedRestaurant({
     required this.restaurant,
     required this.visits,
+    this.isFavorite = false,
   });
 
   final Restaurant restaurant;
   final List<VisitExport> visits;
+  final bool isFavorite;
 }
 
 /// The result of parsing a share file.
@@ -113,5 +119,6 @@ ImportedRestaurant? _readRow(Object? entry) {
   return ImportedRestaurant(
     restaurant: restaurant,
     visits: validatedVisits(export),
+    isFavorite: export.isFavorite,
   );
 }

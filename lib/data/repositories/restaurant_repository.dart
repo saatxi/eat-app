@@ -41,6 +41,7 @@ class RestaurantRepository {
     this.backupWriter,
     this.photoStorage,
     this.onChanged,
+    this.favoriteIds,
   });
 
   final AppDatabase _database;
@@ -57,6 +58,13 @@ class RestaurantRepository {
   /// layer still knows nothing about the widget plugin — it only says "something
   /// changed" and lets `main` decide who cares. Null in every unit test.
   final Future<void> Function()? onChanged;
+
+  /// The ids the user has marked favourite, or null when nothing holds a
+  /// preference store — the case in every unit test. A callback rather than a
+  /// set, because favourites change while this repository lives and are not a
+  /// restaurant column at all: reading it at export time keeps the file and the
+  /// automatic snapshot from ever carrying a stale flag.
+  final Set<String> Function()? favoriteIds;
 
   static const Uuid _uuid = Uuid();
 
@@ -190,7 +198,8 @@ class RestaurantRepository {
   // --- Sharing --------------------------------------------------------------
 
   /// The exportable shape of every restaurant (or just [restaurantIds]),
-  /// carrying each one's visits when [includeVisits] is set.
+  /// carrying each one's visits when [includeVisits] is set and its favourite
+  /// flag always ([favoriteIds]).
   ///
   /// Both the shared/exported file and the automatic `backup.json` snapshot are
   /// built from this one method, so the two can't drift apart in what they
@@ -215,6 +224,7 @@ class RestaurantRepository {
               if (restaurantIds.contains(restaurant.id)) restaurant,
           ];
 
+    final Set<String> favorites = favoriteIds?.call() ?? const <String>{};
     final Map<String, List<Visit>> visitsByRestaurant = includeVisits
         ? _groupVisits(await _visits.getAllVisits())
         : const <String, List<Visit>>{};
@@ -224,6 +234,7 @@ class RestaurantRepository {
         exportRestaurant(
           restaurant,
           visits: visitsByRestaurant[restaurant.id] ?? const <Visit>[],
+          isFavorite: favorites.contains(restaurant.id),
         ),
     ];
   }

@@ -150,6 +150,10 @@ Future<void> main() async {
     // writes or removes a stored photo, so a delete can take the file with it.
     photoStorage: const FilePhotoStorage(),
     onChanged: () => homeWidget.refresh(),
+    // Favourites live in the preference store, not the database, so the
+    // repository reads them back through this callback when it builds an export
+    // or the snapshot — the flag then travels with the file.
+    favoriteIds: () => userPreferences.current.favoriteIds,
   );
   homeWidget = HomeWidgetService(
     repository: restaurantRepository,

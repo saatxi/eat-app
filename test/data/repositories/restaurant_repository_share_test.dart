@@ -71,6 +71,26 @@ void main() {
 
       expect(<String>[for (final RestaurantExport e in exports) e.name], <String>['Second']);
     });
+
+    test('marks the restaurants the preferences call favourite', () async {
+      await repository.insert(restaurant(id: 'a', name: 'Cal Ferran'));
+      await repository.insert(restaurant(id: 'b', name: 'Other'));
+      // Favourites are not a restaurant column, so the repository learns them
+      // from the callback main wires to the preference store.
+      final RestaurantRepository withFavorites = RestaurantRepository(
+        db,
+        favoriteIds: () => <String>{'a'},
+      );
+
+      final List<RestaurantExport> exports =
+          await withFavorites.exportRestaurants();
+
+      final Map<String, bool> byName = <String, bool>{
+        for (final RestaurantExport e in exports) e.name: e.isFavorite,
+      };
+      expect(byName['Cal Ferran'], isTrue);
+      expect(byName['Other'], isFalse);
+    });
   });
 
   group('the backup snapshot', () {

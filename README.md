@@ -111,11 +111,14 @@ Tap the share icon on the list screen to send your whole list, or on a
 restaurant's detail screen to send just that one. Either opens the platform's
 normal share sheet with a small JSON attachment (no account, no server). The
 file carries the `eatapp.restaurants.v2` format tag, so a file that merely
-happens to be JSON can't be mistaken for one of ours. Photos are deliberately
-left out of it, on purpose: embedding one would blow well past the file's own
-size cap for what's supposed to stay a small attachment, so a restaurant
-received this way arrives with no photo and the receiving device's own owner
-can add their own.
+happens to be JSON can't be mistaken for one of ours. Each restaurant also
+records whether it was a favourite, so exporting and importing again keeps
+the hearts — a restaurant has no favourite column of its own (the flag lives
+in your preferences), so the file is the only thing that can carry it across.
+Photos are deliberately left out of it, on purpose: embedding one would blow
+well past the file's own size cap for what's supposed to stay a small
+attachment, so a restaurant received this way arrives with no photo and the
+receiving device's own owner can add their own.
 
 Receiving one works the same way in reverse: opening a restaurant file
 someone sent you (from WhatsApp, Files, or wherever it landed) offers "Open

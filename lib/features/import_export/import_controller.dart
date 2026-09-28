@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/db/app_database.dart';
 import '../../data/repositories/restaurant_repository.dart';
+import '../../data/repositories/user_preferences_repository.dart';
 import '../../data/share/content_files.dart';
 import '../../data/share/restaurant_import_reader.dart';
 import '../../data/share/restaurant_share_models.dart';
@@ -18,6 +19,7 @@ class ImportCandidate {
     required this.visits,
     required this.duplicateOf,
     required this.decision,
+    this.isFavorite = false,
   });
 
   final Restaurant restaurant;
@@ -27,12 +29,17 @@ class ImportCandidate {
   /// null when it is new.
   final Restaurant? duplicateOf;
 
+  /// Whether the file marked this restaurant a favourite, so confirming can
+  /// put it back in the user's favourites under its new id.
+  final bool isFavorite;
+
   ImportDecision decision;
 
   ImportCandidate withDecision(ImportDecision decision) => ImportCandidate(
     restaurant: restaurant,
     visits: visits,
     duplicateOf: duplicateOf,
+    isFavorite: isFavorite,
     decision: decision,
   );
 }
@@ -80,10 +87,18 @@ class ImportUiState {
 /// Nothing reaches the database before that: the review screen is the last line
 /// of defence against a file that is not what it claims to be.
 class ImportController extends ChangeNotifier {
-  ImportController({required this.repository, required this.filePath});
+  ImportController({
+    required this.repository,
+    required this.filePath,
+    this.preferences,
+  });
 
   final RestaurantRepository repository;
   final String filePath;
+
+  /// Where an imported favourite flag is written back to. Null in a bare unit
+  /// test, where nothing holds preferences and the flag is simply dropped.
+  final UserPreferencesRepository? preferences;
 
   ImportUiState _state = const ImportUiState();
   ImportUiState get state => _state;
@@ -155,6 +170,7 @@ class ImportController extends ChangeNotifier {
       restaurant: imported.restaurant,
       visits: imported.visits,
       duplicateOf: duplicate,
+      isFavorite: imported.isFavorite,
       // A likely duplicate defaults to Skip, so the safe path is the one the
       // user has to actively leave.
       decision: duplicate == null ? ImportDecision.add : ImportDecision.skip,
@@ -173,13 +189,20 @@ class ImportController extends ChangeNotifier {
   }
 
   /// Writes the chosen decisions. Adds and replaces go in with their whole
-  /// visit history; skipped rows are left untouched.
+  /// visit history and, when the file marked the row a favourite, back into the
+  /// favourites; skipped rows are left untouched.
   Future<void> confirm() async {
     _emit(_state.copyWith(isImporting: true));
+    // Favourites are collected and written once, after the rows exist, since
+    // the ids they are keyed by are only known once each row has landed.
+    final Set<String> favorites = <String>{};
     for (final ImportCandidate candidate in _state.candidates) {
       final String? restaurantId = await _apply(candidate);
       if (restaurantId == null) {
         continue;
+      }
+      if (candidate.isFavorite) {
+        favorites.add(restaurantId);
       }
       for (final VisitExport visit in candidate.visits) {
         await repository.addVisit(
@@ -190,6 +213,9 @@ class ImportController extends ChangeNotifier {
           priceRange: visit.priceRange,
         );
       }
+    }
+    if (favorites.isNotEmpty) {
+      await preferences?.addFavorites(favorites);
     }
     _emit(_state.copyWith(isImporting: false));
   }

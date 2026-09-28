@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
+import 'package:eatapp/data/repositories/user_preferences_repository.dart';
 import 'package:eatapp/data/share/restaurant_import_reader.dart';
 import 'package:eatapp/data/share/restaurant_share_models.dart';
 import 'package:eatapp/features/import_export/import_controller.dart';
@@ -43,12 +44,14 @@ void main() {
     String name, {
     String? street,
     int priceRange = 2,
+    bool isFavorite = false,
     List<Map<String, Object?>> visits = const <Map<String, Object?>>[],
   }) => <String, Object?>{
     'name': name,
     'cuisineType': 'italian',
     'priceRange': priceRange,
     'streetAddress': street,
+    'isFavorite': isFavorite,
     'visits': visits,
   };
 
@@ -89,6 +92,45 @@ void main() {
     final ImportCandidate candidate = controller.state.candidates.single;
     expect(candidate.duplicateOf?.id, 'existing');
     expect(candidate.decision, ImportDecision.skip);
+  });
+
+  test('a row the file marked favourite is restored to the favourites', () async {
+    final UserPreferencesRepository preferences = UserPreferencesRepository();
+    final String path = await sharedFile(<Map<String, Object?>>[
+      row('Trattoria', isFavorite: true),
+    ]);
+    final ImportController controller = ImportController(
+      repository: repository,
+      preferences: preferences,
+      filePath: path,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.load();
+    expect(controller.state.candidates.single.isFavorite, isTrue);
+    await controller.confirm();
+
+    final List<Restaurant> all = await repository.getAllRestaurants();
+    // The restaurant lands under a fresh id, and it is that id the flag is
+    // keyed by — never the one the file carried.
+    expect(preferences.isFavorite(all.single.id), isTrue);
+  });
+
+  test('confirm leaves a plain row out of the favourites', () async {
+    final UserPreferencesRepository preferences = UserPreferencesRepository();
+    final String path = await sharedFile(<Map<String, Object?>>[row('Trattoria')]);
+    final ImportController controller = ImportController(
+      repository: repository,
+      preferences: preferences,
+      filePath: path,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.load();
+    await controller.confirm();
+
+    final List<Restaurant> all = await repository.getAllRestaurants();
+    expect(preferences.isFavorite(all.single.id), isFalse);
   });
 
   test('confirm adds the rows together with their visits', () async {

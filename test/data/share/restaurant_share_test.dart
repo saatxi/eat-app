@@ -81,7 +81,35 @@ void main() {
           (json['restaurants']! as List<Object?>).single! as Map<String, Object?>;
       expect(row.containsKey('streetAddress'), isTrue);
       expect(row['streetAddress'], isNull);
+      expect(row['isFavorite'], isFalse);
       expect(row['visits'], isEmpty);
+    });
+
+    test('carries the favourite flag', () {
+      final ImportOutcome outcome = readRestaurantImport(
+        encodeRestaurantShareFile(<RestaurantExport>[
+          exportRestaurant(
+            restaurant(id: 'a', name: 'Cal Ferran'),
+            isFavorite: true,
+          ),
+        ]),
+      );
+
+      final ImportSuccess success = outcome as ImportSuccess;
+      expect(success.restaurants.single.isFavorite, isTrue);
+    });
+
+    test('reads a file without the flag as not a favourite', () {
+      // The older writer had no `isFavorite` field at all, and "not a
+      // favourite" is the safe reading of its absence.
+      final ImportOutcome outcome = readRestaurantImport(
+        _file(<Object?>[
+          <String, Object?>{'name': 'Old', 'cuisineType': 'italian', 'priceRange': 1},
+        ]),
+      );
+
+      final ImportSuccess success = outcome as ImportSuccess;
+      expect(success.restaurants.single.isFavorite, isFalse);
     });
   });
 

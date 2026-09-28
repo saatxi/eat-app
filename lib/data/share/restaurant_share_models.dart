@@ -62,6 +62,12 @@ class VisitExport {
 /// Never carries [Restaurant.id] (meaningless in someone else's database) or
 /// [Restaurant.searchText] (derived, not data). Photos are deliberately
 /// excluded, the same way the Android app's export left them out.
+///
+/// The favourite flag rides along as [isFavorite] even though it does not live
+/// on the [Restaurant] entity at all — it is kept in the user's preferences,
+/// keyed by id — so a share/import round-trip carries it the way it carries a
+/// visit. Like every other field it is always written, false included, so a
+/// reader never has to guess whether its absence means anything.
 class RestaurantExport {
   const RestaurantExport({
     required this.name,
@@ -73,6 +79,7 @@ class RestaurantExport {
     this.city,
     this.region,
     this.country,
+    this.isFavorite = false,
     this.visits = const <VisitExport>[],
   });
 
@@ -88,6 +95,11 @@ class RestaurantExport {
   final String? city;
   final String? region;
   final String? country;
+
+  /// Whether the owner had it in their favourites when it was exported. Not a
+  /// column on the restaurant; see the class comment.
+  final bool isFavorite;
+
   final List<VisitExport> visits;
 
   Map<String, Object?> toJson() => <String, Object?>{
@@ -100,6 +112,7 @@ class RestaurantExport {
     'city': city,
     'region': region,
     'country': country,
+    'isFavorite': isFavorite,
     'visits': <Map<String, Object?>>[for (final VisitExport visit in visits) visit.toJson()],
   };
 
@@ -116,6 +129,9 @@ class RestaurantExport {
     city: json['city'] as String?,
     region: json['region'] as String?,
     country: json['country'] as String?,
+    // Absent on a file the older app wrote, and "not a favourite" is the safe
+    // reading of a missing flag.
+    isFavorite: json['isFavorite'] as bool? ?? false,
     visits: <VisitExport>[
       for (final Object? visit in json['visits'] as List<Object?>? ?? const <Object?>[])
         if (visit is Map<String, Object?>) VisitExport.fromJson(visit),
@@ -144,9 +160,13 @@ String encodeRestaurantShareFile(List<RestaurantExport> restaurants) =>
 
 /// The exportable shape of one [Restaurant], with the visits that live in their
 /// own table passed in — they are not derivable from the entity alone.
+///
+/// [isFavorite] is likewise passed in: the flag lives in the user's preferences
+/// rather than the entity, so the caller has to tell this method about it.
 RestaurantExport exportRestaurant(
   Restaurant restaurant, {
   List<Visit> visits = const <Visit>[],
+  bool isFavorite = false,
 }) => RestaurantExport(
   name: restaurant.name,
   cuisineType: restaurant.cuisineType,
@@ -157,6 +177,7 @@ RestaurantExport exportRestaurant(
   city: restaurant.city,
   region: restaurant.region,
   country: restaurant.country,
+  isFavorite: isFavorite,
   visits: <VisitExport>[
     for (final Visit visit in visits)
       VisitExport(

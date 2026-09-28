@@ -152,6 +152,21 @@ class UserPreferencesRepository {
     await _store?.setStringList(_favoriteIdsKey, next.toList());
   }
 
+  /// Marks every id in [restaurantIds] as a favourite, in one write. An import
+  /// restores the flag this way: the rows arrive with fresh ids, so each one
+  /// that was a favourite on the sending side is added back by its new id.
+  /// Already-favourite ids are left alone rather than toggled off.
+  Future<void> addFavorites(Iterable<String> restaurantIds) async {
+    final Set<String> next = <String>{...current.favoriteIds, ...restaurantIds};
+    // Nothing new to write — `next` is a superset of `current`, so an unchanged
+    // length means every id was already present.
+    if (next.length == current.favoriteIds.length) {
+      return;
+    }
+    _value.value = current.copyWith(favoriteIds: next);
+    await _store?.setStringList(_favoriteIdsKey, next.toList());
+  }
+
   static UserPreferences _read(SharedPreferences store) => UserPreferences(
     themeMode: AppThemeMode.fromId(store.getString(_themeModeKey)),
     language: AppLanguage.tryFromLanguageCode(store.getString(_languageKey)),

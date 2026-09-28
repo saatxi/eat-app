@@ -43,8 +43,12 @@ class _ImportScreenState extends State<ImportScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_controller == null) {
+      final AppScope scope = AppScope.of(context);
       final ImportController controller = ImportController(
-        repository: AppScope.of(context).restaurants,
+        repository: scope.restaurants,
+        // Favourites live in the preference store rather than the database, so
+        // the controller needs it to put an imported flag back.
+        preferences: scope.preferences,
         filePath: widget.filePath,
       );
       _controller = controller;
