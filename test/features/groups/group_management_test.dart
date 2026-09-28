@@ -102,7 +102,7 @@ void main() {
     ],
   );
 
-  testWidgets('the journal selector keeps every group reachable', (
+  testWidgets('the journal selector collapses to a dropdown with several groups', (
     WidgetTester tester,
   ) async {
     final GroupsController controller = await ready(gateway: twoGroups());
@@ -116,24 +116,57 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Personal'), findsOneWidget);
+    // One control labelled with the scope in force, rather than a chip each.
     expect(find.text('Família'), findsOneWidget);
-    expect(find.text('Amics'), findsOneWidget);
+    expect(find.text('Personal'), findsNothing);
+    expect(find.text('Amics'), findsNothing);
 
-    // The regression this guards: picking Personal must not make the group
-    // chips vanish, or a group could only be picked again from Settings.
-    await tester.tap(find.text('Personal'));
+    // Opening it lists every scope, and picking Personal moves the label.
+    await tester.tap(find.text('Família'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(MenuItemButton, 'Personal'), findsOneWidget);
+    expect(find.widgetWithText(MenuItemButton, 'Amics'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(MenuItemButton, 'Personal'));
     await tester.pumpAndSettle();
 
     expect(preferences.current.selectedGroupId, isNull);
-    expect(find.text('Família'), findsOneWidget);
-    expect(find.text('Amics'), findsOneWidget);
+    expect(find.text('Personal'), findsOneWidget);
+    expect(find.text('Família'), findsNothing);
+  });
 
-    // And back into a group from the same row.
-    await tester.tap(find.text('Amics'));
+  testWidgets('the journal selector keeps chips for a single group', (
+    WidgetTester tester,
+  ) async {
+    final GroupsController controller = await ready(
+      gateway: _FakeGroupGateway(
+        groups: const <Group>[
+          Group(id: 'g1', name: 'Família', role: GroupRole.owner),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      host(
+        child: Scaffold(body: GroupSelector(controller: controller)),
+        groups: controller,
+      ),
+    );
     await tester.pumpAndSettle();
 
-    expect(preferences.current.selectedGroupId, 'g2');
+    expect(find.text('Personal'), findsOneWidget);
+    expect(find.text('Família'), findsOneWidget);
+
+    await tester.tap(find.text('Família'));
+    await tester.pumpAndSettle();
+    expect(preferences.current.selectedGroupId, 'g1');
+
+    // The regression the dropdown must not reintroduce: choosing Personal
+    // leaves the group reachable, so a group is never Settings-only.
+    await tester.tap(find.text('Personal'));
+    await tester.pumpAndSettle();
+    expect(preferences.current.selectedGroupId, isNull);
+    expect(find.text('Família'), findsOneWidget);
   });
 
   testWidgets('the settings Groups section switches the scope', (
