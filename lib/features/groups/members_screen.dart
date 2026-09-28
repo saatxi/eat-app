@@ -86,6 +86,30 @@ class _MembersScreenState extends State<MembersScreen> {
     await _controller?.removeMember(member.userId);
   }
 
+  /// Lets the signed-in user give themselves a display name, so the roster
+  /// shows a name instead of the bare user id a fresh anonymous account has.
+  Future<void> _renameMe(GroupMember member) async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final String? name = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) =>
+          _RenameDialog(initialName: member.displayName),
+    );
+    if (name == null) {
+      return;
+    }
+    final MembersController? controller = _controller;
+    if (controller == null) {
+      return;
+    }
+    if (!await controller.setDisplayName(name)) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.groupsNameErrorFailed)),
+      );
+    }
+  }
+
   /// Whether the signed-in user may leave.
   ///
   /// Everyone may, with one exception the server also enforces: the last owner
@@ -238,7 +262,16 @@ class _MembersScreenState extends State<MembersScreen> {
           subtitle: member.role == GroupRole.owner
               ? Text(l10n.groupsMemberOwner)
               : null,
-          trailing: iAmOwner && !isMe
+          // Your own row is the one place your name is shown, so it is also
+          // where it can be changed; everyone else is an owner's to remove.
+          onTap: isMe ? () => _renameMe(member) : null,
+          trailing: isMe
+              ? IconButton(
+                  onPressed: () => _renameMe(member),
+                  tooltip: l10n.groupsNameEditAction,
+                  icon: const Icon(Icons.edit_outlined),
+                )
+              : iAmOwner
               ? IconButton(
                   onPressed: () => _remove(member),
                   tooltip: l10n.groupsActionRemove,
@@ -247,6 +280,69 @@ class _MembersScreenState extends State<MembersScreen> {
               : null,
         );
       },
+    );
+  }
+}
+
+/// The "change your name" dialog: one field and the two actions.
+///
+/// A [StatefulWidget] purely so it can own the field's [TextEditingController]
+/// and dispose it when the dialog itself is torn down, rather than leaving the
+/// caller to guess when the route has finished animating away.
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog({required this.initialName});
+
+  /// The name the field opens on; empty for an account that has never set one.
+  final String initialName;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final TextEditingController _name = TextEditingController(
+    text: widget.initialName,
+  );
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final String value = _name.text.trim();
+    if (value.isEmpty) {
+      setState(() => _error = AppLocalizations.of(context).groupsNameRequired);
+      return;
+    }
+    Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.groupsNameDialogTitle),
+      content: TextField(
+        controller: _name,
+        autofocus: true,
+        textCapitalization: TextCapitalization.words,
+        textInputAction: TextInputAction.done,
+        decoration: InputDecoration(
+          labelText: l10n.groupsNameFieldLabel,
+          errorText: _error,
+        ),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.actionCancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.actionOk)),
+      ],
     );
   }
 }

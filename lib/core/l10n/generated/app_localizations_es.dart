@@ -823,6 +823,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get groupsMemberYou => 'Tú';
 
   @override
+  String get groupsNameEditAction => 'Cambiar tu nombre';
+
+  @override
+  String get groupsNameDialogTitle => 'Tu nombre';
+
+  @override
+  String get groupsNameFieldLabel => 'Nombre';
+
+  @override
+  String get groupsNameRequired => 'Escribe un nombre';
+
+  @override
+  String get groupsNameErrorFailed =>
+      'No se ha podido guardar tu nombre. Inténtalo de nuevo.';
+
+  @override
   String get groupsActionLeave => 'Salir del grupo';
 
   @override

@@ -28,25 +28,32 @@ void main() {
     expect(group.role, GroupRole.owner);
   });
 
-  test('groupMemberFromJson parses an embedded profile', () {
-    final GroupMember member = groupMemberFromJson(<String, dynamic>{
-      'user_id': 'u2',
-      'role': 'member',
-      'profiles': <String, dynamic>{'display_name': 'Maria'},
-    });
+  test('groupMembersFromRows joins a roster with its profiles', () {
+    final List<GroupMember> members = groupMembersFromRows(
+      memberships: <Map<String, dynamic>>[
+        <String, dynamic>{'user_id': 'u2', 'role': 'member'},
+        <String, dynamic>{'user_id': 'u3', 'role': 'owner'},
+      ],
+      profiles: <Map<String, dynamic>>[
+        <String, dynamic>{'id': 'u2', 'display_name': 'Maria'},
+      ],
+    );
 
-    expect(member.userId, 'u2');
-    expect(member.displayName, 'Maria');
-    expect(member.role, GroupRole.member);
+    expect(members, hasLength(2));
+    expect(members.first.userId, 'u2');
+    expect(members.first.displayName, 'Maria');
+    expect(members.first.role, GroupRole.member);
   });
 
-  test('a member with no profile falls back to an empty display name', () {
-    final GroupMember member = groupMemberFromJson(<String, dynamic>{
-      'user_id': 'u3',
-      'role': 'member',
-      'profiles': null,
-    });
+  test('a member with no profile row falls back to an empty display name', () {
+    final List<GroupMember> members = groupMembersFromRows(
+      memberships: <Map<String, dynamic>>[
+        <String, dynamic>{'user_id': 'u3', 'role': 'owner'},
+      ],
+      profiles: const <Map<String, dynamic>>[],
+    );
 
-    expect(member.displayName, '');
+    expect(members.single.displayName, '');
+    expect(members.single.role, GroupRole.owner);
   });
 }

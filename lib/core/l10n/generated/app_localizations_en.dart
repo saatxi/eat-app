@@ -815,6 +815,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupsMemberYou => 'You';
 
   @override
+  String get groupsNameEditAction => 'Change your name';
+
+  @override
+  String get groupsNameDialogTitle => 'Your name';
+
+  @override
+  String get groupsNameFieldLabel => 'Name';
+
+  @override
+  String get groupsNameRequired => 'Enter a name';
+
+  @override
+  String get groupsNameErrorFailed =>
+      'Couldn\'t save your name. Please try again.';
+
+  @override
   String get groupsActionLeave => 'Leave group';
 
   @override

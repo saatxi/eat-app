@@ -56,6 +56,12 @@ class _FakeGroupGateway implements GroupGateway {
 
   @override
   Future<void> deleteGroup(String groupId) async {}
+
+  @override
+  Future<void> setDisplayName({
+    required String userId,
+    required String displayName,
+  }) async {}
 }
 
 void main() {
@@ -228,14 +234,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // The section sits below the appearance and language rows, so the lazy list
-    // has to be scrolled to it before the row exists to be tapped.
-    final Finder groupRow = find.widgetWithText(ListTile, 'Família');
-    await tester.scrollUntilVisible(groupRow, 200);
-    await tester.ensureVisible(groupRow);
+    // The scope row names the scope in force — Personal, here — and the roster
+    // only appears once its menu is open. The row sits below the appearance and
+    // language rows, so the lazy list has to be scrolled to it first.
+    final Finder scopeRow = find.widgetWithText(ListTile, 'Personal');
+    await tester.scrollUntilVisible(scopeRow, 200);
+    await tester.ensureVisible(scopeRow);
     await tester.pumpAndSettle();
 
-    await tester.tap(groupRow);
+    await tester.tap(scopeRow);
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(MenuItemButton, 'Família'), findsOneWidget);
+    await tester.tap(find.widgetWithText(MenuItemButton, 'Família'));
     await tester.pumpAndSettle();
 
     expect(preferences.current.selectedGroupId, 'g1');

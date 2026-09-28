@@ -35,6 +35,14 @@ abstract class GroupGateway {
   /// cascades every member, invite and shared row away. There is no undo, which
   /// is why the members screen offers an export first.
   Future<void> deleteGroup(String groupId);
+
+  /// Creates or replaces [userId]'s own profile display name, so the rest of
+  /// their groups see a name instead of a bare user id. The caller sets only
+  /// their own name — `profiles_upsert_own` enforces that server-side.
+  Future<void> setDisplayName({
+    required String userId,
+    required String displayName,
+  });
 }
 
 /// The real [GroupGateway], over the Supabase client.
@@ -78,13 +86,29 @@ class SupabaseGroupGateway implements GroupGateway {
 
   @override
   Future<List<GroupMember>> listMembers(String groupId) async {
-    final rows = await _client
-        .from('group_members')
-        .select('user_id, role, profiles(display_name)')
-        .eq('group_id', groupId);
-    return <GroupMember>[
-      for (final Map<String, dynamic> row in rows) groupMemberFromJson(row),
+    // The roster and the names are fetched separately: `group_members.user_id`
+    // and `profiles.id` both reference `auth.users` rather than each other, so
+    // PostgREST cannot embed one in the other — an embedded select fails
+    // outright with "could not find a relationship between 'group_members' and
+    // 'profiles'". The two row sets are joined in `groupMembersFromRows`.
+    final List<Map<String, dynamic>> memberships =
+        (await _client
+                .from('group_members')
+                .select('user_id, role')
+                .eq('group_id', groupId))
+            .cast<Map<String, dynamic>>();
+    final List<String> ids = <String>[
+      for (final Map<String, dynamic> row in memberships)
+        row['user_id'] as String,
     ];
+    final List<Map<String, dynamic>> profiles = ids.isEmpty
+        ? const <Map<String, dynamic>>[]
+        : (await _client
+                  .from('profiles')
+                  .select('id, display_name')
+                  .inFilter('id', ids))
+              .cast<Map<String, dynamic>>();
+    return groupMembersFromRows(memberships: memberships, profiles: profiles);
   }
 
   @override
@@ -112,6 +136,19 @@ class SupabaseGroupGateway implements GroupGateway {
     // here, since the whole group goes at once.
     await _client.from('groups').delete().eq('id', groupId);
   }
+
+  @override
+  Future<void> setDisplayName({
+    required String userId,
+    required String displayName,
+  }) async {
+    // `profiles_upsert_own` allows the insert and `profiles_update_own` the
+    // update, so one upsert covers a first-time name and a later change alike.
+    await _client.from('profiles').upsert(<String, dynamic>{
+      'id': userId,
+      'display_name': displayName,
+    });
+  }
 }
 
 /// Parses one `group_members` row embedded with its group, as
@@ -122,14 +159,26 @@ Group groupFromMembershipJson(Map<String, dynamic> json) => Group(
   role: GroupRole.fromRemote(json['role'] as String),
 );
 
-/// Parses one `group_members` row embedded with its profile, as
-/// `select('user_id, role, profiles(display_name)')` returns it. A member who
-/// never set a display name has no `profiles` row, so `display_name` falls
-/// back to empty.
-GroupMember groupMemberFromJson(Map<String, dynamic> json) => GroupMember(
-  userId: json['user_id'] as String,
-  displayName: ((json['profiles'] as Map?) ?? const <String, dynamic>{})[
-          'display_name'] as String? ??
-      '',
-  role: GroupRole.fromRemote(json['role'] as String),
-);
+/// Merges a `group_members` roster with the `profiles` that name its users.
+///
+/// `group_members.user_id` and `profiles.id` both reference `auth.users`, not
+/// each other, so PostgREST cannot embed the profile in the membership; the two
+/// row sets are fetched separately and joined here. A member who never set a
+/// display name has no `profiles` row, so `displayName` falls back to empty.
+List<GroupMember> groupMembersFromRows({
+  required List<Map<String, dynamic>> memberships,
+  required List<Map<String, dynamic>> profiles,
+}) {
+  final Map<String, String> names = <String, String>{
+    for (final Map<String, dynamic> profile in profiles)
+      profile['id'] as String: (profile['display_name'] as String?) ?? '',
+  };
+  return <GroupMember>[
+    for (final Map<String, dynamic> row in memberships)
+      GroupMember(
+        userId: row['user_id'] as String,
+        displayName: names[row['user_id']] ?? '',
+        role: GroupRole.fromRemote(row['role'] as String),
+      ),
+  ];
+}

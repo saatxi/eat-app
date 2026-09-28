@@ -44,6 +44,35 @@ class _FakeGroupGateway implements GroupGateway {
     members = <GroupMember>[];
   }
 
+  /// The display names [setDisplayName] stored, keyed by user id.
+  final Map<String, String> names = <String, String>{};
+
+  /// Throw to simulate a backend failure on [setDisplayName].
+  Object? nameError;
+
+  @override
+  Future<void> setDisplayName({
+    required String userId,
+    required String displayName,
+  }) async {
+    final Object? failure = nameError;
+    if (failure != null) {
+      throw failure;
+    }
+    names[userId] = displayName;
+    members = <GroupMember>[
+      for (final GroupMember member in members)
+        if (member.userId == userId)
+          GroupMember(
+            userId: member.userId,
+            displayName: displayName,
+            role: member.role,
+          )
+        else
+          member,
+    ];
+  }
+
   @override
   Future<Group> createGroup({
     required String id,
@@ -96,6 +125,46 @@ void main() {
 
     expect(gateway.removed, <String>['u2']);
     expect(controller.state.members.map((GroupMember m) => m.userId), <String>['u1']);
+  });
+
+  test('setting a display name stores it and reloads the roster', () async {
+    final _FakeGroupGateway gateway = _FakeGroupGateway(
+      members: const <GroupMember>[
+        GroupMember(userId: 'u1', displayName: '', role: GroupRole.owner),
+      ],
+    );
+    final MembersController controller = MembersController(
+      groupId: 'g1',
+      gateway: gateway,
+      identity: FakeIdentityGateway(existingUserId: 'u1'),
+    );
+    addTearDown(controller.dispose);
+    await controller.load();
+
+    expect(await controller.setDisplayName('Albert'), isTrue);
+
+    expect(gateway.names, <String, String>{'u1': 'Albert'});
+    expect(controller.state.members.single.displayName, 'Albert');
+  });
+
+  test('a failed rename leaves the roster and reports it', () async {
+    final _FakeGroupGateway gateway = _FakeGroupGateway(
+      members: const <GroupMember>[
+        GroupMember(userId: 'u1', displayName: '', role: GroupRole.owner),
+      ],
+    )..nameError = Exception('offline');
+    final MembersController controller = MembersController(
+      groupId: 'g1',
+      gateway: gateway,
+      identity: FakeIdentityGateway(existingUserId: 'u1'),
+    );
+    addTearDown(controller.dispose);
+    await controller.load();
+
+    expect(await controller.setDisplayName('Albert'), isFalse);
+
+    expect(gateway.names, isEmpty);
+    expect(controller.state.error, isNotNull);
   });
 
   test('leaving uses the signed-in user id', () async {

@@ -59,38 +59,10 @@ class GroupSettingsSection extends StatelessWidget {
     return ListenableBuilder(
       listenable: controller,
       builder: (BuildContext context, Widget? child) {
-        final GroupsState state = controller.state;
-        final Group? selected = state.selected;
+        final Group? selected = controller.state.selected;
         return Column(
           children: <Widget>[
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: Text(l10n.groupsScopePersonal),
-              trailing: state.selectedGroupId == null
-                  ? const Icon(Icons.check_rounded)
-                  : null,
-              onTap: () => controller.select(null),
-            ),
-            // The whole roster, so a group can still be picked here even though
-            // the journal only shows the one in force.
-            for (final Group group in state.groups)
-              ListTile(
-                leading: const Icon(Icons.group_outlined),
-                title: Text(group.name),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    // The sync state belongs to the group in force, so it rides
-                    // on that group's row.
-                    if (state.selectedGroupId == group.id &&
-                        controller.sync != null)
-                      _SyncIndicator(controller: controller),
-                    if (state.selectedGroupId == group.id)
-                      const Icon(Icons.check_rounded),
-                  ],
-                ),
-                onTap: () => controller.select(group.id),
-              ),
+            _ScopeSelector(controller: controller),
             // Members are only meaningful for a group, and only the picked one.
             if (selected != null)
               ListTile(
@@ -109,6 +81,63 @@ class GroupSettingsSection extends StatelessWidget {
               onTap: () => _join(context),
             ),
           ],
+        );
+      },
+    );
+  }
+}
+
+/// The scope in force, as a drop-down: one row naming it that opens a menu of
+/// Personal and every group.
+///
+/// Built on `MenuAnchor` the same way the settings language selector is, so the
+/// anchor is an ordinary row that keeps the tile styling and its tap handling,
+/// and the roster only appears while the menu is open. The selected group's sync
+/// state rides on the trailing side, beside the arrow.
+class _ScopeSelector extends StatelessWidget {
+  const _ScopeSelector({required this.controller});
+
+  final GroupsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final GroupsState state = controller.state;
+    final Group? selected = state.selected;
+    final Color primary = Theme.of(context).colorScheme.primary;
+    return MenuAnchor(
+      menuChildren: <Widget>[
+        MenuItemButton(
+          onPressed: () => controller.select(null),
+          trailingIcon: selected == null
+              ? Icon(Icons.check_rounded, color: primary)
+              : null,
+          child: Text(l10n.groupsScopePersonal),
+        ),
+        for (final Group group in state.groups)
+          MenuItemButton(
+            onPressed: () => controller.select(group.id),
+            trailingIcon: group.id == state.selectedGroupId
+                ? Icon(Icons.check_rounded, color: primary)
+                : null,
+            child: Text(group.name),
+          ),
+      ],
+      builder: (BuildContext context, MenuController menu, Widget? child) {
+        return ListTile(
+          leading: const Icon(Icons.group_outlined),
+          title: Text(selected?.name ?? l10n.groupsScopePersonal),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              // The sync state belongs to the group in force, so it rides on
+              // this row — and only while there is one.
+              if (selected != null && controller.sync != null)
+                _SyncIndicator(controller: controller),
+              const Icon(Icons.arrow_drop_down),
+            ],
+          ),
+          onTap: () => menu.isOpen ? menu.close() : menu.open(),
         );
       },
     );

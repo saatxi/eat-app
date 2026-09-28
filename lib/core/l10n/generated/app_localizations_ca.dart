@@ -823,6 +823,22 @@ class AppLocalizationsCa extends AppLocalizations {
   String get groupsMemberYou => 'Tu';
 
   @override
+  String get groupsNameEditAction => 'Canvia el teu nom';
+
+  @override
+  String get groupsNameDialogTitle => 'El teu nom';
+
+  @override
+  String get groupsNameFieldLabel => 'Nom';
+
+  @override
+  String get groupsNameRequired => 'Escriu un nom';
+
+  @override
+  String get groupsNameErrorFailed =>
+      'No s\'ha pogut desar el teu nom. Torna-ho a provar.';
+
+  @override
   String get groupsActionLeave => 'Sortir del grup';
 
   @override

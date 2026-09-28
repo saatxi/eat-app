@@ -56,6 +56,12 @@ class _FakeGroupGateway implements GroupGateway {
 
   @override
   Future<void> deleteGroup(String groupId) async {}
+
+  @override
+  Future<void> setDisplayName({
+    required String userId,
+    required String displayName,
+  }) async {}
 }
 
 void main() {
