@@ -16,7 +16,6 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/price_range_label.dart';
 import '../../core/widgets/rating_and_price_row.dart';
 import '../../core/widgets/rating_trend_chart.dart';
-import '../../core/widgets/restaurant_thumbnail.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../import_export/share_service.dart';
 import '../list/restaurant_ui_model.dart';
@@ -214,6 +213,7 @@ class _LoadedContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
     final RestaurantUiModel restaurant = state.restaurant;
     final String priceLabel = priceRangeLabel(l10n, restaurant.priceRange);
     final String? address = restaurant.formattedAddress;
@@ -229,9 +229,9 @@ class _LoadedContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           // The other end of the journal card's [restaurantHeroTag]: the photo
-          // when there is one, and the same cuisine badge the card fell back to
-          // otherwise, so the shared element always has a counterpart on both
-          // screens.
+          // when there is one, and the restaurant's name otherwise. The name
+          // holds the place the cuisine badge used to, so a long name is shown
+          // in full here rather than being truncated in the app bar.
           Hero(
             tag: restaurantHeroTag(restaurant.id),
             child: restaurant.photoPath != null
@@ -250,9 +250,9 @@ class _LoadedContent extends StatelessWidget {
                   )
                 : Align(
                     alignment: Alignment.centerLeft,
-                    child: RestaurantThumbnail(
-                      cuisineKey: restaurant.cuisineKey,
-                      size: 88,
+                    child: Text(
+                      restaurant.name,
+                      style: theme.textTheme.headlineMedium,
                     ),
                   ),
           ),
