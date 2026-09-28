@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/models/stats_projections.dart';
 import '../../data/repositories/restaurant_repository.dart';
+import '../../data/repositories/user_preferences_repository.dart';
 import 'monthly_trends.dart';
 
 /// Everything the statistics screen draws, as one snapshot.
@@ -47,60 +48,90 @@ class StatisticsState {
 class StatisticsController extends ChangeNotifier {
   StatisticsController({
     required this.repository,
+    required this.preferences,
     this.clock = DateTime.now,
-    this.groupId,
   }) {
-    _subscriptions.addAll(<StreamSubscription<Object?>>[
-      repository.observeTotalCount(groupId: groupId).listen((int value) {
-        _totalCount = value;
-        _loaded = true;
-        _publish();
-      }),
-      repository.observeVisitedCount(groupId: groupId).listen((int value) {
-        _visitedCount = value;
-        _publish();
-      }),
-      repository.observeAverageRating(groupId: groupId).listen((double? value) {
-        _averageRating = value;
-        _publish();
-      }),
-      repository.observeCuisineCounts(groupId: groupId).listen(
-        (List<CuisineCount> value) {
-          _cuisineCounts = value;
-          _publish();
-        },
-      ),
-      repository.observePriceRangeCounts(groupId: groupId).listen(
-        (List<PriceRangeCount> value) {
-          _priceRangeCounts = value;
-          _publish();
-        },
-      ),
-      repository.observeAllVisitDates(groupId: groupId).listen((List<int> value) {
-        _visitDates = value;
-        _publish();
-      }),
-      repository.observeAllVisitDateRatings(groupId: groupId).listen(
-        (List<VisitDateRating> value) {
-          _visitDateRatings = value;
-          _publish();
-        },
-      ),
-    ]);
+    _groupId = preferences.current.selectedGroupId;
+    preferences.listenable.addListener(_onPreferencesChanged);
+    _subscribe();
   }
 
   final RestaurantRepository repository;
+
+  /// Where the selected scope is read from, and watched: the app-bar switch can
+  /// move it while this screen is open, so the aggregates have to follow.
+  final UserPreferencesRepository preferences;
 
   /// Reads "now" for the trailing-month window; injectable so the window is
   /// testable at all.
   final DateTime Function() clock;
 
-  /// The scope to aggregate: a group id, or null for Personal. A pushed screen,
-  /// so it is read once when the screen opens rather than tracked live.
-  final String? groupId;
+  /// The scope the aggregates are drawn from: a group id, or null for Personal.
+  String? _groupId;
 
   final List<StreamSubscription<Object?>> _subscriptions =
       <StreamSubscription<Object?>>[];
+
+  /// Opens one subscription per aggregate query, for [_groupId]. Called on
+  /// construction and again whenever the scope moves, so the previous scope's
+  /// subscriptions are cancelled first.
+  void _subscribe() {
+    for (final StreamSubscription<Object?> subscription in _subscriptions) {
+      unawaited(subscription.cancel());
+    }
+    _subscriptions
+      ..clear()
+      ..addAll(<StreamSubscription<Object?>>[
+        repository.observeTotalCount(groupId: _groupId).listen((int value) {
+          _totalCount = value;
+          _loaded = true;
+          _publish();
+        }),
+        repository.observeVisitedCount(groupId: _groupId).listen((int value) {
+          _visitedCount = value;
+          _publish();
+        }),
+        repository.observeAverageRating(groupId: _groupId).listen((
+          double? value,
+        ) {
+          _averageRating = value;
+          _publish();
+        }),
+        repository.observeCuisineCounts(groupId: _groupId).listen(
+          (List<CuisineCount> value) {
+            _cuisineCounts = value;
+            _publish();
+          },
+        ),
+        repository.observePriceRangeCounts(groupId: _groupId).listen(
+          (List<PriceRangeCount> value) {
+            _priceRangeCounts = value;
+            _publish();
+          },
+        ),
+        repository.observeAllVisitDates(groupId: _groupId).listen((
+          List<int> value,
+        ) {
+          _visitDates = value;
+          _publish();
+        }),
+        repository.observeAllVisitDateRatings(groupId: _groupId).listen(
+          (List<VisitDateRating> value) {
+            _visitDateRatings = value;
+            _publish();
+          },
+        ),
+      ]);
+  }
+
+  void _onPreferencesChanged() {
+    final String? next = preferences.current.selectedGroupId;
+    if (next == _groupId) {
+      return;
+    }
+    _groupId = next;
+    _subscribe();
+  }
 
   StatisticsState _state = const StatisticsState();
   int _totalCount = 0;
@@ -118,6 +149,7 @@ class StatisticsController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    preferences.listenable.removeListener(_onPreferencesChanged);
     for (final StreamSubscription<Object?> subscription in _subscriptions) {
       unawaited(subscription.cancel());
     }

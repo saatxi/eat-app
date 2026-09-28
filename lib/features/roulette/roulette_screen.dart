@@ -12,6 +12,8 @@ import '../../core/widgets/price_range_label.dart';
 import '../../core/widgets/pressable_scale.dart';
 import '../../core/widgets/rating_and_price_row.dart';
 import '../../core/widgets/restaurant_thumbnail.dart';
+import '../groups/group_scope_button.dart';
+import '../groups/groups_controller.dart';
 import '../list/journal_filter_bar.dart' show JournalSegment;
 import '../list/restaurant_ui_model.dart';
 import 'roulette_controller.dart';
@@ -52,13 +54,22 @@ class _RouletteScreenState extends State<RouletteScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final RouletteController controller = _controller!;
+    // The scope switch sits in the app bar here too; the controller below is
+    // already scoped by it, so a change re-picks from the new scope's rows.
+    final GroupsController? groups = AppScope.of(context).groupsController;
 
     return ListenableBuilder(
       listenable: controller,
       builder: (BuildContext context, Widget? child) {
         final RouletteState state = controller.state;
         return Scaffold(
-          appBar: AppBar(title: Text(l10n.rouletteTitle)),
+          appBar: AppBar(
+            title: Text(l10n.rouletteTitle),
+            actions: <Widget>[
+              if (groups != null && groups.canUseGroups)
+                GroupScopeButton(controller: groups),
+            ],
+          ),
           body: Column(
             children: <Widget>[
               _Filters(state: state, controller: controller),

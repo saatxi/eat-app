@@ -11,6 +11,8 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/price_range_label.dart';
 import '../../core/widgets/rating_trend_chart.dart';
 import '../../data/models/stats_projections.dart';
+import '../groups/group_scope_button.dart';
+import '../groups/groups_controller.dart';
 import 'monthly_trends.dart';
 import 'statistics_controller.dart';
 
@@ -37,7 +39,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final AppScope scope = AppScope.of(context);
     _controller ??= StatisticsController(
       repository: scope.restaurants,
-      groupId: scope.preferences.current.selectedGroupId,
+      // The controller follows the scope itself, so the app-bar switch can move
+      // it while this screen is open.
+      preferences: scope.preferences,
     );
   }
 
@@ -51,13 +55,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final StatisticsController controller = _controller!;
+    final GroupsController? groups = AppScope.of(context).groupsController;
 
     return ListenableBuilder(
       listenable: controller,
       builder: (BuildContext context, Widget? child) {
         final StatisticsState state = controller.state;
         return Scaffold(
-          appBar: AppBar(title: Text(l10n.statsTitle)),
+          appBar: AppBar(
+            title: Text(l10n.statsTitle),
+            actions: <Widget>[
+              if (groups != null && groups.canUseGroups)
+                GroupScopeButton(controller: groups),
+            ],
+          ),
           body: switch (state) {
             StatisticsState(isInitialLoad: true) => const Center(
                 child: CircularProgressIndicator(),

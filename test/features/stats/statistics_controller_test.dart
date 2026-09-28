@@ -1,5 +1,6 @@
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
+import 'package:eatapp/data/repositories/user_preferences_repository.dart';
 import 'package:eatapp/features/stats/monthly_trends.dart';
 import 'package:eatapp/features/stats/statistics_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,9 +29,10 @@ void main() {
   /// A fixed "now" so the trailing-month window is deterministic.
   final DateTime now = DateTime(2026, 3, 15);
 
-  StatisticsController buildController() {
+  StatisticsController buildController({UserPreferencesRepository? preferences}) {
     final StatisticsController controller = StatisticsController(
       repository: repository,
+      preferences: preferences ?? UserPreferencesRepository(),
       clock: () => now,
     );
     controllers.add(controller);
@@ -128,6 +130,35 @@ void main() {
     expect(
       months.singleWhere((MonthlyVisitCount m) => m.monthKey == '2026-02').count,
       0,
+    );
+  });
+
+  test('follows the scope when the selected group moves', () async {
+    await repository.insert(restaurant(id: 'a', name: 'Private'));
+    await repository.insert(restaurant(id: 'b', name: 'Private 2'));
+    await repository.insert(
+      restaurant(id: 'c', name: 'Shared', groupId: 'g1', createdBy: 'u1'),
+    );
+    final UserPreferencesRepository preferences = UserPreferencesRepository();
+    final StatisticsController controller = buildController(
+      preferences: preferences,
+    );
+
+    await waitFor(
+      () => !controller.state.isInitialLoad,
+      description: 'the first database emission',
+    );
+    // Personal to begin with, so only the two private rows are counted.
+    expect(controller.state.totalCount, 2);
+
+    // The app-bar switch moves the preference; the controller has to notice and
+    // re-query against the new scope, or the screen would keep showing the old
+    // group's numbers.
+    await preferences.setSelectedGroup('g1');
+
+    await waitFor(
+      () => controller.state.totalCount == 1,
+      description: 'the aggregates to follow the new scope',
     );
   });
 }

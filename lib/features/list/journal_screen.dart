@@ -6,7 +6,7 @@ import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/staggered_entrance.dart';
-import '../groups/group_selector.dart';
+import '../groups/group_scope_button.dart';
 import '../groups/groups_controller.dart';
 import '../import_export/share_service.dart';
 import 'journal_filter_bar.dart';
@@ -102,6 +102,12 @@ class _JournalScreenState extends State<JournalScreen> {
       appBar: AppBar(
         title: Text(l10n.navJournal),
         actions: <Widget>[
+          // The scope switch lives up here now, rather than in the row that used
+          // to sit above the list: the list, the roulette and the statistics
+          // screen all read the same controller, so a change here moves all
+          // three.
+          if (groups != null && groups.canUseGroups)
+            GroupScopeButton(controller: groups),
           if (widget.onViewStatistics != null)
             IconButton(
               onPressed: widget.onViewStatistics,
@@ -140,8 +146,6 @@ class _JournalScreenState extends State<JournalScreen> {
           }
           return Column(
             children: <Widget>[
-              if (groups != null && groups.canUseGroups)
-                GroupSelector(controller: groups),
               JournalFilterBar(
                 controller: controller,
                 state: state,

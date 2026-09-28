@@ -6,9 +6,11 @@ import 'package:eatapp/data/groups/group_gateway.dart';
 import 'package:eatapp/data/groups/group_models.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
-import 'package:eatapp/features/groups/group_selector.dart';
+import 'package:eatapp/features/groups/group_scope_button.dart';
 import 'package:eatapp/features/groups/groups_controller.dart';
+import 'package:eatapp/features/roulette/roulette_screen.dart';
 import 'package:eatapp/features/settings/settings_screen.dart';
+import 'package:eatapp/features/stats/statistics_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -102,71 +104,71 @@ void main() {
     ],
   );
 
-  testWidgets('the journal selector collapses to a dropdown with several groups', (
+  testWidgets('the app-bar button switches the scope', (
     WidgetTester tester,
   ) async {
     final GroupsController controller = await ready(gateway: twoGroups());
-    await controller.select('g1');
 
     await tester.pumpWidget(
       host(
-        child: Scaffold(body: GroupSelector(controller: controller)),
+        child: Scaffold(
+          appBar: AppBar(
+            actions: <Widget>[GroupScopeButton(controller: controller)],
+          ),
+        ),
         groups: controller,
       ),
     );
     await tester.pumpAndSettle();
 
-    // One control labelled with the scope in force, rather than a chip each.
-    expect(find.text('Família'), findsOneWidget);
-    expect(find.text('Personal'), findsNothing);
-    expect(find.text('Amics'), findsNothing);
+    // Personal at first, so the icon is the personal one.
+    expect(find.byIcon(Icons.person_outline), findsOneWidget);
 
-    // Opening it lists every scope, and picking Personal moves the label.
-    await tester.tap(find.text('Família'));
+    // The menu names every scope, whichever one is in force.
+    await tester.tap(find.byIcon(Icons.person_outline));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(MenuItemButton, 'Personal'), findsOneWidget);
+    expect(find.widgetWithText(MenuItemButton, 'Família'), findsOneWidget);
     expect(find.widgetWithText(MenuItemButton, 'Amics'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(MenuItemButton, 'Personal'));
+    await tester.tap(find.widgetWithText(MenuItemButton, 'Amics'));
     await tester.pumpAndSettle();
 
-    expect(preferences.current.selectedGroupId, isNull);
-    expect(find.text('Personal'), findsOneWidget);
-    expect(find.text('Família'), findsNothing);
+    expect(preferences.current.selectedGroupId, 'g2');
+    // And the icon now says a group is in force.
+    expect(find.byIcon(Icons.group_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.person_outline), findsNothing);
   });
 
-  testWidgets('the journal selector keeps chips for a single group', (
+  /// Pumps a few frames by hand — both screens show a spinner during their
+  /// initial load, and `pumpAndSettle` never returns while one is up — checks
+  /// the scope button is in the app bar, then tears the tree down while the
+  /// harness is still pumping, so drift's deferred stream-cleanup timer is
+  /// flushed rather than left pending and failing the test.
+  Future<void> expectScopeButton(WidgetTester tester) async {
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.byType(GroupScopeButton), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  }
+
+  testWidgets('the scope switch also shows on the roulette and the statistics', (
     WidgetTester tester,
   ) async {
-    final GroupsController controller = await ready(
-      gateway: _FakeGroupGateway(
-        groups: const <Group>[
-          Group(id: 'g1', name: 'Família', role: GroupRole.owner),
-        ],
-      ),
-    );
+    final GroupsController controller = await ready(gateway: twoGroups());
 
     await tester.pumpWidget(
-      host(
-        child: Scaffold(body: GroupSelector(controller: controller)),
-        groups: controller,
-      ),
+      host(child: const RouletteScreen(), groups: controller),
     );
-    await tester.pumpAndSettle();
+    await expectScopeButton(tester);
 
-    expect(find.text('Personal'), findsOneWidget);
-    expect(find.text('Família'), findsOneWidget);
-
-    await tester.tap(find.text('Família'));
-    await tester.pumpAndSettle();
-    expect(preferences.current.selectedGroupId, 'g1');
-
-    // The regression the dropdown must not reintroduce: choosing Personal
-    // leaves the group reachable, so a group is never Settings-only.
-    await tester.tap(find.text('Personal'));
-    await tester.pumpAndSettle();
-    expect(preferences.current.selectedGroupId, isNull);
-    expect(find.text('Família'), findsOneWidget);
+    await tester.pumpWidget(
+      host(child: const StatisticsScreen(), groups: controller),
+    );
+    await expectScopeButton(tester);
   });
 
   testWidgets('the settings Groups section switches the scope', (
