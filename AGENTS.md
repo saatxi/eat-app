@@ -51,6 +51,13 @@ Optional detailed explanation
 - Present the message inside a fenced code block (` ``` `), not as plain
   text or bold/italic formatting, so it's easy to copy straight into
   `git commit`.
+- On Windows (cmd.exe), do not pass a multi-line message through `-m`:
+  the shell truncates it at the first line break, silently dropping the
+  body. Write the full message to a file and commit with `-F` instead
+  (`git commit -F .git/COMMIT_EDITMSG_TMP.txt`), then delete the file —
+  the only reliable way to land a bulleted body there. After any commit,
+  `git log -1 --format=%B` must show the message exactly as intended;
+  verify before reporting it as done.
 
 ## Tech stack & tools
 
