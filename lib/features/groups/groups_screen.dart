@@ -206,11 +206,15 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
                   onOpenMembers: () => _openMembers(context, group),
                   onOpenInvite: () => _openInvite(context, group),
                   onEditName: () => _editName(context, group),
-                  onChangeYourName: () => _changeYourName(context),
                   onLeave: () => _leaveGroup(context, group),
                   onDelete: () => _deleteGroup(context, group),
                 ),
               const SizedBox(height: AppSpacing.lg),
+              ListTile(
+                leading: const Icon(Icons.person_outline_rounded),
+                title: Text(l10n.groupsChangeYourName),
+                onTap: () => _changeYourName(context),
+              ),
               ListTile(
                 leading: const Icon(Icons.qr_code_scanner_rounded),
                 title: Text(l10n.groupsActionJoin),
@@ -238,7 +242,6 @@ class _GroupTile extends StatelessWidget {
     required this.onOpenMembers,
     required this.onOpenInvite,
     required this.onEditName,
-    required this.onChangeYourName,
     required this.onLeave,
     required this.onDelete,
   });
@@ -248,7 +251,6 @@ class _GroupTile extends StatelessWidget {
   final VoidCallback onOpenMembers;
   final VoidCallback onOpenInvite;
   final VoidCallback onEditName;
-  final VoidCallback onChangeYourName;
   final VoidCallback onLeave;
   final VoidCallback onDelete;
 
@@ -316,12 +318,8 @@ class _GroupTile extends StatelessWidget {
                 tooltip: AppLocalizations.of(context).groupsActionMore,
                 onSelected: (String action) {
                   switch (action) {
-                    case 'members':
-                      onOpenMembers();
                     case 'edit':
                       onEditName();
-                    case 'rename':
-                      onChangeYourName();
                     case 'leave':
                       onLeave();
                     case 'delete':
@@ -330,21 +328,9 @@ class _GroupTile extends StatelessWidget {
                 },
                 itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                   PopupMenuItem<String>(
-                    value: 'members',
-                    child: Text(
-                      AppLocalizations.of(context).groupsMembersTitle,
-                    ),
-                  ),
-                  PopupMenuItem<String>(
                     value: 'edit',
                     child: Text(
                       AppLocalizations.of(context).groupsEditTitle,
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'rename',
-                    child: Text(
-                      AppLocalizations.of(context).groupsChangeYourName,
                     ),
                   ),
                   const PopupMenuDivider(),

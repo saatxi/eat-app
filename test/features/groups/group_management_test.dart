@@ -232,7 +232,7 @@ void main() {
     await expectScopeButton(tester);
   });
 
-  testWidgets('the groups screen shows members, edit, and rename in overflow menu', (
+  testWidgets('the groups screen shows edit and leave in the tile overflow menu', (
     WidgetTester tester,
   ) async {
     final GroupsController controller = await ready(gateway: twoGroups());
@@ -250,12 +250,13 @@ void main() {
     await tester.tap(find.byIcon(Icons.more_vert).at(1));
     await tester.pumpAndSettle();
 
-    // Menu should have: Members, Edit group, Change your name, Leave, Delete (owner).
-    expect(find.text('Members'), findsOneWidget);
+    // The menu holds the tile's own actions: Edit group and Leave group.
     expect(find.text('Edit group'), findsOneWidget);
-    expect(find.text('Change your name'), findsOneWidget);
     expect(find.text('Leave group'), findsOneWidget);
-    // Delete is owner-only, so not shown for member group.
+    // "Change your name" lives as a standalone row under the list, not in the
+    // tile's overflow menu.
+    expect(find.text('Change your name'), findsOneWidget);
+    // Delete is owner-only, so not shown for a member group.
     expect(find.text('Delete group'), findsNothing);
   });
 
