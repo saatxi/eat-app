@@ -74,7 +74,16 @@ class _FakeGroupGateway implements GroupGateway {
   }
 
   @override
-  Future<void> editGroup(String groupId, String name) async => throw UnimplementedError();
+  Future<void> editGroup(String groupId, String name) async {
+    members = <GroupMember>[
+      for (final GroupMember member in members)
+        GroupMember(
+          userId: member.userId,
+          displayName: member.displayName,
+          role: member.role,
+        ),
+    ];
+  }
 
   @override
   Future<Group> createGroup({

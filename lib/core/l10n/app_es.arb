@@ -289,6 +289,8 @@
   "groupsEditTitle": "Editar grupo",
   "groupsEditAction": "Guardar",
   "groupsEditErrorFailed": "No se ha podido actualizar el grupo. Inténtalo de nuevo.",
+  "groupsChangeYourName": "Cambiar tu nombre",
+  "groupsChangeYourNameDialogTitle": "Tu nombre",
 
   "groupsInviteAction": "Invitar",
   "groupsInviteTitle": "Invitar a {name}",

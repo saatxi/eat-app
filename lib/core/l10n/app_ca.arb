@@ -289,6 +289,8 @@
   "groupsEditTitle": "Editar grup",
   "groupsEditAction": "Desa",
   "groupsEditErrorFailed": "No s'ha pogut actualitzar el grup. Torna-ho a provar.",
+  "groupsChangeYourName": "Canvia el teu nom",
+  "groupsChangeYourNameDialogTitle": "El teu nom",
 
   "groupsInviteAction": "Convida",
   "groupsInviteTitle": "Convida a {name}",

@@ -1690,6 +1690,18 @@ abstract class AppLocalizations {
   /// **'Couldn\'t update the group. Please try again.'**
   String get groupsEditErrorFailed;
 
+  /// No description provided for @groupsChangeYourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Change your name'**
+  String get groupsChangeYourName;
+
+  /// No description provided for @groupsChangeYourNameDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get groupsChangeYourNameDialogTitle;
+
   /// No description provided for @groupsInviteAction.
   ///
   /// In en, this message translates to:

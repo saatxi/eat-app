@@ -891,6 +891,12 @@ class AppLocalizationsCa extends AppLocalizations {
       'No s\'ha pogut actualitzar el grup. Torna-ho a provar.';
 
   @override
+  String get groupsChangeYourName => 'Canvia el teu nom';
+
+  @override
+  String get groupsChangeYourNameDialogTitle => 'El teu nom';
+
+  @override
   String get groupsInviteAction => 'Convida';
 
   @override

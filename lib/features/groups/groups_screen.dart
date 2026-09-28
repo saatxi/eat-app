@@ -46,10 +46,6 @@ class _GroupsScreenBody extends StatefulWidget {
 }
 
 class _GroupsScreenState extends State<_GroupsScreenBody> {
-  // No explicit load needed: the controller created in main.dart initState
-  // already calls load() eagerly, so the screen only needs to observe via
-  // ListenableBuilder.
-
   Future<void> _createGroup(BuildContext context) async {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -109,6 +105,26 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
     }
   }
 
+  Future<void> _changeYourName(BuildContext context) async {
+    final String? newName = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) => _RenameMeDialog(),
+    );
+    if (newName == null) {
+      return;
+    }
+    final gateway = widget.controller.gateway;
+    final identity = widget.controller.identity;
+    if (gateway == null || identity == null) {
+      return;
+    }
+    final currentUserId = (await identity.current())?.userId;
+    if (currentUserId == null) {
+      return;
+    }
+    await gateway.setDisplayName(userId: currentUserId, displayName: newName);
+  }
+
   Future<void> _leaveGroup(BuildContext context, Group group) async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final bool? confirmed = await showDialog<bool>(
@@ -129,11 +145,8 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
       ),
     );
     if (confirmed ?? false) {
-      // Leave is done through the MembersScreen's gateway, but we can also
-      // call it directly since GroupsController exposes the gateway.
       final gateway = widget.controller.gateway;
       if (gateway != null && widget.controller.state.selectedGroupId != null) {
-        // We need the current user id — use the identity gateway.
         final identity = widget.controller.identity;
         final currentUserId = (await identity?.current())?.userId;
         if (currentUserId != null) {
@@ -193,6 +206,7 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
                   onOpenMembers: () => _openMembers(context, group),
                   onOpenInvite: () => _openInvite(context, group),
                   onEditName: () => _editName(context, group),
+                  onChangeYourName: () => _changeYourName(context),
                   onLeave: () => _leaveGroup(context, group),
                   onDelete: () => _deleteGroup(context, group),
                 ),
@@ -224,6 +238,7 @@ class _GroupTile extends StatelessWidget {
     required this.onOpenMembers,
     required this.onOpenInvite,
     required this.onEditName,
+    required this.onChangeYourName,
     required this.onLeave,
     required this.onDelete,
   });
@@ -233,6 +248,7 @@ class _GroupTile extends StatelessWidget {
   final VoidCallback onOpenMembers;
   final VoidCallback onOpenInvite;
   final VoidCallback onEditName;
+  final VoidCallback onChangeYourName;
   final VoidCallback onLeave;
   final VoidCallback onDelete;
 
@@ -289,12 +305,7 @@ class _GroupTile extends StatelessWidget {
                   ],
                 ),
               ),
-              // Trailing actions.
-              IconButton(
-                onPressed: onOpenMembers,
-                tooltip: AppLocalizations.of(context).groupsMembersTitle,
-                icon: const Icon(Icons.people_outline),
-              ),
+              // Trailing actions: only invite (owner) and overflow menu.
               if (group.role == GroupRole.owner)
                 IconButton(
                   onPressed: onOpenInvite,
@@ -305,8 +316,12 @@ class _GroupTile extends StatelessWidget {
                 tooltip: AppLocalizations.of(context).groupsActionMore,
                 onSelected: (String action) {
                   switch (action) {
+                    case 'members':
+                      onOpenMembers();
                     case 'edit':
                       onEditName();
+                    case 'rename':
+                      onChangeYourName();
                     case 'leave':
                       onLeave();
                     case 'delete':
@@ -315,9 +330,24 @@ class _GroupTile extends StatelessWidget {
                 },
                 itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                   PopupMenuItem<String>(
-                    value: 'edit',
-                    child: Text(AppLocalizations.of(context).groupsEditTitle),
+                    value: 'members',
+                    child: Text(
+                      AppLocalizations.of(context).groupsMembersTitle,
+                    ),
                   ),
+                  PopupMenuItem<String>(
+                    value: 'edit',
+                    child: Text(
+                      AppLocalizations.of(context).groupsEditTitle,
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'rename',
+                    child: Text(
+                      AppLocalizations.of(context).groupsChangeYourName,
+                    ),
+                  ),
+                  const PopupMenuDivider(),
                   PopupMenuItem<String>(
                     value: 'leave',
                     child: Text(
@@ -472,6 +502,54 @@ class _EditGroupDialogState extends State<_EditGroupDialog> {
           child: Text(l10n.actionCancel),
         ),
         FilledButton(onPressed: _submit, child: Text(l10n.groupsEditAction)),
+      ],
+    );
+  }
+}
+
+/// The "change your display name" dialog: one pre-filled name field and its
+/// two actions.
+class _RenameMeDialog extends StatefulWidget {
+  const _RenameMeDialog();
+
+  @override
+  State<_RenameMeDialog> createState() => _RenameMeDialogState();
+}
+
+class _RenameMeDialogState extends State<_RenameMeDialog> {
+  late final TextEditingController _name = TextEditingController();
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final String value = _name.text.trim();
+    if (value.isNotEmpty) {
+      Navigator.of(context).pop(value);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.groupsChangeYourNameDialogTitle),
+      content: TextField(
+        controller: _name,
+        autofocus: true,
+        textCapitalization: TextCapitalization.words,
+        decoration: InputDecoration(labelText: l10n.groupsNameFieldLabel),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.actionCancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.actionOk)),
       ],
     );
   }

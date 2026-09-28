@@ -400,6 +400,8 @@
   "groupsEditTitle": "Edit group",
   "groupsEditAction": "Save",
   "groupsEditErrorFailed": "Couldn't update the group. Please try again.",
+  "groupsChangeYourName": "Change your name",
+  "groupsChangeYourNameDialogTitle": "Your name",
 
   "groupsInviteAction": "Invite",
   "groupsInviteTitle": "Invite to {name}",

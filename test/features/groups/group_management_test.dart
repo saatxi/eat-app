@@ -232,7 +232,7 @@ void main() {
     await expectScopeButton(tester);
   });
 
-  testWidgets('the groups screen switches the scope from the members button', (
+  testWidgets('the groups screen shows members, edit, and rename in overflow menu', (
     WidgetTester tester,
   ) async {
     final GroupsController controller = await ready(gateway: twoGroups());
@@ -246,11 +246,17 @@ void main() {
     // The second group tile shows "Amics" with role indicator.
     expect(find.text('Amics'), findsOneWidget);
 
-    // Tapping the people icon opens MembersScreen.
-    await tester.tap(find.byIcon(Icons.people_outline).first);
+    // Open the overflow menu on the second group tile.
+    await tester.tap(find.byIcon(Icons.more_vert).at(1));
     await tester.pumpAndSettle();
 
-    expect(find.text('Família'), findsOneWidget);
+    // Menu should have: Members, Edit group, Change your name, Leave, Delete (owner).
+    expect(find.text('Members'), findsOneWidget);
+    expect(find.text('Edit group'), findsOneWidget);
+    expect(find.text('Change your name'), findsOneWidget);
+    expect(find.text('Leave group'), findsOneWidget);
+    // Delete is owner-only, so not shown for member group.
+    expect(find.text('Delete group'), findsNothing);
   });
 
   testWidgets('the groups screen creates and selects a group', (

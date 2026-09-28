@@ -891,6 +891,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se ha podido actualizar el grupo. Inténtalo de nuevo.';
 
   @override
+  String get groupsChangeYourName => 'Cambiar tu nombre';
+
+  @override
+  String get groupsChangeYourNameDialogTitle => 'Tu nombre';
+
+  @override
   String get groupsInviteAction => 'Invitar';
 
   @override
