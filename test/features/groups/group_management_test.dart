@@ -102,7 +102,7 @@ void main() {
     ],
   );
 
-  testWidgets('the journal selector shows Personal and only the group in force', (
+  testWidgets('the journal selector keeps every group reachable', (
     WidgetTester tester,
   ) async {
     final GroupsController controller = await ready(gateway: twoGroups());
@@ -116,11 +116,24 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Personal and the picked group, and nothing else: the full roster is the
-    // settings section's job now, so this row stays a two-way switch.
     expect(find.text('Personal'), findsOneWidget);
     expect(find.text('Família'), findsOneWidget);
-    expect(find.text('Amics'), findsNothing);
+    expect(find.text('Amics'), findsOneWidget);
+
+    // The regression this guards: picking Personal must not make the group
+    // chips vanish, or a group could only be picked again from Settings.
+    await tester.tap(find.text('Personal'));
+    await tester.pumpAndSettle();
+
+    expect(preferences.current.selectedGroupId, isNull);
+    expect(find.text('Família'), findsOneWidget);
+    expect(find.text('Amics'), findsOneWidget);
+
+    // And back into a group from the same row.
+    await tester.tap(find.text('Amics'));
+    await tester.pumpAndSettle();
+
+    expect(preferences.current.selectedGroupId, 'g2');
   });
 
   testWidgets('the settings Groups section switches the scope', (

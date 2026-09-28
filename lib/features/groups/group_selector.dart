@@ -5,13 +5,12 @@ import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/groups/group_models.dart';
 import 'groups_controller.dart';
 
-/// The scope switcher above the list: Personal, and the group currently in
-/// force.
+/// The scope switcher above the list: Personal, and each of the user's groups.
 ///
-/// Deliberately compact — this row only toggles between the private list and
-/// the group you are already in. The full roster, plus creating, joining and
-/// managing a group, lives on the settings screen's Groups section, so the top
-/// of the Journal stays a switch rather than a management surface.
+/// A switch, not a management surface — creating, joining and the members
+/// roster live on the settings screen's Groups section. Every group is listed
+/// here all the same: dropping the ones that are not in force would leave no way
+/// back to a group after choosing Personal without a detour through Settings.
 ///
 /// Only ever built when [GroupsController.canUseGroups] is true, so a build
 /// without a backend never renders it at all.
@@ -27,10 +26,6 @@ class GroupSelector extends StatelessWidget {
       listenable: controller,
       builder: (BuildContext context, Widget? child) {
         final GroupsState state = controller.state;
-        // A selection that no longer resolves (the group was left or dissolved
-        // elsewhere) reads as null, leaving Personal as the only chip — the
-        // same fallback the rest of the app applies to a stale selection.
-        final Group? selected = state.selected;
         return SizedBox(
           height: 48,
           child: ListView(
@@ -42,12 +37,12 @@ class GroupSelector extends StatelessWidget {
                 selected: state.selectedGroupId == null,
                 onSelected: (_) => controller.select(null),
               ),
-              if (selected != null) ...<Widget>[
+              for (final Group group in state.groups) ...<Widget>[
                 const SizedBox(width: AppSpacing.sm),
                 ChoiceChip(
-                  label: Text(selected.name),
-                  selected: true,
-                  onSelected: (_) => controller.select(selected.id),
+                  label: Text(group.name),
+                  selected: state.selectedGroupId == group.id,
+                  onSelected: (_) => controller.select(group.id),
                 ),
               ],
             ],
