@@ -4,14 +4,16 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../data/groups/group_models.dart';
 import 'groups_controller.dart';
 
-/// The scope selector as an app-bar action: an icon that says which kind of
-/// scope is in force and opens a menu of Personal and every group.
+/// The scope selector as an app-bar action: a button naming the scope in force
+/// that opens a menu of Personal and every group.
 ///
 /// Shared by the journal, the roulette and the statistics screens — they all
 /// read the same [GroupsController], so switching here moves all three at once.
-/// An icon rather than the group's own name, because an app bar already carries
-/// a title and up to three actions and a long name would not fit beside them;
-/// the menu is where the names live.
+///
+/// The label is the group's own name, capped by [_labelWidth] and ellipsized:
+/// wide enough to recognise the group at a glance, narrow enough to leave the
+/// app bar's title and its other actions their room. The full name is the
+/// tooltip, and the menu lists every scope.
 ///
 /// Only ever built when [GroupsController.canUseGroups] is true, so a build
 /// without a backend shows nothing at all.
@@ -19,6 +21,10 @@ class GroupScopeButton extends StatelessWidget {
   const GroupScopeButton({super.key, required this.controller});
 
   final GroupsController controller;
+
+  /// How wide the scope's name is allowed to grow before it ellipsizes. Sized to
+  /// fit a group name beside the journal's title and its two other actions.
+  static const double _labelWidth = 84;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +34,7 @@ class GroupScopeButton extends StatelessWidget {
       builder: (BuildContext context, Widget? child) {
         final GroupsState state = controller.state;
         final Group? selected = state.selected;
+        final String scope = selected?.name ?? l10n.groupsScopePersonal;
         return MenuAnchor(
           menuChildren: <Widget>[
             MenuItemButton(
@@ -47,13 +54,24 @@ class GroupScopeButton extends StatelessWidget {
               ),
           ],
           builder: (BuildContext context, MenuController menu, Widget? child) {
-            return IconButton(
-              onPressed: () => menu.isOpen ? menu.close() : menu.open(),
-              // The icon says which kind of scope is in force; the tooltip says
-              // exactly which one, since the name itself has no room here.
-              tooltip: selected?.name ?? l10n.groupsScopePersonal,
-              icon: Icon(
-                selected == null ? Icons.person_outline : Icons.group_outlined,
+            return Tooltip(
+              message: scope,
+              child: TextButton(
+                onPressed: () => menu.isOpen ? menu.close() : menu.open(),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: _labelWidth),
+                      child: Text(
+                        scope,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
+                    ),
+                    const Icon(Icons.arrow_drop_down, size: 20),
+                  ],
+                ),
               ),
             );
           },

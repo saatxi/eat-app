@@ -8,6 +8,7 @@ import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
 import 'package:eatapp/features/groups/group_scope_button.dart';
 import 'package:eatapp/features/groups/groups_controller.dart';
+import 'package:eatapp/features/list/journal_screen.dart';
 import 'package:eatapp/features/roulette/roulette_screen.dart';
 import 'package:eatapp/features/settings/settings_screen.dart';
 import 'package:eatapp/features/stats/statistics_screen.dart';
@@ -104,7 +105,7 @@ void main() {
     ],
   );
 
-  testWidgets('the app-bar button switches the scope', (
+  testWidgets('the app-bar button names the scope and switches it', (
     WidgetTester tester,
   ) async {
     final GroupsController controller = await ready(gateway: twoGroups());
@@ -121,11 +122,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Personal at first, so the icon is the personal one.
-    expect(find.byIcon(Icons.person_outline), findsOneWidget);
+    // The button names the scope in force, rather than only hinting at it.
+    expect(find.text('Personal'), findsOneWidget);
 
     // The menu names every scope, whichever one is in force.
-    await tester.tap(find.byIcon(Icons.person_outline));
+    await tester.tap(find.text('Personal'));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(MenuItemButton, 'Personal'), findsOneWidget);
     expect(find.widgetWithText(MenuItemButton, 'Família'), findsOneWidget);
@@ -135,9 +136,55 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(preferences.current.selectedGroupId, 'g2');
-    // And the icon now says a group is in force.
-    expect(find.byIcon(Icons.group_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.person_outline), findsNothing);
+    // And the label follows the switch.
+    expect(find.text('Amics'), findsOneWidget);
+    expect(find.text('Personal'), findsNothing);
+  });
+
+  testWidgets('the labelled switch still fits the journal app bar', (
+    WidgetTester tester,
+  ) async {
+    // A narrow phone, so the title and the three actions have least room left.
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    // A deliberately long name: the label has to ellipsize rather than push the
+    // title and the other actions off the bar.
+    final GroupsController controller = await ready(
+      gateway: _FakeGroupGateway(
+        groups: const <Group>[
+          Group(
+            id: 'g1',
+            name: 'Família del poble de la muntanya',
+            role: GroupRole.owner,
+          ),
+        ],
+      ),
+    );
+    await controller.select('g1');
+
+    await tester.pumpWidget(
+      host(
+        child: JournalScreen(
+          onOpenRestaurant: (_) {},
+          onAddRestaurant: () {},
+        ),
+        groups: controller,
+      ),
+    );
+    // Hand-pumped: the initial load shows a skeleton that never settles. An
+    // overflow here would fail the test on its own.
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(find.byType(GroupScopeButton), findsOneWidget);
+
+    // Tear down while pumping, so drift's deferred stream-cleanup timer is
+    // flushed rather than left pending.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
   });
 
   /// Pumps a few frames by hand — both screens show a spinner during their
