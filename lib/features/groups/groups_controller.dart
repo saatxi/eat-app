@@ -101,17 +101,33 @@ class GroupsController extends ChangeNotifier {
       ),
     );
     try {
-      final Identity? me = await account.current();
+      final Identity? me = await _withTimeout(
+        account.current(),
+        Duration(seconds: 10),
+        'Identity check timed out',
+      );
       final List<Group> loaded = me == null
           ? const <Group>[]
-          : await groups.listGroups(me.userId);
+          : await _withTimeout(
+              groups.listGroups(me.userId),
+              Duration(seconds: 10),
+              'Group list timed out',
+            );
       _setState(
-        GroupsState(selectedGroupId: _selectedGroupId, groups: loaded),
+        GroupsState(
+          selectedGroupId: _selectedGroupId,
+          groups: loaded,
+          isLoading: false,
+        ),
       );
       _syncSelected();
     } catch (error) {
       _setState(
-        GroupsState(selectedGroupId: _selectedGroupId, error: error),
+        GroupsState(
+          selectedGroupId: _selectedGroupId,
+          isLoading: false,
+          error: error,
+        ),
       );
     }
   }
@@ -137,6 +153,35 @@ class GroupsController extends ChangeNotifier {
   }
 
   void _syncSelected() => unawaited(syncNow());
+
+  /// Edits [groupId]'s name. Only an owner may call this; RLS enforces it
+  /// server-side. Returns whether it worked; a failure lands in
+  /// [GroupsState.error].
+  Future<bool> editGroup(String groupId, String name) async {
+    final GroupGateway? groups = gateway;
+    if (groups == null) {
+      return false;
+    }
+    try {
+      await groups.editGroup(groupId, name);
+      await load();
+      return true;
+    } catch (error, stackTrace) {
+      debugPrint('Editing a group failed: $error');
+      if (kDebugMode) {
+        debugPrintStack(stackTrace: stackTrace);
+      }
+      _setState(
+        GroupsState(
+          groups: _state.groups,
+          selectedGroupId: _selectedGroupId,
+          isLoading: false,
+          error: error,
+        ),
+      );
+      return false;
+    }
+  }
 
   /// Creates a group — signing in anonymously first when the device has never
   /// signed in, since a group needs an owner — then selects it. Returns whether
@@ -199,6 +244,10 @@ class GroupsController extends ChangeNotifier {
         error: _state.error,
       ),
     );
+  }
+
+  static Future<T> _withTimeout<T>(Future<T> future, Duration timeout, String message) async {
+    return await future.timeout(timeout, onTimeout: () async => throw TimeoutException(message));
   }
 
   void _setState(GroupsState next) {

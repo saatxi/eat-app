@@ -8,9 +8,9 @@ import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
 import 'package:eatapp/features/groups/group_scope_button.dart';
 import 'package:eatapp/features/groups/groups_controller.dart';
+import 'package:eatapp/features/groups/groups_screen.dart';
 import 'package:eatapp/features/list/journal_screen.dart';
 import 'package:eatapp/features/roulette/roulette_screen.dart';
-import 'package:eatapp/features/settings/settings_screen.dart';
 import 'package:eatapp/features/stats/statistics_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,6 +53,14 @@ class _FakeGroupGateway implements GroupGateway {
 
   @override
   Future<void> removeMember(String groupId, String userId) async {}
+
+  @override
+  Future<void> editGroup(String groupId, String name) async {
+    groups = <Group>[
+      for (final Group group in groups)
+        group.id == groupId ? Group(id: group.id, name: name, role: group.role) : group,
+    ];
+  }
 
   @override
   Future<void> deleteGroup(String groupId) async {}
@@ -224,56 +232,56 @@ void main() {
     await expectScopeButton(tester);
   });
 
-  testWidgets('the settings Groups section switches the scope', (
+  testWidgets('the groups screen switches the scope from the members button', (
     WidgetTester tester,
   ) async {
     final GroupsController controller = await ready(gateway: twoGroups());
+    await controller.select('g2');
 
     await tester.pumpWidget(
-      host(child: const SettingsScreen(), groups: controller),
+      host(child: const GroupsScreen(), groups: controller),
     );
     await tester.pumpAndSettle();
 
-    // The scope row names the scope in force — Personal, here — and the roster
-    // only appears once its menu is open. The row sits below the appearance and
-    // language rows, so the lazy list has to be scrolled to it first.
-    final Finder scopeRow = find.widgetWithText(ListTile, 'Personal');
-    await tester.scrollUntilVisible(scopeRow, 200);
-    await tester.ensureVisible(scopeRow);
+    // The second group tile shows "Amics" with role indicator.
+    expect(find.text('Amics'), findsOneWidget);
+
+    // Tapping the people icon opens MembersScreen.
+    await tester.tap(find.byIcon(Icons.people_outline).first);
     await tester.pumpAndSettle();
 
-    await tester.tap(scopeRow);
-    await tester.pumpAndSettle();
-
-    expect(find.widgetWithText(MenuItemButton, 'Família'), findsOneWidget);
-    await tester.tap(find.widgetWithText(MenuItemButton, 'Família'));
-    await tester.pumpAndSettle();
-
-    expect(preferences.current.selectedGroupId, 'g1');
+    expect(find.text('Família'), findsOneWidget);
   });
 
-  testWidgets('the settings Groups section creates and selects a group', (
+  testWidgets('the groups screen creates and selects a group', (
     WidgetTester tester,
   ) async {
     final _FakeGroupGateway gateway = _FakeGroupGateway();
     final GroupsController controller = await ready(gateway: gateway);
 
     await tester.pumpWidget(
-      host(child: const SettingsScreen(), groups: controller),
+      host(child: const GroupsScreen(), groups: controller),
     );
-    await tester.pumpAndSettle();
+    // Hand-pumped: the initial load spinner never settles, so pump a few
+    // frames until the list appears, then stop.
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
-    final Finder create = find.widgetWithText(ListTile, 'New group');
-    await tester.scrollUntilVisible(create, 200);
-    await tester.ensureVisible(create);
-    await tester.pumpAndSettle();
-
-    await tester.tap(create);
-    await tester.pumpAndSettle();
+    // Tap the FAB to create.
+    await tester.tap(find.byType(FilledButton).first);
+    // Pump frames until the dialog appears (no pumpAndSettle — dialogs
+    // with animations can keep settling forever).
+    for (int i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     await tester.enterText(find.byType(TextField), 'Family');
     await tester.tap(find.text('Create'));
-    await tester.pumpAndSettle();
+    // Pump frames for the dialog close + controller reload.
+    for (int i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     expect(<String>[for (final Group group in gateway.created) group.name], <String>['Family']);
     expect(preferences.current.selectedGroupId, gateway.created.single.id);

@@ -242,6 +242,9 @@ class AppLocalizationsCa extends AppLocalizations {
   String get navRoulette => 'Ruleta';
 
   @override
+  String get navGroups => 'Grups';
+
+  @override
   String get navSettings => 'Configuració';
 
   @override
@@ -876,6 +879,16 @@ class AppLocalizationsCa extends AppLocalizations {
   @override
   String get groupsDeleteConfirmBody =>
       'El grup i els seus restaurants s\'eliminaran per a tothom. Això no es pot desfer: exporta\'n les dades abans si vols conservar una còpia.';
+
+  @override
+  String get groupsEditTitle => 'Editar grup';
+
+  @override
+  String get groupsEditAction => 'Desa';
+
+  @override
+  String get groupsEditErrorFailed =>
+      'No s\'ha pogut actualitzar el grup. Torna-ho a provar.';
 
   @override
   String get groupsInviteAction => 'Convida';

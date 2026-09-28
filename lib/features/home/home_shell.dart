@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../data/groups/invite_link.dart';
 import '../../widget/home_widget_snapshot.dart';
 import '../detail/restaurant_detail_screen.dart';
 import '../edit/restaurant_edit_screen.dart';
+import '../groups/groups_screen.dart';
 import '../groups/join_screen.dart';
 import '../import_export/import_screen.dart';
 import '../list/journal_screen.dart';
@@ -271,19 +273,27 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  /// The three sections, stacked so their state survives a tab switch — and a
+  /// Whether groups are available in this build (Supabase configured).
+  bool get _canUseGroups => AppScope.of(context).groupsController?.canUseGroups ?? false;
+
+  /// The four sections, stacked so their state survives a tab switch — and a
   /// window crossing the two-pane breakpoint.
   Widget _sections(AppLocalizations l10n) {
+    // When groups are unavailable, skip that tab entirely.
+    final List<Widget> sections = <Widget>[
+      JournalScreen(
+        onOpenRestaurant: _openRestaurant,
+        onAddRestaurant: _pushEdit,
+      ),
+      RouletteScreen(onOpenRestaurant: _openRestaurant),
+    ];
+    if (_canUseGroups) {
+      sections.add(const GroupsScreen());
+    }
+    sections.add(SettingsScreen(onViewStatistics: _pushStatistics));
     return IndexedStack(
       index: _index,
-      children: <Widget>[
-        JournalScreen(
-          onOpenRestaurant: _openRestaurant,
-          onAddRestaurant: _pushEdit,
-        ),
-        RouletteScreen(onOpenRestaurant: _openRestaurant),
-        SettingsScreen(onViewStatistics: _pushStatistics),
-      ],
+      children: sections,
     );
   }
 
@@ -310,33 +320,17 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  /// The phone shape's navigation bar. The three destinations carry their label
-  /// under the icon; the rail keeps its labels beside the icon.
+  /// The phone shape's navigation bar. The destinations carry their label
+  /// under the icon; the rail keeps its labels beside the icon. When groups are
+  /// available there are four tabs; otherwise three.
   NavigationBar _bottomBar(AppLocalizations l10n) => NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: _selectTab,
-        destinations: <NavigationDestination>[
-          NavigationDestination(
-            icon: const Icon(Icons.menu_book_outlined),
-            selectedIcon: const Icon(Icons.menu_book_rounded),
-            label: l10n.navJournal,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.casino_outlined),
-            selectedIcon: const Icon(Icons.casino_rounded),
-            label: l10n.navRoulette,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.settings_outlined),
-            selectedIcon: const Icon(Icons.settings_rounded),
-            label: l10n.navSettings,
-          ),
-        ],
+        destinations: _navDestinations(l10n),
       );
 
-  /// The rail's own copy of the same three destinations: a rail takes
-  /// `NavigationRailDestination`s, which are a different type from the bottom
-  /// bar's, so the icons and labels have to be listed twice.
+  /// The rail's own copy of the same destinations — a rail takes a different type
+  /// from the bottom bar, so the icons and labels have to be listed again.
   List<NavigationRailDestination> _railDestinations(AppLocalizations l10n) =>
       <NavigationRailDestination>[
         NavigationRailDestination(
@@ -349,10 +343,43 @@ class _HomeShellState extends State<HomeShell> {
           selectedIcon: const Icon(Icons.casino_rounded),
           label: Text(l10n.navRoulette),
         ),
+        if (_canUseGroups)
+          NavigationRailDestination(
+            icon: const Icon(Icons.groups_outlined),
+            selectedIcon: const Icon(Icons.groups_rounded),
+            label: Text(l10n.navGroups),
+          ),
         NavigationRailDestination(
           icon: const Icon(Icons.settings_outlined),
           selectedIcon: const Icon(Icons.settings_rounded),
           label: Text(l10n.navSettings),
+        ),
+      ];
+
+  /// The bottom-bar destinations. Groups is included when the backend is
+  /// configured.
+  List<NavigationDestination> _navDestinations(AppLocalizations l10n) =>
+      <NavigationDestination>[
+        NavigationDestination(
+          icon: const Icon(Icons.menu_book_outlined),
+          selectedIcon: const Icon(Icons.menu_book_rounded),
+          label: l10n.navJournal,
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.casino_outlined),
+          selectedIcon: const Icon(Icons.casino_rounded),
+          label: l10n.navRoulette,
+        ),
+        if (_canUseGroups)
+          NavigationDestination(
+            icon: const Icon(Icons.groups_outlined),
+            selectedIcon: const Icon(Icons.groups_rounded),
+            label: l10n.navGroups,
+          ),
+        NavigationDestination(
+          icon: const Icon(Icons.settings_outlined),
+          selectedIcon: const Icon(Icons.settings_rounded),
+          label: l10n.navSettings,
         ),
       ];
 }

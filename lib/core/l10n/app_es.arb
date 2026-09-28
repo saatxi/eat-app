@@ -77,6 +77,7 @@
 
   "navJournal": "Restaurantes",
   "navRoulette": "Ruleta",
+  "navGroups": "Grupos",
   "navSettings": "Ajustes",
 
   "journalSegmentsLabel": "Mostrar",
@@ -285,6 +286,9 @@
   "groupsActionDelete": "Eliminar el grupo",
   "groupsDeleteConfirmTitle": "¿Eliminar este grupo?",
   "groupsDeleteConfirmBody": "El grupo y sus restaurantes se eliminarán para todos. Esto no se puede deshacer: exporta antes los datos si quieres conservar una copia.",
+  "groupsEditTitle": "Editar grupo",
+  "groupsEditAction": "Guardar",
+  "groupsEditErrorFailed": "No se ha podido actualizar el grupo. Inténtalo de nuevo.",
 
   "groupsInviteAction": "Invitar",
   "groupsInviteTitle": "Invitar a {name}",

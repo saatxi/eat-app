@@ -241,6 +241,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navRoulette => 'Roulette';
 
   @override
+  String get navGroups => 'Groups';
+
+  @override
   String get navSettings => 'Settings';
 
   @override
@@ -868,6 +871,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get groupsDeleteConfirmBody =>
       'The group and its restaurants are removed for everyone. This can\'t be undone — export the data first if you want to keep a copy.';
+
+  @override
+  String get groupsEditTitle => 'Edit group';
+
+  @override
+  String get groupsEditAction => 'Save';
+
+  @override
+  String get groupsEditErrorFailed =>
+      'Couldn\'t update the group. Please try again.';
 
   @override
   String get groupsInviteAction => 'Invite';
