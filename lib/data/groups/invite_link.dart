@@ -21,9 +21,9 @@ const String inviteJoinHost = 'join';
 /// look-alike characters.
 const String inviteTokenAlphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
-/// The token length `create-invite` mints (128 bits, one character per byte
-/// modulo the alphabet).
-const int inviteTokenLength = 32;
+/// The token length `create-invite` mints: 128 bits, one character per byte
+/// modulo the alphabet — 16 characters, short enough to read out loud.
+const int inviteTokenLength = 16;
 
 /// The deep link the QR encodes and the share sheet carries.
 String inviteLink(String token) => Uri(

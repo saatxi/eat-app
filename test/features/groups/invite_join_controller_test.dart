@@ -8,7 +8,7 @@ import '../../data/supabase/fake_identity_gateway.dart';
 
 /// A valid token, so the controller tests exercise the same shapes the backend
 /// mints rather than any string.
-const String _token = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789A';
+const String _token = 'ABCDEFGHJKMNPQRS'; // 16 chars, all in the alphabet.
 
 /// A hand-written [InviteGateway] fake — no mocking package, per the project's
 /// convention.

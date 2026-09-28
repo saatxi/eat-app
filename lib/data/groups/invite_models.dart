@@ -18,7 +18,7 @@ class Invite {
     required this.maxUses,
   });
 
-  /// The raw invitation token (32 characters from a no-ambiguity alphabet).
+  /// The raw invitation token (16 characters from a no-ambiguity alphabet).
   final String token;
 
   /// When the invitation stops being redeemable.

@@ -1,8 +1,9 @@
 import 'package:eatapp/data/groups/invite_link.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// A valid token: 32 characters, all from the no-ambiguity alphabet.
-const String _token = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789A';
+/// A valid token: 16 characters, all from the no-ambiguity alphabet — the
+/// shape the backend mints (128 bits, one character per byte).
+const String _token = 'ABCDEFGHJKMNPQRS'; // 16 chars, all in the alphabet.
 
 void main() {
   test('builds the custom-scheme link', () {
@@ -31,7 +32,7 @@ void main() {
   test('ignores a malformed token in an otherwise valid link', () {
     expect(inviteTokenFromUri(Uri.parse('eatapp://join/short')), isNull);
     // Right length, but '0' is not in the alphabet.
-    expect(inviteTokenFromUri(Uri.parse('eatapp://join/${'0' * 32}')), isNull);
+    expect(inviteTokenFromUri(Uri.parse('eatapp://join/${'0' * 16}')), isNull);
   });
 
   test('normalises a hand-typed code', () {
