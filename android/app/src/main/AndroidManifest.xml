@@ -5,7 +5,7 @@
          and the sharing flow still needs none. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <application
-        android:label="eatapp"
+        android:label="EatApp"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
