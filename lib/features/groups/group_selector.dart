@@ -47,7 +47,7 @@ class GroupSelector extends StatelessWidget {
               ActionChip(
                 avatar: const Icon(Icons.add_rounded, size: 18),
                 label: Text(l10n.groupsActionCreate),
-                onPressed: () => _createGroup(context, l10n),
+                onPressed: () => _createGroup(context),
               ),
               const SizedBox(width: AppSpacing.sm),
               ActionChip(
@@ -72,48 +72,75 @@ class GroupSelector extends StatelessWidget {
 
   /// A one-field dialog rather than a whole screen: creating a group is a name
   /// and nothing else.
-  Future<void> _createGroup(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) async {
-    final TextEditingController name = TextEditingController();
+  ///
+  /// The dialog owns its own `TextEditingController` ([_CreateGroupDialog]), so
+  /// that controller is only disposed once the dialog's element is gone. A
+  /// controller created here and disposed on the line after `showDialog`
+  /// returns is torn down while the dialog is still playing its exit
+  /// transition and its `TextField` is still mounted — the field then reads a
+  /// disposed controller mid-frame, which throws and leaves the element tree
+  /// inconsistent (surfacing as a "dirty widget in the wrong build scope"
+  /// assertion on the following frame).
+  Future<void> _createGroup(BuildContext context) async {
     final String? result = await showDialog<String>(
       context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: Text(l10n.groupsCreateTitle),
-        content: TextField(
-          controller: name,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: InputDecoration(labelText: l10n.groupsFieldName),
-          onSubmitted: (String value) {
-            if (value.trim().isNotEmpty) {
-              Navigator.of(dialogContext).pop(value.trim());
-            }
-          },
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(l10n.actionCancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              final String value = name.text.trim();
-              if (value.isNotEmpty) {
-                Navigator.of(dialogContext).pop(value);
-              }
-            },
-            child: Text(l10n.groupsCreateAction),
-          ),
-        ],
-      ),
+      builder: (BuildContext dialogContext) => const _CreateGroupDialog(),
     );
-    name.dispose();
     if (result == null) {
       return;
     }
     await controller.createGroup(result);
+  }
+}
+
+/// The "new group" dialog: one name field and its two actions.
+///
+/// A [StatefulWidget] purely so it can own the field's [TextEditingController]
+/// and dispose it when the dialog itself is torn down, rather than leaving the
+/// caller to guess when the route has finished animating away.
+class _CreateGroupDialog extends StatefulWidget {
+  const _CreateGroupDialog();
+
+  @override
+  State<_CreateGroupDialog> createState() => _CreateGroupDialogState();
+}
+
+class _CreateGroupDialogState extends State<_CreateGroupDialog> {
+  final TextEditingController _name = TextEditingController();
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final String value = _name.text.trim();
+    if (value.isNotEmpty) {
+      Navigator.of(context).pop(value);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.groupsCreateTitle),
+      content: TextField(
+        controller: _name,
+        autofocus: true,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: InputDecoration(labelText: l10n.groupsFieldName),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.actionCancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.groupsCreateAction)),
+      ],
+    );
   }
 }
 
