@@ -94,20 +94,6 @@ class MembersController extends ChangeNotifier {
     return _mutate(() => gateway!.leaveGroup(groupId, me));
   }
 
-  /// Sets the signed-in user's own display name, so the roster shows a name
-  /// instead of their user id, then reloads so the row updates. Returns whether
-  /// it worked.
-  Future<bool> setDisplayName(String name) async {
-    final String? me =
-        _state.currentUserId ?? (await identity?.current())?.userId;
-    if (me == null || gateway == null) {
-      return false;
-    }
-    return _mutate(
-      () => gateway!.setDisplayName(userId: me, displayName: name),
-    );
-  }
-
   Future<bool> _mutate(Future<void> Function() action) async {
     try {
       await action();

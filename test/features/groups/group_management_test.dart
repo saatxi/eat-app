@@ -42,6 +42,9 @@ class _FakeGroupGateway implements GroupGateway {
   }
 
   @override
+  Future<int> ownerGroupLimit() async => 2;
+
+  @override
   Future<List<Group>> listGroups(String userId) async => groups;
 
   @override
@@ -292,5 +295,35 @@ void main() {
 
     expect(<String>[for (final Group group in gateway.created) group.name], <String>['Family']);
     expect(preferences.current.selectedGroupId, gateway.created.single.id);
+  });
+
+  testWidgets('the create button is disabled once the owner cap is reached', (
+    WidgetTester tester,
+  ) async {
+    // Two owned groups already — the fake's cap is 2.
+    final _FakeGroupGateway gateway = _FakeGroupGateway(
+      groups: const <Group>[
+        Group(id: 'g1', name: 'Família', role: GroupRole.owner),
+        Group(id: 'g2', name: 'Amics', role: GroupRole.owner),
+      ],
+    );
+    final GroupsController controller = await ready(gateway: gateway);
+
+    await tester.pumpWidget(
+      host(child: const GroupsScreen(), groups: controller),
+    );
+    await tester.pumpAndSettle();
+
+    // The FAB is a disabled FilledButton — no onPressed, so tapping it does
+    // nothing and no create dialog opens.
+    final FilledButton button = tester.widget<FilledButton>(
+      find.byType(FilledButton),
+    );
+    expect(button.onPressed, isNull);
+    expect(controller.state.ownerCapReached, isTrue);
+
+    await tester.tap(find.byType(FilledButton), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
   });
 }

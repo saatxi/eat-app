@@ -18,6 +18,7 @@ class GroupsState {
     this.selectedGroupId,
     this.isLoading = true,
     this.error,
+    this.ownerGroupLimit,
   });
 
   final List<Group> groups;
@@ -31,6 +32,23 @@ class GroupsState {
   /// The last load/create failure, for the UI to surface. Null once a load
   /// succeeds.
   final Object? error;
+
+  /// How many groups one user may own, per the backend. Null until the first
+  /// successful load (or forever when groups are off), meaning "unknown — the
+  /// backend decides"; never treat null as unlimited.
+  final int? ownerGroupLimit;
+
+  /// How many of the current groups the signed-in user owns.
+  int get ownedGroupsCount =>
+      groups.where((Group group) => group.role == GroupRole.owner).length;
+
+  /// Whether creating another group would exceed the owner cap. Null limit
+  /// (no backend, or not loaded yet) reads as false — the server still
+  /// enforces the cap either way.
+  bool get ownerCapReached {
+    final int? limit = ownerGroupLimit;
+    return limit != null && ownedGroupsCount >= limit;
+  }
 
   /// The selected group, or null for Personal (or a selection that no longer
   /// exists, which reads as Personal).
@@ -113,11 +131,24 @@ class GroupsController extends ChangeNotifier {
               Duration(seconds: 10),
               'Group list timed out',
             );
+      // The owner cap tells the create button whether it can still be offered.
+      // A failure to read it must not fail the whole load; unknown means the
+      // server stays the authority (and the button stays enabled).
+      int? limit;
+      try {
+        limit = await groups.ownerGroupLimit();
+      } catch (error, stackTrace) {
+        debugPrint('Reading the owner group limit failed: $error');
+        if (kDebugMode) {
+          debugPrintStack(stackTrace: stackTrace);
+        }
+      }
       _setState(
         GroupsState(
           selectedGroupId: _selectedGroupId,
           groups: loaded,
           isLoading: false,
+          ownerGroupLimit: limit,
         ),
       );
       _syncSelected();

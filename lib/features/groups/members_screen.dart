@@ -7,6 +7,7 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/groups/group_models.dart';
 import '../import_export/share_service.dart';
+import 'groups_controller.dart';
 import 'invite_screen.dart';
 import 'members_controller.dart';
 
@@ -86,30 +87,6 @@ class _MembersScreenState extends State<MembersScreen> {
     await _controller?.removeMember(member.userId);
   }
 
-  /// Lets the signed-in user give themselves a display name, so the roster
-  /// shows a name instead of the bare user id a fresh anonymous account has.
-  Future<void> _renameMe(GroupMember member) async {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final String? name = await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) =>
-          _RenameDialog(initialName: member.displayName),
-    );
-    if (name == null) {
-      return;
-    }
-    final MembersController? controller = _controller;
-    if (controller == null) {
-      return;
-    }
-    if (!await controller.setDisplayName(name)) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.groupsNameErrorFailed)),
-      );
-    }
-  }
-
   /// Whether the signed-in user may leave.
   ///
   /// Everyone may, with one exception the server also enforces: the last owner
@@ -127,18 +104,34 @@ class _MembersScreenState extends State<MembersScreen> {
 
   Future<void> _leave() async {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    if (!await _confirm(
-      l10n.groupsLeaveConfirmTitle,
-      l10n.groupsLeaveConfirmBody,
-    )) {
+    final MembersController? controller = _controller;
+    final String body = (controller != null &&
+            controller.state.members.length <= 1)
+        // The last member leaving dissolves the group, so say so before it is
+        // done — leaving here deletes the group and its data, not just access.
+        ? l10n.groupsLeaveConfirmLastBody
+        : l10n.groupsLeaveConfirmBody;
+    if (!await _confirm(l10n.groupsLeaveConfirmTitle, body)) {
       return;
     }
     final bool left = await _controller?.leave() ?? false;
     if (!left || !mounted) {
       return;
     }
-    // Back to Personal: the group is no longer one the list can show.
-    await AppScope.of(context).preferences.setSelectedGroup(null);
+    await _leaveOrDissolve();
+  }
+
+  /// After a successful leave or dissolution, the group is gone from the
+  /// remote roster: drop the local selection back to Personal, tell the shared
+  /// [GroupsController] to reload so the dissolved/left group disappears from
+  /// the list, then pop back.
+  Future<void> _leaveOrDissolve() async {
+    final AppScope scope = AppScope.of(context);
+    await scope.preferences.setSelectedGroup(null);
+    final GroupsController? controller = scope.groupsController;
+    if (controller != null) {
+      await controller.load();
+    }
     if (mounted) {
       Navigator.of(context).pop();
     }
@@ -156,10 +149,7 @@ class _MembersScreenState extends State<MembersScreen> {
     if (!deleted || !mounted) {
       return;
     }
-    await AppScope.of(context).preferences.setSelectedGroup(null);
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
+    await _leaveOrDissolve();
   }
 
   /// The safety net before a leave or a dissolution: this group's restaurants
@@ -254,6 +244,9 @@ class _MembersScreenState extends State<MembersScreen> {
         final bool isMe = member.userId == state.currentUserId;
         final String name =
             member.displayName.isEmpty ? member.userId : member.displayName;
+        // The name is purely informational: changing your display name is done
+        // from the groups list ("Change your name"), never from a member row.
+        // Everyone else's row belongs to an owner to remove.
         return ListTile(
           leading: CircleAvatar(
             child: Text(name.substring(0, 1).toUpperCase()),
@@ -262,16 +255,7 @@ class _MembersScreenState extends State<MembersScreen> {
           subtitle: member.role == GroupRole.owner
               ? Text(l10n.groupsMemberOwner)
               : null,
-          // Your own row is the one place your name is shown, so it is also
-          // where it can be changed; everyone else is an owner's to remove.
-          onTap: isMe ? () => _renameMe(member) : null,
-          trailing: isMe
-              ? IconButton(
-                  onPressed: () => _renameMe(member),
-                  tooltip: l10n.groupsNameEditAction,
-                  icon: const Icon(Icons.edit_outlined),
-                )
-              : iAmOwner
+          trailing: !isMe && iAmOwner
               ? IconButton(
                   onPressed: () => _remove(member),
                   tooltip: l10n.groupsActionRemove,
@@ -280,69 +264,6 @@ class _MembersScreenState extends State<MembersScreen> {
               : null,
         );
       },
-    );
-  }
-}
-
-/// The "change your name" dialog: one field and the two actions.
-///
-/// A [StatefulWidget] purely so it can own the field's [TextEditingController]
-/// and dispose it when the dialog itself is torn down, rather than leaving the
-/// caller to guess when the route has finished animating away.
-class _RenameDialog extends StatefulWidget {
-  const _RenameDialog({required this.initialName});
-
-  /// The name the field opens on; empty for an account that has never set one.
-  final String initialName;
-
-  @override
-  State<_RenameDialog> createState() => _RenameDialogState();
-}
-
-class _RenameDialogState extends State<_RenameDialog> {
-  late final TextEditingController _name = TextEditingController(
-    text: widget.initialName,
-  );
-  String? _error;
-
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final String value = _name.text.trim();
-    if (value.isEmpty) {
-      setState(() => _error = AppLocalizations.of(context).groupsNameRequired);
-      return;
-    }
-    Navigator.of(context).pop(value);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    return AlertDialog(
-      title: Text(l10n.groupsNameDialogTitle),
-      content: TextField(
-        controller: _name,
-        autofocus: true,
-        textCapitalization: TextCapitalization.words,
-        textInputAction: TextInputAction.done,
-        decoration: InputDecoration(
-          labelText: l10n.groupsNameFieldLabel,
-          errorText: _error,
-        ),
-        onSubmitted: (_) => _submit(),
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        FilledButton(onPressed: _submit, child: Text(l10n.actionOk)),
-      ],
     );
   }
 }

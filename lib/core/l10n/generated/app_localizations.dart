@@ -1546,6 +1546,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t create the group. Please try again.'**
   String get groupsCreateErrorFailed;
 
+  /// No description provided for @groupsCreateErrorLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve reached the limit of groups you can create.'**
+  String get groupsCreateErrorLimit;
+
   /// No description provided for @groupsMembersTitle.
   ///
   /// In en, this message translates to:
@@ -1570,35 +1576,11 @@ abstract class AppLocalizations {
   /// **'You'**
   String get groupsMemberYou;
 
-  /// No description provided for @groupsNameEditAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Change your name'**
-  String get groupsNameEditAction;
-
-  /// No description provided for @groupsNameDialogTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Your name'**
-  String get groupsNameDialogTitle;
-
   /// No description provided for @groupsNameFieldLabel.
   ///
   /// In en, this message translates to:
   /// **'Name'**
   String get groupsNameFieldLabel;
-
-  /// No description provided for @groupsNameRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a name'**
-  String get groupsNameRequired;
-
-  /// No description provided for @groupsNameErrorFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t save your name. Please try again.'**
-  String get groupsNameErrorFailed;
 
   /// No description provided for @groupsActionLeave.
   ///
@@ -1617,6 +1599,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ll stop seeing this group\'s restaurants. They stay with the other members.'**
   String get groupsLeaveConfirmBody;
+
+  /// No description provided for @groupsLeaveConfirmLastBody.
+  ///
+  /// In en, this message translates to:
+  /// **'As the last member, leaving deletes this group and its restaurants for good. This can\'t be undone — export the data first if you want to keep a copy.'**
+  String get groupsLeaveConfirmLastBody;
 
   /// No description provided for @groupsActionRemove.
   ///

@@ -49,6 +49,17 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
   Future<void> _createGroup(BuildContext context) async {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final AppLocalizations l10n = AppLocalizations.of(context);
+
+    // Pre-validate against the owner cap before anyone types a name: the
+    // button is disabled too, but the backend is the authority, so double-check
+    // here in case the state is stale.
+    if (widget.controller.state.ownerCapReached) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.groupsCreateErrorLimit)),
+      );
+      return;
+    }
+
     final String? result = await showDialog<String>(
       context: context,
       builder: (BuildContext dialogContext) => const _CreateGroupDialog(),
@@ -57,8 +68,15 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
       return;
     }
     if (!await widget.controller.createGroup(result)) {
+      final Object? error = widget.controller.state.error;
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.groupsCreateErrorFailed)),
+        SnackBar(
+          content: Text(
+            error is GroupLimitException
+                ? l10n.groupsCreateErrorLimit
+                : l10n.groupsCreateErrorFailed,
+          ),
+        ),
       );
     }
   }
@@ -224,10 +242,25 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
           );
         },
       ),
-      floatingActionButton: FilledButton.icon(
-        onPressed: () => _createGroup(context),
-        icon: const Icon(Icons.add_rounded),
-        label: Text(l10n.groupsActionCreate),
+      floatingActionButton: ListenableBuilder(
+        listenable: widget.controller,
+        builder: (BuildContext context, Widget? child) {
+          final GroupsState state = widget.controller.state;
+          return state.ownerCapReached
+              ? Tooltip(
+                  message: l10n.groupsCreateErrorLimit,
+                  child: FilledButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Icons.add_rounded),
+                    label: Text(l10n.groupsActionCreate),
+                  ),
+                )
+              : FilledButton.icon(
+                  onPressed: () => _createGroup(context),
+                  icon: const Icon(Icons.add_rounded),
+                  label: Text(l10n.groupsActionCreate),
+                );
+        },
       ),
     );
   }

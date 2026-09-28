@@ -36,6 +36,9 @@ class _FakeGroupGateway implements GroupGateway {
   }
 
   @override
+  Future<int> ownerGroupLimit() async => 2;
+
+  @override
   Future<List<Group>> listGroups(String userId) async {
     final Object? failure = error;
     if (failure != null) {
@@ -194,5 +197,54 @@ void main() {
 
     expect(controller.state.error, isNotNull);
     expect(controller.state.groups, isEmpty);
+  });
+
+  test('load reads the owner cap and detects when it is reached', () async {
+    final _FakeGroupGateway gateway = _FakeGroupGateway(
+      groups: const <Group>[
+        Group(id: 'g1', name: 'Família', role: GroupRole.owner),
+        Group(id: 'g2', name: 'Amics', role: GroupRole.member),
+      ],
+    );
+    final GroupsController controller = GroupsController(
+      preferences: preferences,
+      gateway: gateway,
+      identity: FakeIdentityGateway(existingUserId: 'u1'),
+    );
+    addTearDown(controller.dispose);
+
+    await controller.load();
+
+    // The fake reports a limit of 2; the user owns exactly one group.
+    expect(controller.state.ownerGroupLimit, 2);
+    expect(controller.state.ownedGroupsCount, 1);
+    expect(controller.state.ownerCapReached, isFalse);
+
+    gateway.groups = <Group>[
+      ...gateway.groups,
+      const Group(id: 'g3', name: 'Feina', role: GroupRole.owner),
+    ];
+    await controller.load();
+
+    expect(controller.state.ownedGroupsCount, 2);
+    expect(controller.state.ownerCapReached, isTrue);
+  });
+
+  test('a rejected creation records a GroupLimitException', () async {
+    final _FakeGroupGateway gateway = _FakeGroupGateway()
+      ..error = GroupLimitException(2);
+    final GroupsController controller = GroupsController(
+      preferences: preferences,
+      gateway: gateway,
+      identity: FakeIdentityGateway(existingUserId: 'u1'),
+    );
+    addTearDown(controller.dispose);
+
+    final bool created = await controller.createGroup('Nou');
+
+    expect(created, isFalse);
+    expect(controller.state.error, isA<GroupLimitException>());
+    expect(controller.state.groups, isEmpty);
+    expect(preferences.current.selectedGroupId, isNull);
   });
 }

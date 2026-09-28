@@ -101,11 +101,17 @@ Optional detailed explanation
   the app's only camera user — see the CAMERA permission in the security
   section.
 - **Shared-groups backend**: the Supabase schema, RLS policies, triggers and
-  the two Edge Functions live in `supabase/`. Three invariants are enforced in
+  the two Edge Functions live in `supabase/`. Five invariants are enforced in
   SQL and must not be relaxed: every shared row is group-scoped and attributed
   to its inserter; a group always keeps at least one owner while it has members
   (the `group_members_keep_owner` trigger — the last owner dissolves the group
-  instead of leaving); and invitations are rate-limited per user on both mint
+  instead of leaving) and dissolves once its last member leaves (the
+  `group_members_dissolve_when_empty` trigger); a user may own at most the
+  configured number of groups, default 2 in `private.app_settings`
+  (`owner_group_limit`, readable via the `owner_group_limit()` RPC), enforced
+  by the `group_members_owner_cap` trigger inside the atomic
+  `create_owned_group` RPC — while unlimited plain membership stays untouched;
+  and invitations are rate-limited per user on both mint
   (`record_invite_attempt`) and redemption (`record_join_attempt`). A new
   policy or migration should extend `supabase/tests/rls_smoke_test.sql`, which
   drives an owner, a member and a stranger through every table and rolls back.

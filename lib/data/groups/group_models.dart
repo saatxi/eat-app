@@ -59,3 +59,20 @@ class GroupException implements Exception {
   @override
   String toString() => 'GroupException: $message';
 }
+
+/// The signed-in user already owns the configured maximum number of groups, so
+/// the backend refused a new `create_owned_group` call. Distinct from a plain
+/// [GroupException] so the UI can say exactly this instead of a generic
+/// failure.
+class GroupLimitException implements GroupException {
+  const GroupLimitException(this.limit);
+
+  /// The number of owned groups allowed.
+  final int limit;
+
+  @override
+  String get message => 'owner_group_limit_reached (limit $limit)';
+
+  @override
+  String toString() => 'GroupLimitException: $message';
+}

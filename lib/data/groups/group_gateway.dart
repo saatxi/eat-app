@@ -13,11 +13,22 @@ import 'group_models.dart';
 /// caller already holds the identity and hands it over.
 abstract class GroupGateway {
   /// Creates a group and joins the caller as its owner.
+  ///
+  /// The backend does this atomically: both the groups row and the caller's
+  /// owner membership land together, so if the owner-group cap (see
+  /// [ownerGroupLimit]) refuses the membership, the whole creation rolls back
+  /// and no orphan group is left behind. Throws a [GroupLimitException] when
+  /// the caller already owns the configured maximum.
   Future<Group> createGroup({
     required String id,
     required String name,
     required String createdBy,
   });
+
+  /// The maximum number of groups one user may own, per the backend's
+  /// `private.app_settings`. The UI uses it to disable the create action
+  /// before anyone types a name; the backend is still the authority.
+  Future<int> ownerGroupLimit();
 
   /// Edits the group's name. Only an owner may call this; RLS enforces it
   /// server-side via the `groups_update_owner` policy.
@@ -61,19 +72,31 @@ class SupabaseGroupGateway implements GroupGateway {
     required String name,
     required String createdBy,
   }) async {
-    await _client.from('groups').insert(<String, dynamic>{
-      'id': id,
-      'name': name,
-      'created_by': createdBy,
-    });
-    // The bootstrap membership: the creator joins as owner, allowed by the
-    // `group_members_insert_owner` policy's creator case.
-    await _client.from('group_members').insert(<String, dynamic>{
-      'group_id': id,
-      'user_id': createdBy,
-      'role': GroupRole.owner.remote,
-    });
+    // One transaction on the server: groups row + owner membership. The owner
+    // cap trigger lives inside it, so a refused membership rolls the group row
+    // back too — the old two-insert flow could leave an orphan group the
+    // caller (not yet an owner, so RLS protects it) could not delete.
+    try {
+      await _client.rpc(
+        'create_owned_group',
+        params: <String, dynamic>{
+          'p_id': id,
+          'p_name': name,
+        },
+      );
+    } on PostgrestException catch (error) {
+      if (error.message.contains('owner_group_limit_reached')) {
+        throw GroupLimitException(await ownerGroupLimit());
+      }
+      rethrow;
+    }
     return Group(id: id, name: name, role: GroupRole.owner);
+  }
+
+  @override
+  Future<int> ownerGroupLimit() async {
+    final Object? value = await _client.rpc('owner_group_limit');
+    return value is int ? value : 2;
   }
 
   @override

@@ -814,6 +814,10 @@ class AppLocalizationsCa extends AppLocalizations {
       'No s\'ha pogut crear el grup. Torna-ho a provar.';
 
   @override
+  String get groupsCreateErrorLimit =>
+      'Has arribat al límit de grups que pots crear.';
+
+  @override
   String get groupsMembersTitle => 'Membres';
 
   @override
@@ -826,20 +830,7 @@ class AppLocalizationsCa extends AppLocalizations {
   String get groupsMemberYou => 'Tu';
 
   @override
-  String get groupsNameEditAction => 'Canvia el teu nom';
-
-  @override
-  String get groupsNameDialogTitle => 'El teu nom';
-
-  @override
   String get groupsNameFieldLabel => 'Nom';
-
-  @override
-  String get groupsNameRequired => 'Escriu un nom';
-
-  @override
-  String get groupsNameErrorFailed =>
-      'No s\'ha pogut desar el teu nom. Torna-ho a provar.';
 
   @override
   String get groupsActionLeave => 'Sortir del grup';
@@ -850,6 +841,10 @@ class AppLocalizationsCa extends AppLocalizations {
   @override
   String get groupsLeaveConfirmBody =>
       'Deixaràs de veure els restaurants d\'aquest grup. Es quedaran amb els altres membres.';
+
+  @override
+  String get groupsLeaveConfirmLastBody =>
+      'En ser l\'últim membre, en sortir s\'eliminarà aquest grup i els seus restaurants per sempre. No es pot desfer: exporta\'n les dades abans si vols conservar una còpia.';
 
   @override
   String get groupsActionRemove => 'Expulsa';

@@ -162,7 +162,12 @@ The backend's guarantees — enforced in SQL, not only in the app — are:
   it; a member sees only their groups' rows and may not forge authorship.
 - A group always keeps at least one owner while it has members: the last owner
   cannot leave, only dissolve the group, which removes everything for everyone.
-  The members screen offers an export first, as the safety net.
+  Leaving when you are the last member dissolves the group too. The members
+  screen offers an export first, as the safety net.
+- A user may own at most the configured number of groups (2 by default, set in
+  `private.app_settings`), enforced by the `group_members_owner_cap` trigger as
+  part of the atomic `create_owned_group` RPC; belonging to other people's
+  groups as a member is unlimited.
 - Invitations are rate-limited per user on both ends: 20 minted per hour by
   `create-invite`, and 10 redemption attempts per 10 minutes by `join-group`.
 
