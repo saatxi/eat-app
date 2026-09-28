@@ -106,6 +106,12 @@ class RestaurantUiModel {
     country: country,
   );
 
+  /// The region and country alone, joined, or null when neither is recorded —
+  /// the short form a compact card draws, leaving the street line to the
+  /// detail screen.
+  String? get formattedRegionCountry =>
+      formatRegionCountry(region: region, country: country);
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

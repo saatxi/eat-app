@@ -82,6 +82,30 @@ void main() {
 
       expect(model.formattedAddress, 'Carrer Major 1, Girona, Espanya');
     });
+
+    test('offers the region and country alone for a compact card', () {
+      final RestaurantUiModel model = restaurant(
+        id: 'a',
+        name: 'Kebab',
+        streetAddress: 'Carrer Major 1',
+        city: 'Girona',
+        region: 'Catalunya',
+        country: 'Espanya',
+      ).toUiModel();
+
+      expect(model.formattedRegionCountry, 'Catalunya, Espanya');
+    });
+
+    test('has no region/country form when neither is recorded', () {
+      final RestaurantUiModel model = restaurant(
+        id: 'a',
+        name: 'Kebab',
+        streetAddress: 'Carrer Major 1',
+        city: 'Girona',
+      ).toUiModel();
+
+      expect(model.formattedRegionCountry, isNull);
+    });
   });
 
   group('the price band', () {

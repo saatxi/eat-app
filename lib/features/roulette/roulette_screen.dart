@@ -202,7 +202,9 @@ class _ResultCard extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
     final String priceLabel = priceRangeLabel(l10n, restaurant.priceRange);
-    final String? address = restaurant.formattedAddress;
+    // Region and country only: the full street address is the detail screen's
+    // job, and would crowd the card.
+    final String? location = restaurant.formattedRegionCountry;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -234,10 +236,10 @@ class _ResultCard extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              if (address != null) ...<Widget>[
+              if (location != null) ...<Widget>[
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  address,
+                  location,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,

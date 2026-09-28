@@ -78,4 +78,23 @@ void main() {
       expect(formatAddress(streetAddress: ' ', city: '\t'), isNull);
     });
   });
+
+  group('formatRegionCountry', () {
+    test('joins the region and country in order', () {
+      expect(
+        formatRegionCountry(region: 'Catalunya', country: 'Espanya'),
+        'Catalunya, Espanya',
+      );
+    });
+
+    test('keeps whichever half is present', () {
+      expect(formatRegionCountry(region: '  ', country: 'Espanya'), 'Espanya');
+      expect(formatRegionCountry(region: 'Catalunya'), 'Catalunya');
+    });
+
+    test('returns null when both are blank', () {
+      expect(formatRegionCountry(), isNull);
+      expect(formatRegionCountry(region: '\t', country: ' '), isNull);
+    });
+  });
 }
