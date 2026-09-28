@@ -873,16 +873,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The group and its restaurants are removed for everyone. This can\'t be undone — export the data first if you want to keep a copy.';
 
   @override
-  String get groupsEditTitle => 'Edit group';
-
-  @override
-  String get groupsEditAction => 'Save';
-
-  @override
-  String get groupsEditErrorFailed =>
-      'Couldn\'t update the group. Please try again.';
-
-  @override
   String get groupsInviteAction => 'Invite';
 
   @override

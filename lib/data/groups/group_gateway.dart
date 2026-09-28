@@ -19,10 +19,6 @@ abstract class GroupGateway {
     required String createdBy,
   });
 
-  /// Edits the group's name. Only an owner may call this; RLS enforces it
-  /// server-side via the `groups_update_owner` policy.
-  Future<void> editGroup(String groupId, String name);
-
   /// The groups [userId] belongs to, each with their role.
   Future<List<Group>> listGroups(String userId);
 
@@ -131,15 +127,6 @@ class SupabaseGroupGateway implements GroupGateway {
         .delete()
         .eq('group_id', groupId)
         .eq('user_id', userId);
-  }
-
-  @override
-  Future<void> editGroup(String groupId, String name) async {
-    // Allowed by the groups_update_owner RLS policy.
-    await _client.from('groups').update(<String, dynamic>{'name': name}).eq(
-      'id',
-      groupId,
-    );
   }
 
   @override

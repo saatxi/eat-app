@@ -13,7 +13,7 @@ import 'join_screen.dart';
 import 'members_screen.dart';
 
 /// The Groups half of the app: a list of every group the signed-in user belongs
-/// to, with actions to create, join, edit, leave and dissolve groups, plus one-
+/// to, with actions to create, join, leave and dissolve groups, plus one-
 /// tap access to members and invitations.
 ///
 /// Only shown when [GroupsController.canUseGroups] is true (the build carries
@@ -89,24 +89,6 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
         builder: (BuildContext context) => InviteScreen(group: group),
       ),
     );
-  }
-
-  Future<void> _editName(BuildContext context, Group group) async {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final String? newName = await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) =>
-          _EditGroupDialog(initialName: group.name),
-    );
-    if (newName == null || newName == group.name) {
-      return;
-    }
-    if (!await widget.controller.editGroup(group.id, newName)) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.groupsEditErrorFailed)),
-      );
-    }
   }
 
   Future<void> _leaveGroup(BuildContext context, Group group) async {
@@ -192,7 +174,6 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
                   syncStatus: widget.controller.sync?.status.value,
                   onOpenMembers: () => _openMembers(context, group),
                   onOpenInvite: () => _openInvite(context, group),
-                  onEditName: () => _editName(context, group),
                   onLeave: () => _leaveGroup(context, group),
                   onDelete: () => _deleteGroup(context, group),
                 ),
@@ -223,7 +204,6 @@ class _GroupTile extends StatelessWidget {
     this.syncStatus,
     required this.onOpenMembers,
     required this.onOpenInvite,
-    required this.onEditName,
     required this.onLeave,
     required this.onDelete,
   });
@@ -232,7 +212,6 @@ class _GroupTile extends StatelessWidget {
   final SyncStatus? syncStatus;
   final VoidCallback onOpenMembers;
   final VoidCallback onOpenInvite;
-  final VoidCallback onEditName;
   final VoidCallback onLeave;
   final VoidCallback onDelete;
 
@@ -305,8 +284,6 @@ class _GroupTile extends StatelessWidget {
                 tooltip: AppLocalizations.of(context).groupsActionMore,
                 onSelected: (String action) {
                   switch (action) {
-                    case 'edit':
-                      onEditName();
                     case 'leave':
                       onLeave();
                     case 'delete':
@@ -314,10 +291,6 @@ class _GroupTile extends StatelessWidget {
                   }
                 },
                 itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                  PopupMenuItem<String>(
-                    value: 'edit',
-                    child: Text(AppLocalizations.of(context).groupsEditTitle),
-                  ),
                   PopupMenuItem<String>(
                     value: 'leave',
                     child: Text(
@@ -422,57 +395,3 @@ class _CreateGroupDialogState extends State<_CreateGroupDialog> {
   }
 }
 
-/// The "edit group name" dialog: one pre-filled name field and its two actions.
-class _EditGroupDialog extends StatefulWidget {
-  const _EditGroupDialog({required this.initialName});
-
-  final String initialName;
-
-  @override
-  State<_EditGroupDialog> createState() => _EditGroupDialogState();
-}
-
-class _EditGroupDialogState extends State<_EditGroupDialog> {
-  late final TextEditingController _name;
-
-  @override
-  void initState() {
-    super.initState();
-    _name = TextEditingController(text: widget.initialName);
-  }
-
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final String value = _name.text.trim();
-    if (value.isNotEmpty) {
-      Navigator.of(context).pop(value);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    return AlertDialog(
-      title: Text(l10n.groupsEditTitle),
-      content: TextField(
-        controller: _name,
-        autofocus: true,
-        textCapitalization: TextCapitalization.sentences,
-        decoration: InputDecoration(labelText: l10n.groupsFieldName),
-        onSubmitted: (_) => _submit(),
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        FilledButton(onPressed: _submit, child: Text(l10n.groupsEditAction)),
-      ],
-    );
-  }
-}

@@ -1672,24 +1672,6 @@ abstract class AppLocalizations {
   /// **'The group and its restaurants are removed for everyone. This can\'t be undone — export the data first if you want to keep a copy.'**
   String get groupsDeleteConfirmBody;
 
-  /// No description provided for @groupsEditTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit group'**
-  String get groupsEditTitle;
-
-  /// No description provided for @groupsEditAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Save'**
-  String get groupsEditAction;
-
-  /// No description provided for @groupsEditErrorFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t update the group. Please try again.'**
-  String get groupsEditErrorFailed;
-
   /// No description provided for @groupsInviteAction.
   ///
   /// In en, this message translates to:

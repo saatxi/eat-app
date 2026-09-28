@@ -397,9 +397,6 @@
   "groupsActionDelete": "Delete group",
   "groupsDeleteConfirmTitle": "Delete this group?",
   "groupsDeleteConfirmBody": "The group and its restaurants are removed for everyone. This can't be undone — export the data first if you want to keep a copy.",
-  "groupsEditTitle": "Edit group",
-  "groupsEditAction": "Save",
-  "groupsEditErrorFailed": "Couldn't update the group. Please try again.",
 
   "groupsInviteAction": "Invite",
   "groupsInviteTitle": "Invite to {name}",

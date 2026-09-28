@@ -881,16 +881,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'El grupo y sus restaurantes se eliminarán para todos. Esto no se puede deshacer: exporta antes los datos si quieres conservar una copia.';
 
   @override
-  String get groupsEditTitle => 'Editar grupo';
-
-  @override
-  String get groupsEditAction => 'Guardar';
-
-  @override
-  String get groupsEditErrorFailed =>
-      'No se ha podido actualizar el grupo. Inténtalo de nuevo.';
-
-  @override
   String get groupsInviteAction => 'Invitar';
 
   @override

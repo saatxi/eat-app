@@ -154,35 +154,6 @@ class GroupsController extends ChangeNotifier {
 
   void _syncSelected() => unawaited(syncNow());
 
-  /// Edits [groupId]'s name. Only an owner may call this; RLS enforces it
-  /// server-side. Returns whether it worked; a failure lands in
-  /// [GroupsState.error].
-  Future<bool> editGroup(String groupId, String name) async {
-    final GroupGateway? groups = gateway;
-    if (groups == null) {
-      return false;
-    }
-    try {
-      await groups.editGroup(groupId, name);
-      await load();
-      return true;
-    } catch (error, stackTrace) {
-      debugPrint('Editing a group failed: $error');
-      if (kDebugMode) {
-        debugPrintStack(stackTrace: stackTrace);
-      }
-      _setState(
-        GroupsState(
-          groups: _state.groups,
-          selectedGroupId: _selectedGroupId,
-          isLoading: false,
-          error: error,
-        ),
-      );
-      return false;
-    }
-  }
-
   /// Creates a group — signing in anonymously first when the device has never
   /// signed in, since a group needs an owner — then selects it. Returns whether
   /// it worked; a failure lands in [GroupsState.error].

@@ -881,16 +881,6 @@ class AppLocalizationsCa extends AppLocalizations {
       'El grup i els seus restaurants s\'eliminaran per a tothom. Això no es pot desfer: exporta\'n les dades abans si vols conservar una còpia.';
 
   @override
-  String get groupsEditTitle => 'Editar grup';
-
-  @override
-  String get groupsEditAction => 'Desa';
-
-  @override
-  String get groupsEditErrorFailed =>
-      'No s\'ha pogut actualitzar el grup. Torna-ho a provar.';
-
-  @override
   String get groupsInviteAction => 'Convida';
 
   @override
