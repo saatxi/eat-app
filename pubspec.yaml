@@ -57,7 +57,7 @@ dependencies:
   # detail screen.
   url_launcher: ^6.3.1
 
-  # The shared-groups backend (phase 3 of plans/shared-groups-database.md):
+  # The shared-groups backend (its schema and Edge Functions live in supabase/):
   # anonymous sign-in is the default identity, the sync layer talks to
   # Postgres through it, and photos go to its Storage bucket. The URL and the
   # anon key arrive via --dart-define, never hardcoded. The plain `supabase`
@@ -100,7 +100,7 @@ dependencies:
   # never disagree.
   package_info_plus: ^10.2.1
 
-  # Invitations (phase 4 of plans/shared-groups-database.md). qr_flutter draws
+  # Invitations. qr_flutter draws
   # the invitation QR the owner shows; mobile_scanner reads one back on the
   # joining side (its Android half needs the CAMERA permission declared in the
   # manifest); app_links delivers the eatapp://join/<token> deep link on both a

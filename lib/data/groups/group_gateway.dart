@@ -139,16 +139,20 @@ class SupabaseGroupGateway implements GroupGateway {
   }
 
   @override
-  Future<void> leaveGroup(String groupId, String userId) async {
-    await _client
-        .from('group_members')
-        .delete()
-        .eq('group_id', groupId)
-        .eq('user_id', userId);
-  }
+  Future<void> leaveGroup(String groupId, String userId) =>
+      _deleteMembership(groupId: groupId, userId: userId);
 
   @override
-  Future<void> removeMember(String groupId, String userId) async {
+  Future<void> removeMember(String groupId, String userId) =>
+      _deleteMembership(groupId: groupId, userId: userId);
+
+  /// Deletes one membership row. Leaving and expelling are the same write — the
+  /// `group_members_delete_owner_or_self` policy decides who may perform it, so
+  /// the two public methods above differ only in the intent they name.
+  Future<void> _deleteMembership({
+    required String groupId,
+    required String userId,
+  }) async {
     await _client
         .from('group_members')
         .delete()
