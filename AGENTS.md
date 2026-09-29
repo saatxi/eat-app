@@ -31,7 +31,10 @@ Short summary
 Optional detailed explanation
 ```
 
-- Imperative mood, lowercase type, concise summary line.
+- Imperative mood and a concise summary line. No conventional-commit
+  type prefix (`fix:`, `feat(scope):` and the like): the summary is a
+  plain, capitalised imperative sentence, the way this history is
+  written (e.g. "Raise the owner-group cap from 2 to 10").
 - Always in English, regardless of the language used in the conversation.
 - Body (if needed) explains the "why", not the "what" — each bullet starts
   with a capital letter and uses `-` (not `*`) as its marker.
