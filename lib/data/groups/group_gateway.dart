@@ -96,7 +96,7 @@ class SupabaseGroupGateway implements GroupGateway {
   @override
   Future<int> ownerGroupLimit() async {
     final Object? value = await _client.rpc('owner_group_limit');
-    return value is int ? value : 2;
+    return value is int ? value : 10;
   }
 
   @override

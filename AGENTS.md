@@ -114,7 +114,7 @@ Optional detailed explanation
   (the `group_members_keep_owner` trigger — the last owner dissolves the group
   instead of leaving) and dissolves once its last member leaves (the
   `group_members_dissolve_when_empty` trigger); a user may own at most the
-  configured number of groups, default 2 in `private.app_settings`
+  configured number of groups, default 10 in `private.app_settings`
   (`owner_group_limit`, readable via the `owner_group_limit()` RPC), enforced
   by the `group_members_owner_cap` trigger inside the atomic
   `create_owned_group` RPC — while unlimited plain membership stays untouched;

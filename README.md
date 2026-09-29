@@ -172,7 +172,7 @@ The backend's guarantees — enforced in SQL, not only in the app — are:
   cannot leave, only dissolve the group, which removes everything for everyone.
   Leaving when you are the last member dissolves the group too. The members
   screen offers an export first, as the safety net.
-- A user may own at most the configured number of groups (2 by default, set in
+- A user may own at most the configured number of groups (10 by default, set in
   `private.app_settings`), enforced by the `group_members_owner_cap` trigger as
   part of the atomic `create_owned_group` RPC; belonging to other people's
   groups as a member is unlimited.

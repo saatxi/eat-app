@@ -27,7 +27,7 @@
 --      remain is a plain leave, but the last member's leave removes the group
 --      and cascades every shared row with it.
 --   9. A user may own no more than the configured number of groups
---      (group_members_owner_cap, default 2); plain membership is unlimited.
+--      (group_members_owner_cap, default 10); plain membership is unlimited.
 --
 -- Any violated expectation raises an exception and fails the run.
 
@@ -490,7 +490,7 @@ $$;
 -- memberships. Alice's earlier groups were dissolved in sections 7 and 8, so
 -- her owner count is 0 when this section starts. To reach the cap she must
 -- own the configured limit's worth of groups; each "create" is the groups row
--- plus her owner membership, exactly like the app does. Then a third create
+-- plus her owner membership, exactly like the app does. Then one more create
 -- is refused, while joining other people's groups as a member is never
 -- limited.
 
@@ -511,16 +511,17 @@ begin
     raise exception 'FAIL: alice starts the cap test with % owned groups, expected 0', owned;
   end if;
 
-  if cap <> 2 then
-    raise exception 'FAIL: owner_group_limit() = %, expected 2', cap;
+  if cap <> 10 then
+    raise exception 'FAIL: owner_group_limit() = %, expected 10', cap;
   end if;
 end;
 $$;
 
--- 9b. Alice creates the cap's worth of groups (2), each as owner — allowed.
--- This is exactly the app's create path: the create_owned_group RPC (the
--- client no longer does two inserts). It inserts the groups row and the owner
--- membership in one transaction.
+-- 9b. Alice creates the cap's worth of groups, each as owner — allowed. This
+-- is exactly the app's create path: the create_owned_group RPC (the client no
+-- longer does two inserts). It inserts the groups row and the owner membership
+-- in one transaction. The first two get fixed ids so section 9d can add a
+-- member to them; the rest only matter for their count.
 set local role authenticated;
 select set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-0000-0000-0000-000000000001"}', true);
@@ -532,7 +533,21 @@ select public.create_owned_group(
   'cccccccc-0000-0000-0000-000000000004', 'RLS cap group 2'
 );
 
--- 9c. A third group of her own is refused by the cap trigger (raised from the
+do $$
+declare
+  cap integer;
+  i integer;
+begin
+  select public.owner_group_limit() into cap;
+  for i in 3..cap loop
+    perform public.create_owned_group(
+      gen_random_uuid(), 'RLS cap group ' || i
+    );
+  end loop;
+end;
+$$;
+
+-- 9c. One group beyond the cap is refused by the cap trigger (raised from the
 -- RPC, en route inside the same transaction). The rollback also proves the
 -- groups row did not linger as an orphan.
 do $$
@@ -551,7 +566,7 @@ begin
   end;
 
   if not blocked then
-    raise exception 'FAIL: the owner cap let alice own a third group';
+    raise exception 'FAIL: the owner cap let alice exceed the configured limit';
   end if;
 end;
 $$;
@@ -570,7 +585,7 @@ end;
 $$;
 
 -- The refused group's row was rolled back by the exception, so Alice still
--- owns exactly the cap (2). Count as postgres: the ownership count is the
+-- owns exactly the cap (10). Count as postgres: the ownership count is the
 -- authoritative invariant, and it must hold exactly.
 reset role;
 do $$
@@ -579,8 +594,8 @@ begin
   select count(*) into cnt from public.group_members
     where user_id = 'aaaaaaaa-0000-0000-0000-000000000001'
       and role = 'owner';
-  if cnt <> 2 then
-    raise exception 'FAIL: alice owns %, expected 2 after the cap rejected the third', cnt;
+  if cnt <> 10 then
+    raise exception 'FAIL: alice owns %, expected 10 after the cap rejected the extra', cnt;
   end if;
 end;
 $$;
