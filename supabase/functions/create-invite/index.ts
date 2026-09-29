@@ -16,14 +16,33 @@
 //   500 { "error": "internal" }
 //
 // The raw token is returned exactly once; only its SHA-256 hash is stored.
-import { createClient } from 'npm:@supabase/supabase-js@2';
 import { createHash, randomBytes } from 'node:crypto';
+import { callerClient, json, serviceClient } from '../_shared/mod.ts';
 
-const json = (status, body) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
+// 128-bit token, base32-style alphabet without ambiguous characters — kept in
+// step with inviteTokenAlphabet / inviteTokenLength in
+// lib/data/groups/invite_link.dart.
+const TOKEN_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const TOKEN_LENGTH = 16;
+
+// The largest multiple of the alphabet length that fits in a byte (248 for 31
+// characters). Bytes at or above it are discarded rather than folded with a
+// modulo, which would make the first 256 % 31 characters likelier than the rest.
+const UNBIASED_BYTE_LIMIT =
+  Math.floor(256 / TOKEN_ALPHABET.length) * TOKEN_ALPHABET.length;
+
+function mintToken() {
+  let token = '';
+  while (token.length < TOKEN_LENGTH) {
+    for (const byte of randomBytes(TOKEN_LENGTH)) {
+      if (byte < UNBIASED_BYTE_LIMIT) {
+        token += TOKEN_ALPHABET[byte % TOKEN_ALPHABET.length];
+        if (token.length === TOKEN_LENGTH) break;
+      }
+    }
+  }
+  return token;
+}
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -54,11 +73,7 @@ Deno.serve(async (req) => {
 
   // Caller-bound client: the ownership check below runs as the caller, so
   // RLS's is_group_owner() decides it — no trust in the request body.
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
+  const supabase = callerClient(req);
 
   const { data: authUser } = await supabase.auth.getUser();
   if (!authUser?.user) {
@@ -85,13 +100,7 @@ Deno.serve(async (req) => {
     return json(403, { error: 'not_owner' });
   }
 
-  // 128-bit token, base32-style alphabet without ambiguous characters.
-  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const bytes = randomBytes(16);
-  let token = '';
-  for (const b of bytes) {
-    token += alphabet[b % alphabet.length];
-  }
+  const token = mintToken();
   const tokenHash = createHash('sha256').update(token).digest('hex');
 
   const expiresAt = new Date(
@@ -99,11 +108,7 @@ Deno.serve(async (req) => {
   ).toISOString();
 
   // Service role: invites have no client INSERT policy by design.
-  const admin = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    { auth: { persistSession: false } },
-  );
+  const admin = serviceClient();
 
   const { error: insertError } = await admin.from('invites').insert({
     group_id: groupId,

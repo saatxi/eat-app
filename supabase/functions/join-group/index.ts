@@ -20,16 +20,10 @@
 // The raw token is SHA-256 hashed before lookup; invites stores only hashes.
 // A short-window per-user attempt counter lives in the shared rate_attempts
 // table, so brute-forcing tokens is throttled even across function instances.
-import { createClient } from 'npm:@supabase/supabase-js@2';
 import { createHash } from 'node:crypto';
+import { callerClient, json, serviceClient } from '../_shared/mod.ts';
 
 const SHA256 = (raw) => createHash('sha256').update(raw).digest('hex');
-
-const json = (status, body) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -56,11 +50,7 @@ Deno.serve(async (req) => {
 
   // Client bound to the caller's own JWT: every query below runs as the
   // caller, so RLS still applies to anything we touch through it.
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
+  const supabase = callerClient(req);
 
   const { data: authUser } = await supabase.auth.getUser();
   if (!authUser?.user) {
@@ -77,11 +67,7 @@ Deno.serve(async (req) => {
     return json(429, { error: 'rate_limited' });
   }
 
-  const admin = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    { auth: { persistSession: false } },
-  );
+  const admin = serviceClient();
 
   // The invite lookup must use the service role: invites' RLS only shows a
   // group's invites to that group's members, and the caller is by definition
