@@ -28,6 +28,19 @@ void main() {
         'cal-ferran-20260913_1742.eatapp',
       );
     });
+
+    test('folds the group name into a group-scoped export, capped', () {
+      final DateTime now = DateTime(2026, 9, 13, 17, 42);
+      expect(
+        shareFileName(groupName: 'Família del poble', now: now),
+        'restaurants-família-del-poble-20260913_1742.eatapp',
+      );
+      // A long group name is capped at the same 60-character slug limit.
+      expect(
+        shareFileName(groupName: 'x'.padRight(200, 'x'), now: now),
+        'restaurants-${'x'.padRight(60, 'x')}-20260913_1742.eatapp',
+      );
+    });
   });
 
   group('writeRestaurantShareFile', () {

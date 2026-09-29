@@ -39,6 +39,8 @@ Rect? sharePositionOriginFor(BuildContext context) {
 /// [restaurantIds] null means every restaurant ("share all" and Settings'
 /// "export my data"); a single id means the detail screen's share of one.
 /// [singleName] is that one restaurant's name, folded into the filename.
+/// [groupName], when non-null, is the group a bulk export was scoped to, folded
+/// in too.
 ///
 /// Nothing is exported until the user confirms the options dialog; an exception
 /// on the way (a failed write, a platform channel error) surfaces as a snackbar
@@ -48,6 +50,7 @@ Future<void> exportAndShareRestaurants(
   required RestaurantRepository repository,
   List<String>? restaurantIds,
   String? singleName,
+  String? groupName,
   String? groupId,
 }) async {
   // Read everything off the context before the first await, so no async gap
@@ -70,6 +73,7 @@ Future<void> exportAndShareRestaurants(
     await shareRestaurants(
       restaurants: exports,
       singleName: singleName,
+      groupName: groupName,
       sharePositionOrigin: origin,
     );
   } on Object {
@@ -82,6 +86,7 @@ Future<void> exportAndShareRestaurants(
 Future<ShareResult> shareRestaurants({
   required List<RestaurantExport> restaurants,
   String? singleName,
+  String? groupName,
   Rect? sharePositionOrigin,
 }) async {
   final Directory directory = await getTemporaryDirectory();
@@ -89,6 +94,7 @@ Future<ShareResult> shareRestaurants({
     directory: directory,
     restaurants: restaurants,
     singleName: singleName,
+    groupName: groupName,
   );
   return SharePlus.instance.share(
     ShareParams(

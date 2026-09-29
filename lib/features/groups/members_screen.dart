@@ -204,6 +204,7 @@ class _MembersScreenState extends State<MembersScreen> {
   Future<void> _exportGroup() => exportAndShareRestaurants(
     context,
     repository: AppScope.of(context).restaurants,
+    groupName: _groupName,
     groupId: widget.group.id,
   );
 

@@ -19,11 +19,12 @@ const int _maxNameSlugLength = 60;
 /// Used when a name is blank or nothing survives sanitising.
 const String _fallbackSlug = 'restaurant';
 
-/// Turns a restaurant name into a filesystem-safe slug: anything that isn't a
-/// letter or a digit (spaces, punctuation, path separators) folds to a single
-/// `-`, runs collapse, and the result is capped so one long name can't produce
-/// an unwieldy filename. Letters keep their accents — a filename is UTF-8, and
-/// stripping them would make `Cafè` unreachable from `Cafe`.
+/// Turns a name — a restaurant's, or a group's for a group-scoped export — into
+/// a filesystem-safe slug: anything that isn't a letter or a digit (spaces,
+/// punctuation, path separators) folds to a single `-`, runs collapse, and the
+/// result is capped so one long name can't produce an unwieldy filename. Letters
+/// keep their accents — a filename is UTF-8, and stripping them would make
+/// `Cafè` unreachable from `Cafe`.
 ///
 /// Dart's `toLowerCase` is locale-independent, so unlike a Turkish-locale
 /// `lowercase()` it can't turn an `I` into a dotless `ı` here.
@@ -39,14 +40,22 @@ String restaurantNameSlug(String name) {
   return trimmed.isEmpty ? _fallbackSlug : trimmed;
 }
 
-/// e.g. `restaurants-20260913_1742.eatapp` for a bulk export, or
-/// `cal-ferran-20260913_1742.eatapp` when sharing a single restaurant. The
-/// timestamp is kept either way so re-sharing later doesn't overwrite a file
-/// the recipient already saved under the same name.
-String shareFileName({String? singleName, DateTime? now}) {
-  final String base = singleName == null
-      ? 'restaurants'
-      : restaurantNameSlug(singleName);
+/// e.g. `restaurants-20260913_1742.eatapp` for a bulk export,
+/// `cal-ferran-20260913_1742.eatapp` when sharing a single restaurant, or
+/// `restaurants-familia-20260913_1742.eatapp` when the bulk export is scoped to
+/// a group. [groupName] is folded in (sanitised and capped by
+/// [restaurantNameSlug]) so the recipient can tell which group a file came
+/// from; the timestamp is kept either way so re-sharing later doesn't overwrite
+/// a file the recipient already saved under the same name.
+String shareFileName({String? singleName, String? groupName, DateTime? now}) {
+  final String base;
+  if (singleName != null) {
+    base = restaurantNameSlug(singleName);
+  } else if (groupName != null) {
+    base = 'restaurants-${restaurantNameSlug(groupName)}';
+  } else {
+    base = 'restaurants';
+  }
   return '$base-${DateFormat('yyyyMMdd_HHmm').format(now ?? DateTime.now())}.eatapp';
 }
 
@@ -56,11 +65,13 @@ String shareFileName({String? singleName, DateTime? now}) {
 ///
 /// [singleName], when non-null, is the one restaurant in [restaurants] and is
 /// folded into the filename so a shared single restaurant arrives named after
-/// itself rather than as a generic "restaurants" file.
+/// itself rather than as a generic "restaurants" file. [groupName], when
+/// non-null, names the group a bulk export was scoped to.
 Future<File> writeRestaurantShareFile({
   required Directory directory,
   required List<RestaurantExport> restaurants,
   String? singleName,
+  String? groupName,
   DateTime? now,
 }) async {
   final Directory dir = Directory(p.join(directory.path, shareSubdir));
@@ -71,7 +82,10 @@ Future<File> writeRestaurantShareFile({
     }
   }
   final File file = File(
-    p.join(dir.path, shareFileName(singleName: singleName, now: now)),
+    p.join(
+      dir.path,
+      shareFileName(singleName: singleName, groupName: groupName, now: now),
+    ),
   );
   await file.writeAsString(encodeRestaurantShareFile(restaurants));
   return file;
