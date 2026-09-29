@@ -297,10 +297,7 @@
   "groupsInviteRetry": "Torna-ho a provar",
   "groupsInviteNewLink": "Enllaç nou",
   "groupsInviteCodeLabel": "Codi",
-  "groupsInviteShare": "Comparteix l'enllaç",
-  "groupsInviteCopyLink": "Copia l'enllaç",
   "groupsInviteCopied": "Copiat al porta-retalls",
-  "groupsInviteShareText": "Uneix-te al grup \"{name}\" a EatApp:\n{link}",
   "groupsInviteDetails": "Vàlid durant {days} dies · fins a {uses} persones",
 
   "groupsActionJoin": "Uneix-te a un grup",

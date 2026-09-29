@@ -916,18 +916,7 @@ class AppLocalizationsCa extends AppLocalizations {
   String get groupsInviteCodeLabel => 'Codi';
 
   @override
-  String get groupsInviteShare => 'Comparteix l\'enllaç';
-
-  @override
-  String get groupsInviteCopyLink => 'Copia l\'enllaç';
-
-  @override
   String get groupsInviteCopied => 'Copiat al porta-retalls';
-
-  @override
-  String groupsInviteShareText(String name, String link) {
-    return 'Uneix-te al grup \"$name\" a EatApp:\n$link';
-  }
 
   @override
   String groupsInviteDetails(int days, int uses) {

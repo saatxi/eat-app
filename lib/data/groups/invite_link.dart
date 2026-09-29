@@ -2,8 +2,8 @@
 /// a QR payload or a hand-typed code is turned back into a token.
 ///
 /// Two forms are accepted on the way in — the app's own custom scheme
-/// (`eatapp://join/<token>`, what the QR and the share carry, and what the
-/// Android intent-filter and the iOS URL scheme are registered for) and an
+/// (`eatapp://join/<token>`, what the QR carries, and what the Android
+/// intent-filter and the iOS URL scheme are registered for) and an
 /// `https://<host>/join/<token>` path, ready for the day an App Link / Universal
 /// Link publishes one. A bare alphanumeric code is accepted too: that is the
 /// fallback a user reads out loud or types by hand.

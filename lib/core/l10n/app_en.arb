@@ -416,21 +416,7 @@
   "groupsInviteRetry": "Try again",
   "groupsInviteNewLink": "New link",
   "groupsInviteCodeLabel": "Code",
-  "groupsInviteShare": "Share link",
-  "groupsInviteCopyLink": "Copy link",
   "groupsInviteCopied": "Copied to the clipboard",
-  "groupsInviteShareText": "Join the group \"{name}\" on EatApp:\n{link}",
-  "@groupsInviteShareText": {
-    "description": "The text the share sheet carries; name is the group, link the invitation link.",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "link": {
-        "type": "String"
-      }
-    }
-  },
   "groupsInviteDetails": "Valid for {days} days · up to {uses} people",
   "@groupsInviteDetails": {
     "description": "An invitation's validity shown under its QR code.",

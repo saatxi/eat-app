@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
@@ -11,11 +10,10 @@ import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/groups/group_models.dart';
 import '../../data/groups/invite_link.dart';
 import '../../data/groups/invite_models.dart';
-import '../import_export/share_service.dart';
 import 'invite_controller.dart';
 
 /// The owner-side invitation screen: mint a token for [group] and show it as a
-/// scannable QR, a shareable link and a hand-copyable code.
+/// scannable QR and a hand-copyable code.
 ///
 /// Reachable only for a group the signed-in user owns — the members screen gates
 /// the entry on the role, and `create-invite` re-checks it server-side.
@@ -73,7 +71,6 @@ class _InviteScreenState extends State<InviteScreen> {
                 : _Failure(onRetry: _regenerate);
           }
           return _Ready(
-            groupName: widget.group.name,
             invite: invite,
             isRefreshing: state.isLoading,
             onRegenerate: _regenerate,
@@ -84,16 +81,14 @@ class _InviteScreenState extends State<InviteScreen> {
   }
 }
 
-/// The invitation itself: QR, code and the three actions on it.
+/// The invitation itself: the QR, the code and the actions on it.
 class _Ready extends StatelessWidget {
   const _Ready({
-    required this.groupName,
     required this.invite,
     required this.isRefreshing,
     required this.onRegenerate,
   });
 
-  final String groupName;
   final Invite invite;
   final bool isRefreshing;
   final VoidCallback onRegenerate;
@@ -158,18 +153,6 @@ class _Ready extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xl),
-          FilledButton.icon(
-            onPressed: () => _share(context, groupName, link, l10n),
-            icon: const Icon(Icons.share_outlined),
-            label: Text(l10n.groupsInviteShare),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          OutlinedButton.icon(
-            onPressed: () => _copy(context, link, l10n),
-            icon: const Icon(Icons.link_rounded),
-            label: Text(l10n.groupsInviteCopyLink),
-          ),
-          const SizedBox(height: AppSpacing.sm),
           TextButton.icon(
             onPressed: isRefreshing ? null : onRegenerate,
             icon: const Icon(Icons.refresh_rounded),
@@ -178,26 +161,6 @@ class _Ready extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _share(
-    BuildContext context,
-    String name,
-    String link,
-    AppLocalizations l10n,
-  ) async {
-    final Rect? origin = sharePositionOriginFor(context);
-    try {
-      await SharePlus.instance.share(
-        ShareParams(
-          text: l10n.groupsInviteShareText(name, link),
-          sharePositionOrigin: origin,
-        ),
-      );
-    } on Object {
-      // A dismissed or failed share sheet needs no message — the link is still
-      // on screen to copy.
-    }
   }
 
   Future<void> _copy(

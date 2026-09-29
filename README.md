@@ -150,9 +150,9 @@ to a server.
 Creating a group signs the device in anonymously; from then on, picking a
 group in the list's scope selector shows that group's restaurants instead of
 the personal ones, and every write there is attributed and syncs. Inviting
-someone (an owner only) opens a screen with a QR code, a link
-(`eatapp://join/<token>`) and a short code to read out; the other side scans,
-pastes or types it and joins. The token is minted and redeemed exclusively by
+someone (an owner only) opens a screen with a QR code and a short code to read
+out; the other side scans the QR or types the code in and joins. The token is
+minted and redeemed exclusively by
 the `create-invite` / `join-group` Edge Functions, so the `invites` table has
 no client write path at all.
 

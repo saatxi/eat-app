@@ -297,10 +297,7 @@
   "groupsInviteRetry": "Reintentar",
   "groupsInviteNewLink": "Enlace nuevo",
   "groupsInviteCodeLabel": "Código",
-  "groupsInviteShare": "Compartir enlace",
-  "groupsInviteCopyLink": "Copiar enlace",
   "groupsInviteCopied": "Copiado al portapapeles",
-  "groupsInviteShareText": "Únete al grupo \"{name}\" en EatApp:\n{link}",
   "groupsInviteDetails": "Válido durante {days} días · hasta {uses} personas",
 
   "groupsActionJoin": "Unirse a un grupo",

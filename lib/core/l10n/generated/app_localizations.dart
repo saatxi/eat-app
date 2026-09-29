@@ -1732,29 +1732,11 @@ abstract class AppLocalizations {
   /// **'Code'**
   String get groupsInviteCodeLabel;
 
-  /// No description provided for @groupsInviteShare.
-  ///
-  /// In en, this message translates to:
-  /// **'Share link'**
-  String get groupsInviteShare;
-
-  /// No description provided for @groupsInviteCopyLink.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy link'**
-  String get groupsInviteCopyLink;
-
   /// No description provided for @groupsInviteCopied.
   ///
   /// In en, this message translates to:
   /// **'Copied to the clipboard'**
   String get groupsInviteCopied;
-
-  /// The text the share sheet carries; name is the group, link the invitation link.
-  ///
-  /// In en, this message translates to:
-  /// **'Join the group \"{name}\" on EatApp:\n{link}'**
-  String groupsInviteShareText(String name, String link);
 
   /// An invitation's validity shown under its QR code.
   ///
