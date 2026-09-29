@@ -84,3 +84,8 @@ class GroupLimitException implements GroupException {
 /// "you have reached the limit" case into a generic failure. Kept in step with
 /// the `errcode` in `supabase/migrations/20260929000000_groups_schema.sql`.
 const String ownerGroupLimitReachedCode = 'P0A01';
+
+/// The owner-group cap the client assumes when the backend is unreachable or
+/// answers with something that is not a number. Kept in step with the
+/// `owner_group_limit` seed in the schema; the backend stays authoritative.
+const int defaultOwnerGroupLimit = 10;
