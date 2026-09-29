@@ -9,6 +9,7 @@ import '../../data/groups/invite_link.dart';
 import '../../widget/home_widget_snapshot.dart';
 import '../detail/restaurant_detail_screen.dart';
 import '../edit/restaurant_edit_screen.dart';
+import '../groups/groups_controller.dart';
 import '../groups/groups_screen.dart';
 import '../groups/join_screen.dart';
 import '../import_export/import_screen.dart';
@@ -80,8 +81,13 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   int _index = 0;
+
+  /// The one groups controller, read from [AppScope] once dependencies are
+  /// established so the lifecycle and tab callbacks below can reach it without
+  /// an inherited-widget lookup outside build.
+  GroupsController? _groupsController;
 
   /// Which restaurant the detail pane is showing, on a wide window only. Null
   /// draws the "nothing selected" placeholder; on a phone the selection is the
@@ -102,8 +108,18 @@ class _HomeShellState extends State<HomeShell> {
   bool get _showsDetailPane => _index == 0;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _groupsController = AppScope.of(context).groupsController;
+  }
+
+  @override
   void initState() {
     super.initState();
+    // Coming back from the background is the moment the group's rows are most
+    // likely stale: another member may have added a restaurant while we were
+    // away. The observer turns that into a pull.
+    WidgetsBinding.instance.addObserver(this);
     final String? initial = widget.initialSharedFilePath;
     if (initial != null) {
       // The Navigator above this widget is not ready until the first frame,
@@ -133,13 +149,46 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _sharedFiles?.cancel();
     _widgetClicks?.cancel();
     _inviteLinks?.cancel();
     super.dispose();
   }
 
-  void _selectTab(int index) => setState(() => _index = index);
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncSelectedGroup();
+    }
+  }
+
+  void _selectTab(int index) {
+    if (index != _index) {
+      setState(() => _index = index);
+    }
+    // Entering (or re-tapping) a scope-aware section refreshes the selected
+    // group, so a restaurant another member added shows up without the user
+    // having to do anything special. A no-op in Personal mode.
+    if (_sectionReadsGroupScope(index)) {
+      _syncSelectedGroup();
+    }
+  }
+
+  /// The sections whose data the selected group scopes: the Journal and the
+  /// Roulette. Groups and Settings read no group-scoped rows, so entering them
+  /// triggers no pull.
+  static bool _sectionReadsGroupScope(int index) => index == 0 || index == 1;
+
+  /// Pulls the selected group's changes, if there is a group and a backend.
+  /// [GroupsController.syncNow] owns the guard, so this is safe to fire on every
+  /// tab change and every resume.
+  void _syncSelectedGroup() {
+    final GroupsController? groups = _groupsController;
+    if (groups != null) {
+      unawaited(groups.syncNow());
+    }
+  }
 
   /// Opens a restaurant, in whichever way the current window wants: the detail
   /// pane beside the Journal when there is room for two, a pushed route when
@@ -274,7 +323,7 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   /// Whether groups are available in this build (Supabase configured).
-  bool get _canUseGroups => AppScope.of(context).groupsController?.canUseGroups ?? false;
+  bool get _canUseGroups => _groupsController?.canUseGroups ?? false;
 
   /// The four sections, stacked so their state survives a tab switch — and a
   /// window crossing the two-pane breakpoint.

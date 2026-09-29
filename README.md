@@ -156,6 +156,14 @@ pastes or types it and joins. The token is minted and redeemed exclusively by
 the `create-invite` / `join-group` Edge Functions, so the `invites` table has
 no client write path at all.
 
+A group is pulled when it matters rather than continuously, since each pull
+only asks for what changed since the last one: entering a group (switching to
+it in the scope selector, or opening the Journal or Roulette while it is
+selected), returning to the app from the background, and pulling the list down
+all push this device's own changes and fetch everyone else's. There is no live
+subscription, so a restaurant another member adds appears on the next pull
+rather than the instant it is saved.
+
 The backend's guarantees — enforced in SQL, not only in the app — are:
 
 - Every shared row belongs to a group and is attributed to whoever inserted
@@ -271,6 +279,14 @@ through `String.fromEnvironment` — so the build commands above, and
 them the shipped app simply has groups dormant. The anon key is public by
 design — the server's row-level security protects the data — but the
 `service_role` key must never be embedded.
+
+A debug run needs the same two values: without them the Groups tab and the
+scope selector are compiled out, so a plain `flutter run` looks like a
+personal-only app. Android Studio's `main.dart` run configuration already
+passes `--dart-define-from-file=dart_defines.json`, so the values live in that
+(gitignored) file at the repo root, and
+`flutter run --dart-define-from-file=dart_defines.json` does the same from the
+terminal.
 
 If you edit `lib/data/db/tables.dart` or a DAO, regenerate the drift code:
 

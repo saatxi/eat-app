@@ -37,9 +37,15 @@ class SyncService {
       await _engine.syncGroup(groupId);
       _lastError = null;
       status.value = SyncStatus.succeeded;
-    } catch (error) {
+    } catch (error, stackTrace) {
       _lastError = error;
       status.value = SyncStatus.failed;
+      // The UI can only offer "retry", so the actual cause — a lost session,
+      // no network, an RLS rejection — is logged where a developer can see it.
+      debugPrint('Syncing group $groupId failed: $error');
+      if (kDebugMode) {
+        debugPrintStack(stackTrace: stackTrace);
+      }
     }
   }
 

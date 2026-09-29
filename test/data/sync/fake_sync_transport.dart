@@ -14,14 +14,26 @@ class FakeSyncTransport implements SyncTransport {
   /// The table names in push order, for asserting dependency ordering.
   final List<String> pushLog = <String>[];
 
+  /// The group ids pulled, in order, for asserting that a screen asked for a
+  /// sync (and how many times).
+  final List<String> pullLog = <String>[];
+
   /// The remote's rows, keyed by group id.
   final Map<String, List<RemoteRestaurant>> restaurants =
       <String, List<RemoteRestaurant>>{};
   final Map<String, List<RemoteVisit>> visits = <String, List<RemoteVisit>>{};
   final Map<String, List<RemotePhoto>> photos = <String, List<RemotePhoto>>{};
 
+  /// When set, every restaurant push throws it — to model a server that keeps
+  /// refusing a row.
+  Object? pushError;
+
   @override
   Future<void> pushRestaurants(List<RemoteRestaurant> rows) async {
+    final Object? failure = pushError;
+    if (failure != null) {
+      throw failure;
+    }
     pushLog.add('restaurants');
     pushedRestaurants.addAll(rows);
   }
@@ -43,6 +55,7 @@ class FakeSyncTransport implements SyncTransport {
     required String groupId,
     String? since,
   }) async {
+    pullLog.add(groupId);
     final List<RemoteRestaurant> rs = (restaurants[groupId] ??
             const <RemoteRestaurant>[])
         .where((RemoteRestaurant r) => _after(r.updatedAt, since))

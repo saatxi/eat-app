@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../db/app_database.dart';
 import '../photo/photo_storage.dart';
 import 'pending_sync_store.dart';
@@ -48,9 +50,28 @@ class SyncEngine {
 
   /// Pushes this device's changes, then pulls the group's — push first so the
   /// remote has our rows before we ask what changed since we last looked.
+  ///
+  /// A push that fails does not cost us the pull: what the rest of the group
+  /// changed is independent of whether our own queue could be sent, and a row
+  /// the server keeps refusing would otherwise freeze every future pull behind
+  /// it — the very rows we came for would never arrive. The push failure is
+  /// remembered and rethrown once the pull has had its chance, so the caller
+  /// still learns about it.
   Future<void> syncGroup(String groupId) async {
-    await pushGroup(groupId);
+    Object? pushError;
+    StackTrace? pushStack;
+    try {
+      await pushGroup(groupId);
+    } catch (error, stackTrace) {
+      pushError = error;
+      pushStack = stackTrace;
+    }
+
     await pullGroup(groupId);
+
+    if (pushError != null) {
+      Error.throwWithStackTrace(pushError, pushStack!);
+    }
   }
 
   /// Sends every pending row in [groupId] to the remote, in dependency order,
@@ -180,6 +201,12 @@ class SyncEngine {
 
   /// Downloads each live remote photo into the local store, returning the path
   /// it landed at, keyed by photo id. Tombstones get no entry.
+  ///
+  /// A single unreachable or forbidden binary is logged and skipped rather than
+  /// aborting the pull: it is the *other* members who download the photos, so
+  /// failing the whole batch here would silently starve exactly the device that
+  /// did not create the photo — no rows at all, for a photo that is secondary
+  /// to them. The row is still applied (without a local file this time).
   Future<Map<String, String>> _downloadPhotoBinaries(
     List<RemotePhoto> photos,
   ) async {
@@ -193,9 +220,16 @@ class SyncEngine {
       if (photo.deletedAt != null) {
         continue;
       }
-      paths[photo.id] = await storage.writeBytes(
-        await blobs.download(photo.storagePath),
-      );
+      try {
+        paths[photo.id] = await storage.writeBytes(
+          await blobs.download(photo.storagePath),
+        );
+      } catch (error, stackTrace) {
+        debugPrint('Downloading photo ${photo.id} failed: $error');
+        if (kDebugMode) {
+          debugPrintStack(stackTrace: stackTrace);
+        }
+      }
     }
     return paths;
   }

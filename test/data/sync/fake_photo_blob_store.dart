@@ -10,6 +10,10 @@ class FakePhotoBlobStore implements PhotoBlobStore {
   /// row.
   final List<String> uploadLog = <String>[];
 
+  /// When set, [download] throws for this exact path — to model a binary that
+  /// is missing or that the caller may not read.
+  String? failingDownloadPath;
+
   @override
   Future<void> upload(String path, List<int> bytes) async {
     uploadLog.add(path);
@@ -17,8 +21,12 @@ class FakePhotoBlobStore implements PhotoBlobStore {
   }
 
   @override
-  Future<List<int>> download(String path) async =>
-      objects[path] ?? const <int>[];
+  Future<List<int>> download(String path) async {
+    if (path == failingDownloadPath) {
+      throw StateError('no object at $path');
+    }
+    return objects[path] ?? const <int>[];
+  }
 
   @override
   Future<void> delete(String path) async {

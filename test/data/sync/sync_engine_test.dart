@@ -170,6 +170,19 @@ void main() {
     expect(photoStorage.written['stored/downloaded-0'], <int>[9, 9]);
   });
 
+  test('a failed photo download does not abort the rest of the pull', () async {
+    transport.restaurants['g1'] = <RemoteRestaurant>[remoteRestaurant()];
+    transport.photos['g1'] = <RemotePhoto>[remotePhoto()];
+    blobs.failingDownloadPath = 'g1/p9';
+
+    await engine.pullGroup('g1');
+
+    // The restaurant landed even though its photo's binary could not be read.
+    expect((await db.select(db.restaurants).get()).single.id, 'r9');
+    // The row is still applied, just without a local file this time.
+    expect((await db.select(db.photos).getSingle()).path, '');
+  });
+
   test('a pulled photo tombstone writes no file', () async {
     transport.photos['g1'] = <RemotePhoto>[
       remotePhoto(deletedAt: '2026-09-27T11:00:00.000Z'),
@@ -240,5 +253,22 @@ void main() {
     expect(transport.pushedRestaurants.map((r) => r.id), <String>['r1']);
     expect((await db.select(db.visits).get()).single.id, 'v9');
     expect(await pending.pendingForGroup('g1'), isEmpty);
+  });
+
+  test('syncGroup still pulls when the push fails', () async {
+    await db.into(db.restaurants).insert(sharedRestaurant());
+    await pending.enqueue(SyncTable.restaurants, 'r1', 'g1');
+    transport.pushError = Exception('push refused');
+    transport.restaurants['g1'] = <RemoteRestaurant>[remoteRestaurant()];
+
+    // The push failure still reaches the caller...
+    await expectLater(
+      engine.syncGroup('g1'),
+      throwsA(isA<Exception>()),
+    );
+
+    // ...but it did not cost us the pull: the other member's row landed.
+    final List<Restaurant> rows = await db.select(db.restaurants).get();
+    expect(rows.map((Restaurant r) => r.id), contains('r9'));
   });
 }

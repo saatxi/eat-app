@@ -7,6 +7,7 @@ import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/staggered_entrance.dart';
 import '../groups/group_scope_button.dart';
+import '../groups/group_sync_button.dart';
 import '../groups/groups_controller.dart';
 import 'journal_filter_bar.dart';
 import 'restaurant_card.dart';
@@ -95,8 +96,12 @@ class _JournalScreenState extends State<JournalScreen> {
           // to sit above the list: the list, the roulette and the statistics
           // screen all read the same controller, so a change here moves all
           // three.
-          if (groups != null && groups.canUseGroups)
+          if (groups != null && groups.canUseGroups) ...<Widget>[
             GroupScopeButton(controller: groups),
+            // A one-tap way to pull the selected group, so a member who just
+            // heard a restaurant was added does not have to guess at a gesture.
+            GroupSyncButton(controller: groups),
+          ],
           // Statistics and "share/export all" used to sit here as well; both are
           // reached from Settings now, which leaves the title and the scope
           // switch their room on a narrow phone.
@@ -143,9 +148,10 @@ class _JournalScreenState extends State<JournalScreen> {
               ),
               Expanded(
                 child: RefreshIndicator(
-                  // Pulling re-runs the query rather than waiting on a cosmetic
-                  // delay — see RestaurantListController.refresh.
-                  onRefresh: controller.refresh,
+                  // Pulling first brings down any restaurant another group
+                  // member just added, then re-runs the local query — see
+                  // _refresh. In Personal mode the pull is a no-op.
+                  onRefresh: () => _refresh(controller, groups),
                   child: _content(state, controller, l10n),
                 ),
               ),
@@ -154,6 +160,17 @@ class _JournalScreenState extends State<JournalScreen> {
         },
       ),
     );
+  }
+
+  /// Pull-to-refresh: pull the selected group's changes, then re-run the local
+  /// query. The pull is what surfaces a restaurant another member added; the
+  /// requery then shows it. A no-op when no group is selected.
+  Future<void> _refresh(
+    RestaurantListController controller,
+    GroupsController? groups,
+  ) async {
+    await groups?.syncNow();
+    await controller.refresh();
   }
 
   Widget _content(
