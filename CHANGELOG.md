@@ -9,6 +9,120 @@ tagged at release time. Versioning follows the `vMAJOR.MINOR.PATCH` scheme
 described in [README.md](README.md#versioning) — `versionName`/`versionCode`
 are always derived from git, never hand-edited.
 
+## [3.5.6] - 2026-09-29
+
+Tidy the shared-groups backend and pin down the local schema's migrations
+
+- Collapse the twelve shared-groups migrations into one initial schema,
+  since the backend is pre-production and the chain recorded the path the
+  schema took while it was being built rather than its final shape, folding
+  every superseded intermediate step into its final form
+- Fold the member roster into a security_invoker view so the members screen
+  reads it in one round-trip instead of hitting PostgREST twice, while the
+  caller's row-level security still decides what it may see
+- Merge the invite and join rate limits onto one rate_attempts table and one
+  record_rate_attempt RPC, and share the Edge Functions' json and client
+  boilerplate, so the two flows stop carrying a copy of the same
+  sliding-window logic
+- Make the invite token use rejection sampling rather than a modulo over
+  random bytes, which had made the first few alphabet characters slightly
+  likelier than the rest
+- Test the 14-to-15 drift migration and rewrite the note that claimed the
+  local schema had no migration path, so the documented version history
+  matches the real 14-to-17 onUpgrade steps
+- Drop the leftover refactoring plan documents and unused configuration, none
+  of which any build or tool reads
+
+## [3.5.5] - 2026-09-29
+
+Push group changes live and clean up a deleted group's data
+
+- Attribute a shared write's group through a new onSharedWrite hook on the
+  repository and push it the moment it lands, so a restaurant added in a
+  group reaches the other members without a manual sync or a restart, which
+  is why it had only appeared after the app was reopened
+- Coalesce overlapping sync runs in SyncService, because the auto-push, a
+  poll tick and a manual tap can land together and the engine is not
+  re-entrant, and poll the selected group on a timer so the rest of the
+  group's changes arrive without a tap while the sync button still gives an
+  immediate pull
+- Purge a group's local rows, pending-sync queue and cursor when it is
+  deleted or left, and drop a selection that no longer names a group, so a
+  dissolved group can no longer show its restaurants under Personal or keep
+  the sync button on
+- Hide the Change your name row while the user belongs to no groups, since a
+  display name means nothing outside one
+
+## [3.5.4] - 2026-09-29
+
+Sync shared groups on resume and on demand, remove the non-clickable
+join-link share, and raise the owner-group cap to ten
+
+- Pull the selected group whenever the app returns from the background and
+  when the Journal or Roulette is opened, not only on a cold start, because
+  that is the moment the rows are most likely to have gone stale
+- Add a sync button to the Journal's app bar that shows the pull in progress
+  and becomes a retry with a snackbar on failure, so a member no longer has
+  to guess at a gesture or be left with a silent no-op
+- Stop a failed push from skipping the pull that follows it, which would
+  otherwise freeze every future pull behind one row the server keeps
+  refusing, skip a photo binary that cannot be downloaded rather than
+  aborting the whole pull, and log a failed sync with its cause instead of
+  failing silently
+- Remove the invite screen's Share link action: the eatapp:// custom scheme
+  is never linkified by messaging apps, so the shared link arrived as dead
+  plain text and cannot be made clickable without an App Link the project
+  does not have, while the QR and the hand-copyable short code stay for
+  in-person and remote invites
+- Raise the owner-group cap from 2 to 10 through a new migration over
+  private.app_settings, leaving plain membership unlimited, and make the RLS
+  smoke test derive the cap instead of hardcoding it
+
+## [3.5.3] - 2026-09-28
+
+Fix invite tokens so a scanned QR, a typed code and a shared link all join
+again
+
+- The client pinned the invitation token at 32 characters while the
+  create-invite Edge Function has always minted 16 (128 bits, one character
+  per byte), so every join path rejected the token as malformed and never
+  reached the server: the scanner read the QR but dropped the payload,
+  manual entry reported the code as invalid, and an eatapp://join/<token>
+  deep link arriving from Mail or WhatsApp was silently ignored
+- Align the client contract to the server's real shape instead of changing
+  the backend, so invitations already minted work without redeploying the
+  function, and update the token fixtures in invite_link_test and
+  invite_join_controller_test to the 16-character shape
+
+## [3.5.2] - 2026-09-28
+
+Finish the shared-groups workflow: a dedicated Groups tab, an ownership cap
+and a group that dissolves with its last member
+
+- Move group management out of Settings and into a dedicated Groups tab in
+  the bottom navigation — shown only when the backend is compiled in — with
+  full create, rename, invite, expel and leave flows, plus 10-second
+  timeouts on the identity and group-list calls so an unreachable backend
+  surfaces a message instead of an infinite spinner
+- Restore the group's name editor and add a Change your name entry to the
+  groups menu, so a member sets the display name their roster row shows
+  without leaving the list
+- Cap how many groups a user may own at owner_group_limit in
+  private.app_settings, default 2, while leaving plain membership unlimited;
+  the group_members_owner_cap trigger enforces the cap inside the atomic
+  create_owned_group RPC so a refused ownership rolls the fresh group back,
+  and the app reads the limit through the owner_group_limit() RPC, disables
+  the create button and shows a dedicated message once it is reached
+- Dissolve a group when its last member leaves, via the
+  group_members_dissolve_when_empty trigger that the v3.5.0 release never
+  deployed, and drop the dissolved group from the shared roster after a
+  leave
+- Extend the RLS smoke test with an owner-cap section and run it over the
+  Management API, and make member names in the roster purely informational
+  as the rename stays on the groups list
+- Document the Windows multiline commit trap in AGENTS.md and add the MCP
+  workspace configuration
+
 ## [3.5.1] - 2026-09-28
 
 Fix the shared groups' rough edges and a handful of smaller issues
@@ -294,6 +408,35 @@ visual refresh
 - Replace the manual ViewModel factory with Hilt dependency injection
 - Replace the default palette and type scale with the approved "mercado
   fresco" visual identity
+
+## [2.4.3] - 2026-09-11
+
+Add structured address (street, town, region, country) and a combined
+location filter
+
+- Simplify the Settings export row's label
+- Update SingleChoiceSegmentedButtonRow modifier to fill max width for better
+  layout
+- Bump the minor-and-patch dependency group with 2 updates
+
+## [2.4.2] - 2026-09-06
+
+Fix stale detail dialogs on restaurant switch, wrong Roulette price-chip
+colors, missing accessibility landmarks, and layout bugs; show a clean version
+in Settings
+
+- Fix the detail screen occasionally reusing a stale delete-confirm dialog or
+  overflow menu for the wrong restaurant when switching between restaurants
+  in the two-pane layout
+- Fix Roulette's price chip not picking up the same colors List and Detail
+  already use
+- Restore the Overview and Rating section labels on the detail screen as
+  TalkBack (screen reader) headings, lost in an earlier visual refresh
+- Fix uneven statistics tile heights with longer Catalan labels, and remove a
+  "top cuisine" chip in List's search suggestions that could get clipped at
+  the screen edge with no scroll hint
+- Show a plain X.Y.Z version in Settings' About row for a clean release
+  build, instead of the full development build string
 
 ## [2.4.1] - 2026-09-06
 
