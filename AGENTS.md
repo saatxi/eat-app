@@ -121,8 +121,8 @@ Optional detailed explanation
   (`owner_group_limit`, readable via the `owner_group_limit()` RPC), enforced
   by the `group_members_owner_cap` trigger inside the atomic
   `create_owned_group` RPC — while unlimited plain membership stays untouched;
-  and invitations are rate-limited per user on both mint
-  (`record_invite_attempt`) and redemption (`record_join_attempt`). A new
+  and invitations are rate-limited per user on both mint and redemption (via
+  `record_rate_attempt('invite')` and `record_rate_attempt('join')`). A new
   policy or migration should extend `supabase/tests/rls_smoke_test.sql`, which
   drives an owner, a member and a stranger through every table and rolls back.
 - **Build**: the Flutter tool over the Android project in `android/` (its own

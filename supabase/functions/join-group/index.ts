@@ -18,9 +18,8 @@
 //   500 { "error": "internal" }                         unexpected failure
 //
 // The raw token is SHA-256 hashed before lookup; invites stores only hashes.
-// A short-window per-user attempt counter lives in a dedicated table created
-// by the same migration set, so brute-forcing tokens is throttled even across
-// function instances.
+// A short-window per-user attempt counter lives in the shared rate_attempts
+// table, so brute-forcing tokens is throttled even across function instances.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { createHash } from 'node:crypto';
 
@@ -71,7 +70,9 @@ Deno.serve(async (req) => {
 
   // Rate limit: at most 10 join attempts per user per 10 minutes. Attempts
   // are recorded even when they fail, so guessing tokens is throttled.
-  const { error: rateError } = await supabase.rpc('record_join_attempt');
+  const { error: rateError } = await supabase.rpc('record_rate_attempt', {
+    attempt_kind: 'join',
+  });
   if (rateError) {
     return json(429, { error: 'rate_limited' });
   }

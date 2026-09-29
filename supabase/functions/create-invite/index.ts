@@ -68,7 +68,9 @@ Deno.serve(async (req) => {
   // Rate limit: at most 20 invitations minted per user per hour. The attempt is
   // recorded before the ownership check, so a non-owner probing the endpoint is
   // throttled too.
-  const { error: rateError } = await supabase.rpc('record_invite_attempt');
+  const { error: rateError } = await supabase.rpc('record_rate_attempt', {
+    attempt_kind: 'invite',
+  });
   if (rateError) {
     return json(429, { error: 'rate_limited' });
   }

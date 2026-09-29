@@ -130,21 +130,16 @@ create index index_photos_group_updated on public.photos (group_id, updated_at);
 
 -- ── private tables (rate limiting + settings; no client access) ──────────
 
-create table private.join_attempts (
+-- One attempts table for both rate-limited Edge Functions; `kind` separates the
+-- join flow ('join') from the invite-minting flow ('invite').
+create table private.rate_attempts (
+  kind text not null check (kind in ('join', 'invite')),
   user_id uuid not null references auth.users (id) on delete cascade,
   attempted_at timestamptz not null default now()
 );
 
-create index index_join_attempts_user_time
-  on private.join_attempts (user_id, attempted_at);
-
-create table private.invite_attempts (
-  user_id uuid not null references auth.users (id) on delete cascade,
-  attempted_at timestamptz not null default now()
-);
-
-create index index_invite_attempts_user_time
-  on private.invite_attempts (user_id, attempted_at);
+create index index_rate_attempts_kind_user_time
+  on private.rate_attempts (kind, user_id, attempted_at);
 
 create table private.app_settings (
   key text primary key,
@@ -169,8 +164,7 @@ alter table public.photos enable row level security;
 
 -- No policies on these: with RLS enabled and no policy, no client role can touch
 -- them. Only the SECURITY DEFINER functions below reach them.
-alter table private.join_attempts enable row level security;
-alter table private.invite_attempts enable row level security;
+alter table private.rate_attempts enable row level security;
 alter table private.app_settings enable row level security;
 
 -- ── helper functions (SECURITY DEFINER, bypass RLS for policy subqueries) ─
@@ -557,57 +551,53 @@ $$;
 
 -- ── rate limiting for the two Edge Functions ─────────────────────────────
 --
--- The functions call these RPCs before doing anything else. SECURITY DEFINER
--- because the attempts tables must not be readable or writable by clients (RLS
--- on them denies everyone), while the function only exposes pass/fail. Attempts
--- are recorded on every call, so failed guesses count toward the limit too.
+-- Both Edge Functions call this before doing anything else, passing their own
+-- kind. SECURITY DEFINER because the attempts table must not be readable or
+-- writable by clients (RLS on it denies everyone), while the function only
+-- exposes pass/fail. An attempt is recorded on every call — including a rejected
+-- one — so failed guesses count toward the limit too.
 
-create or replace function public.record_join_attempt()
+create or replace function public.record_rate_attempt(attempt_kind text)
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  window_interval interval;
+  max_attempts integer;
 begin
-  -- Sliding window: 10 attempts per user per 10 minutes.
-  if (
-    select count(*) from private.join_attempts
-    where user_id = auth.uid()
-      and attempted_at > now() - interval '10 minutes'
-  ) >= 10 then
-    raise exception 'join_attempts_rate_limited';
+  -- Per-kind sliding window: token guessing is cheap, so joins are throttled
+  -- hard (10 per 10 minutes) while invites stay generous for a person handing
+  -- them out one at a time (20 per hour).
+  select
+    case attempt_kind when 'join' then interval '10 minutes'
+                      when 'invite' then interval '1 hour' end,
+    case attempt_kind when 'join' then 10
+                      when 'invite' then 20 end
+  into window_interval, max_attempts;
+
+  if window_interval is null then
+    raise exception 'unknown_rate_attempt_kind: %', attempt_kind
+      using errcode = '22023';
   end if;
 
-  insert into private.join_attempts (user_id) values (auth.uid());
-
-  -- Opportunistic cleanup of this user's stale rows.
-  delete from private.join_attempts
-  where user_id = auth.uid()
-    and attempted_at < now() - interval '1 day';
-end;
-$$;
-
-create or replace function public.record_invite_attempt()
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  -- Sliding window: 20 invitations minted per user per hour.
   if (
-    select count(*) from private.invite_attempts
-    where user_id = auth.uid()
-      and attempted_at > now() - interval '1 hour'
-  ) >= 20 then
-    raise exception 'invite_attempts_rate_limited';
+    select count(*) from private.rate_attempts
+    where kind = attempt_kind
+      and user_id = auth.uid()
+      and attempted_at > now() - window_interval
+  ) >= max_attempts then
+    raise exception 'rate_limited';
   end if;
 
-  insert into private.invite_attempts (user_id) values (auth.uid());
+  insert into private.rate_attempts (kind, user_id)
+  values (attempt_kind, auth.uid());
 
-  -- Opportunistic cleanup of this user's stale rows.
-  delete from private.invite_attempts
-  where user_id = auth.uid()
+  -- Opportunistic cleanup of this user's stale rows for this kind.
+  delete from private.rate_attempts
+  where kind = attempt_kind
+    and user_id = auth.uid()
     and attempted_at < now() - interval '1 day';
 end;
 $$;
@@ -666,16 +656,14 @@ revoke all on function public.is_group_member(uuid) from public, anon;
 revoke all on function public.is_group_owner(uuid) from public, anon;
 revoke all on function public.is_group_creator(uuid) from public, anon;
 revoke all on function public.owner_group_limit() from public, anon;
-revoke all on function public.record_join_attempt() from public, anon;
-revoke all on function public.record_invite_attempt() from public, anon;
+revoke all on function public.record_rate_attempt(text) from public, anon;
 revoke all on function public.create_owned_group(uuid, text) from public, anon;
 
 grant execute on function public.is_group_member(uuid) to authenticated;
 grant execute on function public.is_group_owner(uuid) to authenticated;
 grant execute on function public.is_group_creator(uuid) to authenticated;
 grant execute on function public.owner_group_limit() to authenticated;
-grant execute on function public.record_join_attempt() to authenticated;
-grant execute on function public.record_invite_attempt() to authenticated;
+grant execute on function public.record_rate_attempt(text) to authenticated;
 grant execute on function public.create_owned_group(uuid, text) to authenticated;
 
 -- Trigger functions are invoked by the system, not by clients, so the EXECUTE
