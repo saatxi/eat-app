@@ -76,3 +76,11 @@ class GroupLimitException implements GroupException {
   @override
   String toString() => 'GroupLimitException: $message';
 }
+
+/// The SQLSTATE `create_owned_group`'s owner-cap trigger
+/// (`private.prevent_owner_cap_exceeded`) raises when the caller already owns
+/// the maximum number of groups. The client matches on this code rather than the
+/// human-readable message, so rewording the server text cannot silently turn the
+/// "you have reached the limit" case into a generic failure. Kept in step with
+/// the `errcode` in `supabase/migrations/20260929000000_groups_schema.sql`.
+const String ownerGroupLimitReachedCode = 'P0A01';

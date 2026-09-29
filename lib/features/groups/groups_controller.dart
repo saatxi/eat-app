@@ -244,12 +244,15 @@ class GroupsController extends ChangeNotifier {
       return false;
     }
     try {
-      final Identity me = (await account.current()) ??
-          await account.signInAnonymously();
+      // Ensure a session exists before the RPC: create_owned_group attributes
+      // the group and its owner row to auth.uid(), so the client must be
+      // authenticated first.
+      if (await account.current() == null) {
+        await account.signInAnonymously();
+      }
       final Group created = await groups.createGroup(
         id: _uuid.v4(),
         name: name,
-        createdBy: me.userId,
       );
       await load();
       await select(created.id);

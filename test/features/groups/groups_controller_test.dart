@@ -23,7 +23,6 @@ class _FakeGroupGateway implements GroupGateway {
   Future<Group> createGroup({
     required String id,
     required String name,
-    required String createdBy,
   }) async {
     final Object? failure = error;
     if (failure != null) {

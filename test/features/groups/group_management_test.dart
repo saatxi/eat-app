@@ -33,7 +33,6 @@ class _FakeGroupGateway implements GroupGateway {
   Future<Group> createGroup({
     required String id,
     required String name,
-    required String createdBy,
   }) async {
     final Group group = Group(id: id, name: name, role: GroupRole.owner);
     groups = <Group>[...groups, group];

@@ -22,7 +22,6 @@ abstract class GroupGateway {
   Future<Group> createGroup({
     required String id,
     required String name,
-    required String createdBy,
   });
 
   /// The maximum number of groups one user may own, per the backend's
@@ -70,7 +69,6 @@ class SupabaseGroupGateway implements GroupGateway {
   Future<Group> createGroup({
     required String id,
     required String name,
-    required String createdBy,
   }) async {
     // One transaction on the server: groups row + owner membership. The owner
     // cap trigger lives inside it, so a refused membership rolls the group row
@@ -85,7 +83,9 @@ class SupabaseGroupGateway implements GroupGateway {
         },
       );
     } on PostgrestException catch (error) {
-      if (error.message.contains('owner_group_limit_reached')) {
+      // Matched on the SQLSTATE the cap trigger raises, not its message, so a
+      // reworded error cannot silently turn this into a generic failure.
+      if (error.code == ownerGroupLimitReachedCode) {
         throw GroupLimitException(await ownerGroupLimit());
       }
       rethrow;
