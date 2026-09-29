@@ -13,8 +13,9 @@ import 'join_screen.dart';
 import 'members_screen.dart';
 
 /// The Groups half of the app: a list of every group the signed-in user belongs
-/// to, with actions to create, join, edit, leave and dissolve groups, plus one-
-/// tap access to members and invitations.
+/// to, with actions to create and join a group, plus one-tap access to each
+/// group's members and invitations. Managing a group — renaming, leaving or
+/// dissolving it — lives on its members screen.
 ///
 /// Only shown when [GroupsController.canUseGroups] is true (the build carries
 /// Supabase configuration). When groups are unavailable the tab that leads here
@@ -105,24 +106,6 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
     );
   }
 
-  Future<void> _editName(BuildContext context, Group group) async {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final String? newName = await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) =>
-          _EditGroupDialog(initialName: group.name),
-    );
-    if (newName == null || newName == group.name) {
-      return;
-    }
-    if (!await widget.controller.editGroup(group.id, newName)) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.groupsEditErrorFailed)),
-      );
-    }
-  }
-
   Future<void> _changeYourName(BuildContext context) async {
     final String? newName = await showDialog<String>(
       context: context,
@@ -141,81 +124,6 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
       return;
     }
     await gateway.setDisplayName(userId: currentUserId, displayName: newName);
-  }
-
-  Future<void> _leaveGroup(BuildContext context, Group group) async {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppScope scope = AppScope.of(context);
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: Text(l10n.groupsLeaveConfirmTitle),
-        content: Text(l10n.groupsLeaveConfirmBody),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.actionCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.actionOk),
-          ),
-        ],
-      ),
-    );
-    if (confirmed ?? false) {
-      final gateway = widget.controller.gateway;
-      final identity = widget.controller.identity;
-      final currentUserId = (await identity?.current())?.userId;
-      if (gateway != null && currentUserId != null) {
-        await gateway.leaveGroup(group.id, currentUserId);
-        await _purgeAndClear(scope, group.id);
-      }
-    }
-  }
-
-  Future<void> _deleteGroup(BuildContext context, Group group) async {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppScope scope = AppScope.of(context);
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: Text(l10n.groupsDeleteConfirmTitle),
-        content: Text(l10n.groupsDeleteConfirmBody),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.actionCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.actionDelete),
-          ),
-        ],
-      ),
-    );
-    if (confirmed ?? false) {
-      final gateway = widget.controller.gateway;
-      if (gateway != null) {
-        await gateway.deleteGroup(group.id);
-        await _purgeAndClear(scope, group.id);
-      }
-    }
-  }
-
-  /// After a group is left or dissolved, drop its local rows and fall back to
-  /// Personal when it was the selected scope.
-  ///
-  /// The remote cascades the group's rows away, so no tombstone ever reaches
-  /// this device to clean them up — without the purge they would linger as
-  /// orphans under a group that no longer exists, and (while selected) would be
-  /// shown under the "Personal" label with the sync button still on.
-  Future<void> _purgeAndClear(AppScope scope, String groupId) async {
-    await scope.restaurants.purgeGroup(groupId);
-    if (scope.preferences.current.selectedGroupId == groupId) {
-      await scope.preferences.setSelectedGroup(null);
-    }
-    await widget.controller.load();
   }
 
   @override
@@ -238,9 +146,6 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
                   syncStatus: widget.controller.sync?.status.value,
                   onOpenMembers: () => _openMembers(context, group),
                   onOpenInvite: () => _openInvite(context, group),
-                  onEditName: () => _editName(context, group),
-                  onLeave: () => _leaveGroup(context, group),
-                  onDelete: () => _deleteGroup(context, group),
                 ),
               const SizedBox(height: AppSpacing.lg),
               // A display name only means something inside a group, so the row
@@ -293,18 +198,12 @@ class _GroupTile extends StatelessWidget {
     this.syncStatus,
     required this.onOpenMembers,
     required this.onOpenInvite,
-    required this.onEditName,
-    required this.onLeave,
-    required this.onDelete,
   });
 
   final Group group;
   final SyncStatus? syncStatus;
   final VoidCallback onOpenMembers;
   final VoidCallback onOpenInvite;
-  final VoidCallback onEditName;
-  final VoidCallback onLeave;
-  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -359,54 +258,14 @@ class _GroupTile extends StatelessWidget {
                   ],
                 ),
               ),
-              // Trailing actions: only invite (owner) and overflow menu.
+              // Trailing action: invite, and only for an owner (the
+              // create-invite function re-checks it server-side).
               if (group.role == GroupRole.owner)
                 IconButton(
                   onPressed: onOpenInvite,
                   tooltip: AppLocalizations.of(context).groupsInviteAction,
                   icon: const Icon(Icons.person_add_alt_1_rounded),
                 ),
-              PopupMenuButton<String>(
-                tooltip: AppLocalizations.of(context).groupsActionMore,
-                onSelected: (String action) {
-                  switch (action) {
-                    case 'edit':
-                      onEditName();
-                    case 'leave':
-                      onLeave();
-                    case 'delete':
-                      onDelete();
-                  }
-                },
-                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                  PopupMenuItem<String>(
-                    value: 'edit',
-                    child: Text(
-                      AppLocalizations.of(context).groupsEditTitle,
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  PopupMenuItem<String>(
-                    value: 'leave',
-                    child: Text(
-                      AppLocalizations.of(context).groupsActionLeave,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ),
-                  if (group.role == GroupRole.owner)
-                    PopupMenuItem<String>(
-                      value: 'delete',
-                      child: Text(
-                        AppLocalizations.of(context).groupsActionDelete,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
             ],
           ),
         ),
@@ -485,61 +344,6 @@ class _CreateGroupDialogState extends State<_CreateGroupDialog> {
           child: Text(l10n.actionCancel),
         ),
         FilledButton(onPressed: _submit, child: Text(l10n.groupsCreateAction)),
-      ],
-    );
-  }
-}
-
-/// The "edit group name" dialog: one pre-filled name field and its two actions.
-class _EditGroupDialog extends StatefulWidget {
-  const _EditGroupDialog({required this.initialName});
-
-  final String initialName;
-
-  @override
-  State<_EditGroupDialog> createState() => _EditGroupDialogState();
-}
-
-class _EditGroupDialogState extends State<_EditGroupDialog> {
-  late final TextEditingController _name;
-
-  @override
-  void initState() {
-    super.initState();
-    _name = TextEditingController(text: widget.initialName);
-  }
-
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final String value = _name.text.trim();
-    if (value.isNotEmpty) {
-      Navigator.of(context).pop(value);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    return AlertDialog(
-      title: Text(l10n.groupsEditTitle),
-      content: TextField(
-        controller: _name,
-        autofocus: true,
-        textCapitalization: TextCapitalization.sentences,
-        decoration: InputDecoration(labelText: l10n.groupsFieldName),
-        onSubmitted: (_) => _submit(),
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        FilledButton(onPressed: _submit, child: Text(l10n.groupsEditAction)),
       ],
     );
   }

@@ -11,8 +11,8 @@ import 'groups_controller.dart';
 import 'invite_screen.dart';
 import 'members_controller.dart';
 
-/// One group's members, plus the three things you can do to the group itself:
-/// export its data, leave it, or (an owner) dissolve it.
+/// One group's members, plus what you can do to the group itself: rename it
+/// (an owner), export its data, leave it, or (an owner) dissolve it.
 ///
 /// Reached from the group selector while a group is selected. Leaving or
 /// dissolving clears the selection, so the list falls back to Personal on the
@@ -27,11 +27,15 @@ class MembersScreen extends StatefulWidget {
 }
 
 /// The overflow actions in the app bar.
-enum _GroupAction { export, leave, delete }
+enum _GroupAction { edit, export, leave, delete }
 
 class _MembersScreenState extends State<MembersScreen> {
   MembersController? _controller;
   bool _loadStarted = false;
+
+  /// The name shown in the app bar, held here so a rename updates it in place
+  /// without rebuilding the screen with a fresh [Group].
+  late String _groupName = widget.group.name;
 
   @override
   void didChangeDependencies() {
@@ -160,6 +164,41 @@ class _MembersScreenState extends State<MembersScreen> {
     await _leaveOrDissolve();
   }
 
+  /// Renames the group. Only an owner may — the `groups_update_owner` policy
+  /// enforces it server-side, and the menu offers it to an owner alone.
+  Future<void> _editGroup() async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppScope scope = AppScope.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final String? newName = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) =>
+          _EditGroupDialog(initialName: _groupName),
+    );
+    if (newName == null || newName == _groupName) {
+      return;
+    }
+    final groups = scope.groups;
+    if (groups == null) {
+      return;
+    }
+    try {
+      await groups.editGroup(widget.group.id, newName);
+    } on Object {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.groupsEditErrorFailed)),
+      );
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() => _groupName = newName);
+    // Keep the shared list in step, so the renamed group shows its new name
+    // once this screen is popped.
+    await scope.groupsController?.load();
+  }
+
   /// The safety net before a leave or a dissolution: this group's restaurants
   /// (and their visits) as a file the user keeps.
   Future<void> _exportGroup() => exportAndShareRestaurants(
@@ -179,7 +218,7 @@ class _MembersScreenState extends State<MembersScreen> {
         final bool iAmOwner = widget.group.role == GroupRole.owner;
         return Scaffold(
           appBar: AppBar(
-            title: Text(widget.group.name),
+            title: Text(_groupName),
             actions: <Widget>[
               // Only an owner may invite, and the create-invite function
               // re-checks it server-side.
@@ -198,6 +237,8 @@ class _MembersScreenState extends State<MembersScreen> {
                 tooltip: l10n.groupsActionMore,
                 onSelected: (_GroupAction action) {
                   switch (action) {
+                    case _GroupAction.edit:
+                      unawaited(_editGroup());
                     case _GroupAction.export:
                       unawaited(_exportGroup());
                     case _GroupAction.leave:
@@ -208,6 +249,11 @@ class _MembersScreenState extends State<MembersScreen> {
                 },
                 itemBuilder: (BuildContext context) =>
                     <PopupMenuEntry<_GroupAction>>[
+                      if (iAmOwner)
+                        PopupMenuItem<_GroupAction>(
+                          value: _GroupAction.edit,
+                          child: Text(l10n.groupsEditTitle),
+                        ),
                       PopupMenuItem<_GroupAction>(
                         value: _GroupAction.export,
                         child: Text(l10n.groupsActionExport),
@@ -272,6 +318,61 @@ class _MembersScreenState extends State<MembersScreen> {
               : null,
         );
       },
+    );
+  }
+}
+
+/// The "edit group name" dialog: one pre-filled name field and its two actions.
+class _EditGroupDialog extends StatefulWidget {
+  const _EditGroupDialog({required this.initialName});
+
+  final String initialName;
+
+  @override
+  State<_EditGroupDialog> createState() => _EditGroupDialogState();
+}
+
+class _EditGroupDialogState extends State<_EditGroupDialog> {
+  late final TextEditingController _name;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final String value = _name.text.trim();
+    if (value.isNotEmpty) {
+      Navigator.of(context).pop(value);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.groupsEditTitle),
+      content: TextField(
+        controller: _name,
+        autofocus: true,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: InputDecoration(labelText: l10n.groupsFieldName),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.actionCancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.groupsEditAction)),
+      ],
     );
   }
 }

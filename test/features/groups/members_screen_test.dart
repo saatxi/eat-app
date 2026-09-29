@@ -39,6 +39,9 @@ class _FakeGroupGateway implements GroupGateway {
   /// The display names [setDisplayName] stored, keyed by user id.
   final Map<String, String> names = <String, String>{};
 
+  /// The names [editGroup] stored, keyed by group id.
+  final Map<String, String> renamed = <String, String>{};
+
   @override
   Future<List<GroupMember>> listMembers(String groupId) async => members;
 
@@ -85,7 +88,15 @@ class _FakeGroupGateway implements GroupGateway {
   }
 
   @override
-  Future<void> editGroup(String groupId, String name) async {}
+  Future<void> editGroup(String groupId, String name) async {
+    renamed[groupId] = name;
+    groups = <Group>[
+      for (final Group group in groups)
+        group.id == groupId
+            ? Group(id: group.id, name: name, role: group.role)
+            : group,
+    ];
+  }
 
   @override
   Future<Group> createGroup({
@@ -299,4 +310,37 @@ void main() {
       expect(find.byType(MembersScreen), findsNothing);
     },
   );
+
+  testWidgets('an owner renames the group from the overflow menu', (
+    WidgetTester tester,
+  ) async {
+    final _FakeGroupGateway gateway = _FakeGroupGateway(
+      groups: const <Group>[
+        Group(id: 'g1', name: 'Família', role: GroupRole.owner),
+      ],
+      members: const <GroupMember>[
+        GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.owner),
+      ],
+    );
+    const Group group = Group(id: 'g1', name: 'Família', role: GroupRole.owner);
+
+    await tester.pumpWidget(
+      host(groups: gateway, child: const MembersScreen(group: group)),
+    );
+    await tester.pumpAndSettle();
+
+    // Rename sits first in the menu, above the destructive actions.
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit group'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'Amics');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(gateway.renamed['g1'], 'Amics');
+    // The app-bar title follows the rename in place.
+    expect(find.text('Amics'), findsOneWidget);
+  });
 }

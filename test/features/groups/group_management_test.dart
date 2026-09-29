@@ -234,7 +234,7 @@ void main() {
     await expectScopeButton(tester);
   });
 
-  testWidgets('the groups screen shows edit and leave in the tile overflow menu', (
+  testWidgets('the groups screen offers no per-tile management menu', (
     WidgetTester tester,
   ) async {
     final GroupsController controller = await ready(gateway: twoGroups());
@@ -245,21 +245,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // The second group tile shows "Amics" with role indicator.
+    // The list is navigation only: a tile opens its members screen, and
+    // renaming, leaving and dissolving a group all live there, so no tile
+    // carries an overflow menu.
     expect(find.text('Amics'), findsOneWidget);
-
-    // Open the overflow menu on the second group tile.
-    await tester.tap(find.byIcon(Icons.more_vert).at(1));
-    await tester.pumpAndSettle();
-
-    // The menu holds the tile's own actions: Edit group and Leave group.
-    expect(find.text('Edit group'), findsOneWidget);
-    expect(find.text('Leave group'), findsOneWidget);
-    // "Change your name" lives as a standalone row under the list, not in the
-    // tile's overflow menu.
-    expect(find.text('Change your name'), findsOneWidget);
-    // Delete is owner-only, so not shown for a member group.
+    expect(find.byIcon(Icons.more_vert), findsNothing);
+    expect(find.text('Edit group'), findsNothing);
+    expect(find.text('Leave group'), findsNothing);
     expect(find.text('Delete group'), findsNothing);
+    // "Change your name" stays a standalone row under the list.
+    expect(find.text('Change your name'), findsOneWidget);
   });
 
   testWidgets('the groups screen creates and selects a group', (
