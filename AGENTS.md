@@ -78,8 +78,9 @@ Optional detailed explanation
   screen's `State`. The two long-lived repositories are published to the tree
   through `AppScope` (`lib/app/app_scope.dart`), an `InheritedWidget`.
 - **Persistence**: drift (SQLite) — tables, DAOs and the database live under
-  `lib/data/db/`. The schema is the Room schema the old Android app shipped,
-  frozen at `schemaVersion` 14 (see "Migrating from the old Android app").
+  `lib/data/db/`. The schema started at the Room schema the old Android app
+  shipped (version 14) and is now extended by drift migrations — see
+  "Migrating from the old Android app".
 - **Dependency injection**: none. `main()` builds the database and the two
   repositories (`RestaurantRepository`, `UserPreferencesRepository`) and hands
   them down; screens read them from `AppScope.of(context)`. Don't add a DI
@@ -174,16 +175,13 @@ pieces of that history are load-bearing and must not be touched casually:
   builds its own mirror database, so the whole thing keeps working with the
   native app gone. Don't remove it, and don't rename a column it copies
   without updating the `_copies` list there.
-- **`schemaVersion` 14.** `lib/data/db/app_database.dart` is pinned at 14 —
-  Room's frozen baseline — so the import can adopt the legacy file without a
-  version bump. `onUpgrade` throws on purpose; any future bump must ship a
-  real drift migration.
-
-## Known blockers to revisit
-
-- **`schemaVersion` has no migration path yet** — see above. The first time
-  the schema genuinely changes, add the drift `onUpgrade` steps and remove the
-  `UnsupportedError` guard, or the app will crash for anyone upgrading.
+- **Schema versions.** `lib/data/db/app_database.dart` opened at 14 — Room's
+  frozen baseline — so the import could adopt the legacy file without a bump,
+  and it has since moved to 17 with real `onUpgrade` steps: 15 dropped the
+  removed tag feature's two tables, 16 added the shared-group sync columns, 17
+  added the sync layer's own queue and cursor tables. Each step is driven from a
+  hand-built older file by `test/data/db/migration_v1*_test.dart`; a future
+  bump must add its `onUpgrade` step the same way.
 
 ## Build & verify
 

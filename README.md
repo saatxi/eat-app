@@ -337,9 +337,10 @@ an existing install's data is preserved automatically:
 - A preference flag keeps it from running twice; it is written only after a
   successful copy, so a failure part-way through simply retries on the next
   launch.
-- The drift schema (`lib/data/db/app_database.dart`, `schemaVersion` 14) is
-  Room's frozen baseline, which is what lets the import adopt the legacy file
-  without a version bump.
+- The drift schema (`lib/data/db/app_database.dart`) opened at Room's frozen
+  baseline, `schemaVersion` 14, which is what lets the import adopt the legacy
+  file without a version bump; it has since grown to 17 through drift
+  migrations, each covered by `test/data/db/migration_v1*_test.dart`.
 
 A fresh install has no legacy file, so the importer is a quiet no-op there.
 
