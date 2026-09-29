@@ -119,6 +119,20 @@ begin
 
   select count(*) into cnt from public.group_members;
   if cnt <> 1 then raise exception 'FAIL: alice sees % members, expected 1', cnt; end if;
+
+  -- The roster view joins the profile in, obeying RLS via security_invoker.
+  select count(*) into cnt from public.group_member_profiles
+    where group_id = 'cccccccc-0000-0000-0000-000000000001';
+  if cnt <> 1 then
+    raise exception 'FAIL: alice sees % roster rows via the view, expected 1', cnt;
+  end if;
+
+  select count(*) into cnt from public.group_member_profiles
+    where user_id = 'aaaaaaaa-0000-0000-0000-000000000001'
+      and display_name = 'Alice';
+  if cnt <> 1 then
+    raise exception 'FAIL: the roster view did not join the display name';
+  end if;
 end;
 $$;
 
@@ -245,6 +259,12 @@ begin
 
   select count(*) into cnt from public.photos;
   if cnt <> 0 then raise exception 'FAIL: carol sees % photos, expected 0', cnt; end if;
+
+  -- A stranger sees no roster rows through the view either (security_invoker).
+  select count(*) into cnt from public.group_member_profiles;
+  if cnt <> 0 then
+    raise exception 'FAIL: carol sees % roster rows via the view, expected 0', cnt;
+  end if;
 
   -- RLS on the USING clause silently matches nothing. Whether the delete
   -- actually removed a row is verified as postgres below (Carol's own view

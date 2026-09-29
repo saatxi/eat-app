@@ -113,29 +113,17 @@ class SupabaseGroupGateway implements GroupGateway {
 
   @override
   Future<List<GroupMember>> listMembers(String groupId) async {
-    // The roster and the names are fetched separately: `group_members.user_id`
-    // and `profiles.id` both reference `auth.users` rather than each other, so
-    // PostgREST cannot embed one in the other — an embedded select fails
-    // outright with "could not find a relationship between 'group_members' and
-    // 'profiles'". The two row sets are joined in `groupMembersFromRows`.
-    final List<Map<String, dynamic>> memberships =
-        (await _client
-                .from('group_members')
-                .select('user_id, role')
-                .eq('group_id', groupId))
-            .cast<Map<String, dynamic>>();
-    final List<String> ids = <String>[
-      for (final Map<String, dynamic> row in memberships)
-        row['user_id'] as String,
-    ];
-    final List<Map<String, dynamic>> profiles = ids.isEmpty
-        ? const <Map<String, dynamic>>[]
-        : (await _client
-                  .from('profiles')
-                  .select('id, display_name')
-                  .inFilter('id', ids))
-              .cast<Map<String, dynamic>>();
-    return groupMembersFromRows(memberships: memberships, profiles: profiles);
+    // One round-trip: the `group_member_profiles` view joins each membership
+    // with its member's profile. PostgREST could not embed the two directly —
+    // `group_members.user_id` and `profiles.id` both reference `auth.users`
+    // rather than each other — and as a `security_invoker` view it still obeys
+    // the caller's RLS, so it exposes nothing a direct read would not.
+    final List<Map<String, dynamic>> rows = (await _client
+            .from('group_member_profiles')
+            .select('user_id, role, display_name')
+            .eq('group_id', groupId))
+        .cast<Map<String, dynamic>>();
+    return <GroupMember>[for (final row in rows) groupMemberFromRow(row)];
   }
 
   @override
@@ -199,26 +187,11 @@ Group groupFromMembershipJson(Map<String, dynamic> json) => Group(
   role: GroupRole.fromRemote(json['role'] as String),
 );
 
-/// Merges a `group_members` roster with the `profiles` that name its users.
-///
-/// `group_members.user_id` and `profiles.id` both reference `auth.users`, not
-/// each other, so PostgREST cannot embed the profile in the membership; the two
-/// row sets are fetched separately and joined here. A member who never set a
-/// display name has no `profiles` row, so `displayName` falls back to empty.
-List<GroupMember> groupMembersFromRows({
-  required List<Map<String, dynamic>> memberships,
-  required List<Map<String, dynamic>> profiles,
-}) {
-  final Map<String, String> names = <String, String>{
-    for (final Map<String, dynamic> profile in profiles)
-      profile['id'] as String: (profile['display_name'] as String?) ?? '',
-  };
-  return <GroupMember>[
-    for (final Map<String, dynamic> row in memberships)
-      GroupMember(
-        userId: row['user_id'] as String,
-        displayName: names[row['user_id']] ?? '',
-        role: GroupRole.fromRemote(row['role'] as String),
-      ),
-  ];
-}
+/// Parses one `group_member_profiles` view row into the model the members
+/// screen shows. The view has already joined the member's profile, so a member
+/// who never set a display name arrives as an empty string.
+GroupMember groupMemberFromRow(Map<String, dynamic> row) => GroupMember(
+  userId: row['user_id'] as String,
+  displayName: (row['display_name'] as String?) ?? '',
+  role: GroupRole.fromRemote(row['role'] as String),
+);

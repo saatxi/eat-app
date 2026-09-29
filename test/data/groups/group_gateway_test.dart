@@ -28,32 +28,26 @@ void main() {
     expect(group.role, GroupRole.owner);
   });
 
-  test('groupMembersFromRows joins a roster with its profiles', () {
-    final List<GroupMember> members = groupMembersFromRows(
-      memberships: <Map<String, dynamic>>[
-        <String, dynamic>{'user_id': 'u2', 'role': 'member'},
-        <String, dynamic>{'user_id': 'u3', 'role': 'owner'},
-      ],
-      profiles: <Map<String, dynamic>>[
-        <String, dynamic>{'id': 'u2', 'display_name': 'Maria'},
-      ],
-    );
+  test('groupMemberFromRow parses a roster row from the view', () {
+    final GroupMember member = groupMemberFromRow(<String, dynamic>{
+      'user_id': 'u2',
+      'role': 'member',
+      'display_name': 'Maria',
+    });
 
-    expect(members, hasLength(2));
-    expect(members.first.userId, 'u2');
-    expect(members.first.displayName, 'Maria');
-    expect(members.first.role, GroupRole.member);
+    expect(member.userId, 'u2');
+    expect(member.displayName, 'Maria');
+    expect(member.role, GroupRole.member);
   });
 
-  test('a member with no profile row falls back to an empty display name', () {
-    final List<GroupMember> members = groupMembersFromRows(
-      memberships: <Map<String, dynamic>>[
-        <String, dynamic>{'user_id': 'u3', 'role': 'owner'},
-      ],
-      profiles: const <Map<String, dynamic>>[],
-    );
+  test('a member with no display name falls back to an empty string', () {
+    final GroupMember member = groupMemberFromRow(<String, dynamic>{
+      'user_id': 'u3',
+      'role': 'owner',
+      'display_name': null,
+    });
 
-    expect(members.single.displayName, '');
-    expect(members.single.role, GroupRole.owner);
+    expect(member.displayName, '');
+    expect(member.role, GroupRole.owner);
   });
 }

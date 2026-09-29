@@ -370,6 +370,25 @@ create policy "photos_delete_member" on public.photos
   for delete to authenticated
   using (public.is_group_member(photos.group_id));
 
+-- ── member roster view ───────────────────────────────────────────────────
+--
+-- One round-trip for the members screen: each membership joined with its
+-- member's display name. `security_invoker = true` makes the view obey the
+-- *querying* user's RLS on the underlying tables (group_members' member policy
+-- and profiles' world-readable policy), so it exposes nothing a direct read
+-- would not — a plain view would run as its owner and bypass RLS entirely.
+
+create view public.group_member_profiles
+with (security_invoker = true)
+as
+select
+  gm.group_id,
+  gm.user_id,
+  gm.role,
+  coalesce(p.display_name, '') as display_name
+from public.group_members gm
+left join public.profiles p on p.id = gm.user_id;
+
 -- ── updated_at trigger ───────────────────────────────────────────────────
 --
 -- The server owns updated_at (it is the final LWW arbiter for pulls), so a
@@ -638,6 +657,9 @@ grant select, insert, update, delete on
   public.visits,
   public.photos
 to anon, authenticated, service_role;
+
+-- The roster view is read-only; member-scoping comes from the underlying RLS.
+grant select on public.group_member_profiles to authenticated, service_role;
 
 -- The helper and mutating RPCs are callable by authenticated users only.
 revoke all on function public.is_group_member(uuid) from public, anon;
