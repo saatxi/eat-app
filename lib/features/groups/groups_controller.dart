@@ -7,6 +7,7 @@ import '../../data/groups/group_gateway.dart';
 import '../../data/groups/group_models.dart';
 import '../../data/repositories/user_preferences_repository.dart';
 import '../../data/supabase/identity.dart';
+import '../../data/sync/sync_poller.dart';
 import '../../data/sync/sync_service.dart';
 
 /// The user's groups and which one is selected, as the selector and the members
@@ -77,6 +78,8 @@ class GroupsController extends ChangeNotifier {
     this.sync,
   }) {
     _selectedGroupId = preferences.current.selectedGroupId;
+    final SyncService? service = sync;
+    _poller = service == null ? null : SyncPoller(service);
     preferences.listenable.addListener(_onPreferencesChanged);
     unawaited(load());
   }
@@ -88,6 +91,11 @@ class GroupsController extends ChangeNotifier {
   /// The sync driver, when the build has one. Selecting a group (and loading a
   /// selection that already existed) kicks a sync through it.
   final SyncService? sync;
+
+  /// Pulls the selected group on its own timer, so the rest of the group's
+  /// changes arrive without a manual tap or a restart. Null whenever [sync] is
+  /// null — personal mode and every test without a backend.
+  SyncPoller? _poller;
 
   static const Uuid _uuid = Uuid();
 
@@ -151,6 +159,15 @@ class GroupsController extends ChangeNotifier {
           ownerGroupLimit: limit,
         ),
       );
+      // A selection that no longer exists — the group was dissolved by an owner,
+      // or simply dropped from the roster — has to fall back to Personal.
+      // Otherwise the selector would read "Personal" while the list still
+      // queried the dead group and the sync button stayed on for a group that
+      // is gone. Clearing the preference also tells the poller to stop.
+      if (_selectedGroupId != null &&
+          !loaded.any((Group group) => group.id == _selectedGroupId)) {
+        await preferences.setSelectedGroup(null);
+      }
       _syncSelected();
     } catch (error) {
       _setState(
@@ -183,7 +200,10 @@ class GroupsController extends ChangeNotifier {
     await service.syncGroup(groupId);
   }
 
-  void _syncSelected() => unawaited(syncNow());
+  void _syncSelected() {
+    _poller?.setGroup(_selectedGroupId);
+    unawaited(syncNow());
+  }
 
   /// Edits [groupId]'s name. Only an owner may call this; RLS enforces it
   /// server-side. Returns whether it worked; a failure lands in
@@ -257,6 +277,7 @@ class GroupsController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _poller?.dispose();
     preferences.listenable.removeListener(_onPreferencesChanged);
     super.dispose();
   }
@@ -267,6 +288,7 @@ class GroupsController extends ChangeNotifier {
       return;
     }
     _selectedGroupId = next;
+    _poller?.setGroup(next);
     _setState(
       GroupsState(
         groups: _state.groups,

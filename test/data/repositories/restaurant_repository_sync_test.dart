@@ -3,6 +3,7 @@ import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/sync/pending_sync_store.dart';
 import 'package:eatapp/data/sync/shared_write.dart';
+import 'package:eatapp/data/sync/sync_cursor_store.dart';
 import 'package:eatapp/data/sync/sync_table.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -257,6 +258,96 @@ void main() {
       expect(rows.single.rating, 5);
       expect(rows.single.deletedAt, isNull);
       expect(rows.single.groupId, groupId);
+    });
+  });
+
+  group('the auto-push hook', () {
+    late List<String> notified;
+    late RestaurantRepository notifying;
+
+    setUp(() {
+      notified = <String>[];
+      notifying = RestaurantRepository(db, onSharedWrite: notified.add);
+    });
+
+    test('a shared insert fires the hook once with the group id', () async {
+      await notifying.insert(sharedRestaurant(id: 'r1'));
+
+      expect(notified, <String>[groupId]);
+    });
+
+    test('a private insert never fires the hook', () async {
+      await notifying.insert(restaurant(id: 'p', name: 'Private'));
+
+      expect(notified, isEmpty);
+    });
+
+    test('a shared visit and its photos fire the hook once', () async {
+      await notifying.insert(sharedRestaurant(id: 'r1'));
+      notified.clear();
+
+      await notifying.addVisit(
+        restaurantId: 'r1',
+        visitDate: 10,
+        rating: 4,
+        photoSourcePaths: <String>['a.jpg'],
+        shared: shared,
+      );
+
+      expect(notified, <String>[groupId]);
+    });
+
+    test('a shared delete fires the hook', () async {
+      await notifying.insert(sharedRestaurant(id: 'r1'));
+      notified.clear();
+
+      await notifying.delete('r1');
+
+      expect(notified, <String>[groupId]);
+    });
+  });
+
+  group('purgeGroup', () {
+    test('drops the group rows, its queue and its cursor, leaving others', () async {
+      // The group being purged: a restaurant, a visit and two photos.
+      await repository.insert(sharedRestaurant(id: 'r1'));
+      await repository.addVisit(
+        restaurantId: 'r1',
+        visitDate: 10,
+        rating: 4,
+        photoSourcePaths: <String>['v.jpg'],
+        shared: shared,
+      );
+      await repository.addRestaurantPhotos(
+        'r1',
+        <String>['r.jpg'],
+        shared: shared,
+      );
+      await SyncCursorStore(db).advance(groupId, '2026-01-01T00:00:00Z');
+
+      // A second group that must survive the purge untouched.
+      await repository.insert(
+        restaurant(id: 'r2', name: 'Other').copyWith(
+          groupId: const Value<String?>('g2'),
+          createdBy: const Value<String?>('u2'),
+        ),
+      );
+      await SyncCursorStore(db).advance('g2', '2026-01-02T00:00:00Z');
+
+      await repository.purgeGroup(groupId);
+
+      expect(
+        <String>[for (final Restaurant r in await db.select(db.restaurants).get()) r.id],
+        <String>['r2'],
+      );
+      expect(await db.select(db.visits).get(), isEmpty);
+      expect(await db.select(db.photos).get(), isEmpty);
+      // The dead group's queue and cursor are gone...
+      expect(await pending.pendingForGroup(groupId), isEmpty);
+      expect(await SyncCursorStore(db).read(groupId), isNull);
+      // ...while the other group keeps both.
+      expect(await SyncCursorStore(db).read('g2'), '2026-01-02T00:00:00Z');
+      expect(await pending.pendingForGroup('g2'), isNotEmpty);
     });
   });
 }

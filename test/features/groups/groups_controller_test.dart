@@ -247,4 +247,33 @@ void main() {
     expect(controller.state.groups, isEmpty);
     expect(preferences.current.selectedGroupId, isNull);
   });
+
+  test('a selection that no longer exists falls back to Personal', () async {
+    final _FakeGroupGateway gateway = _FakeGroupGateway(
+      groups: const <Group>[
+        Group(id: 'g1', name: 'Família', role: GroupRole.owner),
+      ],
+    );
+    final GroupsController controller = GroupsController(
+      preferences: preferences,
+      gateway: gateway,
+      identity: FakeIdentityGateway(existingUserId: 'u1'),
+    );
+    addTearDown(controller.dispose);
+    await controller.load();
+    await controller.select('g1');
+    expect(controller.state.selectedGroupId, 'g1');
+
+    // An owner dissolves the group: it drops out of the roster on the next load.
+    gateway.groups = const <Group>[];
+    await controller.load();
+
+    expect(controller.state.selectedGroupId, isNull);
+    expect(controller.state.selected, isNull);
+    expect(
+      preferences.current.selectedGroupId,
+      isNull,
+      reason: 'the dead selection is cleared, not left pointing at nothing',
+    );
+  });
 }

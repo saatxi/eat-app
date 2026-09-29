@@ -154,6 +154,13 @@ Future<void> main() async {
     // repository reads them back through this callback when it builds an export
     // or the snapshot — the flag then travels with the file.
     favoriteIds: () => userPreferences.current.favoriteIds,
+    // A shared write is pushed to its group right away instead of waiting for a
+    // manual sync or the next launch. This is what makes a restaurant added in
+    // a group reach the rest of the members without anyone restarting; the
+    // SyncService coalesces the pushes so rapid writes don't stack.
+    onSharedWrite: syncService == null
+        ? null
+        : (String groupId) => unawaited(syncService.syncGroup(groupId)),
   );
   homeWidget = HomeWidgetService(
     repository: restaurantRepository,

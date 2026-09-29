@@ -326,4 +326,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(TextField), findsNothing);
   });
+
+  testWidgets('the change-your-name row is hidden with no groups', (
+    WidgetTester tester,
+  ) async {
+    final _FakeGroupGateway gateway = _FakeGroupGateway();
+    final GroupsController controller = await ready(gateway: gateway);
+
+    await tester.pumpWidget(
+      host(child: const GroupsScreen(), groups: controller),
+    );
+    await tester.pumpAndSettle();
+
+    // A display name only means something inside a group, so the row is gone
+    // when the user belongs to none — while creating one stays available.
+    expect(find.text('Change your name'), findsNothing);
+    expect(find.byType(FilledButton), findsWidgets);
+  });
 }

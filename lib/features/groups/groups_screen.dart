@@ -145,6 +145,7 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
 
   Future<void> _leaveGroup(BuildContext context, Group group) async {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppScope scope = AppScope.of(context);
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
@@ -164,19 +165,18 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
     );
     if (confirmed ?? false) {
       final gateway = widget.controller.gateway;
-      if (gateway != null && widget.controller.state.selectedGroupId != null) {
-        final identity = widget.controller.identity;
-        final currentUserId = (await identity?.current())?.userId;
-        if (currentUserId != null) {
-          await gateway.leaveGroup(group.id, currentUserId);
-          await widget.controller.load();
-        }
+      final identity = widget.controller.identity;
+      final currentUserId = (await identity?.current())?.userId;
+      if (gateway != null && currentUserId != null) {
+        await gateway.leaveGroup(group.id, currentUserId);
+        await _purgeAndClear(scope, group.id);
       }
     }
   }
 
   Future<void> _deleteGroup(BuildContext context, Group group) async {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppScope scope = AppScope.of(context);
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
@@ -198,9 +198,24 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
       final gateway = widget.controller.gateway;
       if (gateway != null) {
         await gateway.deleteGroup(group.id);
-        await widget.controller.load();
+        await _purgeAndClear(scope, group.id);
       }
     }
+  }
+
+  /// After a group is left or dissolved, drop its local rows and fall back to
+  /// Personal when it was the selected scope.
+  ///
+  /// The remote cascades the group's rows away, so no tombstone ever reaches
+  /// this device to clean them up — without the purge they would linger as
+  /// orphans under a group that no longer exists, and (while selected) would be
+  /// shown under the "Personal" label with the sync button still on.
+  Future<void> _purgeAndClear(AppScope scope, String groupId) async {
+    await scope.restaurants.purgeGroup(groupId);
+    if (scope.preferences.current.selectedGroupId == groupId) {
+      await scope.preferences.setSelectedGroup(null);
+    }
+    await widget.controller.load();
   }
 
   @override
@@ -228,11 +243,15 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
                   onDelete: () => _deleteGroup(context, group),
                 ),
               const SizedBox(height: AppSpacing.lg),
-              ListTile(
-                leading: const Icon(Icons.person_outline_rounded),
-                title: Text(l10n.groupsChangeYourName),
-                onTap: () => _changeYourName(context),
-              ),
+              // A display name only means something inside a group, so the row
+              // is hidden while the user belongs to none — the same condition
+              // that keeps the rest of the group surface out of a personal app.
+              if (state.groups.isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.person_outline_rounded),
+                  title: Text(l10n.groupsChangeYourName),
+                  onTap: () => _changeYourName(context),
+                ),
               ListTile(
                 leading: const Icon(Icons.qr_code_scanner_rounded),
                 title: Text(l10n.groupsActionJoin),

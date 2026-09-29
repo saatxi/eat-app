@@ -42,6 +42,7 @@ class RestaurantRepository {
     this.photoStorage,
     this.onChanged,
     this.favoriteIds,
+    this.onSharedWrite,
   });
 
   final AppDatabase _database;
@@ -65,6 +66,13 @@ class RestaurantRepository {
   /// restaurant column at all: reading it at export time keeps the file and the
   /// automatic snapshot from ever carrying a stale flag.
   final Set<String> Function()? favoriteIds;
+
+  /// Called with a group id after a write that produced a shared row, so the
+  /// app can push it to the group right away instead of waiting for a manual
+  /// sync or the next launch. Kept as a bare callback (not the sync service
+  /// itself) so this layer still knows nothing about the transport. Null in
+  /// every unit test and in personal mode, where a shared write cannot happen.
+  final void Function(String groupId)? onSharedWrite;
 
   static const Uuid _uuid = Uuid();
 
@@ -154,6 +162,7 @@ class RestaurantRepository {
       );
     });
     await _afterWrite();
+    _notifySharedWrite(restaurant.groupId);
   }
 
   /// Same contract as [insert]; the row must already exist.
@@ -167,6 +176,7 @@ class RestaurantRepository {
       );
     });
     await _afterWrite();
+    _notifySharedWrite(restaurant.groupId);
   }
 
   /// Deletes a restaurant: hard for a private one, softly for a shared one.
@@ -180,6 +190,7 @@ class RestaurantRepository {
     if (row != null && row.groupId != null) {
       await _softDeleteSharedRestaurant(row);
       await _afterWrite();
+      _notifySharedWrite(row.groupId);
       return;
     }
     final List<Photo> photos = await _photos.getAllPhotosForRestaurant(id);
@@ -191,6 +202,38 @@ class RestaurantRepository {
   Future<void> deleteAll() async {
     final List<Photo> photos = await _photos.getAllPhotos();
     await _restaurants.deleteAllRestaurants();
+    await _deleteFiles(photos);
+    await _afterWrite();
+  }
+
+  /// Removes every local trace of [groupId]: its shared rows and their photo
+  /// files, the pending-sync queue entries and the pull cursor.
+  ///
+  /// Called when a group is deleted or left. A deleted group is gone on the
+  /// server (the foreign keys cascade), so no tombstone ever reaches this
+  /// device to clean its rows up — without this they would linger as orphans
+  /// under a `groupId` that no longer names any group.
+  Future<void> purgeGroup(String groupId) async {
+    final List<Photo> photos = await (_database.select(_database.photos)
+          ..where((t) => t.groupId.equals(groupId)))
+        .get();
+    await _database.transaction(() async {
+      await (_database.delete(_database.photos)
+            ..where((t) => t.groupId.equals(groupId)))
+          .go();
+      await (_database.delete(_database.visits)
+            ..where((t) => t.groupId.equals(groupId)))
+          .go();
+      await (_database.delete(_database.restaurants)
+            ..where((t) => t.groupId.equals(groupId)))
+          .go();
+      await (_database.delete(_database.pendingSyncs)
+            ..where((t) => t.groupId.equals(groupId)))
+          .go();
+      await (_database.delete(_database.syncCursors)
+            ..where((t) => t.groupId.equals(groupId)))
+          .go();
+    });
     await _deleteFiles(photos);
     await _afterWrite();
   }
@@ -367,6 +410,7 @@ class RestaurantRepository {
     });
     await _deleteFiles(removedPhotos);
     await _afterWrite();
+    _notifySharedWrite(shared?.groupId);
   }
 
   /// Adds one more visit, together with any photos taken on it. Returns the new
@@ -434,6 +478,7 @@ class RestaurantRepository {
       }
     });
     await _afterWrite();
+    _notifySharedWrite(shared?.groupId);
     return visitId;
   }
 
@@ -455,6 +500,7 @@ class RestaurantRepository {
         }
       });
       await _afterWrite();
+      _notifySharedWrite(groupId);
       return;
     }
     await _visits.deleteVisit(id);
@@ -524,6 +570,7 @@ class RestaurantRepository {
       }
     });
     await _deleteFiles(existing);
+    _notifySharedWrite(shared?.groupId);
   }
 
   /// Appends [photoPaths] after whatever the restaurant already has. A no-op for
@@ -561,6 +608,7 @@ class RestaurantRepository {
         }
       }
     });
+    _notifySharedWrite(shared?.groupId);
   }
 
   /// Deletes one photo (restaurant- or visit-level) and the file behind it — a
@@ -575,6 +623,7 @@ class RestaurantRepository {
         await _pending.enqueue(SyncTable.photos, id, groupId);
       });
       await _deleteFiles(<Photo>[photo]);
+      _notifySharedWrite(groupId);
       return;
     }
     await _photos.deletePhoto(id);
@@ -603,6 +652,16 @@ class RestaurantRepository {
       (byRestaurant[visit.restaurantId] ??= <Visit>[]).add(visit);
     }
     return byRestaurant;
+  }
+
+  /// Fires [onSharedWrite] for a write that produced a shared row, so the app
+  /// can push it to the group right away. A private write (null group id) is a
+  /// no-op, since there is no group to push it to.
+  void _notifySharedWrite(String? groupId) {
+    if (groupId == null) {
+      return;
+    }
+    onSharedWrite?.call(groupId);
   }
 
   /// Queues a row for sync when it belongs to a group. A private row has no

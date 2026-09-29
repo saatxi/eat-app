@@ -122,12 +122,20 @@ class _MembersScreenState extends State<MembersScreen> {
   }
 
   /// After a successful leave or dissolution, the group is gone from the
-  /// remote roster: drop the local selection back to Personal, tell the shared
-  /// [GroupsController] to reload so the dissolved/left group disappears from
-  /// the list, then pop back.
+  /// remote roster: drop its local rows and (when it was the selected scope)
+  /// the selection, tell the shared [GroupsController] to reload so the group
+  /// disappears from the list, then pop back.
+  ///
+  /// The remote cascades the group's rows away, so nothing arrives to clean the
+  /// local copies up — and clearing the selection only when this really was the
+  /// selected group keeps a different scope intact for a user who was managing
+  /// another one.
   Future<void> _leaveOrDissolve() async {
     final AppScope scope = AppScope.of(context);
-    await scope.preferences.setSelectedGroup(null);
+    await scope.restaurants.purgeGroup(widget.group.id);
+    if (scope.preferences.current.selectedGroupId == widget.group.id) {
+      await scope.preferences.setSelectedGroup(null);
+    }
     final GroupsController? controller = scope.groupsController;
     if (controller != null) {
       await controller.load();
