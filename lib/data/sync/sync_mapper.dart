@@ -11,11 +11,9 @@ import 'remote_models.dart';
 /// in the other direction rebuilds `searchText` with [buildSearchText], because
 /// that column is deliberately not stored remotely.
 RemoteRestaurant toRemoteRestaurant(Restaurant r) {
-  final String groupId = _requireShared(r.groupId, 'restaurant', r.id);
   final String createdBy = _requireShared(r.createdBy, 'restaurant', r.id);
   return RemoteRestaurant(
     id: r.id,
-    groupId: groupId,
     name: r.name,
     cuisineType: r.cuisineType,
     address: r.streetAddress,
@@ -32,9 +30,13 @@ RemoteRestaurant toRemoteRestaurant(Restaurant r) {
 }
 
 /// Rebuilds the drift row from a remote one, deriving `searchText` locally.
-Restaurant toRestaurant(RemoteRestaurant r) => Restaurant(
+///
+/// [homeGroupId] is the group the row is being pulled for: the remote carries
+/// no group on a restaurant, so a row new to this device adopts the group it
+/// arrived through as its home group. An existing row keeps its own.
+Restaurant toRestaurant(RemoteRestaurant r, {String? homeGroupId}) => Restaurant(
   id: r.id,
-  groupId: r.groupId,
+  groupId: homeGroupId,
   name: r.name,
   cuisineType: r.cuisineType,
   streetAddress: r.address,
@@ -55,6 +57,30 @@ Restaurant toRestaurant(RemoteRestaurant r) => Restaurant(
   createdBy: r.createdBy,
   updatedAt: epochMillisFromIso(r.updatedAt)!,
   deletedAt: epochMillisFromIso(r.deletedAt),
+);
+
+RemoteRestaurantGroup toRemoteRestaurantGroup(RestaurantGroup rg) {
+  final String createdBy = _requireShared(
+    rg.createdBy,
+    'restaurant group',
+    rg.restaurantId,
+  );
+  return RemoteRestaurantGroup(
+    restaurantId: rg.restaurantId,
+    groupId: rg.groupId,
+    createdBy: createdBy,
+    updatedAt: isoFromEpochMillis(rg.updatedAt),
+    deletedAt: rg.deletedAt == null ? null : isoFromEpochMillis(rg.deletedAt!),
+  );
+}
+
+/// Rebuilds a membership row from a remote one.
+RestaurantGroup toRestaurantGroup(RemoteRestaurantGroup rg) => RestaurantGroup(
+  restaurantId: rg.restaurantId,
+  groupId: rg.groupId,
+  createdBy: rg.createdBy,
+  updatedAt: epochMillisFromIso(rg.updatedAt)!,
+  deletedAt: epochMillisFromIso(rg.deletedAt),
 );
 
 RemoteVisit toRemoteVisit(Visit v) {

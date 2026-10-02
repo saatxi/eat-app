@@ -9,10 +9,13 @@
 library;
 
 /// A restaurant as it travels to and from the remote.
+///
+/// It carries no group id: a restaurant's group membership is the
+/// [RemoteRestaurantGroup] junction, so one canonical row can be shared into
+/// several groups at once.
 class RemoteRestaurant {
   const RemoteRestaurant({
     required this.id,
-    required this.groupId,
     required this.name,
     required this.cuisineType,
     required this.address,
@@ -28,7 +31,6 @@ class RemoteRestaurant {
   });
 
   final String id;
-  final String groupId;
   final String name;
   final String cuisineType;
   final String? address;
@@ -46,6 +48,30 @@ class RemoteRestaurant {
 
   /// ISO-8601 UTC, or null while the row is alive. A tombstone pulls with this
   /// set, which is how a deletion reaches every member.
+  final String? deletedAt;
+}
+
+/// One membership of a restaurant in a group, as it travels to and from the
+/// remote. The row's key is the (restaurant, group) pair; [deletedAt] is a
+/// tombstone, so "removed from this group" reaches every member on the pull.
+class RemoteRestaurantGroup {
+  const RemoteRestaurantGroup({
+    required this.restaurantId,
+    required this.groupId,
+    required this.createdBy,
+    required this.updatedAt,
+    required this.deletedAt,
+  });
+
+  final String restaurantId;
+  final String groupId;
+  final String createdBy;
+
+  /// ISO-8601 UTC. On a push this is the local write's timestamp; the remote
+  /// replaces it with its own clock, which is what a later pull returns.
+  final String updatedAt;
+
+  /// ISO-8601 UTC, or null while the membership is live.
   final String? deletedAt;
 }
 

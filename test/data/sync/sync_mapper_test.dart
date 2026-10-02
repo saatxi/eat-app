@@ -27,7 +27,6 @@ void main() {
     final RemoteRestaurant remote = toRemoteRestaurant(sharedRestaurant());
 
     expect(remote.id, 'r1');
-    expect(remote.groupId, 'g1');
     expect(remote.name, 'Cal Ferran');
     expect(remote.cuisineType, 'italian');
     expect(remote.address, 'Carrer Major 1');
@@ -41,12 +40,9 @@ void main() {
     expect(remote.deletedAt, isNull);
   });
 
-  test('toRemoteRestaurant throws on a private or unattributed row', () {
-    final Restaurant private = sharedRestaurant().copyWith(
-      groupId: const Value<String?>(null),
-    );
-    expect(() => toRemoteRestaurant(private), throwsA(isA<SyncException>()));
-
+  test('toRemoteRestaurant throws on an unattributed row', () {
+    // A restaurant no longer needs a group id to be pushed — its membership is
+    // the junction — but it still needs an author.
     final Restaurant unattributed = sharedRestaurant().copyWith(
       createdBy: const Value<String?>(null),
     );
@@ -59,7 +55,6 @@ void main() {
   test('toRestaurant rebuilds searchText and converts timestamps', () {
     final RemoteRestaurant remote = RemoteRestaurant(
       id: 'r9',
-      groupId: 'g1',
       name: 'Remote',
       cuisineType: 'japanese',
       address: null,
@@ -74,9 +69,11 @@ void main() {
       deletedAt: '2026-09-27T11:00:00.000Z',
     );
 
-    final Restaurant row = toRestaurant(remote);
+    final Restaurant row = toRestaurant(remote, homeGroupId: 'g1');
 
     expect(row.id, 'r9');
+    // The remote carries no group, so a pulled row adopts the group it arrived
+    // through as its home group.
     expect(row.groupId, 'g1');
     expect(row.searchText, contains('remote'));
     expect(row.searchText, contains('kyoto'));

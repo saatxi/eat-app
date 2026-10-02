@@ -12,6 +12,10 @@ abstract class SyncTransport {
   /// the caller ensures).
   Future<void> pushRestaurants(List<RemoteRestaurant> rows);
 
+  /// Upserts restaurant↔group memberships. A membership references its
+  /// restaurant, so the engine pushes restaurants first.
+  Future<void> pushRestaurantGroups(List<RemoteRestaurantGroup> rows);
+
   /// Upserts [rows] to the remote.
   Future<void> pushVisits(List<RemoteVisit> rows);
 
@@ -29,12 +33,17 @@ abstract class SyncTransport {
 class GroupPull {
   const GroupPull({
     required this.restaurants,
+    required this.restaurantGroups,
     required this.visits,
     required this.photos,
     required this.cursor,
   });
 
   final List<RemoteRestaurant> restaurants;
+
+  /// The memberships that changed in this group — the rows that name which
+  /// restaurants belong to it, including tombstones for ones removed.
+  final List<RemoteRestaurantGroup> restaurantGroups;
   final List<RemoteVisit> visits;
   final List<RemotePhoto> photos;
 

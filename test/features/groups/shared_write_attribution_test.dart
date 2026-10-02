@@ -85,9 +85,16 @@ void main() {
       final Restaurant row = await db.select(db.restaurants).getSingle();
       expect(row.groupId, teamGroupId);
       expect(row.createdBy, teamUserId);
+      // The restaurant and its group membership are both queued, so the push
+      // sends the row and the junction that actually shares it.
       expect(
-        (await pending.pendingForGroup(teamGroupId)).single.sharedTable,
-        SyncTable.restaurants.name,
+        (await pending.pendingForGroup(teamGroupId))
+            .map((PendingSync e) => e.sharedTable)
+            .toSet(),
+        <String>{
+          SyncTable.restaurants.name,
+          SyncTable.restaurantGroups.name,
+        },
       );
     });
 

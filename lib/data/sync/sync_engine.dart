@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show BooleanExpressionOperators;
 import 'package:flutter/foundation.dart';
 
 import '../db/app_database.dart';
@@ -16,8 +17,9 @@ import 'sync_transport.dart';
 /// A screen or a scheduler drives [syncGroup]; the [SyncTransport] is the only
 /// piece that knows the remote exists. Pulls write straight to drift — outside
 /// the repository — so a pulled row is applied without being re-enqueued as a
-/// local change. Pushing is ordered restaurants-before-visits (the queue
-/// already returns them that way), because a visit references its restaurant.
+/// local change. Pushing is ordered restaurants → memberships → visits →
+/// photos, because a membership references its restaurant and a visit or photo
+/// references its restaurant too.
 class SyncEngine {
   SyncEngine({
     required AppDatabase database,
@@ -76,25 +78,35 @@ class SyncEngine {
 
   /// Sends every pending row in [groupId] to the remote, in dependency order,
   /// and drops each table's queue entries only once its push has succeeded.
+  ///
+  /// A restaurant row is pushed whenever it is dirty *or* one of its
+  /// memberships is, so the membership's foreign key always resolves.
   Future<void> pushGroup(String groupId) async {
     final List<PendingSync> entries = await _pending.pendingForGroup(groupId);
     if (entries.isEmpty) {
       return;
     }
 
-    final List<String> restaurantIds = <String>[
-      for (final PendingSync e in entries)
-        if (e.sharedTable == SyncTable.restaurants.name) e.rowId,
-    ];
-    final List<String> visitIds = <String>[
-      for (final PendingSync e in entries)
-        if (e.sharedTable == SyncTable.visits.name) e.rowId,
-    ];
-    final List<String> photoIds = <String>[
-      for (final PendingSync e in entries)
-        if (e.sharedTable == SyncTable.photos.name) e.rowId,
-    ];
+    final Set<String> dirtyRestaurantIds = <String>{};
+    final List<String> membershipRestaurantIds = <String>[];
+    final List<String> visitIds = <String>[];
+    final List<String> photoIds = <String>[];
+    for (final PendingSync e in entries) {
+      if (e.sharedTable == SyncTable.restaurants.name) {
+        dirtyRestaurantIds.add(e.rowId);
+      } else if (e.sharedTable == SyncTable.restaurantGroups.name) {
+        membershipRestaurantIds.add(e.rowId);
+        dirtyRestaurantIds.add(e.rowId);
+      } else if (e.sharedTable == SyncTable.visits.name) {
+        visitIds.add(e.rowId);
+      } else if (e.sharedTable == SyncTable.photos.name) {
+        photoIds.add(e.rowId);
+      }
+    }
 
+    // Restaurants first: both the ones changed directly and the ones a
+    // membership references.
+    final List<String> restaurantIds = dirtyRestaurantIds.toList();
     if (restaurantIds.isNotEmpty) {
       final List<Restaurant> rows = await (_database
               .select(_database.restaurants)
@@ -105,7 +117,24 @@ class SyncEngine {
           rows.map(toRemoteRestaurant).toList(),
         );
       }
-      await _pending.complete(SyncTable.restaurants, restaurantIds);
+    }
+
+    // Memberships, now that their restaurants exist remotely. Only this
+    // group's membership rows are pushed (the group is the push's scope).
+    if (membershipRestaurantIds.isNotEmpty) {
+      final List<RestaurantGroup> rows = await (_database
+              .select(_database.restaurantGroups)
+            ..where(
+              (t) =>
+                  t.restaurantId.isIn(membershipRestaurantIds) &
+                  t.groupId.equals(groupId),
+            ))
+          .get();
+      if (rows.isNotEmpty) {
+        await _transport.pushRestaurantGroups(
+          rows.map(toRemoteRestaurantGroup).toList(),
+        );
+      }
     }
 
     if (visitIds.isNotEmpty) {
@@ -116,7 +145,6 @@ class SyncEngine {
       if (rows.isNotEmpty) {
         await _transport.pushVisits(rows.map(toRemoteVisit).toList());
       }
-      await _pending.complete(SyncTable.visits, visitIds);
     }
 
     if (photoIds.isNotEmpty) {
@@ -131,8 +159,19 @@ class SyncEngine {
         await _pushPhotoBinaries(rows, remotes);
         await _transport.pushPhotos(remotes);
       }
-      await _pending.complete(SyncTable.photos, photoIds);
     }
+
+    // Drop the queue entries only now that every table's push has succeeded,
+    // so a mid-way failure leaves the whole group to retry.
+    await _pending.complete(
+      SyncTable.restaurants,
+      entries
+          .where((PendingSync e) => e.sharedTable == SyncTable.restaurants.name)
+          .map((PendingSync e) => e.rowId),
+    );
+    await _pending.complete(SyncTable.restaurantGroups, membershipRestaurantIds);
+    await _pending.complete(SyncTable.visits, visitIds);
+    await _pending.complete(SyncTable.photos, photoIds);
   }
 
   /// Uploads each live photo's binary before its row is upserted, so a row never
@@ -176,9 +215,21 @@ class SyncEngine {
     );
 
     await _database.transaction(() async {
+      // Memberships first: a restaurant new to this device adopts the group it
+      // arrived through as its home group.
+      for (final RemoteRestaurantGroup rg in pull.restaurantGroups) {
+        await _database.into(_database.restaurantGroups).insertOnConflictUpdate(
+          toRestaurantGroup(rg).toCompanion(false),
+        );
+      }
       for (final RemoteRestaurant r in pull.restaurants) {
+        final Restaurant? existing = await (_database
+                .select(_database.restaurants)
+              ..where((t) => t.id.equals(r.id)))
+            .getSingleOrNull();
         await _database.into(_database.restaurants).insertOnConflictUpdate(
-          toRestaurant(r).toCompanion(false),
+          toRestaurant(r, homeGroupId: existing?.groupId ?? groupId)
+              .toCompanion(false),
         );
       }
       for (final RemoteVisit v in pull.visits) {

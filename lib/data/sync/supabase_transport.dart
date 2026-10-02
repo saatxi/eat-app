@@ -28,6 +28,19 @@ class SupabaseSyncTransport implements SyncTransport {
   }
 
   @override
+  Future<void> pushRestaurantGroups(List<RemoteRestaurantGroup> rows) async {
+    if (rows.isEmpty) {
+      return;
+    }
+    await _client.from('restaurant_groups').upsert(
+      <Map<String, dynamic>>[
+        for (final RemoteRestaurantGroup rg in rows) restaurantGroupToJson(rg),
+      ],
+      onConflict: 'restaurant_id,group_id',
+    );
+  }
+
+  @override
   Future<void> pushVisits(List<RemoteVisit> rows) async {
     if (rows.isEmpty) {
       return;
@@ -54,17 +67,31 @@ class SupabaseSyncTransport implements SyncTransport {
     required String groupId,
     String? since,
   }) async {
-    final List<RemoteRestaurant> restaurants = await _pullRestaurants(
+    // The junction names which restaurants belong to this group (and which
+    // were removed, as tombstones); the restaurants themselves and their
+    // visits/photos are then pulled by the ids it yields. A restaurant's own
+    // row carries no group, so it can be shared into several groups at once.
+    final List<RemoteRestaurantGroup> junction = await _pullRestaurantGroups(
       groupId,
       since,
     );
-    final List<RemoteVisit> visits = await _pullVisits(groupId, since);
-    final List<RemotePhoto> photos = await _pullPhotos(groupId, since);
+    final List<String> restaurantIds = <String>[
+      for (final RemoteRestaurantGroup j in junction) j.restaurantId,
+    ];
+
+    final List<RemoteRestaurant> restaurants = await _pullRestaurants(
+      restaurantIds,
+      since,
+    );
+    final List<RemoteVisit> visits = await _pullVisits(restaurantIds, since);
+    final List<RemotePhoto> photos = await _pullPhotos(restaurantIds, since);
     return GroupPull(
       restaurants: restaurants,
+      restaurantGroups: junction,
       visits: visits,
       photos: photos,
       cursor: _newestIso(<String?>[
+        ...junction.map((RemoteRestaurantGroup j) => j.updatedAt),
         ...restaurants.map((RemoteRestaurant r) => r.updatedAt),
         ...visits.map((RemoteVisit v) => v.updatedAt),
         ...photos.map((RemotePhoto p) => p.updatedAt),
@@ -72,11 +99,34 @@ class SupabaseSyncTransport implements SyncTransport {
     );
   }
 
-  Future<List<RemoteRestaurant>> _pullRestaurants(
+  Future<List<RemoteRestaurantGroup>> _pullRestaurantGroups(
     String groupId,
     String? since,
   ) async {
-    var query = _client.from('restaurants').select().eq('group_id', groupId);
+    var query = _client
+        .from('restaurant_groups')
+        .select()
+        .eq('group_id', groupId);
+    if (since != null) {
+      query = query.gt('updated_at', since);
+    }
+    final rows = await query;
+    return <RemoteRestaurantGroup>[
+      for (final Map<String, dynamic> row in rows) restaurantGroupFromJson(row),
+    ];
+  }
+
+  Future<List<RemoteRestaurant>> _pullRestaurants(
+    List<String> restaurantIds,
+    String? since,
+  ) async {
+    if (restaurantIds.isEmpty) {
+      return const <RemoteRestaurant>[];
+    }
+    var query = _client.from('restaurants').select().inFilter(
+      'id',
+      restaurantIds,
+    );
     if (since != null) {
       query = query.gt('updated_at', since);
     }
@@ -86,8 +136,17 @@ class SupabaseSyncTransport implements SyncTransport {
     ];
   }
 
-  Future<List<RemoteVisit>> _pullVisits(String groupId, String? since) async {
-    var query = _client.from('visits').select().eq('group_id', groupId);
+  Future<List<RemoteVisit>> _pullVisits(
+    List<String> restaurantIds,
+    String? since,
+  ) async {
+    if (restaurantIds.isEmpty) {
+      return const <RemoteVisit>[];
+    }
+    var query = _client.from('visits').select().inFilter(
+      'restaurant_id',
+      restaurantIds,
+    );
     if (since != null) {
       query = query.gt('updated_at', since);
     }
@@ -97,8 +156,17 @@ class SupabaseSyncTransport implements SyncTransport {
     ];
   }
 
-  Future<List<RemotePhoto>> _pullPhotos(String groupId, String? since) async {
-    var query = _client.from('photos').select().eq('group_id', groupId);
+  Future<List<RemotePhoto>> _pullPhotos(
+    List<String> restaurantIds,
+    String? since,
+  ) async {
+    if (restaurantIds.isEmpty) {
+      return const <RemotePhoto>[];
+    }
+    var query = _client.from('photos').select().inFilter(
+      'restaurant_id',
+      restaurantIds,
+    );
     if (since != null) {
       query = query.gt('updated_at', since);
     }
@@ -118,7 +186,6 @@ class SupabaseSyncTransport implements SyncTransport {
 /// `created_by`, `deleted_at`) are the schema's own.
 Map<String, dynamic> restaurantToJson(RemoteRestaurant r) => <String, dynamic>{
   'id': r.id,
-  'group_id': r.groupId,
   'name': r.name,
   'cuisineType': r.cuisineType,
   'address': r.address,
@@ -137,7 +204,6 @@ Map<String, dynamic> restaurantToJson(RemoteRestaurant r) => <String, dynamic>{
 RemoteRestaurant restaurantFromJson(Map<String, dynamic> json) =>
     RemoteRestaurant(
       id: json['id'] as String,
-      groupId: json['group_id'] as String,
       name: json['name'] as String,
       cuisineType: json['cuisineType'] as String,
       address: json['address'] as String?,
@@ -147,6 +213,26 @@ RemoteRestaurant restaurantFromJson(Map<String, dynamic> json) =>
       city: json['city'] as String?,
       region: json['region'] as String?,
       country: json['country'] as String?,
+      createdBy: json['created_by'] as String,
+      updatedAt: _asIso(json['updated_at']),
+      deletedAt: _asIsoOrNull(json['deleted_at']),
+    );
+
+/// Serializes a membership for an upsert, omitting the server-owned
+/// `updated_at`.
+Map<String, dynamic> restaurantGroupToJson(RemoteRestaurantGroup rg) =>
+    <String, dynamic>{
+      'restaurant_id': rg.restaurantId,
+      'group_id': rg.groupId,
+      'created_by': rg.createdBy,
+      'deleted_at': rg.deletedAt,
+    };
+
+/// Parses a membership as Supabase returns it.
+RemoteRestaurantGroup restaurantGroupFromJson(Map<String, dynamic> json) =>
+    RemoteRestaurantGroup(
+      restaurantId: json['restaurant_id'] as String,
+      groupId: json['group_id'] as String,
       createdBy: json['created_by'] as String,
       updatedAt: _asIso(json['updated_at']),
       deletedAt: _asIsoOrNull(json['deleted_at']),

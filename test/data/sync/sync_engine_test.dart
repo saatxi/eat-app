@@ -39,7 +39,6 @@ RemoteRestaurant remoteRestaurant({
   String? deletedAt,
 }) => RemoteRestaurant(
   id: id,
-  groupId: 'g1',
   name: 'Remote',
   cuisineType: 'italian',
   address: null,

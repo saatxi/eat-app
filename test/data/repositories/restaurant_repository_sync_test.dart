@@ -49,22 +49,40 @@ void main() {
       expect(await queue(), isEmpty);
     });
 
-    test('a shared insert queues the restaurant', () async {
+    test('a shared insert queues the restaurant and its membership', () async {
       await repository.insert(sharedRestaurant(id: 'r1'));
 
       final List<PendingSync> entries = await queue();
-      expect(entries, hasLength(1));
-      expect(entries.single.sharedTable, SyncTable.restaurants.name);
-      expect(entries.single.rowId, 'r1');
+      expect(
+        entries.map((PendingSync e) => e.sharedTable).toSet(),
+        <String>{
+          SyncTable.restaurants.name,
+          SyncTable.restaurantGroups.name,
+        },
+      );
+      expect(
+        entries
+            .where((PendingSync e) => e.sharedTable == SyncTable.restaurants.name)
+            .single
+            .rowId,
+        'r1',
+      );
     });
 
     test('a shared update queues it again', () async {
       await repository.insert(sharedRestaurant(id: 'r1'));
       await pending.complete(SyncTable.restaurants, <String>['r1']);
+      await pending.complete(SyncTable.restaurantGroups, <String>['r1']);
 
       await repository.update(sharedRestaurant(id: 'r1', name: 'Renamed'));
 
-      expect((await queue()).single.rowId, 'r1');
+      expect(
+        (await queue())
+            .where((PendingSync e) => e.sharedTable == SyncTable.restaurants.name)
+            .single
+            .rowId,
+        'r1',
+      );
     });
 
     test('a shared visit is attributed and queued with its photos', () async {
@@ -180,6 +198,7 @@ void main() {
         (await queue()).map((PendingSync e) => e.sharedTable).toSet(),
         <String>{
           SyncTable.restaurants.name,
+          SyncTable.restaurantGroups.name,
           SyncTable.visits.name,
           SyncTable.photos.name,
         },

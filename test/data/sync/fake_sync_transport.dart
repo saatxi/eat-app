@@ -8,6 +8,8 @@ import 'package:eatapp/data/sync/sync_transport.dart';
 /// plain lexicographic `compareTo` rather than a timestamp parse.
 class FakeSyncTransport implements SyncTransport {
   final List<RemoteRestaurant> pushedRestaurants = <RemoteRestaurant>[];
+  final List<RemoteRestaurantGroup> pushedRestaurantGroups =
+      <RemoteRestaurantGroup>[];
   final List<RemoteVisit> pushedVisits = <RemoteVisit>[];
   final List<RemotePhoto> pushedPhotos = <RemotePhoto>[];
 
@@ -21,6 +23,8 @@ class FakeSyncTransport implements SyncTransport {
   /// The remote's rows, keyed by group id.
   final Map<String, List<RemoteRestaurant>> restaurants =
       <String, List<RemoteRestaurant>>{};
+  final Map<String, List<RemoteRestaurantGroup>> restaurantGroups =
+      <String, List<RemoteRestaurantGroup>>{};
   final Map<String, List<RemoteVisit>> visits = <String, List<RemoteVisit>>{};
   final Map<String, List<RemotePhoto>> photos = <String, List<RemotePhoto>>{};
 
@@ -36,6 +40,12 @@ class FakeSyncTransport implements SyncTransport {
     }
     pushLog.add('restaurants');
     pushedRestaurants.addAll(rows);
+  }
+
+  @override
+  Future<void> pushRestaurantGroups(List<RemoteRestaurantGroup> rows) async {
+    pushLog.add('restaurantGroups');
+    pushedRestaurantGroups.addAll(rows);
   }
 
   @override
@@ -56,6 +66,10 @@ class FakeSyncTransport implements SyncTransport {
     String? since,
   }) async {
     pullLog.add(groupId);
+    final List<RemoteRestaurantGroup> rgs = (restaurantGroups[groupId] ??
+            const <RemoteRestaurantGroup>[])
+        .where((RemoteRestaurantGroup rg) => _after(rg.updatedAt, since))
+        .toList();
     final List<RemoteRestaurant> rs = (restaurants[groupId] ??
             const <RemoteRestaurant>[])
         .where((RemoteRestaurant r) => _after(r.updatedAt, since))
@@ -69,9 +83,11 @@ class FakeSyncTransport implements SyncTransport {
         .toList();
     return GroupPull(
       restaurants: rs,
+      restaurantGroups: rgs,
       visits: vs,
       photos: ps,
       cursor: _newest(<String?>[
+        ...rgs.map((RemoteRestaurantGroup rg) => rg.updatedAt),
         ...rs.map((RemoteRestaurant r) => r.updatedAt),
         ...vs.map((RemoteVisit v) => v.updatedAt),
         ...ps.map((RemotePhoto p) => p.updatedAt),

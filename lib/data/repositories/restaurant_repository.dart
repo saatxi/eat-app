@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:uuid/uuid.dart';
 
 import '../../core/utils/search_normalizer.dart';
@@ -160,6 +161,7 @@ class RestaurantRepository {
         restaurant.id,
         restaurant.groupId,
       );
+      await _recordMembership(restaurant);
     });
     await _afterWrite();
     _notifySharedWrite(restaurant.groupId);
@@ -174,6 +176,7 @@ class RestaurantRepository {
         restaurant.id,
         restaurant.groupId,
       );
+      await _recordMembership(restaurant);
     });
     await _afterWrite();
     _notifySharedWrite(restaurant.groupId);
@@ -218,6 +221,9 @@ class RestaurantRepository {
           ..where((t) => t.groupId.equals(groupId)))
         .get();
     await _database.transaction(() async {
+      await (_database.delete(_database.restaurantGroups)
+            ..where((t) => t.groupId.equals(groupId)))
+          .go();
       await (_database.delete(_database.photos)
             ..where((t) => t.groupId.equals(groupId)))
           .go();
@@ -687,6 +693,10 @@ class RestaurantRepository {
     final int now = DateTime.now().millisecondsSinceEpoch;
     final List<Visit> visits = await _visits.getVisitsForRestaurant(row.id);
     final List<Photo> photos = await _photos.getAllPhotosForRestaurant(row.id);
+    final List<RestaurantGroup> memberships = await (_database
+            .select(_database.restaurantGroups)
+          ..where((t) => t.restaurantId.equals(row.id)))
+        .get();
     await _database.transaction(() async {
       await _restaurants.softDeleteRestaurant(row.id, now);
       await _visits.softDeleteVisitsForRestaurant(row.id, now);
@@ -695,6 +705,24 @@ class RestaurantRepository {
         await _photos.softDeletePhotosForVisit(visit.id, now);
       }
       await _pending.enqueue(SyncTable.restaurants, row.id, groupId);
+      // Tombstone every membership the restaurant had, so removing it reaches
+      // each group it was shared into, not just its home group.
+      for (final RestaurantGroup membership in memberships) {
+        await _database.into(_database.restaurantGroups).insertOnConflictUpdate(
+          RestaurantGroupsCompanion.insert(
+            restaurantId: membership.restaurantId,
+            groupId: membership.groupId,
+            createdBy: membership.createdBy,
+            updatedAt: Value<int>(now),
+            deletedAt: Value<int>(now),
+          ),
+        );
+        await _pending.enqueue(
+          SyncTable.restaurantGroups,
+          membership.restaurantId,
+          membership.groupId,
+        );
+      }
       for (final Visit visit in visits) {
         await _pending.enqueue(SyncTable.visits, visit.id, groupId);
       }
@@ -702,6 +730,30 @@ class RestaurantRepository {
         await _pending.enqueue(SyncTable.photos, photo.id, groupId);
       }
     });
+  }
+
+  /// Records (or refreshes) [restaurant]'s membership in its home group and
+  /// queues it, so the junction — which is what actually shares the restaurant
+  /// — travels with the row. A private restaurant has no group and is skipped.
+  Future<void> _recordMembership(Restaurant restaurant) async {
+    final String? groupId = restaurant.groupId;
+    final String? createdBy = restaurant.createdBy;
+    if (groupId == null || createdBy == null) {
+      return;
+    }
+    await _database.into(_database.restaurantGroups).insertOnConflictUpdate(
+      RestaurantGroupsCompanion.insert(
+        restaurantId: restaurant.id,
+        groupId: groupId,
+        createdBy: createdBy,
+        updatedAt: Value<int>(restaurant.updatedAt),
+      ),
+    );
+    await _pending.enqueue(
+      SyncTable.restaurantGroups,
+      restaurant.id,
+      groupId,
+    );
   }
 
   /// The single visit the edit form collects, reused from the existing row when

@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 RemoteRestaurant restaurant() => RemoteRestaurant(
   id: 'r1',
-  groupId: 'g1',
   name: 'Cal Ferran',
   cuisineType: 'italian',
   address: 'Carrer Major 1',
@@ -50,7 +49,8 @@ void main() {
     final Map<String, dynamic> json = restaurantToJson(restaurant());
 
     expect(json['id'], 'r1');
-    expect(json['group_id'], 'g1');
+    // A restaurant carries no group of its own; membership is the junction.
+    expect(json.containsKey('group_id'), isFalse);
     expect(json['cuisineType'], 'italian');
     expect(json['priceRange'], 2);
     expect(json['created_by'], 'u1');
@@ -68,7 +68,6 @@ void main() {
     final RemoteRestaurant parsed = restaurantFromJson(json);
 
     expect(parsed.id, 'r1');
-    expect(parsed.groupId, 'g1');
     expect(parsed.cuisineType, 'italian');
     expect(parsed.priceRange, 2);
     expect(parsed.region, isNull);
@@ -87,6 +86,33 @@ void main() {
 
     expect(parsed.deletedAt, isNull);
     expect(parsed.updatedAt, '2026-09-27T10:00:00.000Z');
+  });
+
+  test('restaurantGroupToJson and restaurantGroupFromJson round-trip', () {
+    final Map<String, dynamic> json = restaurantGroupToJson(
+      const RemoteRestaurantGroup(
+        restaurantId: 'r1',
+        groupId: 'g1',
+        createdBy: 'u1',
+        updatedAt: '2026-09-27T10:00:00.000Z',
+        deletedAt: null,
+      ),
+    );
+    expect(json['restaurant_id'], 'r1');
+    expect(json['group_id'], 'g1');
+    expect(json.containsKey('updated_at'), isFalse);
+
+    final RemoteRestaurantGroup parsed = restaurantGroupFromJson(
+      <String, dynamic>{
+        ...json,
+        'updated_at': '2026-09-27T10:00:00.000Z',
+        'deleted_at': '2026-09-27T11:00:00.000Z',
+      },
+    );
+    expect(parsed.restaurantId, 'r1');
+    expect(parsed.groupId, 'g1');
+    expect(parsed.createdBy, 'u1');
+    expect(parsed.deletedAt, '2026-09-27T11:00:00.000Z');
   });
 
   test('visitToJson and visitFromJson map the visit columns', () {
