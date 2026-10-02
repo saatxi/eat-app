@@ -670,6 +670,42 @@ abstract class AppLocalizations {
   /// **'Data'**
   String get settingsSectionData;
 
+  /// No description provided for @settingsSectionAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get settingsSectionAccount;
+
+  /// No description provided for @accountSignInPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to create or join shared groups'**
+  String get accountSignInPrompt;
+
+  /// No description provided for @accountSignInGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get accountSignInGoogle;
+
+  /// No description provided for @accountSignInApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Apple'**
+  String get accountSignInApple;
+
+  /// No description provided for @accountSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re signed in'**
+  String get accountSignedIn;
+
+  /// No description provided for @accountSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get accountSignOut;
+
   /// No description provided for @settingsActionViewStatistics.
   ///
   /// In en, this message translates to:

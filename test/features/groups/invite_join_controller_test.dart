@@ -1,5 +1,6 @@
 import 'package:eatapp/data/groups/invite_gateway.dart';
 import 'package:eatapp/data/groups/invite_models.dart';
+import 'package:eatapp/data/supabase/identity.dart';
 import 'package:eatapp/features/groups/invite_controller.dart';
 import 'package:eatapp/features/groups/join_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,7 +83,7 @@ void main() {
       expect(gateway.createCalls, 1);
     });
 
-    test('signs in anonymously when the device never has', () async {
+    test('fails without a session, asking the user to sign in', () async {
       final FakeIdentityGateway identity = FakeIdentityGateway();
       final InviteController controller = InviteController(
         groupId: 'g1',
@@ -91,9 +92,23 @@ void main() {
       );
       addTearDown(controller.dispose);
 
-      await controller.create();
+      expect(await controller.create(), isFalse);
+      expect(identity.signInCount, 0);
+      expect(controller.state.error, isA<IdentityException>());
+    });
 
+    test('signIn delegates to the chosen provider', () async {
+      final FakeIdentityGateway identity = FakeIdentityGateway();
+      final InviteController controller = InviteController(
+        groupId: 'g1',
+        gateway: _FakeInviteGateway(),
+        identity: identity,
+      );
+      addTearDown(controller.dispose);
+
+      expect(await controller.signIn(SocialProvider.google), isTrue);
       expect(identity.signInCount, 1);
+      expect(identity.lastProvider, SocialProvider.google);
     });
 
     test('surfaces a failure and keeps any earlier invite', () async {
@@ -143,7 +158,7 @@ void main() {
       expect(gateway.lastDisplayName, 'Maria');
     });
 
-    test('signs in anonymously before redeeming when needed', () async {
+    test('fails without a session, asking the user to sign in first', () async {
       final FakeIdentityGateway identity = FakeIdentityGateway();
       final JoinController controller = JoinController(
         gateway: _FakeInviteGateway(),
@@ -151,9 +166,12 @@ void main() {
       );
       addTearDown(controller.dispose);
 
-      await controller.join(token: _token, displayName: 'Maria');
-
-      expect(identity.signInCount, 1);
+      expect(
+        await controller.join(token: _token, displayName: 'Maria'),
+        isFalse,
+      );
+      expect(identity.signInCount, 0);
+      expect(controller.state.failure, InviteFailure.unauthenticated);
     });
 
     test('maps a server failure onto its reason', () async {

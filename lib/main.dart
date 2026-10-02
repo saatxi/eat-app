@@ -189,6 +189,23 @@ Future<void> main() async {
   }
   final Stream<Uri> inviteLinkStream = appLinks.uriLinkStream;
 
+  // The OAuth sign-in redirect (eatapp://login-callback) is a deep link of its
+  // own: it goes back to the identity gateway to become a session, never to the
+  // shell as an invitation. A cold-start callback is consumed here; every warm
+  // one arrives on the same broadcast stream the invitations use.
+  if (identityGateway != null) {
+    final IdentityGateway account = identityGateway;
+    if (initialInviteUri != null && _isAuthRedirect(initialInviteUri)) {
+      await account.completeSignIn(initialInviteUri);
+      initialInviteUri = null;
+    }
+    appLinks.uriLinkStream.listen((Uri uri) {
+      if (_isAuthRedirect(uri)) {
+        unawaited(account.completeSignIn(uri));
+      }
+    });
+  }
+
   final ReceiveSharingIntent sharingIntent = ReceiveSharingIntent.instance;
   final String? initialSharedFilePath = _sharedFilePath(
     await sharingIntent.getInitialMedia(),
@@ -223,6 +240,11 @@ Future<void> main() async {
     ),
   );
 }
+
+/// Whether [uri] is the provider sign-in redirect this app registered, rather
+/// than an invitation link.
+bool _isAuthRedirect(Uri uri) =>
+    uri.scheme == 'eatapp' && uri.host == 'login-callback';
 
 /// The first readable path among [files], or null when the share carried none.
 ///

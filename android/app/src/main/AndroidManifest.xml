@@ -78,6 +78,16 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="eatapp" android:host="join" />
             </intent-filter>
+            <!-- The provider sign-in redirect: eatapp://login-callback. It reuses
+                 the same scheme, on its own host, so the browser can hand the
+                 OAuth callback straight back to the app for the identity gateway
+                 to exchange for a session. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="eatapp" android:host="login-callback" />
+            </intent-filter>
         </activity>
         <!-- The "Want to try" home-screen widget. The provider draws the card
              from data the Dart side publishes through the home_widget plugin;

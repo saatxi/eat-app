@@ -3,11 +3,10 @@ import 'package:eatapp/data/supabase/identity.dart';
 /// A hand-written [IdentityGateway] fake — no mocking package, per the
 /// project's convention.
 ///
-/// It simulates the pieces of Supabase auth the app actually touches: a
-/// device either has an identity or it does not, `signInAnonymously` mints
-/// one (reusing the same user id on later calls, as the real backend does for
-/// repeat anonymous sign-ins from a restored session), and `signOut` forgets
-/// it. The email link is recorded, not sent.
+/// It simulates the pieces of Supabase auth the app actually touches: a device
+/// either has an identity or it does not, [signInWithProvider] mints one
+/// (reusing the same user id on later calls, as the real backend does when the
+/// same provider account signs in again), and [signOut] forgets it.
 class FakeIdentityGateway implements IdentityGateway {
   FakeIdentityGateway({this.existingUserId});
 
@@ -15,11 +14,14 @@ class FakeIdentityGateway implements IdentityGateway {
   /// device has never signed in".
   String? existingUserId;
 
-  /// The last email passed to [linkEmail], for assertions.
-  String? linkedEmail;
+  /// The provider passed to the last [signInWithProvider], for assertions.
+  SocialProvider? lastProvider;
 
-  /// How many times [signInAnonymously] ran.
+  /// How many times [signInWithProvider] ran.
   int signInCount = 0;
+
+  /// The user id a provider sign-in mints, when the device had none.
+  String providerUserId = 'fake-user-1';
 
   /// Throw to simulate a network/auth failure.
   Object? signInError;
@@ -34,24 +36,22 @@ class FakeIdentityGateway implements IdentityGateway {
   }
 
   @override
-  Future<Identity> signInAnonymously() async {
+  Future<Identity> signInWithProvider(SocialProvider provider) async {
     final Object? error = signInError;
     if (error != null) {
       throw error;
     }
     signInCount++;
-    existingUserId ??= 'fake-user-$signInCount';
+    lastProvider = provider;
+    existingUserId ??= providerUserId;
     return Identity(userId: existingUserId!, isSignedIn: true);
   }
 
   @override
-  Future<void> linkEmail(String email) async {
-    linkedEmail = email;
-  }
+  Future<Identity?> completeSignIn(Uri redirect) async => current();
 
   @override
   Future<void> signOut() async {
     existingUserId = null;
-    linkedEmail = null;
   }
 }

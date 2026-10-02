@@ -158,24 +158,18 @@ void main() {
     expect(controller.state.selected, isNull);
   });
 
-  test('creating a group signs in first, then selects it', () async {
+  test('creating a group needs a session, then selects it', () async {
     final _FakeGroupGateway gateway = _FakeGroupGateway();
-    final FakeIdentityGateway identity = FakeIdentityGateway();
     final GroupsController controller = GroupsController(
       preferences: preferences,
       gateway: gateway,
-      identity: identity,
+      identity: FakeIdentityGateway(existingUserId: 'u1'),
     );
     addTearDown(controller.dispose);
 
     final bool created = await controller.createGroup('Família');
 
     expect(created, isTrue);
-    expect(
-      identity.signInCount,
-      1,
-      reason: 'a group needs an owner, so the first creation signs in',
-    );
     expect(gateway.created, hasLength(1));
     expect(controller.state.groups.single.name, 'Família');
     expect(
@@ -183,6 +177,19 @@ void main() {
       gateway.created.single.id,
       reason: 'the new group is selected, so the list switches to it',
     );
+  });
+
+  test('creating a group without a session is refused', () async {
+    final _FakeGroupGateway gateway = _FakeGroupGateway();
+    final GroupsController controller = GroupsController(
+      preferences: preferences,
+      gateway: gateway,
+      identity: FakeIdentityGateway(),
+    );
+    addTearDown(controller.dispose);
+
+    expect(await controller.createGroup('Família'), isFalse);
+    expect(gateway.created, isEmpty);
   });
 
   test('a backend failure is recorded rather than thrown', () async {

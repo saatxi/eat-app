@@ -327,6 +327,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsSectionData => 'Datos';
 
   @override
+  String get settingsSectionAccount => 'Cuenta';
+
+  @override
+  String get accountSignInPrompt =>
+      'Inicia sesión para crear o unirte a grupos compartidos';
+
+  @override
+  String get accountSignInGoogle => 'Continuar con Google';
+
+  @override
+  String get accountSignInApple => 'Continuar con Apple';
+
+  @override
+  String get accountSignedIn => 'Has iniciado sesión';
+
+  @override
+  String get accountSignOut => 'Cerrar sesión';
+
+  @override
   String get settingsActionViewStatistics => 'Ver estadísticas';
 
   @override

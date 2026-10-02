@@ -1,13 +1,36 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase/supabase.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+/// The social providers the app signs in with.
+///
+/// The app has no password of its own: identity comes from a provider, and the
+/// stable provider subject is what makes ownership recoverable after a
+/// reinstall or a phone change.
+enum SocialProvider {
+  google,
+  apple;
+
+  /// The provider as the `supabase` client names it.
+  OAuthProvider get gotrue => switch (this) {
+    SocialProvider.google => OAuthProvider.google,
+    SocialProvider.apple => OAuthProvider.apple,
+  };
+}
+
+/// The deep link the provider signs in back to. It must be a redirect the
+/// platform and the Supabase project both accept; it reuses the app's own
+/// `eatapp://` scheme (already registered by the invite deep link).
+const String authRedirectUri = 'eatapp://login-callback';
 
 /// The app's remote identity, as the sync layer and the group features see it.
 ///
 /// Deliberately narrower than `supabase`'s `Session`: the rest of the app must
 /// not learn what a JWT is. [userId] is the stable identifier every
-/// `createdBy` column and every `group_members` row will carry; [isSignedIn]
+/// `createdBy` column and every `group_members` row carries; [isSignedIn]
 /// says whether a session exists at all (it does not vouch for the token still
 /// being valid — the sync layer discovers that on its first request).
 class Identity {
@@ -23,25 +46,26 @@ class Identity {
 /// Everything the app needs from the remote identity provider, and nothing
 /// more.
 ///
-/// The concrete implementation wraps the `supabase` package; tests supply a
-/// hand-written fake. Kept this narrow so the sync layer (phase 4) can be
-/// written against it without dragging gotrue's types into every test.
+/// Sign-in is social only: [signInWithProvider] opens the provider's page and
+/// completes from the redirect the platform hands back to [completeSignIn]. The
+/// concrete implementation wraps the `supabase` package; tests supply a
+/// hand-written fake.
 abstract class IdentityGateway {
   /// The current identity, or null when this device has never signed in.
   Future<Identity?> current();
 
-  /// Signs in anonymously — Supabase creates the `auth.users` row on the
-  /// first call and simply issues a new session on every later one, so this
-  /// is idempotent from the app's point of view.
-  Future<Identity> signInAnonymously();
+  /// Starts a provider sign-in and completes once the browser redirect brings
+  /// a session back to [completeSignIn]. Throws [IdentityException] when the
+  /// provider page cannot be opened or the user abandons the flow.
+  Future<Identity> signInWithProvider(SocialProvider provider);
 
-  /// Attaches an email to the anonymous account, so the identity survives a
-  /// phone change. Optional by design: the app works fully without it.
-  Future<void> linkEmail(String email);
+  /// Feeds a provider redirect back into the client. Returns the resulting
+  /// identity, or null when the URI is not an in-flight sign-in callback.
+  Future<Identity?> completeSignIn(Uri redirect);
 
   /// Forgets the session on this device. The remote `auth.users` row stays —
-  /// signing in again anonymously mints a *new* identity, which is why this
-  /// is only wired to an explicit "sign out" action, never called silently.
+  /// signing in again with the same provider account recovers the same
+  /// identity, which is what restores group ownership.
   Future<void> signOut();
 }
 
@@ -83,6 +107,10 @@ class SupabaseIdentityGateway implements IdentityGateway {
   /// because the client's `recoverSession` takes the serialized session, not a
   /// `Session`.
   String? _pendingSessionJson;
+
+  /// The in-flight provider sign-in, completed by [completeSignIn] when the
+  /// browser hands the redirect back.
+  Completer<Identity>? _pendingSignIn;
 
   void _restore() {
     final String? stored = _preferences.getString(identityPrefsKey);
@@ -126,8 +154,7 @@ class SupabaseIdentityGateway implements IdentityGateway {
   /// unauthenticated: every request it then makes — creating a group, syncing —
   /// would be anonymous and refused by row-level security. A token that can no
   /// longer be recovered (expired or revoked) is dropped here instead, so the
-  /// next `signInAnonymously` mints a fresh identity rather than the app
-  /// carrying a dead one.
+  /// next sign-in starts clean rather than the app carrying a dead one.
   Future<void> _ensureClientSession() async {
     final String? pending = _pendingSessionJson;
     if (pending == null) {
@@ -143,19 +170,65 @@ class SupabaseIdentityGateway implements IdentityGateway {
   }
 
   @override
-  Future<Identity> signInAnonymously() async {
-    final AuthResponse response = await _client.auth.signInAnonymously();
-    final Session? session = response.session;
-    if (session == null) {
-      throw const IdentityException('anonymous sign-in returned no session');
+  Future<Identity> signInWithProvider(SocialProvider provider) async {
+    if (_pendingSignIn != null) {
+      throw const IdentityException('a sign-in is already in progress');
     }
-    await _store(session);
-    return Identity(userId: session.user.id, isSignedIn: true);
+    final OAuthResponse response = await _client.auth.getOAuthSignInUrl(
+      provider: provider.gotrue,
+      redirectTo: authRedirectUri,
+    );
+    final Completer<Identity> completer = Completer<Identity>();
+    _pendingSignIn = completer;
+
+    final bool opened = await launchUrl(
+      Uri.parse(response.url),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!opened) {
+      _pendingSignIn = null;
+      throw const IdentityException('could not open the sign-in page');
+    }
+    // The browser may be abandoned without ever redirecting back; a ceiling
+    // stops the caller waiting forever for a callback that will not arrive.
+    return completer.future.timeout(
+      const Duration(minutes: 5),
+      onTimeout: () {
+        _pendingSignIn = null;
+        throw const IdentityException('sign-in timed out');
+      },
+    );
   }
 
   @override
-  Future<void> linkEmail(String email) =>
-      _client.auth.updateUser(UserAttributes(email: email));
+  Future<Identity?> completeSignIn(Uri redirect) async {
+    final Completer<Identity>? completer = _pendingSignIn;
+    if (completer == null) {
+      return null;
+    }
+    try {
+      final AuthSessionUrlResponse result = await _client.auth.getSessionFromUrl(
+        redirect,
+        storeSession: false,
+      );
+      await _store(result.session);
+      final Identity identity = Identity(
+        userId: result.session.user.id,
+        isSignedIn: true,
+      );
+      if (!completer.isCompleted) {
+        completer.complete(identity);
+      }
+      return identity;
+    } on Object catch (error, stackTrace) {
+      if (!completer.isCompleted) {
+        completer.completeError(error, stackTrace);
+      }
+      return null;
+    } finally {
+      _pendingSignIn = null;
+    }
+  }
 
   @override
   Future<void> signOut() async {
@@ -165,9 +238,7 @@ class SupabaseIdentityGateway implements IdentityGateway {
       // The client drops its own session before it reaches the server, so a
       // round-trip that cannot complete — offline, a server it can't reach —
       // must not leave this device still holding a session the client has
-      // already forgotten. There is nothing sensitive to revoke (the account
-      // is anonymous and the remote row stays either way), so the local forget
-      // is what the app actually needs.
+      // already forgotten.
     }
     _restoredSession = null;
     _pendingSessionJson = null;

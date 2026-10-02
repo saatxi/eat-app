@@ -234,9 +234,37 @@ class GroupsController extends ChangeNotifier {
     }
   }
 
-  /// Creates a group — signing in anonymously first when the device has never
-  /// signed in, since a group needs an owner — then selects it. Returns whether
+  /// Signs in with [provider], then reloads the user's groups. Returns whether
   /// it worked; a failure lands in [GroupsState.error].
+  Future<bool> signIn(SocialProvider provider) async {
+    final IdentityGateway? account = identity;
+    if (account == null) {
+      return false;
+    }
+    try {
+      await account.signInWithProvider(provider);
+      await load();
+      return true;
+    } catch (error, stackTrace) {
+      debugPrint('Signing in failed: $error');
+      if (kDebugMode) {
+        debugPrintStack(stackTrace: stackTrace);
+      }
+      _setState(
+        GroupsState(
+          groups: _state.groups,
+          selectedGroupId: _selectedGroupId,
+          isLoading: false,
+          error: error,
+        ),
+      );
+      return false;
+    }
+  }
+
+  /// Creates a group — the device must already be signed in with a provider,
+  /// since a group needs an owner — then selects it. Returns whether it worked;
+  /// a failure lands in [GroupsState.error].
   Future<bool> createGroup(String name) async {
     final GroupGateway? groups = gateway;
     final IdentityGateway? account = identity;
@@ -244,11 +272,11 @@ class GroupsController extends ChangeNotifier {
       return false;
     }
     try {
-      // Ensure a session exists before the RPC: create_owned_group attributes
-      // the group and its owner row to auth.uid(), so the client must be
-      // authenticated first.
+      // The RPC attributes the group and its owner row to auth.uid(), so the
+      // client must already be signed in with a provider — sign-in is a
+      // deliberate step offered by the groups screen, not a silent side effect.
       if (await account.current() == null) {
-        await account.signInAnonymously();
+        throw const IdentityException('sign in required');
       }
       final Group created = await groups.createGroup(
         id: _uuid.v4(),

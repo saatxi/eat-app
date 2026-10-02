@@ -70,15 +70,29 @@ class InviteController extends ChangeNotifier {
     }
   }
 
+  /// Signs in with [provider]. Returns whether it worked.
+  Future<bool> signIn(SocialProvider provider) async {
+    final IdentityGateway? account = identity;
+    if (account == null) {
+      return false;
+    }
+    try {
+      await account.signInWithProvider(provider);
+      return true;
+    } catch (error) {
+      _set(InviteState(invite: _state.invite, error: error));
+      return false;
+    }
+  }
+
   Future<void> _ensureSignedIn() async {
     final IdentityGateway? account = identity;
     if (account == null) {
       return;
     }
-    if (await account.current() != null) {
-      return;
+    if (await account.current() == null) {
+      throw const IdentityException('sign in required');
     }
-    await account.signInAnonymously();
   }
 
   @override

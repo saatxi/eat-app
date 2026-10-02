@@ -7,6 +7,7 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme_mode.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/repositories/user_preferences_repository.dart';
+import '../../data/supabase/identity.dart';
 import '../import_export/share_service.dart';
 
 /// Settings: the appearance choices, the data actions, and which build this is.
@@ -136,6 +137,10 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 onTap: () => _confirmDeleteAll(context),
               ),
+              if (scope.identity != null) ...<Widget>[
+                _SectionHeader(l10n.settingsSectionAccount),
+                _AccountSection(identity: scope.identity!),
+              ],
               // Hidden when there is no platform to ask — a bare widget test.
               // Then the bare version only: what the describe string adds past
               // the tag is build detail, and a settings screen owes nobody the
@@ -217,6 +222,114 @@ class _LanguageSelector extends StatelessWidget {
                   controller.isOpen ? controller.close() : controller.open(),
             );
           },
+    );
+  }
+}
+
+/// The account section: sign in with Google or Apple, or, once signed in, show
+/// the session and offer to sign out. Only ever built when the build carries an
+/// identity provider.
+class _AccountSection extends StatefulWidget {
+  const _AccountSection({required this.identity});
+
+  final IdentityGateway identity;
+
+  @override
+  State<_AccountSection> createState() => _AccountSectionState();
+}
+
+class _AccountSectionState extends State<_AccountSection> {
+  bool _busy = false;
+  bool _signedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final Identity? me = await widget.identity.current();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _signedIn = me != null);
+  }
+
+  Future<void> _signIn(SocialProvider provider) async {
+    setState(() => _busy = true);
+    try {
+      await widget.identity.signInWithProvider(provider);
+    } on Object {
+      // The row stays put and the user can try again; the outcome needs no
+      // error copy of its own.
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+      await _refresh();
+    }
+  }
+
+  Future<void> _signOut() async {
+    setState(() => _busy = true);
+    try {
+      await widget.identity.signOut();
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+      await _refresh();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    if (_signedIn) {
+      return ListTile(
+        leading: const Icon(Icons.account_circle_outlined),
+        title: Text(l10n.accountSignedIn),
+        trailing: TextButton(
+          onPressed: _busy ? null : _signOut,
+          child: Text(l10n.accountSignOut),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
+          child: Text(l10n.accountSignInPrompt),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: FilledButton.icon(
+            onPressed: _busy ? null : () => _signIn(SocialProvider.google),
+            icon: const Icon(Icons.login),
+            label: Text(l10n.accountSignInGoogle),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            0,
+          ),
+          child: OutlinedButton.icon(
+            onPressed: _busy ? null : () => _signIn(SocialProvider.apple),
+            icon: const Icon(Icons.apple),
+            label: Text(l10n.accountSignInApple),
+          ),
+        ),
+      ],
     );
   }
 }
