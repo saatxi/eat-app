@@ -17,6 +17,9 @@ class FakeIdentityGateway implements IdentityGateway {
   /// The provider passed to the last [signInWithProvider], for assertions.
   SocialProvider? lastProvider;
 
+  /// The email passed to the last [signInWithEmail], for assertions.
+  String? lastEmail;
+
   /// How many times [signInWithProvider] ran.
   int signInCount = 0;
 
@@ -43,6 +46,18 @@ class FakeIdentityGateway implements IdentityGateway {
     }
     signInCount++;
     lastProvider = provider;
+    existingUserId ??= providerUserId;
+    return Identity(userId: existingUserId!, isSignedIn: true);
+  }
+
+  @override
+  Future<Identity> signInWithEmail(String email) async {
+    final Object? error = signInError;
+    if (error != null) {
+      throw error;
+    }
+    signInCount++;
+    lastEmail = email;
     existingUserId ??= providerUserId;
     return Identity(userId: existingUserId!, isSignedIn: true);
   }

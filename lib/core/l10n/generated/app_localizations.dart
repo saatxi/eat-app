@@ -688,11 +688,29 @@ abstract class AppLocalizations {
   /// **'Continue with Google'**
   String get accountSignInGoogle;
 
-  /// No description provided for @accountSignInApple.
+  /// No description provided for @accountEmailLabel.
   ///
   /// In en, this message translates to:
-  /// **'Continue with Apple'**
-  String get accountSignInApple;
+  /// **'Email'**
+  String get accountEmailLabel;
+
+  /// No description provided for @accountEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address'**
+  String get accountEmailInvalid;
+
+  /// No description provided for @accountSendLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Email me a sign-in link'**
+  String get accountSendLink;
+
+  /// No description provided for @accountLinkSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your email for the sign-in link'**
+  String get accountLinkSent;
 
   /// No description provided for @accountSignedIn.
   ///

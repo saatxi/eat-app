@@ -337,7 +337,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountSignInGoogle => 'Continuar con Google';
 
   @override
-  String get accountSignInApple => 'Continuar con Apple';
+  String get accountEmailLabel => 'Correo electrónico';
+
+  @override
+  String get accountEmailInvalid => 'Introduce una dirección de correo válida';
+
+  @override
+  String get accountSendLink => 'Envíame un enlace de acceso';
+
+  @override
+  String get accountLinkSent => 'Revisa tu correo para el enlace de acceso';
 
   @override
   String get accountSignedIn => 'Has iniciado sesión';

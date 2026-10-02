@@ -9,16 +9,15 @@ import 'package:url_launcher/url_launcher.dart';
 ///
 /// The app has no password of its own: identity comes from a provider, and the
 /// stable provider subject is what makes ownership recoverable after a
-/// reinstall or a phone change.
+/// reinstall or a phone change. Google is the only OAuth provider offered —
+/// Apple needs a paid developer account, so email sign-in
+/// ([IdentityGateway.signInWithEmail]) is the free, cross-platform second
+/// option instead.
 enum SocialProvider {
-  google,
-  apple;
+  google;
 
   /// The provider as the `supabase` client names it.
-  OAuthProvider get gotrue => switch (this) {
-    SocialProvider.google => OAuthProvider.google,
-    SocialProvider.apple => OAuthProvider.apple,
-  };
+  OAuthProvider get gotrue => OAuthProvider.google;
 }
 
 /// The deep link the provider signs in back to. It must be a redirect the
@@ -58,6 +57,11 @@ abstract class IdentityGateway {
   /// a session back to [completeSignIn]. Throws [IdentityException] when the
   /// provider page cannot be opened or the user abandons the flow.
   Future<Identity> signInWithProvider(SocialProvider provider);
+
+  /// Emails [email] a one-time sign-in link and completes once the link's
+  /// redirect comes back to [completeSignIn]. Creates the account on first use,
+  /// so the same address is the recoverable identity on every device.
+  Future<Identity> signInWithEmail(String email);
 
   /// Feeds a provider redirect back into the client. Returns the resulting
   /// identity, or null when the URI is not an in-flight sign-in callback.
@@ -189,16 +193,45 @@ class SupabaseIdentityGateway implements IdentityGateway {
       _pendingSignIn = null;
       throw const IdentityException('could not open the sign-in page');
     }
-    // The browser may be abandoned without ever redirecting back; a ceiling
-    // stops the caller waiting forever for a callback that will not arrive.
-    return completer.future.timeout(
-      const Duration(minutes: 5),
-      onTimeout: () {
-        _pendingSignIn = null;
-        throw const IdentityException('sign-in timed out');
-      },
-    );
+    return _awaitRedirect(completer, const Duration(minutes: 5));
   }
+
+  @override
+  Future<Identity> signInWithEmail(String email) async {
+    if (_pendingSignIn != null) {
+      throw const IdentityException('a sign-in is already in progress');
+    }
+    final Completer<Identity> completer = Completer<Identity>();
+    _pendingSignIn = completer;
+    try {
+      await _client.auth.signInWithOtp(
+        email: email,
+        emailRedirectTo: authRedirectUri,
+        shouldCreateUser: true,
+      );
+    } on Object {
+      _pendingSignIn = null;
+      rethrow;
+    }
+    // Opening the mail and tapping the link takes longer than a provider
+    // redirect, so the ceiling is generous.
+    return _awaitRedirect(completer, const Duration(minutes: 15));
+  }
+
+  /// The browser or the mail client may be abandoned without ever redirecting
+  /// back; a ceiling stops the caller waiting forever for a callback that will
+  /// not arrive.
+  Future<Identity> _awaitRedirect(
+    Completer<Identity> completer,
+    Duration timeout,
+  ) =>
+      completer.future.timeout(
+        timeout,
+        onTimeout: () {
+          _pendingSignIn = null;
+          throw const IdentityException('sign-in timed out');
+        },
+      );
 
   @override
   Future<Identity?> completeSignIn(Uri redirect) async {

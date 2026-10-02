@@ -239,13 +239,22 @@ class _AccountSection extends StatefulWidget {
 }
 
 class _AccountSectionState extends State<_AccountSection> {
+  final TextEditingController _email = TextEditingController();
   bool _busy = false;
   bool _signedIn = false;
+  bool _linkSent = false;
+  bool _emailError = false;
 
   @override
   void initState() {
     super.initState();
     _refresh();
+  }
+
+  @override
+  void dispose() {
+    _email.dispose();
+    super.dispose();
   }
 
   Future<void> _refresh() async {
@@ -263,6 +272,31 @@ class _AccountSectionState extends State<_AccountSection> {
     } on Object {
       // The row stays put and the user can try again; the outcome needs no
       // error copy of its own.
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+      await _refresh();
+    }
+  }
+
+  Future<void> _sendLink() async {
+    final String email = _email.text.trim();
+    if (!email.contains('@')) {
+      setState(() => _emailError = true);
+      return;
+    }
+    // The message shows at once; the await below is what carries the session,
+    // which arrives when the link's redirect is tapped.
+    setState(() {
+      _busy = true;
+      _linkSent = true;
+      _emailError = false;
+    });
+    try {
+      await widget.identity.signInWithEmail(email);
+    } on Object {
+      // The row stays put; the user can request another link.
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -319,16 +353,44 @@ class _AccountSectionState extends State<_AccountSection> {
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
             AppSpacing.sm,
+          ),
+          child: TextField(
+            controller: _email,
+            enabled: !_busy,
+            keyboardType: TextInputType.emailAddress,
+            autocorrect: false,
+            decoration: InputDecoration(
+              labelText: l10n.accountEmailLabel,
+              errorText: _emailError ? l10n.accountEmailInvalid : null,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
             AppSpacing.lg,
             0,
           ),
           child: OutlinedButton.icon(
-            onPressed: _busy ? null : () => _signIn(SocialProvider.apple),
-            icon: const Icon(Icons.apple),
-            label: Text(l10n.accountSignInApple),
+            onPressed: _busy ? null : _sendLink,
+            icon: const Icon(Icons.mail_outline),
+            label: Text(l10n.accountSendLink),
           ),
         ),
+        if (_linkSent)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              0,
+            ),
+            child: Text(l10n.accountLinkSent),
+          ),
       ],
     );
   }
