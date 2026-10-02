@@ -58,7 +58,14 @@ where group_id is not null
 on conflict do nothing;
 
 -- restaurants no longer carries its own group; membership is the junction
--- above. The old per-group policies are replaced further down.
+-- above. The old per-group policies reference group_id and must be dropped
+-- before the column, or the DROP COLUMN is refused; the replacement policies
+-- are created in section 7. (An index on the column is dropped with it.)
+drop policy if exists "restaurants_select_member" on public.restaurants;
+drop policy if exists "restaurants_insert_member" on public.restaurants;
+drop policy if exists "restaurants_update_member" on public.restaurants;
+drop policy if exists "restaurants_delete_member" on public.restaurants;
+
 alter table public.restaurants drop column if exists group_id;
 
 -- visits/photos keep a nullable home_group (the group the row was first shared
@@ -194,11 +201,6 @@ $$;
 -- ── 7. replace the shared-data policies ──────────────────────────────────
 -- The restaurants quartet no longer reads a group_id column; visibility comes
 -- from the junction. visits/photos derive visibility from their restaurant.
-
-drop policy if exists "restaurants_select_member" on public.restaurants;
-drop policy if exists "restaurants_insert_member" on public.restaurants;
-drop policy if exists "restaurants_update_member" on public.restaurants;
-drop policy if exists "restaurants_delete_member" on public.restaurants;
 
 create policy "restaurants_select_visible" on public.restaurants
   for select to authenticated
