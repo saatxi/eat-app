@@ -97,20 +97,6 @@ void main() {
       expect(controller.state.error, isA<IdentityException>());
     });
 
-    test('signIn delegates to the chosen provider', () async {
-      final FakeIdentityGateway identity = FakeIdentityGateway();
-      final InviteController controller = InviteController(
-        groupId: 'g1',
-        gateway: _FakeInviteGateway(),
-        identity: identity,
-      );
-      addTearDown(controller.dispose);
-
-      expect(await controller.signIn(SocialProvider.google), isTrue);
-      expect(identity.signInCount, 1);
-      expect(identity.lastProvider, SocialProvider.google);
-    });
-
     test('surfaces a failure and keeps any earlier invite', () async {
       final _FakeInviteGateway gateway = _FakeInviteGateway();
       final InviteController controller = InviteController(

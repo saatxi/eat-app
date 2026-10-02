@@ -335,19 +335,22 @@ class AppLocalizationsCa extends AppLocalizations {
       'Inicia sessió per crear o unir-te a grups compartits';
 
   @override
-  String get accountSignInGoogle => 'Continua amb Google';
-
-  @override
   String get accountEmailLabel => 'Correu electrònic';
 
   @override
   String get accountEmailInvalid => 'Introdueix una adreça de correu vàlida';
 
   @override
-  String get accountSendLink => 'Envia\'m un enllaç d\'accés';
+  String get accountSendCode => 'Envia\'m un codi d\'accés';
 
   @override
-  String get accountLinkSent => 'Revisa el correu per l\'enllaç d\'accés';
+  String get accountCodeLabel => 'Codi';
+
+  @override
+  String get accountVerify => 'Inicia sessió';
+
+  @override
+  String get accountCodeSent => 'Revisa el correu per el codi';
 
   @override
   String get accountSignedIn => 'Has iniciat sessió';

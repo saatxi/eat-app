@@ -1,29 +1,7 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase/supabase.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-/// The social providers the app signs in with.
-///
-/// The app has no password of its own: identity comes from a provider, and the
-/// stable provider subject is what makes ownership recoverable after a
-/// reinstall or a phone change. Google is the only OAuth provider offered —
-/// Apple needs a paid developer account, so email sign-in
-/// ([IdentityGateway.signInWithEmail]) is the free, cross-platform second
-/// option instead.
-enum SocialProvider {
-  google;
-
-  /// The provider as the `supabase` client names it.
-  OAuthProvider get gotrue => OAuthProvider.google;
-}
-
-/// The deep link the provider signs in back to. It must be a redirect the
-/// platform and the Supabase project both accept; it reuses the app's own
-/// `eatapp://` scheme (already registered by the invite deep link).
-const String authRedirectUri = 'eatapp://login-callback';
 
 /// The app's remote identity, as the sync layer and the group features see it.
 ///
@@ -45,31 +23,29 @@ class Identity {
 /// Everything the app needs from the remote identity provider, and nothing
 /// more.
 ///
-/// Sign-in is social only: [signInWithProvider] opens the provider's page and
-/// completes from the redirect the platform hands back to [completeSignIn]. The
-/// concrete implementation wraps the `supabase` package; tests supply a
-/// hand-written fake.
+/// Sign-in is by an email one-time code: [sendEmailCode] mails a short code and
+/// [verifyEmailCode] exchanges it for a session. There is no password, no
+/// browser and no redirect — the whole exchange happens inside the app, so the
+/// behaviour is identical on Android and iOS and there is no custom URL
+/// callback to keep in step between them. The verified email is the stable
+/// identity, which is what makes ownership recoverable after a reinstall.
 abstract class IdentityGateway {
   /// The current identity, or null when this device has never signed in.
   Future<Identity?> current();
 
-  /// Starts a provider sign-in and completes once the browser redirect brings
-  /// a session back to [completeSignIn]. Throws [IdentityException] when the
-  /// provider page cannot be opened or the user abandons the flow.
-  Future<Identity> signInWithProvider(SocialProvider provider);
+  /// Emails a one-time sign-in code to [email]. Creates the account on first
+  /// use, so the same address works on every device.
+  Future<void> sendEmailCode(String email);
 
-  /// Emails [email] a one-time sign-in link and completes once the link's
-  /// redirect comes back to [completeSignIn]. Creates the account on first use,
-  /// so the same address is the recoverable identity on every device.
-  Future<Identity> signInWithEmail(String email);
-
-  /// Feeds a provider redirect back into the client. Returns the resulting
-  /// identity, or null when the URI is not an in-flight sign-in callback.
-  Future<Identity?> completeSignIn(Uri redirect);
+  /// Exchanges the code the user typed for a session, and returns the identity.
+  Future<Identity> verifyEmailCode({
+    required String email,
+    required String code,
+  });
 
   /// Forgets the session on this device. The remote `auth.users` row stays —
-  /// signing in again with the same provider account recovers the same
-  /// identity, which is what restores group ownership.
+  /// signing in again with the same email recovers the same identity, which is
+  /// what restores group ownership.
   Future<void> signOut();
 }
 
@@ -111,10 +87,6 @@ class SupabaseIdentityGateway implements IdentityGateway {
   /// because the client's `recoverSession` takes the serialized session, not a
   /// `Session`.
   String? _pendingSessionJson;
-
-  /// The in-flight provider sign-in, completed by [completeSignIn] when the
-  /// browser hands the redirect back.
-  Completer<Identity>? _pendingSignIn;
 
   void _restore() {
     final String? stored = _preferences.getString(identityPrefsKey);
@@ -174,93 +146,25 @@ class SupabaseIdentityGateway implements IdentityGateway {
   }
 
   @override
-  Future<Identity> signInWithProvider(SocialProvider provider) async {
-    if (_pendingSignIn != null) {
-      throw const IdentityException('a sign-in is already in progress');
-    }
-    final OAuthResponse response = await _client.auth.getOAuthSignInUrl(
-      provider: provider.gotrue,
-      redirectTo: authRedirectUri,
-    );
-    final Completer<Identity> completer = Completer<Identity>();
-    _pendingSignIn = completer;
-
-    final bool opened = await launchUrl(
-      Uri.parse(response.url),
-      mode: LaunchMode.externalApplication,
-    );
-    if (!opened) {
-      _pendingSignIn = null;
-      throw const IdentityException('could not open the sign-in page');
-    }
-    return _awaitRedirect(completer, const Duration(minutes: 5));
-  }
+  Future<void> sendEmailCode(String email) =>
+      _client.auth.signInWithOtp(email: email, shouldCreateUser: true);
 
   @override
-  Future<Identity> signInWithEmail(String email) async {
-    if (_pendingSignIn != null) {
-      throw const IdentityException('a sign-in is already in progress');
+  Future<Identity> verifyEmailCode({
+    required String email,
+    required String code,
+  }) async {
+    final AuthResponse response = await _client.auth.verifyOTP(
+      type: OtpType.email,
+      email: email,
+      token: code,
+    );
+    final Session? session = response.session;
+    if (session == null) {
+      throw const IdentityException('the code did not produce a session');
     }
-    final Completer<Identity> completer = Completer<Identity>();
-    _pendingSignIn = completer;
-    try {
-      await _client.auth.signInWithOtp(
-        email: email,
-        emailRedirectTo: authRedirectUri,
-        shouldCreateUser: true,
-      );
-    } on Object {
-      _pendingSignIn = null;
-      rethrow;
-    }
-    // Opening the mail and tapping the link takes longer than a provider
-    // redirect, so the ceiling is generous.
-    return _awaitRedirect(completer, const Duration(minutes: 15));
-  }
-
-  /// The browser or the mail client may be abandoned without ever redirecting
-  /// back; a ceiling stops the caller waiting forever for a callback that will
-  /// not arrive.
-  Future<Identity> _awaitRedirect(
-    Completer<Identity> completer,
-    Duration timeout,
-  ) =>
-      completer.future.timeout(
-        timeout,
-        onTimeout: () {
-          _pendingSignIn = null;
-          throw const IdentityException('sign-in timed out');
-        },
-      );
-
-  @override
-  Future<Identity?> completeSignIn(Uri redirect) async {
-    final Completer<Identity>? completer = _pendingSignIn;
-    if (completer == null) {
-      return null;
-    }
-    try {
-      final AuthSessionUrlResponse result = await _client.auth.getSessionFromUrl(
-        redirect,
-        storeSession: false,
-      );
-      await _store(result.session);
-      final Identity identity = Identity(
-        userId: result.session.user.id,
-        isSignedIn: true,
-      );
-      if (!completer.isCompleted) {
-        completer.complete(identity);
-      }
-      return identity;
-    } on Object catch (error, stackTrace) {
-      if (!completer.isCompleted) {
-        completer.completeError(error, stackTrace);
-      }
-      return null;
-    } finally {
-      _pendingSignIn = null;
-    }
+    await _store(session);
+    return Identity(userId: session.user.id, isSignedIn: true);
   }
 
   @override

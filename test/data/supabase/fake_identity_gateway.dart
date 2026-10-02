@@ -4,9 +4,9 @@ import 'package:eatapp/data/supabase/identity.dart';
 /// project's convention.
 ///
 /// It simulates the pieces of Supabase auth the app actually touches: a device
-/// either has an identity or it does not, [signInWithProvider] mints one
-/// (reusing the same user id on later calls, as the real backend does when the
-/// same provider account signs in again), and [signOut] forgets it.
+/// either has an identity or it does not, [verifyEmailCode] mints one (reusing
+/// the same user id on later calls, as the real backend does when the same
+/// address signs in again), and [signOut] forgets it.
 class FakeIdentityGateway implements IdentityGateway {
   FakeIdentityGateway({this.existingUserId});
 
@@ -14,20 +14,24 @@ class FakeIdentityGateway implements IdentityGateway {
   /// device has never signed in".
   String? existingUserId;
 
-  /// The provider passed to the last [signInWithProvider], for assertions.
-  SocialProvider? lastProvider;
-
-  /// The email passed to the last [signInWithEmail], for assertions.
+  /// The last email passed to [sendEmailCode] or [verifyEmailCode].
   String? lastEmail;
 
-  /// How many times [signInWithProvider] ran.
+  /// The last code passed to [verifyEmailCode].
+  String? lastCode;
+
+  /// How many codes were sent.
+  int sendCodeCount = 0;
+
+  /// How many codes were verified (and so how many times a session was minted).
   int signInCount = 0;
 
-  /// The user id a provider sign-in mints, when the device had none.
+  /// The user id a verified code mints, when the device had none.
   String providerUserId = 'fake-user-1';
 
-  /// Throw to simulate a network/auth failure.
-  Object? signInError;
+  /// Throw to simulate a network/auth failure when sending or verifying.
+  Object? sendError;
+  Object? verifyError;
 
   @override
   Future<Identity?> current() async {
@@ -39,31 +43,30 @@ class FakeIdentityGateway implements IdentityGateway {
   }
 
   @override
-  Future<Identity> signInWithProvider(SocialProvider provider) async {
-    final Object? error = signInError;
+  Future<void> sendEmailCode(String email) async {
+    final Object? error = sendError;
     if (error != null) {
       throw error;
     }
-    signInCount++;
-    lastProvider = provider;
-    existingUserId ??= providerUserId;
-    return Identity(userId: existingUserId!, isSignedIn: true);
+    sendCodeCount++;
+    lastEmail = email;
   }
 
   @override
-  Future<Identity> signInWithEmail(String email) async {
-    final Object? error = signInError;
+  Future<Identity> verifyEmailCode({
+    required String email,
+    required String code,
+  }) async {
+    final Object? error = verifyError;
     if (error != null) {
       throw error;
     }
     signInCount++;
     lastEmail = email;
+    lastCode = code;
     existingUserId ??= providerUserId;
     return Identity(userId: existingUserId!, isSignedIn: true);
   }
-
-  @override
-  Future<Identity?> completeSignIn(Uri redirect) async => current();
 
   @override
   Future<void> signOut() async {

@@ -75,22 +75,6 @@ class JoinController extends ChangeNotifier {
   /// Clears the last outcome, e.g. after the screen has acted on a failure.
   void reset() => _set(const JoinState());
 
-  /// Signs in with [provider], for the screen to offer before a first join.
-  /// Returns whether it worked.
-  Future<bool> signIn(SocialProvider provider) async {
-    final IdentityGateway? account = identity;
-    if (account == null) {
-      return false;
-    }
-    try {
-      await account.signInWithProvider(provider);
-      return true;
-    } catch (error) {
-      _set(JoinState(failure: InviteFailure.network, message: error.toString()));
-      return false;
-    }
-  }
-
   Future<void> _ensureSignedIn() async {
     final IdentityGateway? account = identity;
     if (account == null) {

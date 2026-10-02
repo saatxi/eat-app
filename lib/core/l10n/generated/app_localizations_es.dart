@@ -334,19 +334,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'Inicia sesión para crear o unirte a grupos compartidos';
 
   @override
-  String get accountSignInGoogle => 'Continuar con Google';
-
-  @override
   String get accountEmailLabel => 'Correo electrónico';
 
   @override
   String get accountEmailInvalid => 'Introduce una dirección de correo válida';
 
   @override
-  String get accountSendLink => 'Envíame un enlace de acceso';
+  String get accountSendCode => 'Envíame un código de acceso';
 
   @override
-  String get accountLinkSent => 'Revisa tu correo para el enlace de acceso';
+  String get accountCodeLabel => 'Código';
+
+  @override
+  String get accountVerify => 'Iniciar sesión';
+
+  @override
+  String get accountCodeSent => 'Revisa tu correo para el código';
 
   @override
   String get accountSignedIn => 'Has iniciado sesión';

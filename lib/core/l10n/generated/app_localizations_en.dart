@@ -332,19 +332,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountSignInPrompt => 'Sign in to create or join shared groups';
 
   @override
-  String get accountSignInGoogle => 'Continue with Google';
-
-  @override
   String get accountEmailLabel => 'Email';
 
   @override
   String get accountEmailInvalid => 'Enter a valid email address';
 
   @override
-  String get accountSendLink => 'Email me a sign-in link';
+  String get accountSendCode => 'Email me a sign-in code';
 
   @override
-  String get accountLinkSent => 'Check your email for the sign-in link';
+  String get accountCodeLabel => 'Code';
+
+  @override
+  String get accountVerify => 'Sign in';
+
+  @override
+  String get accountCodeSent => 'Check your email for the code';
 
   @override
   String get accountSignedIn => 'You\'re signed in';

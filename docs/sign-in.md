@@ -1,119 +1,75 @@
-# Sign-in methods (Google and email)
+# Sign-in (email code)
 
-The app signs in only through a verified identity: there is no password-less
-anonymous account, because ownership has to be recoverable after a reinstall.
-Two methods are supported, both free:
+The app signs in with a short code sent by email. There is no password, no
+social provider and no browser redirect: the user types an address, receives a
+code, and types it into the app. Everything happens inside the app, so the
+behaviour is identical on Android and iOS and there is no custom URL callback to
+keep in step between them.
 
-- **Google** — an OAuth provider.
-- **Email** — a one-time sign-in link ("magic link").
+Apple (and any OAuth provider) was dropped deliberately: Apple's sign-in needs a
+paid developer account, and the email code covers the same need for nothing. A
+few small settings on the Supabase side are all that is required.
 
-Apple was dropped deliberately: Sign in with Apple needs a paid Apple Developer
-account, and the email method covers the same "sign in without Google" need for
-nothing.
+The only fixed value in code is the sign-in mechanism itself, in
+`lib/data/supabase/identity.dart`. There is no client ID or secret to keep.
 
-Almost nothing here lives in source code. The only fixed values are the redirect
-string (`authRedirectUri` in `lib/data/supabase/identity.dart`) and the
-`eatapp://` scheme, already registered on both platforms. Client IDs and secrets
-are project configuration and must never be committed.
+## What the app does
 
-## What the app expects
+1. `sendEmailCode(email)` asks Supabase for a one-time code
+   (`auth.signInWithOtp`).
+2. `verifyEmailCode(email, code)` exchanges it for a session
+   (`auth.verifyOTP` with `OtpType.email`) and stores it.
+3. The session is kept in `SharedPreferences` and re-established on the next
+   launch, so the user stays signed in until they sign out.
 
-- For Google, it asks Supabase for the provider URL
-  (`auth.getOAuthSignInUrl`) and opens it in the system browser.
-- For email, it asks Supabase to send a one-time link to the address
-  (`auth.signInWithOtp`).
-- Either way, the user ends up back in the app with
-  `eatapp://login-callback`, which the app hands to the identity gateway to turn
-  into a session (`getSessionFromUrl`).
+The verified email is the stable identity: signing in again with the same
+address — after reinstalling or on a new phone — resolves to the same
+`auth.users.id`, which is what brings back ownership and the groups.
 
-So the Supabase project must list `eatapp://login-callback` as an allowed
-redirect, and (for Google only) the provider must call back to Supabase, not to
-the app.
-
-## 1. Supabase: allow the redirect
+## Supabase setup
 
 1. Open the project at <https://supabase.com/dashboard>.
-2. Go to **Authentication → URL Configuration**.
-3. Under **Redirect URLs**, add `eatapp://login-callback` and save.
-4. Leave the **Site URL** as it is: it is only the fallback for links opened in
-   a browser, which this flow never uses.
+2. Go to **Authentication → Providers → Email** and make sure **Email** is
+   enabled.
+3. Leave **Confirm email** off: a one-time code already proves the address is
+   the user's, so a second confirmation step is pure friction.
 
-The `eatapp://` scheme is custom, so it needs no domain verification. It must be
-listed exactly, in lowercase, with no trailing slash. This one entry covers both
-Google and email.
+That is the whole setup. No redirect URLs, no OAuth client, no keys.
 
-## 2. Email (no extra setup, but read the note)
+### Email delivery
 
-Email sign-in works with Supabase's built-in sender as soon as the redirect
-above is listed — there is nothing to create in Google or Apple.
+Out of the box, Supabase uses its built-in sender, capped at a few messages per
+hour and meant for testing. For a real release, add a custom SMTP sender under
+**Authentication → Settings → SMTP Settings** (Resend, Brevo and Postmark all
+have free tiers). That is a deliverability concern, not a code change or a
+cost.
 
-One caveat: the built-in sender is rate-limited (a few messages per hour per
-project) and meant for testing. It is enough for a personal app, but for a real
-release set up a custom SMTP sender under **Authentication → Settings → SMTP
-Settings** (for example the free tiers of Resend, Brevo or Postmark). That is a
-deliverability concern, not a cost or a code change.
-
-Under **Authentication → Providers → Email**, make sure **Email** is enabled.
-Leaving **Confirm email** off is fine here: a magic link already proves the
-address is the user's.
-
-## 3. Google
-
-1. In the same project, go to **Authentication → Providers → Google** and turn
-   it on.
-2. Paste the **Client ID** and **Client Secret** from Google (below).
-3. Save.
-
-### Create the Google credentials
-
-1. Open the [Google Cloud Console](https://console.cloud.google.com/) and pick
-   or create a project.
-2. Configure the **OAuth consent screen** (External, with the app name and your
-   support email). While it is in "Testing", add your own Google account under
-   **Test users**.
-3. Go to **APIs & Services → Credentials → Create credentials → OAuth client
-   ID**.
-4. Choose **Web application** (not Android or iOS): Supabase performs the token
-   exchange on the server, so the client is a web one.
-5. Add an **Authorized redirect URI**:
-
-   ```text
-   https://<project-ref>.supabase.co/auth/v1/callback
-   ```
-
-   `<project-ref>` is the project's reference (here `gswzrfmppbgjbgwhoruq`).
-6. Create it and copy the **Client ID** and **Client secret** into the Supabase
-   Google provider from the section above.
-
-## 4. Build and try it
-
-The rest is already wired: the redirect host is registered in the Android
-manifest, the `eatapp` scheme is in the iOS `CFBundleURLTypes`, and the redirect
-is routed to the gateway in `main()`.
+## Trying it
 
 Run the app with the backend configuration compiled in (the same two values a
-release build needs):
+release build needs), then open **Settings → Account**:
 
 ```powershell
 flutter run --dart-define-from-file=dart_defines.json
 ```
 
-Then open **Settings → Account** and either tap **Continue with Google** or type
-an address and tap **Email me a sign-in link**. If it comes back without a
-session, the three usual causes are:
+Type an address, tap **Email me a sign-in code**, and enter the code from the
+message. The row switches to "You're signed in".
 
-- `eatapp://login-callback` is not in the Supabase redirect list, or is spelled
-  differently there.
-- For Google, the provider's own redirect still points at the app instead of
-  `https://<project-ref>.supabase.co/auth/v1/callback`.
-- The Google consent screen is still in "Testing" and your account is not a test
-  user.
+If no code arrives, the two usual causes are a project still on the built-in
+sender hitting its hourly limit, and a spam filter.
 
-## Why a verified identity and not a password
+## What is and is not recovered
 
-The stable identity is the provider subject or the email address, which Supabase
-maps to a fixed `auth.users.id`. Signing in again the same way — on a reinstall
-or a new phone — resolves to the same id, and every `group_members` row and
-`createdBy` column keyed on it comes back. A password could not promise that as
-simply, and an anonymous id could promise it at all: reinstalling would mint a
-brand-new identity the backend had never seen.
+- **Recovered**: the account, group memberships and every shared restaurant,
+  because they live in Supabase keyed by the signed-in user.
+- **Not recovered by signing in**: private restaurants that were only ever on
+  the phone. Those depend on the platform's own backup (Android Auto Backup) or
+  on the app's export, not on sign-in.
+
+## Adding Google later (optional)
+
+If a Google button is wanted later, the clean way without any redirect is native
+Google sign-in (`google_sign_in`) feeding `auth.signInWithIdToken`. That is a
+new plugin and a Google Cloud project, so it is a separate decision — not
+needed for the email flow described here.

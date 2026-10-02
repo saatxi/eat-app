@@ -234,35 +234,7 @@ class GroupsController extends ChangeNotifier {
     }
   }
 
-  /// Signs in with [provider], then reloads the user's groups. Returns whether
-  /// it worked; a failure lands in [GroupsState.error].
-  Future<bool> signIn(SocialProvider provider) async {
-    final IdentityGateway? account = identity;
-    if (account == null) {
-      return false;
-    }
-    try {
-      await account.signInWithProvider(provider);
-      await load();
-      return true;
-    } catch (error, stackTrace) {
-      debugPrint('Signing in failed: $error');
-      if (kDebugMode) {
-        debugPrintStack(stackTrace: stackTrace);
-      }
-      _setState(
-        GroupsState(
-          groups: _state.groups,
-          selectedGroupId: _selectedGroupId,
-          isLoading: false,
-          error: error,
-        ),
-      );
-      return false;
-    }
-  }
-
-  /// Creates a group — the device must already be signed in with a provider,
+  /// Creates a group — the device must already be signed in,
   /// since a group needs an owner — then selects it. Returns whether it worked;
   /// a failure lands in [GroupsState.error].
   Future<bool> createGroup(String name) async {

@@ -226,9 +226,9 @@ class _LanguageSelector extends StatelessWidget {
   }
 }
 
-/// The account section: sign in with Google or Apple, or, once signed in, show
-/// the session and offer to sign out. Only ever built when the build carries an
-/// identity provider.
+/// The account section: sign in with an emailed one-time code, or, once signed
+/// in, show the session and offer to sign out. Only ever built when the build
+/// carries an identity gateway.
 class _AccountSection extends StatefulWidget {
   const _AccountSection({required this.identity});
 
@@ -240,9 +240,10 @@ class _AccountSection extends StatefulWidget {
 
 class _AccountSectionState extends State<_AccountSection> {
   final TextEditingController _email = TextEditingController();
+  final TextEditingController _code = TextEditingController();
   bool _busy = false;
   bool _signedIn = false;
-  bool _linkSent = false;
+  bool _codeSent = false;
   bool _emailError = false;
 
   @override
@@ -254,6 +255,7 @@ class _AccountSectionState extends State<_AccountSection> {
   @override
   void dispose() {
     _email.dispose();
+    _code.dispose();
     super.dispose();
   }
 
@@ -265,38 +267,43 @@ class _AccountSectionState extends State<_AccountSection> {
     setState(() => _signedIn = me != null);
   }
 
-  Future<void> _signIn(SocialProvider provider) async {
-    setState(() => _busy = true);
-    try {
-      await widget.identity.signInWithProvider(provider);
-    } on Object {
-      // The row stays put and the user can try again; the outcome needs no
-      // error copy of its own.
-    } finally {
-      if (mounted) {
-        setState(() => _busy = false);
-      }
-      await _refresh();
-    }
-  }
-
-  Future<void> _sendLink() async {
+  /// Mails a one-time code to the typed address. Everything else happens inside
+  /// the app, so no browser and no redirect are involved.
+  Future<void> _sendCode() async {
     final String email = _email.text.trim();
     if (!email.contains('@')) {
       setState(() => _emailError = true);
       return;
     }
-    // The message shows at once; the await below is what carries the session,
-    // which arrives when the link's redirect is tapped.
     setState(() {
       _busy = true;
-      _linkSent = true;
       _emailError = false;
     });
     try {
-      await widget.identity.signInWithEmail(email);
+      await widget.identity.sendEmailCode(email);
+      if (mounted) {
+        setState(() => _codeSent = true);
+      }
     } on Object {
-      // The row stays put; the user can request another link.
+      // The row stays put; the user can ask for another code.
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  Future<void> _verifyCode() async {
+    final String email = _email.text.trim();
+    final String code = _code.text.trim();
+    if (email.isEmpty || code.isEmpty) {
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await widget.identity.verifyEmailCode(email: email, code: code);
+    } on Object {
+      // A wrong or expired code leaves the fields as they are, to retype.
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -344,19 +351,6 @@ class _AccountSectionState extends State<_AccountSection> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: FilledButton.icon(
-            onPressed: _busy ? null : () => _signIn(SocialProvider.google),
-            icon: const Icon(Icons.login),
-            label: Text(l10n.accountSignInGoogle),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.md,
-            AppSpacing.lg,
-            AppSpacing.sm,
-          ),
           child: TextField(
             controller: _email,
             enabled: !_busy,
@@ -371,17 +365,35 @@ class _AccountSectionState extends State<_AccountSection> {
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
-            0,
+            AppSpacing.sm,
             AppSpacing.lg,
             0,
           ),
-          child: OutlinedButton.icon(
-            onPressed: _busy ? null : _sendLink,
+          child: FilledButton.icon(
+            onPressed: _busy ? null : _sendCode,
             icon: const Icon(Icons.mail_outline),
-            label: Text(l10n.accountSendLink),
+            label: Text(l10n.accountSendCode),
           ),
         ),
-        if (_linkSent)
+        if (_codeSent) ...<Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
+            child: Text(l10n.accountCodeSent),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: TextField(
+              controller: _code,
+              enabled: !_busy,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: l10n.accountCodeLabel),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
@@ -389,8 +401,12 @@ class _AccountSectionState extends State<_AccountSection> {
               AppSpacing.lg,
               0,
             ),
-            child: Text(l10n.accountLinkSent),
+            child: FilledButton(
+              onPressed: _busy ? null : _verifyCode,
+              child: Text(l10n.accountVerify),
+            ),
           ),
+        ],
       ],
     );
   }

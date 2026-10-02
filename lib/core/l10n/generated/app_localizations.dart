@@ -682,12 +682,6 @@ abstract class AppLocalizations {
   /// **'Sign in to create or join shared groups'**
   String get accountSignInPrompt;
 
-  /// No description provided for @accountSignInGoogle.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue with Google'**
-  String get accountSignInGoogle;
-
   /// No description provided for @accountEmailLabel.
   ///
   /// In en, this message translates to:
@@ -700,17 +694,29 @@ abstract class AppLocalizations {
   /// **'Enter a valid email address'**
   String get accountEmailInvalid;
 
-  /// No description provided for @accountSendLink.
+  /// No description provided for @accountSendCode.
   ///
   /// In en, this message translates to:
-  /// **'Email me a sign-in link'**
-  String get accountSendLink;
+  /// **'Email me a sign-in code'**
+  String get accountSendCode;
 
-  /// No description provided for @accountLinkSent.
+  /// No description provided for @accountCodeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Check your email for the sign-in link'**
-  String get accountLinkSent;
+  /// **'Code'**
+  String get accountCodeLabel;
+
+  /// No description provided for @accountVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get accountVerify;
+
+  /// No description provided for @accountCodeSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your email for the code'**
+  String get accountCodeSent;
 
   /// No description provided for @accountSignedIn.
   ///
