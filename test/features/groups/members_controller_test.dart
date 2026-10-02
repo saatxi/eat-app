@@ -33,6 +33,9 @@ class _FakeGroupGateway implements GroupGateway {
   }
 
   @override
+  Future<void> setRole(String groupId, String userId, GroupRole role) async {}
+
+  @override
   Future<void> leaveGroup(String groupId, String userId) async {
     left.add(userId);
   }
@@ -103,7 +106,7 @@ void main() {
     final _FakeGroupGateway gateway = _FakeGroupGateway(
       members: const <GroupMember>[
         GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.owner),
-        GroupMember(userId: 'u2', displayName: 'Maria', role: GroupRole.member),
+        GroupMember(userId: 'u2', displayName: 'Maria', role: GroupRole.editor),
       ],
     );
     final MembersController controller = MembersController(
@@ -124,7 +127,7 @@ void main() {
     final _FakeGroupGateway gateway = _FakeGroupGateway(
       members: const <GroupMember>[
         GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.owner),
-        GroupMember(userId: 'u2', displayName: 'Maria', role: GroupRole.member),
+        GroupMember(userId: 'u2', displayName: 'Maria', role: GroupRole.editor),
       ],
     );
     final MembersController controller = MembersController(
@@ -160,7 +163,7 @@ void main() {
     final _FakeGroupGateway gateway = _FakeGroupGateway(
       members: const <GroupMember>[
         GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.owner),
-        GroupMember(userId: 'u2', displayName: 'Maria', role: GroupRole.member),
+        GroupMember(userId: 'u2', displayName: 'Maria', role: GroupRole.editor),
       ],
     );
     final MembersController controller = MembersController(

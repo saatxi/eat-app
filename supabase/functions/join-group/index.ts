@@ -105,7 +105,10 @@ Deno.serve(async (req) => {
   const { error: insertError } = await admin.from('group_members').insert({
     group_id: invite.group_id,
     user_id: userId,
-    role: 'member',
+    // A person who redeems an invitation joins as an editor: they may add and
+    // edit the group's restaurants but cannot manage members or the group.
+    // An owner can promote them to owner, or demote them to reader, later.
+    role: 'editor',
   });
   if (insertError) {
     // A concurrent join may have inserted the row first; that is success.

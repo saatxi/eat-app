@@ -2114,6 +2114,392 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
   }
 }
 
+class $RestaurantGroupsTable extends RestaurantGroups
+    with TableInfo<$RestaurantGroupsTable, RestaurantGroup> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RestaurantGroupsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _restaurantIdMeta = const VerificationMeta(
+    'restaurantId',
+  );
+  @override
+  late final GeneratedColumn<String> restaurantId = GeneratedColumn<String>(
+    'restaurantId',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES restaurants (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+    'groupId',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'createdBy',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updatedAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deletedAt',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    restaurantId,
+    groupId,
+    createdBy,
+    updatedAt,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'restaurant_groups';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RestaurantGroup> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('restaurantId')) {
+      context.handle(
+        _restaurantIdMeta,
+        restaurantId.isAcceptableOrUnknown(
+          data['restaurantId']!,
+          _restaurantIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_restaurantIdMeta);
+    }
+    if (data.containsKey('groupId')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['groupId']!, _groupIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('createdBy')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['createdBy']!, _createdByMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
+    }
+    if (data.containsKey('updatedAt')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updatedAt']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deletedAt')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deletedAt']!, _deletedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {restaurantId, groupId};
+  @override
+  RestaurantGroup map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RestaurantGroup(
+      restaurantId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}restaurantId'],
+      )!,
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}groupId'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}createdBy'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updatedAt'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deletedAt'],
+      ),
+    );
+  }
+
+  @override
+  $RestaurantGroupsTable createAlias(String alias) {
+    return $RestaurantGroupsTable(attachedDatabase, alias);
+  }
+}
+
+class RestaurantGroup extends DataClass implements Insertable<RestaurantGroup> {
+  /// The shared restaurant. Cascades, so deleting a restaurant drops its
+  /// memberships with it.
+  final String restaurantId;
+
+  /// The group it is shared into. Never null: a membership is always scoped.
+  final String groupId;
+
+  /// Auth user id of whoever shared the restaurant into the group.
+  final String createdBy;
+
+  /// Epoch millis of the last membership write — the LWW arbiter.
+  final int updatedAt;
+
+  /// Epoch millis of the soft delete (removed from this group), or null while
+  /// the membership is live.
+  final int? deletedAt;
+  const RestaurantGroup({
+    required this.restaurantId,
+    required this.groupId,
+    required this.createdBy,
+    required this.updatedAt,
+    this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['restaurantId'] = Variable<String>(restaurantId);
+    map['groupId'] = Variable<String>(groupId);
+    map['createdBy'] = Variable<String>(createdBy);
+    map['updatedAt'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deletedAt'] = Variable<int>(deletedAt);
+    }
+    return map;
+  }
+
+  RestaurantGroupsCompanion toCompanion(bool nullToAbsent) {
+    return RestaurantGroupsCompanion(
+      restaurantId: Value(restaurantId),
+      groupId: Value(groupId),
+      createdBy: Value(createdBy),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory RestaurantGroup.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RestaurantGroup(
+      restaurantId: serializer.fromJson<String>(json['restaurantId']),
+      groupId: serializer.fromJson<String>(json['groupId']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'restaurantId': serializer.toJson<String>(restaurantId),
+      'groupId': serializer.toJson<String>(groupId),
+      'createdBy': serializer.toJson<String>(createdBy),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+    };
+  }
+
+  RestaurantGroup copyWith({
+    String? restaurantId,
+    String? groupId,
+    String? createdBy,
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
+  }) => RestaurantGroup(
+    restaurantId: restaurantId ?? this.restaurantId,
+    groupId: groupId ?? this.groupId,
+    createdBy: createdBy ?? this.createdBy,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+  );
+  RestaurantGroup copyWithCompanion(RestaurantGroupsCompanion data) {
+    return RestaurantGroup(
+      restaurantId: data.restaurantId.present
+          ? data.restaurantId.value
+          : this.restaurantId,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RestaurantGroup(')
+          ..write('restaurantId: $restaurantId, ')
+          ..write('groupId: $groupId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(restaurantId, groupId, createdBy, updatedAt, deletedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RestaurantGroup &&
+          other.restaurantId == this.restaurantId &&
+          other.groupId == this.groupId &&
+          other.createdBy == this.createdBy &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class RestaurantGroupsCompanion extends UpdateCompanion<RestaurantGroup> {
+  final Value<String> restaurantId;
+  final Value<String> groupId;
+  final Value<String> createdBy;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
+  final Value<int> rowid;
+  const RestaurantGroupsCompanion({
+    this.restaurantId = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RestaurantGroupsCompanion.insert({
+    required String restaurantId,
+    required String groupId,
+    required String createdBy,
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : restaurantId = Value(restaurantId),
+       groupId = Value(groupId),
+       createdBy = Value(createdBy);
+  static Insertable<RestaurantGroup> custom({
+    Expression<String>? restaurantId,
+    Expression<String>? groupId,
+    Expression<String>? createdBy,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (restaurantId != null) 'restaurantId': restaurantId,
+      if (groupId != null) 'groupId': groupId,
+      if (createdBy != null) 'createdBy': createdBy,
+      if (updatedAt != null) 'updatedAt': updatedAt,
+      if (deletedAt != null) 'deletedAt': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RestaurantGroupsCompanion copyWith({
+    Value<String>? restaurantId,
+    Value<String>? groupId,
+    Value<String>? createdBy,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return RestaurantGroupsCompanion(
+      restaurantId: restaurantId ?? this.restaurantId,
+      groupId: groupId ?? this.groupId,
+      createdBy: createdBy ?? this.createdBy,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (restaurantId.present) {
+      map['restaurantId'] = Variable<String>(restaurantId.value);
+    }
+    if (groupId.present) {
+      map['groupId'] = Variable<String>(groupId.value);
+    }
+    if (createdBy.present) {
+      map['createdBy'] = Variable<String>(createdBy.value);
+    }
+    if (updatedAt.present) {
+      map['updatedAt'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deletedAt'] = Variable<int>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RestaurantGroupsCompanion(')
+          ..write('restaurantId: $restaurantId, ')
+          ..write('groupId: $groupId, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $PendingSyncsTable extends PendingSyncs
     with TableInfo<$PendingSyncsTable, PendingSync> {
   @override
@@ -2622,6 +3008,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $RestaurantsTable restaurants = $RestaurantsTable(this);
   late final $VisitsTable visits = $VisitsTable(this);
   late final $PhotosTable photos = $PhotosTable(this);
+  late final $RestaurantGroupsTable restaurantGroups = $RestaurantGroupsTable(
+    this,
+  );
   late final $PendingSyncsTable pendingSyncs = $PendingSyncsTable(this);
   late final $SyncCursorsTable syncCursors = $SyncCursorsTable(this);
   late final Index indexRestaurantsName = Index(
@@ -2640,6 +3029,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'index_photos_visitId',
     'CREATE INDEX index_photos_visitId ON photos (visitId)',
   );
+  late final Index indexRestaurantGroupsGroupId = Index(
+    'index_restaurant_groups_groupId',
+    'CREATE INDEX index_restaurant_groups_groupId ON restaurant_groups (groupId)',
+  );
+  late final Index indexRestaurantGroupsRestaurantId = Index(
+    'index_restaurant_groups_restaurantId',
+    'CREATE INDEX index_restaurant_groups_restaurantId ON restaurant_groups (restaurantId)',
+  );
   late final Index indexPendingSyncsGroupId = Index(
     'index_pending_syncs_groupId',
     'CREATE INDEX index_pending_syncs_groupId ON pending_syncs (groupId)',
@@ -2655,12 +3052,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     restaurants,
     visits,
     photos,
+    restaurantGroups,
     pendingSyncs,
     syncCursors,
     indexRestaurantsName,
     indexVisitsRestaurantId,
     indexPhotosRestaurantId,
     indexPhotosVisitId,
+    indexRestaurantGroupsGroupId,
+    indexRestaurantGroupsRestaurantId,
     indexPendingSyncsGroupId,
   ];
   @override
@@ -2685,6 +3085,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('photos', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'restaurants',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('restaurant_groups', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -2765,6 +3172,26 @@ final class $$RestaurantsTableReferences
     ).filter((f) => f.restaurantId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_photosRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$RestaurantGroupsTable, List<RestaurantGroup>>
+  _restaurantGroupsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.restaurantGroups,
+    aliasName: 'restaurants__id__restaurant_groups__restaurantId',
+  );
+
+  $$RestaurantGroupsTableProcessedTableManager get restaurantGroupsRefs {
+    final manager = $$RestaurantGroupsTableTableManager(
+      $_db,
+      $_db.restaurantGroups,
+    ).filter((f) => f.restaurantId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _restaurantGroupsRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -2896,6 +3323,31 @@ class $$RestaurantsTableFilterComposer
           }) => $$PhotosTableFilterComposer(
             $db: $db,
             $table: $db.photos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> restaurantGroupsRefs(
+    Expression<bool> Function($$RestaurantGroupsTableFilterComposer f) f,
+  ) {
+    final $$RestaurantGroupsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.restaurantGroups,
+      getReferencedColumn: (t) => t.restaurantId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RestaurantGroupsTableFilterComposer(
+            $db: $db,
+            $table: $db.restaurantGroups,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3102,6 +3554,31 @@ class $$RestaurantsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> restaurantGroupsRefs<T extends Object>(
+    Expression<T> Function($$RestaurantGroupsTableAnnotationComposer a) f,
+  ) {
+    final $$RestaurantGroupsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.restaurantGroups,
+      getReferencedColumn: (t) => t.restaurantId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RestaurantGroupsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.restaurantGroups,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$RestaurantsTableTableManager
@@ -3117,7 +3594,11 @@ class $$RestaurantsTableTableManager
           $$RestaurantsTableUpdateCompanionBuilder,
           (Restaurant, $$RestaurantsTableReferences),
           Restaurant,
-          PrefetchHooks Function({bool visitsRefs, bool photosRefs})
+          PrefetchHooks Function({
+            bool visitsRefs,
+            bool photosRefs,
+            bool restaurantGroupsRefs,
+          })
         > {
   $$RestaurantsTableTableManager(_$AppDatabase db, $RestaurantsTable table)
     : super(
@@ -3210,62 +3691,89 @@ class $$RestaurantsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({visitsRefs = false, photosRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (visitsRefs) db.visits,
-                if (photosRefs) db.photos,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (visitsRefs)
-                    await $_getPrefetchedData<
-                      Restaurant,
-                      $RestaurantsTable,
-                      Visit
-                    >(
-                      currentTable: table,
-                      referencedTable: $$RestaurantsTableReferences
-                          ._visitsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$RestaurantsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).visitsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where(
-                            (e) => e.restaurantId == item.id,
-                          ),
-                      typedResults: items,
-                    ),
-                  if (photosRefs)
-                    await $_getPrefetchedData<
-                      Restaurant,
-                      $RestaurantsTable,
-                      Photo
-                    >(
-                      currentTable: table,
-                      referencedTable: $$RestaurantsTableReferences
-                          ._photosRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$RestaurantsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).photosRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where(
-                            (e) => e.restaurantId == item.id,
-                          ),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({
+                visitsRefs = false,
+                photosRefs = false,
+                restaurantGroupsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (visitsRefs) db.visits,
+                    if (photosRefs) db.photos,
+                    if (restaurantGroupsRefs) db.restaurantGroups,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (visitsRefs)
+                        await $_getPrefetchedData<
+                          Restaurant,
+                          $RestaurantsTable,
+                          Visit
+                        >(
+                          currentTable: table,
+                          referencedTable: $$RestaurantsTableReferences
+                              ._visitsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RestaurantsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).visitsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.restaurantId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (photosRefs)
+                        await $_getPrefetchedData<
+                          Restaurant,
+                          $RestaurantsTable,
+                          Photo
+                        >(
+                          currentTable: table,
+                          referencedTable: $$RestaurantsTableReferences
+                              ._photosRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RestaurantsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).photosRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.restaurantId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (restaurantGroupsRefs)
+                        await $_getPrefetchedData<
+                          Restaurant,
+                          $RestaurantsTable,
+                          RestaurantGroup
+                        >(
+                          currentTable: table,
+                          referencedTable: $$RestaurantsTableReferences
+                              ._restaurantGroupsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RestaurantsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).restaurantGroupsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.restaurantId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -3282,7 +3790,11 @@ typedef $$RestaurantsTableProcessedTableManager =
       $$RestaurantsTableUpdateCompanionBuilder,
       (Restaurant, $$RestaurantsTableReferences),
       Restaurant,
-      PrefetchHooks Function({bool visitsRefs, bool photosRefs})
+      PrefetchHooks Function({
+        bool visitsRefs,
+        bool photosRefs,
+        bool restaurantGroupsRefs,
+      })
     >;
 typedef $$VisitsTableCreateCompanionBuilder = VisitsCompanion Function({
   Value<String?> groupId,
@@ -4250,6 +4762,329 @@ typedef $$PhotosTableProcessedTableManager =
       Photo,
       PrefetchHooks Function({bool restaurantId, bool visitId})
     >;
+typedef $$RestaurantGroupsTableCreateCompanionBuilder =
+    RestaurantGroupsCompanion Function({
+      required String restaurantId,
+      required String groupId,
+      required String createdBy,
+      Value<int> updatedAt,
+      Value<int?> deletedAt,
+      Value<int> rowid,
+    });
+typedef $$RestaurantGroupsTableUpdateCompanionBuilder =
+    RestaurantGroupsCompanion Function({
+      Value<String> restaurantId,
+      Value<String> groupId,
+      Value<String> createdBy,
+      Value<int> updatedAt,
+      Value<int?> deletedAt,
+      Value<int> rowid,
+    });
+
+final class $$RestaurantGroupsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $RestaurantGroupsTable, RestaurantGroup> {
+  $$RestaurantGroupsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $RestaurantsTable _restaurantIdTable(_$AppDatabase db) => db
+      .restaurants
+      .createAlias('restaurant_groups__restaurantId__restaurants__id');
+
+  $$RestaurantsTableProcessedTableManager get restaurantId {
+    final $_column = $_itemColumn<String>('restaurantId')!;
+
+    final manager = $$RestaurantsTableTableManager(
+      $_db,
+      $_db.restaurants,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_restaurantIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$RestaurantGroupsTableFilterComposer
+    extends Composer<_$AppDatabase, $RestaurantGroupsTable> {
+  $$RestaurantGroupsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$RestaurantsTableFilterComposer get restaurantId {
+    final $$RestaurantsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.restaurantId,
+      referencedTable: $db.restaurants,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RestaurantsTableFilterComposer(
+            $db: $db,
+            $table: $db.restaurants,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RestaurantGroupsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RestaurantGroupsTable> {
+  $$RestaurantGroupsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$RestaurantsTableOrderingComposer get restaurantId {
+    final $$RestaurantsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.restaurantId,
+      referencedTable: $db.restaurants,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RestaurantsTableOrderingComposer(
+            $db: $db,
+            $table: $db.restaurants,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RestaurantGroupsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RestaurantGroupsTable> {
+  $$RestaurantGroupsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  $$RestaurantsTableAnnotationComposer get restaurantId {
+    final $$RestaurantsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.restaurantId,
+      referencedTable: $db.restaurants,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RestaurantsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.restaurants,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RestaurantGroupsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RestaurantGroupsTable,
+          RestaurantGroup,
+          $$RestaurantGroupsTableFilterComposer,
+          $$RestaurantGroupsTableOrderingComposer,
+          $$RestaurantGroupsTableAnnotationComposer,
+          $$RestaurantGroupsTableCreateCompanionBuilder,
+          $$RestaurantGroupsTableUpdateCompanionBuilder,
+          (RestaurantGroup, $$RestaurantGroupsTableReferences),
+          RestaurantGroup,
+          PrefetchHooks Function({bool restaurantId})
+        > {
+  $$RestaurantGroupsTableTableManager(
+    _$AppDatabase db,
+    $RestaurantGroupsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RestaurantGroupsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RestaurantGroupsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RestaurantGroupsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> restaurantId = const Value.absent(),
+                Value<String> groupId = const Value.absent(),
+                Value<String> createdBy = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RestaurantGroupsCompanion(
+                restaurantId: restaurantId,
+                groupId: groupId,
+                createdBy: createdBy,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String restaurantId,
+                required String groupId,
+                required String createdBy,
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RestaurantGroupsCompanion.insert(
+                restaurantId: restaurantId,
+                groupId: groupId,
+                createdBy: createdBy,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$RestaurantGroupsTable, RestaurantGroup>(table),
+                  $$RestaurantGroupsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({restaurantId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (restaurantId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.restaurantId,
+                        referencedTable: $$RestaurantGroupsTableReferences
+                            ._restaurantIdTable(db),
+                        referencedColumn: $$RestaurantGroupsTableReferences
+                            ._restaurantIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$RestaurantGroupsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RestaurantGroupsTable,
+      RestaurantGroup,
+      $$RestaurantGroupsTableFilterComposer,
+      $$RestaurantGroupsTableOrderingComposer,
+      $$RestaurantGroupsTableAnnotationComposer,
+      $$RestaurantGroupsTableCreateCompanionBuilder,
+      $$RestaurantGroupsTableUpdateCompanionBuilder,
+      (RestaurantGroup, $$RestaurantGroupsTableReferences),
+      RestaurantGroup,
+      PrefetchHooks Function({bool restaurantId})
+    >;
 typedef $$PendingSyncsTableCreateCompanionBuilder =
     PendingSyncsCompanion Function({
       required String sharedTable,
@@ -4587,6 +5422,8 @@ class $AppDatabaseManager {
       $$VisitsTableTableManager(_db, _db.visits);
   $$PhotosTableTableManager get photos =>
       $$PhotosTableTableManager(_db, _db.photos);
+  $$RestaurantGroupsTableTableManager get restaurantGroups =>
+      $$RestaurantGroupsTableTableManager(_db, _db.restaurantGroups);
   $$PendingSyncsTableTableManager get pendingSyncs =>
       $$PendingSyncsTableTableManager(_db, _db.pendingSyncs);
   $$SyncCursorsTableTableManager get syncCursors =>

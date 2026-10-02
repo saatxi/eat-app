@@ -17,14 +17,23 @@ part 'app_database.g.dart';
 ///
 /// [schemaVersion] began at 14 — Room's frozen baseline — so the Room→drift
 /// import could adopt an existing install's file without a version bump. It is
-/// now 17: 15 dropped the removed tag feature's two tables, 16 added the
+/// now 18: 15 dropped the removed tag feature's two tables, 16 added the
 /// shared-group sync metadata (`groupId`, `createdBy`, `updatedAt`,
-/// `deletedAt`) to every shared table, and 17 added the two drift-only tables
+/// `deletedAt`) to every shared table, 17 added the two drift-only tables
 /// the sync layer itself keeps — [PendingSyncs] (the push queue) and
-/// [SyncCursors] (the per-group pull cursor). Every migration so far is purely
-/// additive, so existing rows stay private (`groupId` NULL) without backfill.
+/// [SyncCursors] (the per-group pull cursor), and 18 added [RestaurantGroups],
+/// the many-to-many membership that lets one canonical restaurant be shared
+/// into several groups. Every migration so far is purely additive, so existing
+/// rows stay private (`groupId` NULL) without backfill.
 @DriftDatabase(
-  tables: <Type>[Restaurants, Visits, Photos, PendingSyncs, SyncCursors],
+  tables: <Type>[
+    Restaurants,
+    Visits,
+    Photos,
+    RestaurantGroups,
+    PendingSyncs,
+    SyncCursors,
+  ],
   daos: <Type>[RestaurantDao, VisitDao, PhotoDao],
 )
 class AppDatabase extends _$AppDatabase {
@@ -34,7 +43,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -71,6 +80,14 @@ class AppDatabase extends _$AppDatabase {
       if (from < 17) {
         await m.createTable(pendingSyncs);
         await m.createTable(syncCursors);
+      }
+      // 17 -> 18: the restaurant↔group junction. Additive: every existing
+      // restaurant already carries its home group in `groupId`, which the
+      // repository uses to seed the junction on its next write. No backfill
+      // here — a table rebuild would be needed to add the composite primary
+      // key, so the rows are created on demand instead.
+      if (from < 18) {
+        await m.createTable(restaurantGroups);
       }
     },
     // SQLite requires this per connection, and every cascade delete the schema

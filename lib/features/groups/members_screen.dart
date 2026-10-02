@@ -80,6 +80,15 @@ class _MembersScreenState extends State<MembersScreen> {
     return answer ?? false;
   }
 
+  /// Changes [member]'s role. Owners only — the menu is built for an owner, and
+  /// RLS re-checks it server-side.
+  Future<void> _setRole(GroupMember member, GroupRole role) async {
+    if (role == member.role) {
+      return;
+    }
+    await _controller?.setRole(member.userId, role);
+  }
+
   Future<void> _remove(GroupMember member) async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     if (!await _confirm(
@@ -307,20 +316,47 @@ class _MembersScreenState extends State<MembersScreen> {
             child: Text(name.substring(0, 1).toUpperCase()),
           ),
           title: Text(isMe ? '${l10n.groupsMemberYou} · $name' : name),
-          subtitle: member.role == GroupRole.owner
-              ? Text(l10n.groupsMemberOwner)
-              : null,
+          // Every role is shown, so an editor and a reader are distinguishable
+          // from an owner at a glance.
+          subtitle: Text(_roleLabel(l10n, member.role)),
+          // An owner may change another member's role or remove them; your own
+          // row carries no actions (you leave from the overflow menu).
           trailing: !isMe && iAmOwner
-              ? IconButton(
-                  onPressed: () => _remove(member),
-                  tooltip: l10n.groupsActionRemove,
-                  icon: const Icon(Icons.person_remove_outlined),
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    PopupMenuButton<GroupRole>(
+                      tooltip: l10n.groupsActionChangeRole,
+                      icon: const Icon(Icons.manage_accounts_outlined),
+                      onSelected: (GroupRole role) =>
+                          unawaited(_setRole(member, role)),
+                      itemBuilder: (BuildContext context) =>
+                          <PopupMenuEntry<GroupRole>>[
+                            for (final GroupRole role in GroupRole.values)
+                              PopupMenuItem<GroupRole>(
+                                value: role,
+                                child: Text(_roleLabel(l10n, role)),
+                              ),
+                          ],
+                    ),
+                    IconButton(
+                      onPressed: () => _remove(member),
+                      tooltip: l10n.groupsActionRemove,
+                      icon: const Icon(Icons.person_remove_outlined),
+                    ),
+                  ],
                 )
               : null,
         );
       },
     );
   }
+  static String _roleLabel(AppLocalizations l10n, GroupRole role) =>
+      switch (role) {
+        GroupRole.owner => l10n.groupsMemberOwner,
+        GroupRole.editor => l10n.groupsMemberEditor,
+        GroupRole.reader => l10n.groupsMemberReader,
+      };
 }
 
 /// The "edit group name" dialog: one pre-filled name field and its two actions.

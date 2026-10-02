@@ -57,6 +57,9 @@ class _FakeGroupGateway implements GroupGateway {
   Future<void> removeMember(String groupId, String userId) async {}
 
   @override
+  Future<void> setRole(String groupId, String userId, GroupRole role) async {}
+
+  @override
   Future<void> editGroup(String groupId, String name) async {
     groups = <Group>[
       for (final Group group in groups)
@@ -98,7 +101,7 @@ void main() {
     final _FakeGroupGateway gateway = _FakeGroupGateway(
       groups: const <Group>[
         Group(id: 'g1', name: 'Família', role: GroupRole.owner),
-        Group(id: 'g2', name: 'Amics', role: GroupRole.member),
+        Group(id: 'g2', name: 'Amics', role: GroupRole.editor),
       ],
     );
     final GroupsController controller = GroupsController(
@@ -202,7 +205,7 @@ void main() {
     final _FakeGroupGateway gateway = _FakeGroupGateway(
       groups: const <Group>[
         Group(id: 'g1', name: 'Família', role: GroupRole.owner),
-        Group(id: 'g2', name: 'Amics', role: GroupRole.member),
+        Group(id: 'g2', name: 'Amics', role: GroupRole.editor),
       ],
     );
     final GroupsController controller = GroupsController(

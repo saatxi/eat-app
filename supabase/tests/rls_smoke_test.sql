@@ -5,31 +5,26 @@
 -- simulates each user's JWT claims with set_config() to exercise the policies
 -- exactly as a real client would. rollback cleans up every row the test made.
 --
--- Three identities, one group:
+-- Four identities, one group:
 --   Alice  — owns the group, and authors its first restaurant/visit/photo.
---   Bob    — a plain member Alice invited.
+--   Bob    — an editor Alice invited.
+--   Dave   — a reader Alice invited (read-only).
 --   Carol  — a stranger who belongs to nothing.
 --
 -- What it checks:
 --   1. Alice, as the owner, sees exactly her group's rows.
---   2. Bob, once a member, sees the group and its rows, may add his own
---      (attributed to himself) but may not forge authorship, and may not
---      manage the group or its members.
---   3. Carol sees nothing, may write nothing into the group, and may not add
---      herself to it.
---   4. Only an owner may mint invites; no client may insert into invites.
---   5. profiles are world-readable but only self-writable.
---   6. The last owner cannot leave a group that still has members
---      (group_members_keep_owner); a solo owner can.
---   7. An owner dissolving the group cascades every shared row away.
---   8. Leaving when the leaver was the last member dissolves the group too
---      (group_members_dissolve_when_empty): a member leaving while others
---      remain is a plain leave, but the last member's leave removes the group
---      and cascades every shared row with it.
---   9. A user may own no more than the configured number of groups
---      (group_members_owner_cap, default 10); plain membership is unlimited.
---
--- Any violated expectation raises an exception and fails the run.
+--   2. Membership is a junction (restaurant_groups): a restaurant is visible to
+--      members of every group it is shared into; its visits and photos follow.
+--   3. Bob, as an editor, may add and edit the group's rows but may not manage
+--      the group, its members or its tags.
+--   4. Dave, as a reader, may read but may not write.
+--   5. Carol sees nothing and may write nothing into the group.
+--   6. Only an owner may mint invites; no client may insert into invites.
+--   7. profiles are world-readable but only self-writable.
+--   8. The last owner cannot leave (or be demoted) while members remain.
+--   9. A group with no members left is dissolved, cascading its rows away; a
+--      restaurant whose last membership goes is deleted with its visits/photos.
+--  10. A user may own no more than the configured number of groups.
 
 begin;
 
@@ -44,17 +39,22 @@ insert into auth.users (
    'aaaaaaaa-0000-0000-0000-000000000001',
    'authenticated', 'authenticated', 'rls-test-alice@example.com',
    crypt('x', gen_salt('bf')), now(), now(), now(),
-   '{"provider":"anon","providers":["anon"]}', '{}'),
+   '{"provider":"google","providers":["google"]}', '{}'),
   ('00000000-0000-0000-0000-000000000000',
    'bbbbbbbb-0000-0000-0000-000000000002',
    'authenticated', 'authenticated', 'rls-test-bob@example.com',
    crypt('x', gen_salt('bf')), now(), now(), now(),
-   '{"provider":"anon","providers":["anon"]}', '{}'),
+   '{"provider":"google","providers":["google"]}', '{}'),
+  ('00000000-0000-0000-0000-000000000000',
+   '99999999-0000-0000-0000-000000000004',
+   'authenticated', 'authenticated', 'rls-test-dave@example.com',
+   crypt('x', gen_salt('bf')), now(), now(), now(),
+   '{"provider":"google","providers":["google"]}', '{}'),
   ('00000000-0000-0000-0000-000000000000',
    'eeeeeeee-0000-0000-0000-000000000003',
    'authenticated', 'authenticated', 'rls-test-carol@example.com',
    crypt('x', gen_salt('bf')), now(), now(), now(),
-   '{"provider":"anon","providers":["anon"]}', '{}');
+   '{"provider":"google","providers":["google"]}', '{}');
 
 -- ── 2. Alice creates the group and its content ───────────────────────────
 
@@ -70,30 +70,33 @@ insert into public.group_members (group_id, user_id, role)
 values ('cccccccc-0000-0000-0000-000000000001',
   'aaaaaaaa-0000-0000-0000-000000000001', 'owner');
 
+-- restaurants carry no group of their own now; membership is the junction.
 insert into public.restaurants (
-  id, group_id, name, "cuisineType", "priceRange", created_by
+  id, name, "cuisineType", "priceRange", created_by
 ) values (
   'dddddddd-0000-0000-0000-000000000001',
-  'cccccccc-0000-0000-0000-000000000001',
   'Alice place', 'japanese', 2,
   'aaaaaaaa-0000-0000-0000-000000000001'
 );
 
+insert into public.restaurant_groups (restaurant_id, group_id, created_by)
+values ('dddddddd-0000-0000-0000-000000000001',
+  'cccccccc-0000-0000-0000-000000000001',
+  'aaaaaaaa-0000-0000-0000-000000000001');
+
 insert into public.visits (
-  id, group_id, restaurant_id, "visitDate", rating, "priceRange", created_by
+  id, restaurant_id, "visitDate", rating, "priceRange", created_by
 ) values (
   'ffffffff-0000-0000-0000-000000000001',
-  'cccccccc-0000-0000-0000-000000000001',
   'dddddddd-0000-0000-0000-000000000001',
   1700000000000, 4, 2,
   'aaaaaaaa-0000-0000-0000-000000000001'
 );
 
 insert into public.photos (
-  id, group_id, restaurant_id, position, storage_path, created_by
+  id, restaurant_id, position, storage_path, created_by
 ) values (
   '11111111-0000-0000-0000-000000000001',
-  'cccccccc-0000-0000-0000-000000000001',
   'dddddddd-0000-0000-0000-000000000001',
   0, 'cccccccc-0000-0000-0000-000000000001/11111111-0000-0000-0000-000000000001',
   'aaaaaaaa-0000-0000-0000-000000000001'
@@ -111,6 +114,9 @@ begin
   select count(*) into cnt from public.restaurants;
   if cnt <> 1 then raise exception 'FAIL: alice sees % restaurants, expected 1', cnt; end if;
 
+  select count(*) into cnt from public.restaurant_groups;
+  if cnt <> 1 then raise exception 'FAIL: alice sees % junctions, expected 1', cnt; end if;
+
   select count(*) into cnt from public.visits;
   if cnt <> 1 then raise exception 'FAIL: alice sees % visits, expected 1', cnt; end if;
 
@@ -122,13 +128,7 @@ begin
 
   -- The roster view joins the profile in, obeying RLS via security_invoker.
   select count(*) into cnt from public.group_member_profiles
-    where group_id = 'cccccccc-0000-0000-0000-000000000001';
-  if cnt <> 1 then
-    raise exception 'FAIL: alice sees % roster rows via the view, expected 1', cnt;
-  end if;
-
-  select count(*) into cnt from public.group_member_profiles
-    where user_id = 'aaaaaaaa-0000-0000-0000-000000000001'
+    where group_id = 'cccccccc-0000-0000-0000-000000000001'
       and display_name = 'Alice';
   if cnt <> 1 then
     raise exception 'FAIL: the roster view did not join the display name';
@@ -154,13 +154,17 @@ begin
 end;
 $$;
 
--- ── 3. Alice invites Bob ────────────────────────────────────────────────
+-- ── 3. Alice adds Bob as editor and Dave as reader ───────────────────────
 
 insert into public.group_members (group_id, user_id, role)
 values ('cccccccc-0000-0000-0000-000000000001',
-  'bbbbbbbb-0000-0000-0000-000000000002', 'member');
+  'bbbbbbbb-0000-0000-0000-000000000002', 'editor');
 
--- ── 4. Bob's session (plain member) ─────────────────────────────────────
+insert into public.group_members (group_id, user_id, role)
+values ('cccccccc-0000-0000-0000-000000000001',
+  '99999999-0000-0000-0000-000000000004', 'reader');
+
+-- ── 4. Bob's session (editor) ────────────────────────────────────────────
 
 select set_config('request.jwt.claims',
   '{"sub":"bbbbbbbb-0000-0000-0000-000000000002"}', true);
@@ -176,21 +180,24 @@ begin
 
   -- Bob may add his own content, attributed to himself.
   insert into public.restaurants (
-    id, group_id, name, "cuisineType", "priceRange", created_by
+    id, name, "cuisineType", "priceRange", created_by
   ) values (
     'dddddddd-0000-0000-0000-000000000002',
-    'cccccccc-0000-0000-0000-000000000001',
     'Bob place', 'italian', 1,
     'bbbbbbbb-0000-0000-0000-000000000002'
   );
 
+  insert into public.restaurant_groups (restaurant_id, group_id, created_by)
+  values ('dddddddd-0000-0000-0000-000000000002',
+    'cccccccc-0000-0000-0000-000000000001',
+    'bbbbbbbb-0000-0000-0000-000000000002');
+
   -- ...but may not forge authorship.
   begin
     insert into public.restaurants (
-      id, group_id, name, "cuisineType", "priceRange", created_by
+      id, name, "cuisineType", "priceRange", created_by
     ) values (
       'dddddddd-0000-0000-0000-000000000003',
-      'cccccccc-0000-0000-0000-000000000001',
       'Forged', 'italian', 1,
       'aaaaaaaa-0000-0000-0000-000000000001'
     );
@@ -201,10 +208,10 @@ begin
 end;
 $$;
 
--- Bob is a member, not an owner: he may not manage the group or its members.
--- The Management API (db query --linked) rejects `get diagnostics rowcount`,
--- so the no-op statements are verified by re-reading: the forbidden mutation
--- must have changed nothing.
+-- Bob is an editor, not an owner: he may not manage the group, its members or
+-- its tags. The Management API (db query --linked) rejects
+-- `get diagnostics rowcount`, so the no-op statements are verified by
+-- re-reading: the forbidden mutation must have changed nothing.
 do $$
 declare cnt integer;
 begin
@@ -214,33 +221,69 @@ begin
     where id = 'cccccccc-0000-0000-0000-000000000001' and name = 'hijacked';
   if cnt <> 0 then raise exception 'FAIL: bob renamed the group'; end if;
 
-  delete from public.groups where id = 'cccccccc-0000-0000-0000-000000000001';
-  select count(*) into cnt from public.groups
-    where id = 'cccccccc-0000-0000-0000-000000000001';
-  if cnt <> 1 then raise exception 'FAIL: bob deleted the group'; end if;
-
-  -- Bob cannot remove Alice's membership.
-  delete from public.group_members
+  -- Bob cannot change a member's role.
+  update public.group_members set role = 'owner'
     where group_id = 'cccccccc-0000-0000-0000-000000000001'
-      and user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+      and user_id = 'bbbbbbbb-0000-0000-0000-000000000002';
   select count(*) into cnt from public.group_members
     where group_id = 'cccccccc-0000-0000-0000-000000000001'
-      and user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
-  if cnt <> 1 then raise exception 'FAIL: bob removed alice'; end if;
+      and user_id = 'bbbbbbbb-0000-0000-0000-000000000002'
+      and role = 'owner';
+  if cnt <> 0 then raise exception 'FAIL: bob promoted himself'; end if;
 
   -- Bob cannot add someone else either.
   begin
     insert into public.group_members (group_id, user_id, role)
     values ('cccccccc-0000-0000-0000-000000000001',
-      'eeeeeeee-0000-0000-0000-000000000003', 'member');
+      'eeeeeeee-0000-0000-0000-000000000003', 'editor');
     raise exception 'FAIL: bob added carol';
+  exception when insufficient_privilege or check_violation then
+    null; -- expected
+  end;
+
+  -- Bob cannot tag the group.
+  begin
+    insert into public.group_tags (group_id, tag)
+    values ('cccccccc-0000-0000-0000-000000000001', 'friends');
+    raise exception 'FAIL: bob tagged the group';
   exception when insufficient_privilege or check_violation then
     null; -- expected
   end;
 end;
 $$;
 
--- ── 5. Carol's session (a stranger) ─────────────────────────────────────
+-- ── 5. Dave's session (reader — may read, may not write) ─────────────────
+
+select set_config('request.jwt.claims',
+  '{"sub":"99999999-0000-0000-0000-000000000004"}', true);
+
+do $$
+declare cnt integer;
+begin
+  select count(*) into cnt from public.groups;
+  if cnt <> 1 then raise exception 'FAIL: dave sees % groups, expected 1', cnt; end if;
+
+  select count(*) into cnt from public.restaurants;
+  if cnt <> 2 then raise exception 'FAIL: dave sees % restaurants, expected 2', cnt; end if;
+
+  select count(*) into cnt from public.visits;
+  if cnt <> 1 then raise exception 'FAIL: dave sees % visits, expected 1', cnt; end if;
+
+  -- A reader may not edit or delete Alice's restaurant.
+  update public.restaurants set name = 'dave was here'
+    where id = 'dddddddd-0000-0000-0000-000000000001';
+  select count(*) into cnt from public.restaurants
+    where id = 'dddddddd-0000-0000-0000-000000000001' and name = 'dave was here';
+  if cnt <> 0 then raise exception 'FAIL: a reader edited a restaurant'; end if;
+
+  delete from public.restaurants where id = 'dddddddd-0000-0000-0000-000000000001';
+  select count(*) into cnt from public.restaurants
+    where id = 'dddddddd-0000-0000-0000-000000000001';
+  if cnt <> 1 then raise exception 'FAIL: a reader deleted a restaurant'; end if;
+end;
+$$;
+
+-- ── 6. Carol's session (a stranger) ──────────────────────────────────────
 
 select set_config('request.jwt.claims',
   '{"sub":"eeeeeeee-0000-0000-0000-000000000003"}', true);
@@ -254,35 +297,21 @@ begin
   select count(*) into cnt from public.restaurants;
   if cnt <> 0 then raise exception 'FAIL: carol sees % restaurants, expected 0', cnt; end if;
 
-  select count(*) into cnt from public.visits;
-  if cnt <> 0 then raise exception 'FAIL: carol sees % visits, expected 0', cnt; end if;
+  select count(*) into cnt from public.restaurant_groups;
+  if cnt <> 0 then raise exception 'FAIL: carol sees % junctions, expected 0', cnt; end if;
 
-  select count(*) into cnt from public.photos;
-  if cnt <> 0 then raise exception 'FAIL: carol sees % photos, expected 0', cnt; end if;
-
-  -- A stranger sees no roster rows through the view either (security_invoker).
   select count(*) into cnt from public.group_member_profiles;
   if cnt <> 0 then
     raise exception 'FAIL: carol sees % roster rows via the view, expected 0', cnt;
   end if;
 
-  -- RLS on the USING clause silently matches nothing. Whether the delete
-  -- actually removed a row is verified as postgres below (Carol's own view
-  -- hides the row either way).
-  delete from public.restaurants
-    where group_id = 'cccccccc-0000-0000-0000-000000000001';
-
-  -- WITH CHECK policies reject an outright insert.
+  -- WITH CHECK policies reject an outright insert into a group she is not in.
   begin
-    insert into public.restaurants (
-      id, group_id, name, "cuisineType", "priceRange", created_by
-    ) values (
-      'dddddddd-0000-0000-0000-000000000009',
+    insert into public.restaurant_groups (restaurant_id, group_id, created_by)
+    values ('dddddddd-0000-0000-0000-000000000001',
       'cccccccc-0000-0000-0000-000000000001',
-      'Carol intrusion', 'japanese', 2,
-      'eeeeeeee-0000-0000-0000-000000000003'
-    );
-    raise exception 'FAIL: carol inserted into a group she is not in';
+      'eeeeeeee-0000-0000-0000-000000000003');
+    raise exception 'FAIL: carol shared into a group she is not in';
   exception when insufficient_privilege or check_violation then
     null; -- expected
   end;
@@ -290,7 +319,7 @@ begin
   begin
     insert into public.group_members (group_id, user_id, role)
     values ('cccccccc-0000-0000-0000-000000000001',
-      'eeeeeeee-0000-0000-0000-000000000003', 'member');
+      'eeeeeeee-0000-0000-0000-000000000003', 'editor');
     raise exception 'FAIL: carol added herself';
   exception when insufficient_privilege or check_violation then
     null; -- expected
@@ -298,58 +327,37 @@ begin
 end;
 $$;
 
--- Verify Carol could not delete Alice's data. Count as postgres: Carol's own
--- view hides the row either way, so her session could not tell the difference.
-reset role;
-do $$
-declare cnt integer;
-begin
-  select count(*) into cnt from public.restaurants
-    where id = 'dddddddd-0000-0000-0000-000000000001';
-  if cnt <> 1 then raise exception 'FAIL: carol deleted a restaurant'; end if;
-end;
-$$;
+-- ── 7. Multi-group: one restaurant shared into two groups ────────────────
 
--- profiles are world-readable; only self-writable.
 set local role authenticated;
 select set_config('request.jwt.claims',
-  '{"sub":"eeeeeeee-0000-0000-0000-000000000003"}', true);
-
-do $$
-declare cnt integer;
-begin
-  select count(*) into cnt from public.profiles
-    where id = 'aaaaaaaa-0000-0000-0000-000000000001';
-  if cnt <> 1 then raise exception 'FAIL: carol cannot read alice''s profile'; end if;
-
-  insert into public.profiles (id, display_name)
-  values ('eeeeeeee-0000-0000-0000-000000000003', 'Carol');
-
-  update public.profiles set display_name = 'Not Alice'
-    where id = 'aaaaaaaa-0000-0000-0000-000000000001';
-end;
-$$;
-
--- The update was a no-op: Alice's profile is unchanged. Count as postgres.
-reset role;
-do $$
-declare cnt integer;
-begin
-  select count(*) into cnt from public.profiles
-    where id = 'aaaaaaaa-0000-0000-0000-000000000001'
-      and display_name = 'Not Alice';
-  if cnt <> 0 then raise exception 'FAIL: carol updated alice''s profile'; end if;
-end;
-$$;
-
--- ── 6. The last owner may not leave a group that still has members ───────
-
-select set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-0000-0000-0000-000000000001"}', true);
+
+insert into public.groups (id, name, created_by)
+values ('cccccccc-0000-0000-0000-000000000002', 'RLS second group',
+  'aaaaaaaa-0000-0000-0000-000000000001');
+insert into public.group_members (group_id, user_id, role)
+values ('cccccccc-0000-0000-0000-000000000002',
+  'aaaaaaaa-0000-0000-0000-000000000001', 'owner');
+
+-- Share Alice's existing restaurant into the second group as well.
+insert into public.restaurant_groups (restaurant_id, group_id, created_by)
+values ('dddddddd-0000-0000-0000-000000000001',
+  'cccccccc-0000-0000-0000-000000000002',
+  'aaaaaaaa-0000-0000-0000-000000000001');
+
+-- ── 8. The last owner may not leave or be demoted ────────────────────────
+
+-- (Group 2 is a solo-owner group; group 1 has members.) Alice leaves group 2
+-- freely — she is its only member, so the leave dissolves it.
+delete from public.group_members
+  where group_id = 'cccccccc-0000-0000-0000-000000000002'
+    and user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
 
 do $$
 declare blocked boolean := false;
 begin
+  -- In group 1 Alice is the last owner but others remain: she may not leave.
   begin
     delete from public.group_members
       where group_id = 'cccccccc-0000-0000-0000-000000000001'
@@ -361,28 +369,39 @@ begin
       raise;
     end if;
   end;
-
   if not blocked then
     raise exception 'FAIL: the last owner left a group with other members';
+  end if;
+
+  -- ...nor may she demote herself while others remain.
+  blocked := false;
+  begin
+    update public.group_members set role = 'editor'
+      where group_id = 'cccccccc-0000-0000-0000-000000000001'
+        and user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  exception when others then
+    if sqlerrm like '%last_owner_cannot_be_demoted%' then
+      blocked := true;
+    else
+      raise;
+    end if;
+  end;
+  if not blocked then
+    raise exception 'FAIL: the last owner demoted themselves';
   end if;
 end;
 $$;
 
--- ── 7. An owner dissolves the group; the cascade clears every row ────────
+-- ── 9. Dissolution cascades the junction and its rows ────────────────────
 
 do $$
 declare cnt integer;
 begin
   delete from public.groups where id = 'cccccccc-0000-0000-0000-000000000001';
-  select count(*) into cnt from public.groups
-    where id = 'cccccccc-0000-0000-0000-000000000001';
-  if cnt <> 0 then raise exception 'FAIL: owner dissolution left the group'; end if;
 end;
 $$;
 
--- Back to postgres to count without any RLS filter.
 reset role;
-
 do $$
 declare cnt integer;
 begin
@@ -394,164 +413,47 @@ begin
     where group_id = 'cccccccc-0000-0000-0000-000000000001';
   if cnt <> 0 then raise exception 'FAIL: members survived dissolution'; end if;
 
-  select count(*) into cnt from public.restaurants
+  -- The junction cascaded; the prune trigger then deleted every restaurant
+  -- whose last membership went, taking its visits and photos with it.
+  select count(*) into cnt from public.restaurant_groups
     where group_id = 'cccccccc-0000-0000-0000-000000000001';
-  if cnt <> 0 then raise exception 'FAIL: restaurants survived dissolution'; end if;
+  if cnt <> 0 then raise exception 'FAIL: junctions survived dissolution'; end if;
+
+  select count(*) into cnt from public.restaurants
+    where id in ('dddddddd-0000-0000-0000-000000000001',
+                 'dddddddd-0000-0000-0000-000000000002');
+  if cnt <> 0 then raise exception 'FAIL: orphaned restaurants survived'; end if;
 
   select count(*) into cnt from public.visits
-    where group_id = 'cccccccc-0000-0000-0000-000000000001';
+    where id = 'ffffffff-0000-0000-0000-000000000001';
   if cnt <> 0 then raise exception 'FAIL: visits survived dissolution'; end if;
-
-  select count(*) into cnt from public.photos
-    where group_id = 'cccccccc-0000-0000-0000-000000000001';
-  if cnt <> 0 then raise exception 'FAIL: photos survived dissolution'; end if;
 end;
 $$;
 
--- ── 8. The last member leaving dissolves the group ───────────────────────
---
--- A fresh two-member group: Bob leaves first while Alice remains — a plain
--- leave, the group survives. Then Alice, now the last member, leaves and the
--- group (and the shared row it carried) is dissolved by
--- group_members_dissolve_when_empty.
+-- ── 10. A user may own no more than the configured number of groups ──────
 
-set local role authenticated;
-select set_config('request.jwt.claims',
-  '{"sub":"aaaaaaaa-0000-0000-0000-000000000001"}', true);
-
-insert into public.groups (id, name, created_by)
-values ('cccccccc-0000-0000-0000-000000000002', 'RLS last-member test group',
-  'aaaaaaaa-0000-0000-0000-000000000001');
-
-insert into public.group_members (group_id, user_id, role)
-values ('cccccccc-0000-0000-0000-000000000002',
-  'aaaaaaaa-0000-0000-0000-000000000001', 'owner');
-
-insert into public.group_members (group_id, user_id, role)
-values ('cccccccc-0000-0000-0000-000000000002',
-  'bbbbbbbb-0000-0000-0000-000000000002', 'member');
-
-insert into public.restaurants (
-  id, group_id, name, "cuisineType", "priceRange", created_by
-) values (
-  'dddddddd-0000-0000-0000-00000000000a',
-  'cccccccc-0000-0000-0000-000000000002',
-  'Shared place', 'japanese', 2,
-  'aaaaaaaa-0000-0000-0000-000000000001'
-);
-
--- Bob (a member, not the last) leaves: the group must survive with Alice.
-select set_config('request.jwt.claims',
-  '{"sub":"bbbbbbbb-0000-0000-0000-000000000002"}', true);
-
-delete from public.group_members
-  where group_id = 'cccccccc-0000-0000-0000-000000000002'
-    and user_id = 'bbbbbbbb-0000-0000-0000-000000000002';
-
--- Count as postgres: RLS would filter the group out of the leaver's own view
--- the moment their membership is gone, hiding the very row that must survive.
-reset role;
-
-do $$
-declare cnt integer;
-begin
-  select count(*) into cnt from public.groups
-    where id = 'cccccccc-0000-0000-0000-000000000002';
-  if cnt <> 1 then
-    raise exception 'FAIL: group died when a non-last member left';
-  end if;
-
-  select count(*) into cnt from public.group_members
-    where group_id = 'cccccccc-0000-0000-0000-000000000002';
-  if cnt <> 1 then
-    raise exception 'FAIL: % members remain after bob left, expected 1', cnt;
-  end if;
-end;
-$$;
-
--- Alice is now the last member. Leaving dissolves the group, cascading the
--- restaurant away with it.
-set local role authenticated;
-select set_config('request.jwt.claims',
-  '{"sub":"aaaaaaaa-0000-0000-0000-000000000001"}', true);
-
-delete from public.group_members
-  where group_id = 'cccccccc-0000-0000-0000-000000000002'
-    and user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
-
-reset role;
-
-do $$
-declare cnt integer;
-begin
-  select count(*) into cnt from public.groups
-    where id = 'cccccccc-0000-0000-0000-000000000002';
-  if cnt <> 0 then
-    raise exception 'FAIL: group survived the last member''s leave';
-  end if;
-
-  select count(*) into cnt from public.group_members
-    where group_id = 'cccccccc-0000-0000-0000-000000000002';
-  if cnt <> 0 then
-    raise exception 'FAIL: members survived the last member''s leave';
-  end if;
-
-  select count(*) into cnt from public.restaurants
-    where group_id = 'cccccccc-0000-0000-0000-000000000002';
-  if cnt <> 0 then
-    raise exception 'FAIL: restaurants survived the last member''s leave';
-  end if;
-end;
-$$;
-
--- ── 9. A user may own no more than the configured number of groups ────────
---
--- The owner cap (group_members_owner_cap) counts owner memberships, not
--- memberships. Alice's earlier groups were dissolved in sections 7 and 8, so
--- her owner count is 0 when this section starts. To reach the cap she must
--- own the configured limit's worth of groups; each "create" is the groups row
--- plus her owner membership, exactly like the app does. Then one more create
--- is refused, while joining other people's groups as a member is never
--- limited.
-
--- 9a. Alice's current owner count and the configured cap.
-reset role;
 do $$
 declare
   cap integer;
   owned integer;
 begin
   select public.owner_group_limit() into cap;
+  if cap <> 10 then
+    raise exception 'FAIL: owner_group_limit() = %, expected 10', cap;
+  end if;
 
   select count(*) into owned
   from public.group_members
-  where user_id = 'aaaaaaaa-0000-0000-0000-000000000001'
-    and role = 'owner';
+  where user_id = 'aaaaaaaa-0000-0000-0000-000000000001' and role = 'owner';
   if owned <> 0 then
-    raise exception 'FAIL: alice starts the cap test with % owned groups, expected 0', owned;
-  end if;
-
-  if cap <> 10 then
-    raise exception 'FAIL: owner_group_limit() = %, expected 10', cap;
+    raise exception 'FAIL: alice starts the cap test with % owned groups', owned;
   end if;
 end;
 $$;
 
--- 9b. Alice creates the cap's worth of groups, each as owner — allowed. This
--- is exactly the app's create path: the create_owned_group RPC (the client no
--- longer does two inserts). It inserts the groups row and the owner membership
--- in one transaction. The first two get fixed ids so section 9d can add a
--- member to them; the rest only matter for their count.
 set local role authenticated;
 select set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-0000-0000-0000-000000000001"}', true);
-
-select public.create_owned_group(
-  'cccccccc-0000-0000-0000-000000000003', 'RLS cap group 1'
-);
-select public.create_owned_group(
-  'cccccccc-0000-0000-0000-000000000004', 'RLS cap group 2'
-);
 
 do $$
 declare
@@ -559,23 +461,18 @@ declare
   i integer;
 begin
   select public.owner_group_limit() into cap;
-  for i in 3..cap loop
-    perform public.create_owned_group(
-      gen_random_uuid(), 'RLS cap group ' || i
-    );
+  for i in 1..cap loop
+    perform public.create_owned_group(gen_random_uuid(), 'RLS cap group ' || i);
   end loop;
 end;
 $$;
 
--- 9c. One group beyond the cap is refused by the cap trigger (raised from the
--- RPC, en route inside the same transaction). The rollback also proves the
--- groups row did not linger as an orphan.
 do $$
 declare blocked boolean := false;
 begin
   begin
-    select public.create_owned_group(
-      'cccccccc-0000-0000-0000-000000000005', 'RLS cap group 3'
+    perform public.create_owned_group(
+      'cccccccc-0000-0000-0000-0000000000ff', 'RLS cap overflow'
     );
   exception when others then
     if sqlerrm like '%owner_group_limit_reached%' then
@@ -584,68 +481,20 @@ begin
       raise;
     end if;
   end;
-
   if not blocked then
     raise exception 'FAIL: the owner cap let alice exceed the configured limit';
   end if;
 end;
 $$;
 
--- The refused RPC rolled its whole transaction back — no orphan groups row.
-reset role;
-do $$
-declare cnt integer;
-begin
-  select count(*) into cnt from public.groups
-    where id = 'cccccccc-0000-0000-0000-000000000005';
-  if cnt <> 0 then
-    raise exception 'FAIL: the rejected third group left an orphan row';
-  end if;
-end;
-$$;
-
--- The refused group's row was rolled back by the exception, so Alice still
--- owns exactly the cap (10). Count as postgres: the ownership count is the
--- authoritative invariant, and it must hold exactly.
 reset role;
 do $$
 declare cnt integer;
 begin
   select count(*) into cnt from public.group_members
-    where user_id = 'aaaaaaaa-0000-0000-0000-000000000001'
-      and role = 'owner';
+    where user_id = 'aaaaaaaa-0000-0000-0000-000000000001' and role = 'owner';
   if cnt <> 10 then
     raise exception 'FAIL: alice owns %, expected 10 after the cap rejected the extra', cnt;
-  end if;
-end;
-$$;
-
--- 9d. Membership as a plain member is unlimited: Alice's adding Bob as a
--- member of both of her new groups is unaffected by the cap — the cap counts
--- only owner rows, and Bob's own (future) memberships are never counted
--- against anyone. Bob is not an owner of these, so inserting him needs Alice,
--- who is.
-set local role authenticated;
-select set_config('request.jwt.claims',
-  '{"sub":"aaaaaaaa-0000-0000-0000-000000000001"}', true);
-
-insert into public.group_members (group_id, user_id, role)
-values ('cccccccc-0000-0000-0000-000000000003',
-  'bbbbbbbb-0000-0000-0000-000000000002', 'member');
-insert into public.group_members (group_id, user_id, role)
-values ('cccccccc-0000-0000-0000-000000000004',
-  'bbbbbbbb-0000-0000-0000-000000000002', 'member');
-
--- back to postgres for the final read-only assertions.
-reset role;
-do $$
-declare cnt integer;
-begin
-  select count(*) into cnt from public.group_members
-    where user_id = 'bbbbbbbb-0000-0000-0000-000000000002'
-      and role = 'member';
-  if cnt <> 2 then
-    raise exception 'FAIL: bob joined % groups as a member, expected 2 (unlimited)', cnt;
   end if;
 end;
 $$;

@@ -1570,6 +1570,24 @@ abstract class AppLocalizations {
   /// **'Owner'**
   String get groupsMemberOwner;
 
+  /// No description provided for @groupsMemberEditor.
+  ///
+  /// In en, this message translates to:
+  /// **'Editor'**
+  String get groupsMemberEditor;
+
+  /// No description provided for @groupsMemberReader.
+  ///
+  /// In en, this message translates to:
+  /// **'Reader'**
+  String get groupsMemberReader;
+
+  /// No description provided for @groupsActionChangeRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Change role'**
+  String get groupsActionChangeRole;
+
   /// No description provided for @groupsMemberYou.
   ///
   /// In en, this message translates to:

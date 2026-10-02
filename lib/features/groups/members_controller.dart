@@ -80,6 +80,10 @@ class MembersController extends ChangeNotifier {
   Future<bool> removeMember(String userId) =>
       _mutate(() => gateway!.removeMember(groupId, userId));
 
+  /// An owner changes another member's role. Returns whether it worked.
+  Future<bool> setRole(String userId, GroupRole role) =>
+      _mutate(() => gateway!.setRole(groupId, userId, role));
+
   /// An owner dissolves the group entirely. Returns whether it worked.
   Future<bool> deleteGroup() =>
       _mutate(() => gateway!.deleteGroup(groupId));

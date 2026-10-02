@@ -184,6 +184,49 @@ class PendingSyncs extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{sharedTable, rowId};
 }
 
+/// Which groups a shared restaurant belongs to — the many-to-many membership
+/// that replaced the single nullable `groupId` on [Restaurants].
+///
+/// A private restaurant has no row here. A shared one has one row per group it
+/// is in, each also carrying the sync metadata: `createdBy` (who shared it),
+/// `updatedAt` (the LWW arbiter for membership changes) and `deletedAt` (a
+/// tombstone, so "removed from group X" reaches every member on the next pull).
+///
+/// `visits` and `photos` stay children of the restaurant and inherit its
+/// visibility, so they do not repeat this membership; a restaurant's own
+/// `groupId` column remains only as its **home group** — the group it was first
+/// shared into, which names the Storage folder for its photo.
+@DataClassName('RestaurantGroup')
+@TableIndex(name: 'index_restaurant_groups_groupId', columns: {#groupId})
+@TableIndex(name: 'index_restaurant_groups_restaurantId', columns: {#restaurantId})
+class RestaurantGroups extends Table {
+  @override
+  String get tableName => 'restaurant_groups';
+
+  /// The shared restaurant. Cascades, so deleting a restaurant drops its
+  /// memberships with it.
+  TextColumn get restaurantId => text()
+      .named('restaurantId')
+      .references(Restaurants, #id, onDelete: KeyAction.cascade)();
+
+  /// The group it is shared into. Never null: a membership is always scoped.
+  TextColumn get groupId => text().named('groupId')();
+
+  /// Auth user id of whoever shared the restaurant into the group.
+  TextColumn get createdBy => text().named('createdBy')();
+
+  /// Epoch millis of the last membership write — the LWW arbiter.
+  IntColumn get updatedAt =>
+      integer().named('updatedAt').withDefault(const Constant(0))();
+
+  /// Epoch millis of the soft delete (removed from this group), or null while
+  /// the membership is live.
+  IntColumn get deletedAt => integer().named('deletedAt').nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{restaurantId, groupId};
+}
+
 /// One row per group the device is a member of, holding this device's pull
 /// cursor: the newest remote `updated_at` it has already applied.
 ///

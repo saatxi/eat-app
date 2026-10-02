@@ -6,19 +6,40 @@
 /// through the [GroupGateway].
 library;
 
-/// A member's role, mirroring the `group_members.role` column's two values.
+/// A member's role, mirroring the `group_members.role` column's three values.
+///
+/// - [owner]  — full control: manage members and roles, rename or dissolve the
+///   group, and add/edit/delete its shared data.
+/// - [editor] — may add, edit and delete the group's restaurants, visits and
+///   photos, but not manage the group or its members.
+/// - [reader] — may only read the group's data.
 enum GroupRole {
   owner,
-  member;
+  editor,
+  reader;
 
-  /// The value the column stores: the enum's own name (`owner` / `member`).
+  /// The value the column stores: the enum's own name (`owner` / `editor` /
+  /// `reader`).
   String get remote => name;
+
+  /// Whether this role may write the group's shared data (restaurants, visits,
+  /// photos). Owners and editors may; readers may not.
+  bool get canEdit => this == GroupRole.owner || this == GroupRole.editor;
+
+  /// Whether this role may manage the group itself: its name, its members and
+  /// their roles, its tags, and its invitations. Owners only.
+  bool get canManage => this == GroupRole.owner;
 
   /// Parses a stored role. An unknown value (only possible if a role is added
   /// remotely before the app learns it) fails loudly rather than guessing.
+  ///
+  /// The pre-roles app wrote `member`, which meant "may write"; it is read as
+  /// [GroupRole.editor], the closer of the two new roles.
   static GroupRole fromRemote(String value) => switch (value) {
     'owner' => GroupRole.owner,
-    'member' => GroupRole.member,
+    'editor' => GroupRole.editor,
+    'reader' => GroupRole.reader,
+    'member' => GroupRole.editor,
     _ => throw GroupException('unrecognised group role: $value'),
   };
 }

@@ -45,6 +45,12 @@ abstract class GroupGateway {
   /// Removes [userId]'s membership — an owner expels a member.
   Future<void> removeMember(String groupId, String userId);
 
+  /// Changes [userId]'s role in [groupId]. Only an owner may call this; RLS
+  /// enforces it via the `group_members_update_owner` policy, and the
+  /// `group_members_keep_owner_on_update` trigger refuses demoting the last
+  /// owner of a group that still has other members.
+  Future<void> setRole(String groupId, String userId, GroupRole role);
+
   /// Dissolves the group entirely. Only an owner may call this; the delete
   /// cascades every member, invite and shared row away. There is no undo, which
   /// is why the members screen offers an export first.
@@ -133,6 +139,17 @@ class SupabaseGroupGateway implements GroupGateway {
   @override
   Future<void> removeMember(String groupId, String userId) =>
       _deleteMembership(groupId: groupId, userId: userId);
+
+  @override
+  Future<void> setRole(String groupId, String userId, GroupRole role) async {
+    // Allowed by the group_members_update_owner policy; the keep-owner trigger
+    // rejects a demotion that would leave the group ownerless.
+    await _client
+        .from('group_members')
+        .update(<String, dynamic>{'role': role.remote})
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+  }
 
   /// Deletes one membership row. Leaving and expelling are the same write — the
   /// `group_members_delete_owner_or_self` policy decides who may perform it, so

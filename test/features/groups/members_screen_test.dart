@@ -52,6 +52,9 @@ class _FakeGroupGateway implements GroupGateway {
   Future<List<Group>> listGroups(String userId) async => groups;
 
   @override
+  Future<void> setRole(String groupId, String userId, GroupRole role) async {}
+
+  @override
   Future<void> setDisplayName({
     required String userId,
     required String displayName,
@@ -147,7 +150,7 @@ void main() {
         GroupMember(
           userId: 'u2',
           displayName: 'Maria',
-          role: GroupRole.member,
+          role: GroupRole.editor,
         ),
       ],
     );
@@ -208,11 +211,11 @@ void main() {
     // so the menu legitimately offers "Leave group".
     final _FakeGroupGateway gateway = _FakeGroupGateway(
       members: const <GroupMember>[
-        GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.member),
+        GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.editor),
         GroupMember(userId: 'u2', displayName: 'Alice', role: GroupRole.owner),
       ],
     );
-    const Group group = Group(id: 'g1', name: 'Família', role: GroupRole.member);
+    const Group group = Group(id: 'g1', name: 'Família', role: GroupRole.editor);
 
     await tester.pumpWidget(
       host(groups: gateway, child: const MembersScreen(group: group)),

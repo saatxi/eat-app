@@ -827,6 +827,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get groupsMemberOwner => 'Administrador';
 
   @override
+  String get groupsMemberEditor => 'Editor';
+
+  @override
+  String get groupsMemberReader => 'Lector';
+
+  @override
+  String get groupsActionChangeRole => 'Cambiar rol';
+
+  @override
   String get groupsMemberYou => 'Tú';
 
   @override

@@ -827,6 +827,15 @@ class AppLocalizationsCa extends AppLocalizations {
   String get groupsMemberOwner => 'Administrador';
 
   @override
+  String get groupsMemberEditor => 'Editor';
+
+  @override
+  String get groupsMemberReader => 'Lector';
+
+  @override
+  String get groupsActionChangeRole => 'Canvia el rol';
+
+  @override
   String get groupsMemberYou => 'Tu';
 
   @override
