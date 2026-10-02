@@ -123,9 +123,15 @@ Optional detailed explanation
   by the `group_members_owner_cap` trigger inside the atomic
   `create_owned_group` RPC — while unlimited plain membership stays untouched;
   and invitations are rate-limited per user on both mint and redemption (via
-  `record_rate_attempt('invite')` and `record_rate_attempt('join')`). A new
-  policy or migration should extend `supabase/tests/rls_smoke_test.sql`, which
-  drives an owner, a member and a stranger through every table and rolls back.
+  `record_rate_attempt('invite')` and `record_rate_attempt('join')`). Roles are
+  three — owner, editor, reader: an owner or editor may write a group's rows
+  while a reader may only read, and only an owner manages the group, its members
+  and its invitations. A restaurant's membership is a many-to-many
+  `restaurant_groups` junction, so one canonical restaurant can be shared into
+  several groups at once, and a restaurant removed from its last group is
+  deleted with its visits and photos. A new policy or migration should extend
+  `supabase/tests/rls_smoke_test.sql`, which drives an owner, an editor, a
+  reader and a stranger through every table and rolls back.
 - **Build**: the Flutter tool over the Android project in `android/` (its own
   Gradle wrapper and `android/gradle.properties`) and the iOS project in
   `ios/`. There is no longer a root Gradle build to run.
@@ -177,11 +183,13 @@ pieces of that history are load-bearing and must not be touched casually:
   without updating the `_copies` list there.
 - **Schema versions.** `lib/data/db/app_database.dart` opened at 14 — Room's
   frozen baseline — so the import could adopt the legacy file without a bump,
-  and it has since moved to 17 with real `onUpgrade` steps: 15 dropped the
+  and it has since moved to 18 with real `onUpgrade` steps: 15 dropped the
   removed tag feature's two tables, 16 added the shared-group sync columns, 17
-  added the sync layer's own queue and cursor tables. Each step is driven from a
-  hand-built older file by `test/data/db/migration_v1*_test.dart`; a future
-  bump must add its `onUpgrade` step the same way.
+  added the sync layer's own queue and cursor tables, and 18 added the
+  `restaurant_groups` membership table (backfilled from the old single
+  `groupId`). Each step is driven from a hand-built older file by
+  `test/data/db/migration_v1*_test.dart`; a future bump must add its `onUpgrade`
+  step the same way.
 
 ## Build & verify
 
@@ -303,7 +311,8 @@ lib/
   networking dependency or remote data source without discussing it first.
 - A file received through the sharing intent-filter is untrusted input:
   size-capped before parsing (`lib/data/share/content_files.dart`), parsed
-  as JSON, gated on the `eatapp.restaurants.v2` `format` tag
+  as JSON, gated on the `eatapp.restaurants.v3` `format` tag (v2 and the
+  whole-group `eatapp.group.v1` are also accepted)
   ([`restaurant_share_models.dart`](lib/data/share/restaurant_share_models.dart)),
   and validated field-by-field before anything reaches drift — a row that
   fails is dropped rather than failing the whole file. The confirmation

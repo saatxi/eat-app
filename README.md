@@ -33,7 +33,10 @@ install's data is imported automatically on first launch — see
   opening a shared file shows a review screen before anything is saved.
 - A single colour scheme, with a light/dark choice in Settings.
 - English, Spanish and Catalan.
-- No account, no server, no network calls.
+- Optional shared groups over a Supabase backend, with three roles (owner,
+  editor, reader) and a restaurant free to belong to more than one group. It is
+  compiled out unless the build carries its configuration; personal mode stays
+  fully offline, with no account and no network calls.
 
 ## Managing your restaurants
 
@@ -110,8 +113,9 @@ Keep this table in sync with `Cuisine` when adding a key.
 Tap the share icon on the list screen to send your whole list, or on a
 restaurant's detail screen to send just that one. Either opens the platform's
 normal share sheet with a small JSON attachment (no account, no server). The
-file carries the `eatapp.restaurants.v2` format tag, so a file that merely
-happens to be JSON can't be mistaken for one of ours. Each restaurant also
+file carries the `eatapp.restaurants.v3` format tag (the older v2 is still
+read), so a file that merely happens to be JSON can't be mistaken for one of
+ours; a whole group can be exported as an `eatapp.group.v1` file. Each also
 records whether it was a favourite, so exporting and importing again keeps
 the hearts — a restaurant has no favourite column of its own (the flag lives
 in your preferences), so the file is the only thing that can carry it across.
@@ -147,14 +151,21 @@ Supabase. It stays entirely off unless the build carries the backend
 configuration (see "Building and running"), so a personal install never talks
 to a server.
 
-Creating a group signs the device in anonymously; from then on, picking a
-group in the list's scope selector shows that group's restaurants instead of
-the personal ones, and every write there is attributed and syncs. Inviting
-someone (an owner only) opens a screen with a QR code and a short code to read
-out; the other side scans the QR or types the code in and joins. The token is
-minted and redeemed exclusively by
-the `create-invite` / `join-group` Edge Functions, so the `invites` table has
-no client write path at all.
+Using groups needs a verified identity: sign in with an email one-time code
+from **Settings → Account** (see [docs/sign-in.md](docs/sign-in.md)). The same
+address is the stable identity, so signing in again restores your account, your
+groups and their shared restaurants after a reinstall or on a new phone.
+
+Each member has a role: an **owner** manages the group, its members and its
+invitations; an **editor** may add and edit its restaurants but not manage it;
+a **reader** may only look. Creating a group signs you in; from then on, picking
+a group in the list's scope selector shows that group's restaurants, and every
+write there is attributed and syncs. A restaurant can belong to **more than one
+group at once**, chosen in the add/edit form. Inviting someone (an owner only)
+opens a screen with a QR code and a short code to read out; the other side scans
+the QR or types the code in and joins. The token is minted and redeemed
+exclusively by the `create-invite` / `join-group` Edge Functions, so the
+`invites` table has no client write path at all.
 
 A group is pulled when it matters rather than continuously, since each pull
 only asks for what changed since the last one: entering a group (switching to
@@ -167,7 +178,8 @@ rather than the instant it is saved.
 The backend's guarantees — enforced in SQL, not only in the app — are:
 
 - Every shared row belongs to a group and is attributed to whoever inserted
-  it; a member sees only their groups' rows and may not forge authorship.
+  it; a member sees only their groups' rows and may not forge authorship, and
+  only an owner or editor may write while a reader may not.
 - A group always keeps at least one owner while it has members: the last owner
   cannot leave, only dissolve the group, which removes everything for everyone.
   Leaving when you are the last member dissolves the group too. The members
@@ -200,6 +212,11 @@ reinstall on the same phone, or setting up a new phone signed into the same
 Google account, restores everything automatically. A direct phone-to-phone
 transfer follows the same rules.
 
+That covers what was only ever on the device. Anything that was shared into a
+group lives on the server instead, so it comes back by **signing in again with
+the same email** (Settings → Account) rather than from the device backup — see
+[docs/sign-in.md](docs/sign-in.md).
+
 Auto Backup needs a Google account with device backup turned on (and Google
 Play Services), and it runs roughly once a day while idle, charging and on
 Wi-Fi — not immediately after every change, so a restaurant added seconds
@@ -229,6 +246,7 @@ outside Xcode can do; see [docs/ios-widget.md](docs/ios-widget.md).
 
 - Flutter + Material 3 (Dart)
 - [drift](https://drift.simonbinder.eu/) (SQLite) for local persistence
+- [Supabase](https://supabase.com/) for the optional shared-groups backend
 - `share_plus` and `receive_sharing_intent` for the share/import flows
 - `url_launcher` for links and maps, `shared_preferences` for preferences
 - `home_widget` for the home-screen widget's Android and iOS halves
