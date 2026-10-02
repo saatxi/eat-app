@@ -8,6 +8,7 @@ import '../../core/theme/app_theme_mode.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/repositories/user_preferences_repository.dart';
 import '../../data/supabase/identity.dart';
+import '../groups/groups_controller.dart';
 import '../import_export/share_service.dart';
 
 /// Settings: the appearance choices, the data actions, and which build this is.
@@ -299,9 +300,14 @@ class _AccountSectionState extends State<_AccountSection> {
     if (email.isEmpty || code.isEmpty) {
       return;
     }
+    final GroupsController? groups = AppScope.of(context).groupsController;
     setState(() => _busy = true);
     try {
       await widget.identity.verifyEmailCode(email: email, code: code);
+      // A fresh sign-in — after a reinstall, say — must bring the account's
+      // groups back, so the roster is reloaded and its shared data can be
+      // pulled.
+      await groups?.load();
     } on Object {
       // A wrong or expired code leaves the fields as they are, to retype.
     } finally {
@@ -313,6 +319,7 @@ class _AccountSectionState extends State<_AccountSection> {
   }
 
   Future<void> _signOut() async {
+    final GroupsController? groups = AppScope.of(context).groupsController;
     setState(() => _busy = true);
     try {
       await widget.identity.signOut();
@@ -320,6 +327,8 @@ class _AccountSectionState extends State<_AccountSection> {
       if (mounted) {
         setState(() => _busy = false);
       }
+      // Signing out must drop the groups from the UI too.
+      await groups?.load();
       await _refresh();
     }
   }
