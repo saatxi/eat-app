@@ -25,6 +25,11 @@ class SharedWrites {
   /// private, so a visit or photo never widens a private restaurant's reach.
   Future<SharedWrite?> forChildOf(String? groupId) => _resolve(groupId);
 
+  /// The signed-in user's id, or null with no session. Used to attribute a
+  /// group membership, which needs an author even when the selected scope is
+  /// Personal.
+  Future<String?> currentUserId() async => (await identity?.current())?.userId;
+
   Future<SharedWrite?> _resolve(String? groupId) async {
     if (groupId == null) {
       return null;

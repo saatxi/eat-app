@@ -6,6 +6,8 @@ part of 'restaurant_dao.dart';
 mixin _$RestaurantDaoMixin on DatabaseAccessor<AppDatabase> {
   $RestaurantsTable get restaurants => attachedDatabase.restaurants;
   $VisitsTable get visits => attachedDatabase.visits;
+  $RestaurantGroupsTable get restaurantGroups =>
+      attachedDatabase.restaurantGroups;
   RestaurantDaoManager get managers => RestaurantDaoManager(this);
 }
 
@@ -16,4 +18,9 @@ class RestaurantDaoManager {
       $$RestaurantsTableTableManager(_db.attachedDatabase, _db.restaurants);
   $$VisitsTableTableManager get visits =>
       $$VisitsTableTableManager(_db.attachedDatabase, _db.visits);
+  $$RestaurantGroupsTableTableManager get restaurantGroups =>
+      $$RestaurantGroupsTableTableManager(
+        _db.attachedDatabase,
+        _db.restaurantGroups,
+      );
 }

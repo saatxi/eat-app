@@ -12,9 +12,29 @@ part 'visit_dao.g.dart';
 /// Soft-deleted rows are excluded throughout: a visit tombstoned by a shared
 /// delete (locally or by another member) must not count as a visit, feed a
 /// rating trend, or keep a restaurant looking "visited".
-@DriftAccessor(tables: <Type>[Visits])
+@DriftAccessor(tables: <Type>[Visits, RestaurantGroups])
 class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
   VisitDao(super.db);
+
+  /// The scope predicate shared by the collection queries: a group id shows
+  /// visits of that group's restaurants, null shows visits of restaurants with
+  /// no membership at all. Written against the visit alias so callers
+  /// interpolate it. Three placeholders: the group id, three times.
+  static const String _groupScope =
+      '((? IS NULL AND EXISTS (SELECT 1 FROM restaurants r '
+      'WHERE r.id = %ALIAS%.restaurantId AND NOT EXISTS (SELECT 1 '
+      'FROM restaurant_groups rg WHERE rg.restaurantId = r.id '
+      'AND rg.deletedAt IS NULL))) '
+      'OR (? IS NOT NULL AND EXISTS (SELECT 1 FROM restaurant_groups rg '
+      'WHERE rg.restaurantId = %ALIAS%.restaurantId AND rg.groupId = ? '
+      'AND rg.deletedAt IS NULL)))';
+
+  static List<Variable<Object>> _groupVars(String? groupId) =>
+      <Variable<Object>>[
+        Variable<String>(groupId),
+        Variable<String>(groupId),
+        Variable<String>(groupId),
+      ];
 
   Stream<List<Visit>> observeVisitsForRestaurant(String restaurantId) =>
       customSelect(
@@ -44,9 +64,10 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
         'INNER JOIN (SELECT restaurantId, MAX(visitDate) AS maxDate FROM visits '
         'WHERE deletedAt IS NULL GROUP BY restaurantId) latest '
         'ON latest.restaurantId = v.restaurantId AND latest.maxDate = v.visitDate '
-        'WHERE v.deletedAt IS NULL AND v.groupId IS ?',
-        variables: <Variable<Object>>[Variable<String>(groupId)],
-        readsFrom: <ResultSetImplementation>{visits},
+        'WHERE v.deletedAt IS NULL '
+        'AND ${_groupScope.replaceAll('%ALIAS%', 'v')}',
+        variables: _groupVars(groupId),
+        readsFrom: <ResultSetImplementation>{visits, restaurantGroups},
       ).watch().map(_mapVisits);
 
   Future<void> insertVisit(Visit row) => into(visits).insert(row);
@@ -114,17 +135,19 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
 
   Stream<int> observeVisitedCount({String? groupId}) => customSelect(
     'SELECT COUNT(DISTINCT restaurantId) AS count FROM visits '
-    'WHERE deletedAt IS NULL AND groupId IS ?',
-    variables: <Variable<Object>>[Variable<String>(groupId)],
-    readsFrom: <ResultSetImplementation>{visits},
+    'WHERE deletedAt IS NULL '
+    'AND ${_groupScope.replaceAll('%ALIAS%', 'visits')}',
+    variables: _groupVars(groupId),
+    readsFrom: <ResultSetImplementation>{visits, restaurantGroups},
   ).watchSingle().map((QueryRow row) => row.read<int>('count'));
 
   /// Null when nothing has a real visit yet.
   Stream<double?> observeAverageRating({String? groupId}) => customSelect(
     'SELECT AVG(rating) AS average FROM visits '
-    'WHERE deletedAt IS NULL AND groupId IS ?',
-    variables: <Variable<Object>>[Variable<String>(groupId)],
-    readsFrom: <ResultSetImplementation>{visits},
+    'WHERE deletedAt IS NULL '
+    'AND ${_groupScope.replaceAll('%ALIAS%', 'visits')}',
+    variables: _groupVars(groupId),
+    readsFrom: <ResultSetImplementation>{visits, restaurantGroups},
   ).watchSingle().map((QueryRow row) => row.read<double?>('average'));
 
   /// Every visit's raw epoch-millis date, across every restaurant — bucketed
@@ -133,9 +156,11 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
   /// bucketing in Dart is simpler.
   Stream<List<int>> observeAllVisitDates({String? groupId}) => customSelect(
     'SELECT visitDate AS visitDate FROM visits '
-    'WHERE deletedAt IS NULL AND groupId IS ? ORDER BY visitDate ASC',
-    variables: <Variable<Object>>[Variable<String>(groupId)],
-    readsFrom: <ResultSetImplementation>{visits},
+    'WHERE deletedAt IS NULL '
+    'AND ${_groupScope.replaceAll('%ALIAS%', 'visits')} '
+    'ORDER BY visitDate ASC',
+    variables: _groupVars(groupId),
+    readsFrom: <ResultSetImplementation>{visits, restaurantGroups},
   ).watch().map(
     (List<QueryRow> rows) => <int>[
       for (final QueryRow row in rows) row.read<int>('visitDate'),
@@ -147,9 +172,11 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
   Stream<List<VisitDateRating>> observeAllVisitDateRatings({String? groupId}) =>
       customSelect(
         'SELECT visitDate AS visitDate, rating AS rating FROM visits '
-        'WHERE deletedAt IS NULL AND groupId IS ? ORDER BY visitDate ASC',
-        variables: <Variable<Object>>[Variable<String>(groupId)],
-        readsFrom: <ResultSetImplementation>{visits},
+        'WHERE deletedAt IS NULL '
+        'AND ${_groupScope.replaceAll('%ALIAS%', 'visits')} '
+        'ORDER BY visitDate ASC',
+        variables: _groupVars(groupId),
+        readsFrom: <ResultSetImplementation>{visits, restaurantGroups},
   ).watch().map(
     (List<QueryRow> rows) => <VisitDateRating>[
       for (final QueryRow row in rows)

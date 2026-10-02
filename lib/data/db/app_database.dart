@@ -81,13 +81,18 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(pendingSyncs);
         await m.createTable(syncCursors);
       }
-      // 17 -> 18: the restaurant↔group junction. Additive: every existing
-      // restaurant already carries its home group in `groupId`, which the
-      // repository uses to seed the junction on its next write. No backfill
-      // here — a table rebuild would be needed to add the composite primary
-      // key, so the rows are created on demand instead.
+      // 17 -> 18: the restaurant↔group junction. Creating it is followed by a
+      // backfill from the old single `groupId`: every shared restaurant becomes
+      // a member of the group it was already in, so scope queries (which now
+      // read the junction) keep showing it under that group.
       if (from < 18) {
         await m.createTable(restaurantGroups);
+        await customStatement(
+          'INSERT INTO restaurant_groups '
+          '(restaurantId, groupId, createdBy, updatedAt, deletedAt) '
+          'SELECT id, groupId, createdBy, updatedAt, NULL FROM restaurants '
+          'WHERE groupId IS NOT NULL AND createdBy IS NOT NULL',
+        );
       }
     },
     // SQLite requires this per connection, and every cascade delete the schema

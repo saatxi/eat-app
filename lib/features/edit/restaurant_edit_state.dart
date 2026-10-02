@@ -21,6 +21,7 @@ class RestaurantEditState {
     this.existingPhotoPath,
     this.pickedPhotoPath,
     this.photoRemoved = false,
+    this.selectedGroupIds = const <String>{},
     this.nameError = false,
     this.cuisineError = false,
     this.websiteError = false,
@@ -59,6 +60,9 @@ class RestaurantEditState {
   /// meaningful when [existingPhotoPath] is set and nothing was picked instead.
   final bool photoRemoved;
 
+  /// The groups the restaurant is shared into. Empty means personal.
+  final Set<String> selectedGroupIds;
+
   final bool nameError;
   final bool cuisineError;
   final bool websiteError;
@@ -93,6 +97,7 @@ class RestaurantEditState {
     String? pickedPhotoPath,
     bool clearPickedPhoto = false,
     bool? photoRemoved,
+    Set<String>? selectedGroupIds,
     bool? nameError,
     bool? cuisineError,
     bool? websiteError,
@@ -113,6 +118,7 @@ class RestaurantEditState {
         ? null
         : (pickedPhotoPath ?? this.pickedPhotoPath),
     photoRemoved: photoRemoved ?? this.photoRemoved,
+    selectedGroupIds: selectedGroupIds ?? this.selectedGroupIds,
     nameError: nameError ?? this.nameError,
     cuisineError: cuisineError ?? this.cuisineError,
     websiteError: websiteError ?? this.websiteError,

@@ -8,6 +8,7 @@ import '../../core/theme/tokens/app_radius.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/price_range_picker.dart';
+import '../../data/groups/group_models.dart';
 import '../../data/models/cuisine.dart';
 import '../../data/sync/shared_writes.dart';
 import 'restaurant_edit_controller.dart';
@@ -55,6 +56,8 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
         preferences: scope.preferences,
         identity: scope.identity,
       ),
+      groups: scope.groupsController?.state.groups ?? const <Group>[],
+      initialGroupId: scope.preferences.current.selectedGroupId,
     )..addListener(_prefillOnce);
   }
 
@@ -175,6 +178,25 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                       onAdd: controller.pickPhoto,
                       onRemove: controller.removePhoto,
                     ),
+                    if (controller.groups.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: AppSpacing.lg),
+                      _SectionLabel(l10n.editSectionGroups),
+                      const SizedBox(height: AppSpacing.sm),
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
+                        children: <Widget>[
+                          for (final Group group in controller.groups)
+                            FilterChip(
+                              label: Text(group.name),
+                              selected:
+                                  state.selectedGroupIds.contains(group.id),
+                              onSelected: (bool _) =>
+                                  controller.onToggleGroup(group.id),
+                            ),
+                        ],
+                      ),
+                    ],
                     _textField(
                       controller: _streetAddress,
                       label: l10n.editFieldAddress,

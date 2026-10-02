@@ -7,6 +7,7 @@ import '../../core/utils/link_validation.dart';
 import '../../core/utils/search_normalizer.dart';
 import '../../core/widgets/presentation_bounds.dart';
 import '../../data/db/app_database.dart';
+import '../../data/groups/group_models.dart';
 import '../../data/photo/photo_picker.dart';
 import '../../data/repositories/restaurant_repository.dart';
 import '../../data/sync/shared_write.dart';
@@ -29,8 +30,13 @@ class RestaurantEditController extends ChangeNotifier {
     this.restaurantId,
     this.photoPicker,
     this.sharedWrites,
+    this.groups = const <Group>[],
+    this.initialGroupId,
   }) {
-    _state = RestaurantEditState(isLoading: restaurantId != null);
+    _state = RestaurantEditState(
+      isLoading: restaurantId != null,
+      selectedGroupIds: <String>{?initialGroupId},
+    );
     _subscriptions.addAll(<StreamSubscription<Object>>[
       repository.observeCities().listen((List<String> value) {
         _citySuggestions = value;
@@ -62,6 +68,14 @@ class RestaurantEditController extends ChangeNotifier {
   /// Resolves the group a save should carry, or null in Personal mode. Without
   /// it (every unit test, and every personal install) writes stay private.
   final SharedWrites? sharedWrites;
+
+  /// The groups the user may share this restaurant into. Empty whenever groups
+  /// are off — the form then shows no selector and the write stays private.
+  final List<Group> groups;
+
+  /// The group the list is scoped to, used to pre-select a group for a new
+  /// restaurant. Null in Personal mode.
+  final String? initialGroupId;
 
   bool get isEditingExisting => restaurantId != null;
 
@@ -112,6 +126,29 @@ class RestaurantEditController extends ChangeNotifier {
 
   void onInstagramChange(String value) =>
       _set(_state.copyWith(instagram: value, instagramError: false));
+
+  /// Adds or removes [groupId] from the restaurant's memberships.
+  void onToggleGroup(String groupId) {
+    final Set<String> next = <String>{..._state.selectedGroupIds};
+    if (!next.add(groupId)) {
+      next.remove(groupId);
+    }
+    _set(_state.copyWith(selectedGroupIds: next));
+  }
+
+  /// The group that acts as the restaurant's home — the one whose Storage folder
+  /// its children use. Prefers the group it already had, else the first choice.
+  String? _homeGroup() {
+    final Set<String> selected = _state.selectedGroupIds;
+    if (selected.isEmpty) {
+      return null;
+    }
+    final String? existing = _loadedShared?.groupId;
+    if (existing != null && selected.contains(existing)) {
+      return existing;
+    }
+    return selected.first;
+  }
 
   /// Opens the picker and stages whatever comes back. Nothing is written until
   /// [save]: a back-out leaves the form, and the database, untouched.
@@ -168,12 +205,25 @@ class RestaurantEditController extends ChangeNotifier {
     final String? region = _nonBlank(state.region);
     final String? country = _nonBlank(state.country);
 
-    // A new row takes the selected group and the current user; an edit keeps the
-    // row's own sharing and author untouched, so editing a shared restaurant
-    // never quietly makes it private (or reassigns who created it).
-    final SharedWrite? shared = restaurantId == null
-        ? await sharedWrites?.forNewRow()
-        : _loadedShared;
+    // With no selector — groups off, or a bare test — the write carries the
+    // selected group and the row's own author, exactly as before. With the
+    // selector in play the home group and author come from the chosen groups:
+    // the row's own creator is kept (an edit never reassigns it) and the home
+    // group is the row's previous one when still chosen, else the first.
+    final String? author;
+    final SharedWrite? shared;
+    if (groups.isEmpty) {
+      shared = restaurantId == null
+          ? await sharedWrites?.forNewRow()
+          : _loadedShared;
+      author = shared?.createdBy;
+    } else {
+      author = _loadedShared?.createdBy ?? await sharedWrites?.currentUserId();
+      final String? home = _homeGroup();
+      shared = (home != null && author != null)
+          ? SharedWrite(groupId: home, createdBy: author)
+          : null;
+    }
 
     final String id = restaurantId ?? _uuid.v4();
     final Restaurant restaurant = Restaurant(
@@ -208,6 +258,17 @@ class RestaurantEditController extends ChangeNotifier {
       await repository.insert(restaurant);
     } else {
       await repository.update(restaurant);
+    }
+
+    // The junction is the authoritative membership set: write the chosen groups
+    // (and tombstone any dropped) after the row itself. Only when the selector
+    // was in play — otherwise the insert above already recorded the home group.
+    if (groups.isNotEmpty && author != null) {
+      await repository.setRestaurantGroups(
+        restaurantId: id,
+        groupIds: _state.selectedGroupIds,
+        createdBy: author,
+      );
     }
 
     // The photo is written after the row, so a new restaurant has an id to hang
@@ -248,6 +309,7 @@ class RestaurantEditController extends ChangeNotifier {
           )
         : null;
     final String? photoPath = await repository.getRestaurantPhotoPath(id);
+    final List<String> memberships = await repository.groupIdsForRestaurant(id);
     if (_disposed) {
       return;
     }
@@ -264,6 +326,7 @@ class RestaurantEditController extends ChangeNotifier {
         website: restaurant.website ?? '',
         instagram: restaurant.instagram ?? '',
         existingPhotoPath: photoPath,
+        selectedGroupIds: memberships.toSet(),
       ),
     );
   }

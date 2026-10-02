@@ -180,6 +180,7 @@
   "themeModeDark": "Dark",
   "settingsSectionData": "Data",
   "settingsSectionAccount": "Account",
+  "editSectionGroups": "Shared with",
   "accountSignInPrompt": "Sign in to create or join shared groups",
   "accountEmailLabel": "Email",
   "accountEmailInvalid": "Enter a valid email address",

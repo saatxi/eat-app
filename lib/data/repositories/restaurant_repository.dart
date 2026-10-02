@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show BooleanExpressionOperators, Value;
 import 'package:uuid/uuid.dart';
 
 import '../../core/utils/search_normalizer.dart';
@@ -242,6 +242,101 @@ class RestaurantRepository {
     });
     await _deleteFiles(photos);
     await _afterWrite();
+  }
+
+  // --- Group membership -----------------------------------------------------
+
+  /// The groups [restaurantId] currently belongs to (live memberships only).
+  Future<List<String>> groupIdsForRestaurant(String restaurantId) async {
+    final List<RestaurantGroup> rows = await (_database
+            .select(_database.restaurantGroups)
+          ..where(
+            (t) => t.restaurantId.equals(restaurantId) & t.deletedAt.isNull(),
+          ))
+        .get();
+    return <String>[for (final RestaurantGroup rg in rows) rg.groupId];
+  }
+
+  /// Replaces [restaurantId]'s group memberships with [groupIds], attributed to
+  /// [createdBy]. A group that is added writes or revives a membership; one that
+  /// is dropped is tombstoned (and queued). Empty [groupIds] leaves the
+  /// restaurant private: it keeps no membership and is not synced anywhere.
+  Future<void> setRestaurantGroups({
+    required String restaurantId,
+    required Set<String> groupIds,
+    required String createdBy,
+  }) async {
+    final int now = DateTime.now().millisecondsSinceEpoch;
+    final List<RestaurantGroup> existing = await (_database
+            .select(_database.restaurantGroups)
+          ..where((t) => t.restaurantId.equals(restaurantId)))
+        .get();
+    final Map<String, RestaurantGroup> byGroup = <String, RestaurantGroup>{
+      for (final RestaurantGroup rg in existing) rg.groupId: rg,
+    };
+
+    await _database.transaction(() async {
+      // Drop the memberships the user removed, tombstoned so it propagates.
+      for (final RestaurantGroup rg in existing) {
+        if (groupIds.contains(rg.groupId) || rg.deletedAt != null) {
+          continue;
+        }
+        await (_database.update(_database.restaurantGroups)
+              ..where(
+                (t) =>
+                    t.restaurantId.equals(restaurantId) &
+                    t.groupId.equals(rg.groupId),
+              ))
+            .write(
+              RestaurantGroupsCompanion(
+                deletedAt: Value<int>(now),
+                updatedAt: Value<int>(now),
+              ),
+            );
+        await _pending.enqueue(
+          SyncTable.restaurantGroups,
+          restaurantId,
+          rg.groupId,
+        );
+      }
+
+      // Add (or revive) the memberships the user kept.
+      for (final String groupId in groupIds) {
+        final RestaurantGroup? prior = byGroup[groupId];
+        await _database.into(_database.restaurantGroups).insertOnConflictUpdate(
+          RestaurantGroupsCompanion.insert(
+            restaurantId: restaurantId,
+            groupId: groupId,
+            createdBy: prior?.createdBy ?? createdBy,
+            updatedAt: Value<int>(now),
+            deletedAt: const Value<int?>(null),
+          ),
+        );
+        await _pending.enqueue(
+          SyncTable.restaurantGroups,
+          restaurantId,
+          groupId,
+        );
+      }
+    });
+
+    await _applyHomeGroup(restaurantId);
+    await _afterWrite();
+  }
+
+  /// Points the restaurant's home group (its `groupId` column) at one of its
+  /// live memberships, or null when it has none, so its visits and photos keep a
+  /// Storage home without the row itself being group-scoped.
+  Future<void> _applyHomeGroup(String restaurantId) async {
+    final List<String> groups = await groupIdsForRestaurant(restaurantId);
+    final String? home = groups.isEmpty ? null : groups.first;
+    final Restaurant? row = await _restaurants.getById(restaurantId);
+    if (row == null || row.groupId == home) {
+      return;
+    }
+    await _restaurants.updateRestaurant(
+      row.copyWith(groupId: Value<String?>(home)),
+    );
   }
 
   // --- Sharing --------------------------------------------------------------

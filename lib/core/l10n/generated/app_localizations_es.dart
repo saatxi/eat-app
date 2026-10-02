@@ -330,6 +330,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsSectionAccount => 'Cuenta';
 
   @override
+  String get editSectionGroups => 'Compartido con';
+
+  @override
   String get accountSignInPrompt =>
       'Inicia sesión para crear o unirte a grupos compartidos';
 

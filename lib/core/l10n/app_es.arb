@@ -110,6 +110,7 @@
   "themeModeDark": "Oscuro",
   "settingsSectionData": "Datos",
   "settingsSectionAccount": "Cuenta",
+  "editSectionGroups": "Compartido con",
   "accountSignInPrompt": "Inicia sesión para crear o unirte a grupos compartidos",
   "accountEmailLabel": "Correo electrónico",
   "accountEmailInvalid": "Introduce una dirección de correo válida",

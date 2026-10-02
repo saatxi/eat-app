@@ -12,10 +12,28 @@ part 'restaurant_dao.g.dart';
 /// statement; drift's `customSelect` binds `variables` to the `?` placeholders
 /// in the order they appear, so each query's placeholders are listed in its own
 /// documentation.
-@DriftAccessor(tables: <Type>[Restaurants, Visits])
+@DriftAccessor(tables: <Type>[Restaurants, Visits, RestaurantGroups])
 class RestaurantDao extends DatabaseAccessor<AppDatabase>
     with _$RestaurantDaoMixin {
   RestaurantDao(super.db);
+
+  /// The scope predicate shared by every collection query: a group id shows the
+  /// restaurants with a live membership in it, null the ones with no membership
+  /// at all (personal). Written against the `restaurants` alias so callers can
+  /// interpolate it. Three placeholders: the group id, three times.
+  static const String _groupScope =
+      '((? IS NULL AND NOT EXISTS (SELECT 1 FROM restaurant_groups rg '
+      'WHERE rg.restaurantId = %ALIAS%.id AND rg.deletedAt IS NULL)) '
+      'OR (? IS NOT NULL AND EXISTS (SELECT 1 FROM restaurant_groups rg '
+      'WHERE rg.restaurantId = %ALIAS%.id AND rg.groupId = ? '
+      'AND rg.deletedAt IS NULL)))';
+
+  static List<Variable<Object>> _groupVars(String? groupId) =>
+      <Variable<Object>>[
+        Variable<String>(groupId),
+        Variable<String>(groupId),
+        Variable<String>(groupId),
+      ];
 
   /// The list screen's single query.
   ///
@@ -72,7 +90,7 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
       'AND (? IS NULL OR region = ?) '
       'AND (? IS NULL OR country = ?) '
       'AND (? IS NULL OR priceRange = ?) '
-      'AND r.groupId IS ? '
+      'AND ${_groupScope.replaceAll('%ALIAS%', 'r')} '
       'ORDER BY CASE WHEN ? THEN '
       '(SELECT MAX(v2.rating) FROM visits v2 WHERE v2.restaurantId = r.id AND v2.deletedAt IS NULL) '
       'ELSE 0 END DESC, name COLLATE NOCASE ASC',
@@ -94,10 +112,10 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
         Variable<String>(country),
         Variable<int>(priceRange),
         Variable<int>(priceRange),
-        Variable<String>(groupId),
+        ..._groupVars(groupId),
         Variable<bool>(sortByRating),
       ],
-      readsFrom: <ResultSetImplementation>{restaurants, visits},
+      readsFrom: <ResultSetImplementation>{restaurants, visits, restaurantGroups},
     ).watch().map(_mapRestaurants);
   }
 
@@ -105,9 +123,10 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
   /// only those instead of all 24 entries of the vocabulary.
   Stream<List<String>> observeCuisineTypes({String? groupId}) => customSelect(
     'SELECT DISTINCT cuisineType AS cuisineType FROM restaurants '
-    'WHERE deletedAt IS NULL AND groupId IS ?',
-    variables: <Variable<Object>>[Variable<String>(groupId)],
-    readsFrom: <ResultSetImplementation>{restaurants},
+    'WHERE deletedAt IS NULL '
+    'AND ${_groupScope.replaceAll('%ALIAS%', 'restaurants')}',
+    variables: _groupVars(groupId),
+    readsFrom: <ResultSetImplementation>{restaurants, restaurantGroups},
   ).watch().map(
     (List<QueryRow> rows) => <String>[
       for (final QueryRow row in rows) row.read<String>('cuisineType'),
@@ -185,18 +204,20 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
 
   Stream<int> observeTotalCount({String? groupId}) => customSelect(
     'SELECT COUNT(*) AS count FROM restaurants '
-    'WHERE deletedAt IS NULL AND groupId IS ?',
-    variables: <Variable<Object>>[Variable<String>(groupId)],
-    readsFrom: <ResultSetImplementation>{restaurants},
+    'WHERE deletedAt IS NULL '
+    'AND ${_groupScope.replaceAll('%ALIAS%', 'restaurants')}',
+    variables: _groupVars(groupId),
+    readsFrom: <ResultSetImplementation>{restaurants, restaurantGroups},
   ).watchSingle().map((QueryRow row) => row.read<int>('count'));
 
   Stream<List<CuisineCount>> observeCuisineCounts({String? groupId}) =>
       customSelect(
         'SELECT cuisineType AS cuisineType, COUNT(*) AS count FROM restaurants '
-        'WHERE deletedAt IS NULL AND groupId IS ? '
+        'WHERE deletedAt IS NULL '
+        'AND ${_groupScope.replaceAll('%ALIAS%', 'restaurants')} '
         'GROUP BY cuisineType ORDER BY count DESC',
-        variables: <Variable<Object>>[Variable<String>(groupId)],
-        readsFrom: <ResultSetImplementation>{restaurants},
+        variables: _groupVars(groupId),
+        readsFrom: <ResultSetImplementation>{restaurants, restaurantGroups},
   ).watch().map(
     (List<QueryRow> rows) => <CuisineCount>[
       for (final QueryRow row in rows)
@@ -210,9 +231,11 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
   Stream<List<PriceRangeCount>> observePriceRangeCounts({String? groupId}) =>
       customSelect(
         'SELECT priceRange AS priceRange, COUNT(*) AS count FROM restaurants '
-        'WHERE deletedAt IS NULL AND groupId IS ? GROUP BY priceRange',
-        variables: <Variable<Object>>[Variable<String>(groupId)],
-        readsFrom: <ResultSetImplementation>{restaurants},
+        'WHERE deletedAt IS NULL '
+        'AND ${_groupScope.replaceAll('%ALIAS%', 'restaurants')} '
+        'GROUP BY priceRange',
+        variables: _groupVars(groupId),
+        readsFrom: <ResultSetImplementation>{restaurants, restaurantGroups},
   ).watch().map(
     (List<QueryRow> rows) => <PriceRangeCount>[
       for (final QueryRow row in rows)
@@ -228,13 +251,14 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
   /// it (re)renders instead of observing. Null when nothing is marked
   /// want-to-try.
   Future<Restaurant?> getRandomWantToTry({String? groupId}) => customSelect(
-    'SELECT * FROM restaurants WHERE deletedAt IS NULL AND groupId IS ? '
+    'SELECT * FROM restaurants WHERE deletedAt IS NULL '
+    'AND ${_groupScope.replaceAll('%ALIAS%', 'restaurants')} '
     'AND NOT EXISTS '
     '(SELECT 1 FROM visits WHERE restaurantId = restaurants.id '
     'AND visits.deletedAt IS NULL) '
     'ORDER BY RANDOM() LIMIT 1',
-    variables: <Variable<Object>>[Variable<String>(groupId)],
-    readsFrom: <ResultSetImplementation>{restaurants, visits},
+    variables: _groupVars(groupId),
+    readsFrom: <ResultSetImplementation>{restaurants, visits, restaurantGroups},
   ).getSingleOrNull().then(
     (QueryRow? row) => row == null ? null : restaurants.map(row.data),
   );
@@ -242,10 +266,11 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
   Stream<List<String>> _observeDistinct(String column, {String? groupId}) =>
       customSelect(
         'SELECT DISTINCT $column AS value FROM restaurants '
-        'WHERE $column IS NOT NULL AND deletedAt IS NULL AND groupId IS ? '
+        'WHERE $column IS NOT NULL AND deletedAt IS NULL '
+        'AND ${_groupScope.replaceAll('%ALIAS%', 'restaurants')} '
         'ORDER BY $column COLLATE NOCASE ASC',
-        variables: <Variable<Object>>[Variable<String>(groupId)],
-        readsFrom: <ResultSetImplementation>{restaurants},
+        variables: _groupVars(groupId),
+        readsFrom: <ResultSetImplementation>{restaurants, restaurantGroups},
       ).watch().map(
         (List<QueryRow> rows) => <String>[
           for (final QueryRow row in rows) row.read<String>('value'),
