@@ -77,7 +77,8 @@ ImportOutcome readRestaurantImport(String rawJson) {
   if (decoded is! Map<String, Object?>) {
     return const ImportError(ImportFailureReason.invalidFile);
   }
-  if (decoded['format'] != restaurantShareFormat) {
+  final Object? format = decoded['format'];
+  if (format is! String || !acceptedShareFormats.contains(format)) {
     return const ImportError(ImportFailureReason.invalidFile);
   }
   final Object? rawRestaurants = decoded['restaurants'];

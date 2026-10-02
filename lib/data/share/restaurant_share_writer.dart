@@ -106,6 +106,32 @@ Future<File> writeBackupFile({
   return file;
 }
 
+/// Writes a whole-group export to a timestamped `.eatapp` file under
+/// `directory/shared/` and returns it. Same cleanup and naming rules as
+/// [writeRestaurantShareFile]; the file carries the `eatapp.group.v1` tag and
+/// the group's name.
+Future<File> writeGroupShareFile({
+  required Directory directory,
+  required String groupName,
+  required List<RestaurantExport> restaurants,
+  DateTime? now,
+}) async {
+  final Directory dir = Directory(p.join(directory.path, shareSubdir));
+  await dir.create(recursive: true);
+  await for (final FileSystemEntity entity in dir.list()) {
+    if (entity is File) {
+      await entity.delete();
+    }
+  }
+  final File file = File(
+    p.join(dir.path, shareFileName(groupName: groupName, now: now)),
+  );
+  await file.writeAsString(
+    encodeGroupShareFile(groupName: groupName, restaurants: restaurants),
+  );
+  return file;
+}
+
 String _trimDashes(String value) {
   int start = 0;
   int end = value.length;

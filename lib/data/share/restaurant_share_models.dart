@@ -9,7 +9,21 @@ import '../db/app_database.dart';
 /// It is a cheap gate against a file that happens to be valid JSON but isn't
 /// ours — the app registers to open plain `.eatapp`/`.json` files, so a
 /// stranger's JSON can reach the import path.
+///
+/// [restaurantShareFormat] is the older v2 tag, still accepted on read;
+/// [restaurantShareFormatV3] is what the app writes now, adding the optional
+/// group-metadata field. [groupShareFormat] is a whole-group export, whose
+/// restaur[ant] list is the same shape, so the reader treats all three alike.
 const String restaurantShareFormat = 'eatapp.restaurants.v2';
+const String restaurantShareFormatV3 = 'eatapp.restaurants.v3';
+const String groupShareFormat = 'eatapp.group.v1';
+
+/// Every format tag the importer accepts.
+const Set<String> acceptedShareFormats = <String>{
+  restaurantShareFormat,
+  restaurantShareFormatV3,
+  groupShareFormat,
+};
 
 /// On-the-wire shape of one visit.
 ///
@@ -81,6 +95,7 @@ class RestaurantExport {
     this.country,
     this.isFavorite = false,
     this.visits = const <VisitExport>[],
+    this.groupNames = const <String>[],
   });
 
   final String name;
@@ -102,6 +117,28 @@ class RestaurantExport {
 
   final List<VisitExport> visits;
 
+  /// The names of the groups this restaurant was shared into when it was
+  /// exported. Informational only: a file cannot grant membership, so the
+  /// importer ignores it — it is there so a human can see where a row came from.
+  final List<String> groupNames;
+
+  /// The same export, tagged with [groups] — used to fold a group's name into a
+  /// whole-group export without mutating the row itself.
+  RestaurantExport withGroupNames(List<String> groups) => RestaurantExport(
+    name: name,
+    cuisineType: cuisineType,
+    priceRange: priceRange,
+    streetAddress: streetAddress,
+    website: website,
+    instagram: instagram,
+    city: city,
+    region: region,
+    country: country,
+    isFavorite: isFavorite,
+    visits: visits,
+    groupNames: groups,
+  );
+
   Map<String, Object?> toJson() => <String, Object?>{
     'name': name,
     'cuisineType': cuisineType,
@@ -113,6 +150,7 @@ class RestaurantExport {
     'region': region,
     'country': country,
     'isFavorite': isFavorite,
+    'groups': groupNames,
     'visits': <Map<String, Object?>>[for (final VisitExport visit in visits) visit.toJson()],
   };
 
@@ -136,12 +174,19 @@ class RestaurantExport {
       for (final Object? visit in json['visits'] as List<Object?>? ?? const <Object?>[])
         if (visit is Map<String, Object?>) VisitExport.fromJson(visit),
     ],
+    groupNames: <String>[
+      for (final Object? group in json['groups'] as List<Object?>? ?? const <Object?>[])
+        if (group is String) group,
+    ],
   );
 }
 
 /// The top-level shape of a shared/exported file.
 class RestaurantShareFile {
-  const RestaurantShareFile({required this.restaurants, this.format = restaurantShareFormat});
+  const RestaurantShareFile({
+    required this.restaurants,
+    this.format = restaurantShareFormatV3,
+  });
 
   final String format;
   final List<RestaurantExport> restaurants;
@@ -157,6 +202,38 @@ class RestaurantShareFile {
 /// Encodes [restaurants] as the JSON text of a share file.
 String encodeRestaurantShareFile(List<RestaurantExport> restaurants) =>
     jsonEncode(RestaurantShareFile(restaurants: restaurants).toJson());
+
+/// The top-level shape of a whole-group export: the group's name plus every
+/// restaurant it contained, each carrying the group name so the file is
+/// self-describing. Ownership and roles do not travel — a file transfers
+/// content, never membership.
+class GroupShareFile {
+  const GroupShareFile({
+    required this.groupName,
+    required this.restaurants,
+    this.format = groupShareFormat,
+  });
+
+  final String groupName;
+  final List<RestaurantExport> restaurants;
+  final String format;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'format': format,
+    'groupName': groupName,
+    'restaurants': <Map<String, Object?>>[
+      for (final RestaurantExport restaurant in restaurants) restaurant.toJson(),
+    ],
+  };
+}
+
+/// Encodes a whole-group export as JSON text.
+String encodeGroupShareFile({
+  required String groupName,
+  required List<RestaurantExport> restaurants,
+}) => jsonEncode(
+  GroupShareFile(groupName: groupName, restaurants: restaurants).toJson(),
+);
 
 /// The exportable shape of one [Restaurant], with the visits that live in their
 /// own table passed in — they are not derivable from the entity alone.

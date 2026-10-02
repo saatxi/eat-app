@@ -76,13 +76,49 @@ void main() {
               ]))
               as Map<String, Object?>;
 
-      expect(json['format'], restaurantShareFormat);
+      expect(json['format'], restaurantShareFormatV3);
       final Map<String, Object?> row =
           (json['restaurants']! as List<Object?>).single! as Map<String, Object?>;
       expect(row.containsKey('streetAddress'), isTrue);
       expect(row['streetAddress'], isNull);
       expect(row['isFavorite'], isFalse);
+      expect(row['groups'], isEmpty);
       expect(row['visits'], isEmpty);
+    });
+
+    test('reads a v3 file, ignoring its group metadata', () {
+      final String encoded = encodeRestaurantShareFile(<RestaurantExport>[
+        exportRestaurant(restaurant(id: 'a', name: 'Tagged'))
+            .withGroupNames(<String>['Amics']),
+      ]);
+      final Map<String, Object?> file =
+          jsonDecode(encoded) as Map<String, Object?>;
+      expect(file['format'], restaurantShareFormatV3);
+
+      final ImportOutcome outcome = readRestaurantImport(encoded);
+      expect(
+        (outcome as ImportSuccess).restaurants.single.restaurant.name,
+        'Tagged',
+      );
+    });
+
+    test('reads a whole-group file through the same reader', () {
+      final String encoded = encodeGroupShareFile(
+        groupName: 'Amics',
+        restaurants: <RestaurantExport>[
+          exportRestaurant(restaurant(id: 'a', name: 'Group member')),
+        ],
+      );
+      expect(
+        (jsonDecode(encoded) as Map<String, Object?>)['format'],
+        groupShareFormat,
+      );
+
+      final ImportOutcome outcome = readRestaurantImport(encoded);
+      expect(
+        (outcome as ImportSuccess).restaurants.single.restaurant.name,
+        'Group member',
+      );
     });
 
     test('carries the favourite flag', () {

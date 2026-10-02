@@ -90,12 +90,24 @@ Future<ShareResult> shareRestaurants({
   Rect? sharePositionOrigin,
 }) async {
   final Directory directory = await getTemporaryDirectory();
-  final File file = await writeRestaurantShareFile(
-    directory: directory,
-    restaurants: restaurants,
-    singleName: singleName,
-    groupName: groupName,
-  );
+  // A group-scoped export is a whole-group file (its own format tag and the
+  // group's name), with every row tagged with that name; anything else is the
+  // ordinary restaurants file.
+  final File file = groupName == null
+      ? await writeRestaurantShareFile(
+          directory: directory,
+          restaurants: restaurants,
+          singleName: singleName,
+          groupName: groupName,
+        )
+      : await writeGroupShareFile(
+          directory: directory,
+          groupName: groupName,
+          restaurants: <RestaurantExport>[
+            for (final RestaurantExport restaurant in restaurants)
+              restaurant.withGroupNames(<String>[groupName]),
+          ],
+        );
   return SharePlus.instance.share(
     ShareParams(
       files: <XFile>[XFile(file.path, mimeType: restaurantShareMimeType)],
