@@ -170,7 +170,8 @@ void main() {
     await pump(tester);
 
     expect(find.text("You're signed in"), findsOneWidget);
-    expect(find.text('Copy account code'), findsOneWidget);
+    expect(find.byTooltip('Copy account code'), findsOneWidget);
+    expect(find.byTooltip('Sign out'), findsOneWidget);
 
     await disposeApp(tester);
   });

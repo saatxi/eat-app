@@ -377,41 +377,28 @@ class _AccountSectionState extends State<_AccountSection> {
           margin: EdgeInsets.zero,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // One row: the signed-in line, then the two icon actions at its
+            // end. The title is Expanded so a long translation or a large text
+            // scale wraps rather than pushing the actions off the row.
+            child: Row(
               children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    const Icon(Icons.account_circle_outlined),
-                    const SizedBox(width: AppSpacing.sm),
-                    // Expanded so a long translation or a large text scale wraps
-                    // rather than overflowing the row.
-                    Expanded(
-                      child: Text(
-                        l10n.accountSignedIn,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                  ],
+                const Icon(Icons.account_circle_outlined),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.accountSignedIn,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                // OverflowBar, not Row: the two labels are long enough to
-                // overflow a narrow screen side by side, and it stacks them
-                // instead.
-                OverflowBar(
-                  alignment: MainAxisAlignment.spaceBetween,
-                  spacing: AppSpacing.sm,
-                  children: <Widget>[
-                    TextButton.icon(
-                      onPressed: _storedCode == null ? null : _copyCode,
-                      icon: const Icon(Icons.copy_outlined),
-                      label: Text(l10n.accountCopyCode),
-                    ),
-                    TextButton(
-                      onPressed: _busy ? null : _signOut,
-                      child: Text(l10n.accountSignOut),
-                    ),
-                  ],
+                IconButton(
+                  onPressed: _storedCode == null ? null : _copyCode,
+                  tooltip: l10n.accountCopyCode,
+                  icon: const Icon(Icons.copy_outlined),
+                ),
+                IconButton(
+                  onPressed: _busy ? null : _signOut,
+                  tooltip: l10n.accountSignOut,
+                  icon: const Icon(Icons.logout),
                 ),
               ],
             ),
