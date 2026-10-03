@@ -332,6 +332,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editSectionGroups => 'Shared with';
 
   @override
+  String get editGroupsNotShared => 'Not shared';
+
+  @override
   String get accountSignInPrompt => 'Create an account to use shared groups';
 
   @override

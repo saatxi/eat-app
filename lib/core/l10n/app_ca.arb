@@ -111,6 +111,7 @@
   "settingsSectionData": "Dades",
   "settingsSectionAccount": "Compte",
   "editSectionGroups": "Compartit amb",
+  "editGroupsNotShared": "Sense compartir",
   "accountSignInPrompt": "Crea un compte per fer servir grups compartits",
   "accountCreateAction": "Crea un compte nou",
   "accountCreateFailed": "No s'ha pogut crear el compte. Torna-ho a provar.",

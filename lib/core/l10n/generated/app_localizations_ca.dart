@@ -334,6 +334,9 @@ class AppLocalizationsCa extends AppLocalizations {
   String get editSectionGroups => 'Compartit amb';
 
   @override
+  String get editGroupsNotShared => 'Sense compartir';
+
+  @override
   String get accountSignInPrompt =>
       'Crea un compte per fer servir grups compartits';
 

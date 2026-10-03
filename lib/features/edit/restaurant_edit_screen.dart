@@ -181,20 +181,10 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                     if (controller.groups.isNotEmpty) ...<Widget>[
                       const SizedBox(height: AppSpacing.lg),
                       _SectionLabel(l10n.editSectionGroups),
-                      const SizedBox(height: AppSpacing.sm),
-                      Wrap(
-                        spacing: AppSpacing.sm,
-                        runSpacing: AppSpacing.sm,
-                        children: <Widget>[
-                          for (final Group group in controller.groups)
-                            FilterChip(
-                              label: Text(group.name),
-                              selected:
-                                  state.selectedGroupIds.contains(group.id),
-                              onSelected: (bool _) =>
-                                  controller.onToggleGroup(group.id),
-                            ),
-                        ],
+                      _GroupsField(
+                        groups: controller.groups,
+                        selectedIds: state.selectedGroupIds,
+                        onToggle: controller.onToggleGroup,
                       ),
                     ],
                     _textField(
@@ -340,6 +330,79 @@ class _CuisineField extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The "Shared with" field: one dropdown that opens a checkable list of the
+/// user's groups, so a restaurant can be shared into several at once. Styled
+/// like [_CuisineField] so the form reads as one column.
+class _GroupsField extends StatelessWidget {
+  const _GroupsField({
+    required this.groups,
+    required this.selectedIds,
+    required this.onToggle,
+  });
+
+  final List<Group> groups;
+  final Set<String> selectedIds;
+  final ValueChanged<String> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final List<String> selectedNames = <String>[
+      for (final Group group in groups)
+        if (selectedIds.contains(group.id)) group.name,
+    ];
+    final bool anySelected = selectedNames.isNotEmpty;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: MenuAnchor(
+        menuChildren: <Widget>[
+          for (final Group group in groups)
+            // CheckboxMenuButton keeps the menu open as items are ticked, so
+            // several groups can be chosen in one go.
+            CheckboxMenuButton(
+              value: selectedIds.contains(group.id),
+              onChanged: (bool? _) => onToggle(group.id),
+              child: Text(group.name),
+            ),
+        ],
+        builder:
+            (BuildContext context, MenuController controller, Widget? child) {
+              return InkWell(
+                onTap: () =>
+                    controller.isOpen ? controller.close() : controller.open(),
+                borderRadius: BorderRadius.circular(4),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          anySelected
+                              ? selectedNames.join(', ')
+                              : l10n.editGroupsNotShared,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: anySelected
+                              ? theme.textTheme.bodyLarge
+                              : theme.textTheme.bodyLarge?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                        ),
+                      ),
+                      const Icon(Icons.arrow_drop_down),
+                    ],
+                  ),
+                ),
+              );
+            },
       ),
     );
   }

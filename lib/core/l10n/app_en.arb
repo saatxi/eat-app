@@ -181,6 +181,7 @@
   "settingsSectionData": "Data",
   "settingsSectionAccount": "Account",
   "editSectionGroups": "Shared with",
+  "editGroupsNotShared": "Not shared",
   "accountSignInPrompt": "Create an account to use shared groups",
   "accountCreateAction": "Create a new account",
   "accountCreateFailed": "Couldn't create the account. Please try again.",

@@ -682,6 +682,12 @@ abstract class AppLocalizations {
   /// **'Shared with'**
   String get editSectionGroups;
 
+  /// No description provided for @editGroupsNotShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Not shared'**
+  String get editGroupsNotShared;
+
   /// No description provided for @accountSignInPrompt.
   ///
   /// In en, this message translates to:
