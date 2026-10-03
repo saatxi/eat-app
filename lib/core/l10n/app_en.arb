@@ -191,8 +191,6 @@
   "accountCreateFailed": "Couldn't create the account. Please try again.",
   "accountCopyCode": "Copy account code",
   "accountCodeCopied": "Account code copied",
-  "accountCodeReveal": "Show account code",
-  "accountCodeHide": "Hide account code",
   "accountSignedIn": "You're signed in",
   "accountSignOut": "Sign out",
   "settingsActionViewStatistics": "View statistics",

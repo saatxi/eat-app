@@ -4,13 +4,16 @@ import 'package:eatapp/core/theme/app_theme.dart';
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
+import 'package:eatapp/data/supabase/identity.dart';
 import 'package:eatapp/features/detail/restaurant_detail_screen.dart';
 import 'package:eatapp/features/list/journal_screen.dart';
+import 'package:eatapp/features/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../data/db/db_test_utils.dart';
 import '../../data/photo/photo_fakes.dart';
+import '../../data/supabase/fake_identity_gateway.dart';
 
 /// The app under a large system text size.
 ///
@@ -32,10 +35,15 @@ void main() {
 
   tearDown(() => db.close());
 
-  Widget host(Widget screen, {required double scale}) => AppScope(
+  Widget host(
+    Widget screen, {
+    required double scale,
+    IdentityGateway? identity,
+  }) => AppScope(
     restaurants: repository,
     preferences: preferences,
     photoPicker: FakePhotoPicker(),
+    identity: identity,
     child: MaterialApp(
       theme: AppTheme.of(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -136,4 +144,34 @@ void main() {
       await disposeApp(tester);
     });
   }
+
+  // A narrow phone at the normal text scale: the signed-in account card has two
+  // long action labels, and before it used an OverflowBar they overflowed the
+  // row instead of stacking. No text-scale loop here — the theme SegmentedButton
+  // above it is a separate, unrelated constraint at 2x.
+  testWidgets('the signed-in account card fits a narrow phone', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 720);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      host(
+        const SettingsScreen(),
+        scale: 1.0,
+        identity: FakeIdentityGateway(
+          existingUserId: 'u-1',
+          storedCode: 'ABCDEFGH2345WXYZ',
+        ),
+      ),
+    );
+    await pump(tester);
+
+    expect(find.text("You're signed in"), findsOneWidget);
+    expect(find.text('Copy account code'), findsOneWidget);
+
+    await disposeApp(tester);
+  });
 }

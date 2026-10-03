@@ -121,8 +121,6 @@
   "accountCreateFailed": "No s'ha pogut crear el compte. Torna-ho a provar.",
   "accountCopyCode": "Copia el codi de compte",
   "accountCodeCopied": "Codi de compte copiat",
-  "accountCodeReveal": "Mostra el codi de compte",
-  "accountCodeHide": "Amaga el codi de compte",
   "accountSignedIn": "Has iniciat sessió",
   "accountSignOut": "Tanca la sessió",
   "settingsActionViewStatistics": "Veure estadístiques",

@@ -742,18 +742,6 @@ abstract class AppLocalizations {
   /// **'Account code copied'**
   String get accountCodeCopied;
 
-  /// No description provided for @accountCodeReveal.
-  ///
-  /// In en, this message translates to:
-  /// **'Show account code'**
-  String get accountCodeReveal;
-
-  /// No description provided for @accountCodeHide.
-  ///
-  /// In en, this message translates to:
-  /// **'Hide account code'**
-  String get accountCodeHide;
-
   /// No description provided for @accountSignedIn.
   ///
   /// In en, this message translates to:

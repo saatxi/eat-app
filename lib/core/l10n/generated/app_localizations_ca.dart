@@ -367,12 +367,6 @@ class AppLocalizationsCa extends AppLocalizations {
   String get accountCodeCopied => 'Codi de compte copiat';
 
   @override
-  String get accountCodeReveal => 'Mostra el codi de compte';
-
-  @override
-  String get accountCodeHide => 'Amaga el codi de compte';
-
-  @override
   String get accountSignedIn => 'Has iniciat sessió';
 
   @override

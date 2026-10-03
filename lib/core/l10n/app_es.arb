@@ -121,8 +121,6 @@
   "accountCreateFailed": "No se pudo crear la cuenta. Inténtalo de nuevo.",
   "accountCopyCode": "Copiar el código de cuenta",
   "accountCodeCopied": "Código de cuenta copiado",
-  "accountCodeReveal": "Mostrar el código de cuenta",
-  "accountCodeHide": "Ocultar el código de cuenta",
   "accountSignedIn": "Has iniciado sesión",
   "accountSignOut": "Cerrar sesión",
   "settingsActionViewStatistics": "Ver estadísticas",

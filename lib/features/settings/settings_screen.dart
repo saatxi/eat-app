@@ -260,7 +260,6 @@ class _AccountSectionState extends State<_AccountSection> {
   final TextEditingController _code = TextEditingController();
   bool _busy = false;
   bool _signedIn = false;
-  bool _revealCode = false;
   String? _storedCode;
 
   @override
@@ -369,52 +368,55 @@ class _AccountSectionState extends State<_AccountSection> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     if (_signedIn) {
-      final String? code = _storedCode;
-      // The reveal/copy actions sit on their own row rather than in the tile's
-      // trailing slot: three trailing widgets starve the title of width and
-      // wrap it — and the code — into an unreadable column.
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          ListTile(
-            leading: const Icon(Icons.account_circle_outlined),
-            title: Text(l10n.accountSignedIn),
-            subtitle: code == null
-                ? null
-                : Text(
-                    _revealCode ? formatAccountCode(code) : maskAccountCode(code),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-            trailing: TextButton(
-              onPressed: _busy ? null : _signOut,
-              child: Text(l10n.accountSignOut),
+      // The code is deliberately never shown: it stays on the device and is
+      // copied to the clipboard only when the user asks. So the card is just the
+      // signed-in line and its two actions.
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    const Icon(Icons.account_circle_outlined),
+                    const SizedBox(width: AppSpacing.sm),
+                    // Expanded so a long translation or a large text scale wraps
+                    // rather than overflowing the row.
+                    Expanded(
+                      child: Text(
+                        l10n.accountSignedIn,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                // OverflowBar, not Row: the two labels are long enough to
+                // overflow a narrow screen side by side, and it stacks them
+                // instead.
+                OverflowBar(
+                  alignment: MainAxisAlignment.spaceBetween,
+                  spacing: AppSpacing.sm,
+                  children: <Widget>[
+                    TextButton.icon(
+                      onPressed: _storedCode == null ? null : _copyCode,
+                      icon: const Icon(Icons.copy_outlined),
+                      label: Text(l10n.accountCopyCode),
+                    ),
+                    TextButton(
+                      onPressed: _busy ? null : _signOut,
+                      child: Text(l10n.accountSignOut),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          if (code != null)
-            Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.lg),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-                  IconButton(
-                    onPressed: () => setState(() => _revealCode = !_revealCode),
-                    tooltip: _revealCode
-                        ? l10n.accountCodeHide
-                        : l10n.accountCodeReveal,
-                    icon: Icon(
-                      _revealCode ? Icons.visibility_off : Icons.visibility,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: _copyCode,
-                    tooltip: l10n.accountCopyCode,
-                    icon: const Icon(Icons.copy_outlined),
-                  ),
-                ],
-              ),
-            ),
-        ],
+        ),
       );
     }
     return Column(
