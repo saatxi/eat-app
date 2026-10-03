@@ -370,39 +370,51 @@ class _AccountSectionState extends State<_AccountSection> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     if (_signedIn) {
       final String? code = _storedCode;
-      return ListTile(
-        leading: const Icon(Icons.account_circle_outlined),
-        title: Text(l10n.accountSignedIn),
-        subtitle: code == null
-            ? null
-            : Text(
-                _revealCode ? formatAccountCode(code) : maskAccountCode(code),
-              ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            if (code != null) ...<Widget>[
-              IconButton(
-                onPressed: () => setState(() => _revealCode = !_revealCode),
-                tooltip: _revealCode
-                    ? l10n.accountCodeHide
-                    : l10n.accountCodeReveal,
-                icon: Icon(
-                  _revealCode ? Icons.visibility_off : Icons.visibility,
-                ),
-              ),
-              IconButton(
-                onPressed: _copyCode,
-                tooltip: l10n.accountCopyCode,
-                icon: const Icon(Icons.copy_outlined),
-              ),
-            ],
-            TextButton(
+      // The reveal/copy actions sit on their own row rather than in the tile's
+      // trailing slot: three trailing widgets starve the title of width and
+      // wrap it — and the code — into an unreadable column.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          ListTile(
+            leading: const Icon(Icons.account_circle_outlined),
+            title: Text(l10n.accountSignedIn),
+            subtitle: code == null
+                ? null
+                : Text(
+                    _revealCode ? formatAccountCode(code) : maskAccountCode(code),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+            trailing: TextButton(
               onPressed: _busy ? null : _signOut,
               child: Text(l10n.accountSignOut),
             ),
-          ],
-        ),
+          ),
+          if (code != null)
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.lg),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  IconButton(
+                    onPressed: () => setState(() => _revealCode = !_revealCode),
+                    tooltip: _revealCode
+                        ? l10n.accountCodeHide
+                        : l10n.accountCodeReveal,
+                    icon: Icon(
+                      _revealCode ? Icons.visibility_off : Icons.visibility,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _copyCode,
+                    tooltip: l10n.accountCopyCode,
+                    icon: const Icon(Icons.copy_outlined),
+                  ),
+                ],
+              ),
+            ),
+        ],
       );
     }
     return Column(
