@@ -374,8 +374,7 @@ class AppLocalizationsCa extends AppLocalizations {
   String get settingsActionExportData => 'Exporta les meves dades';
 
   @override
-  String get settingsActionBackupAccount =>
-      'Còpia de seguretat de les meves dades i compte';
+  String get settingsActionBackupAccount => 'Còpia de seguretat';
 
   @override
   String get accountBackupNeedsAccount =>

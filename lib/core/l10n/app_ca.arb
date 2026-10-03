@@ -123,7 +123,7 @@
   "accountDeleteFailed": "No s'ha pogut eliminar el perfil. Torna-ho a provar.",
   "settingsActionViewStatistics": "Veure estadístiques",
   "settingsActionExportData": "Exporta les meves dades",
-  "settingsActionBackupAccount": "Còpia de seguretat de les meves dades i compte",
+  "settingsActionBackupAccount": "Còpia de seguretat",
   "accountBackupNeedsAccount": "Crea un compte primer per poder copiar-lo.",
   "accountBackupAdoptTitle": "Aquest fitxer inclou un compte",
   "accountBackupAdoptBody": "La còpia incloïa el codi del compte. Inicia sessió amb ell per recuperar el compte i els seus grups.",

@@ -757,7 +757,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsActionBackupAccount.
   ///
   /// In en, this message translates to:
-  /// **'Back up my data and account'**
+  /// **'Back up data'**
   String get settingsActionBackupAccount;
 
   /// No description provided for @accountBackupNeedsAccount.

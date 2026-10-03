@@ -373,8 +373,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsActionExportData => 'Exportar mis datos';
 
   @override
-  String get settingsActionBackupAccount =>
-      'Copia de seguridad de mis datos y cuenta';
+  String get settingsActionBackupAccount => 'Copia de seguridad';
 
   @override
   String get accountBackupNeedsAccount =>

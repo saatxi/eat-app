@@ -142,15 +142,14 @@ Future<void> exportAndShareAccountBackup(
     return;
   }
 
-  final bool? includeVisits = await showExportOptionsDialog(context);
-  if (includeVisits == null || !context.mounted) {
-    return;
-  }
+  // No options dialog here: a backup's whole point is to carry everything, so
+  // it always includes the visits. The restaurant export keeps that dialog of
+  // its own.
   final Rect? origin = sharePositionOriginFor(context);
 
   try {
     final List<RestaurantExport> exports = await repository.exportRestaurants(
-      includeVisits: includeVisits,
+      includeVisits: true,
     );
     final Directory directory = await getTemporaryDirectory();
     final File file = await writeAccountBackupFile(

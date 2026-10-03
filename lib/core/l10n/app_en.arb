@@ -193,7 +193,7 @@
   "accountDeleteFailed": "Couldn't delete the profile. Please try again.",
   "settingsActionViewStatistics": "View statistics",
   "settingsActionExportData": "Export my data",
-  "settingsActionBackupAccount": "Back up my data and account",
+  "settingsActionBackupAccount": "Back up data",
   "accountBackupNeedsAccount": "Create an account first to back it up.",
   "accountBackupAdoptTitle": "This file carries an account",
   "accountBackupAdoptBody": "The backup included its account code. Sign in with it to restore the account and its groups.",

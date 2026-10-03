@@ -371,7 +371,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsActionExportData => 'Export my data';
 
   @override
-  String get settingsActionBackupAccount => 'Back up my data and account';
+  String get settingsActionBackupAccount => 'Back up data';
 
   @override
   String get accountBackupNeedsAccount =>

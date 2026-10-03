@@ -123,7 +123,7 @@
   "accountDeleteFailed": "No se pudo eliminar el perfil. Inténtalo de nuevo.",
   "settingsActionViewStatistics": "Ver estadísticas",
   "settingsActionExportData": "Exportar mis datos",
-  "settingsActionBackupAccount": "Copia de seguridad de mis datos y cuenta",
+  "settingsActionBackupAccount": "Copia de seguridad",
   "accountBackupNeedsAccount": "Crea una cuenta primero para poder copiarla.",
   "accountBackupAdoptTitle": "Este archivo incluye una cuenta",
   "accountBackupAdoptBody": "La copia incluía el código de la cuenta. Inicia sesión con él para recuperar la cuenta y sus grupos.",
