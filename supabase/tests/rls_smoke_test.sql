@@ -531,4 +531,41 @@ end;
 $$;
 reset role;
 
+-- ── 12. delete_account_data erases a user's footprint ────────────────────
+-- Runs as service_role (the Edge Function's role). Alice still owns the ten
+-- groups built up in the cap test, so erasing her account must take them with
+-- it, along with her membership rows and her profile.
+
+do $$
+declare cnt integer;
+begin
+  select count(*) into cnt from public.group_members
+    where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  if cnt = 0 then
+    raise exception 'FAIL: alice has no memberships to erase';
+  end if;
+end;
+$$;
+
+set local role service_role;
+select public.delete_account_data('aaaaaaaa-0000-0000-0000-000000000001');
+reset role;
+
+do $$
+declare cnt integer;
+begin
+  select count(*) into cnt from public.groups
+    where created_by = 'aaaaaaaa-0000-0000-0000-000000000001';
+  if cnt <> 0 then raise exception 'FAIL: owned groups survived deletion'; end if;
+
+  select count(*) into cnt from public.group_members
+    where user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  if cnt <> 0 then raise exception 'FAIL: memberships survived deletion'; end if;
+
+  select count(*) into cnt from public.profiles
+    where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  if cnt <> 0 then raise exception 'FAIL: profile survived deletion'; end if;
+end;
+$$;
+
 rollback;

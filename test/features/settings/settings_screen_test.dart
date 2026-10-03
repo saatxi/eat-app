@@ -7,12 +7,14 @@ import 'package:eatapp/core/theme/app_theme_mode.dart';
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
+import 'package:eatapp/data/supabase/identity.dart';
 import 'package:eatapp/features/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../data/db/db_test_utils.dart';
 import '../../data/photo/photo_fakes.dart';
+import '../../data/supabase/fake_identity_gateway.dart';
 
 void main() {
   late AppDatabase db;
@@ -29,11 +31,12 @@ void main() {
 
   /// Null [appVersion] is what a bare widget test has: no platform to ask, so
   /// the About section is absent.
-  Widget host({AppVersion? appVersion}) => AppScope(
+  Widget host({AppVersion? appVersion, IdentityGateway? identity}) => AppScope(
     restaurants: repository,
     preferences: preferences,
     photoPicker: FakePhotoPicker(),
     appVersion: appVersion,
+    identity: identity,
     child: MaterialApp(
       theme: AppTheme.of(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -163,5 +166,59 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('About'), findsNothing);
+  });
+
+  /// Scrolls the lazy list down to the signed-in account card's delete action.
+  Future<void> revealDeleteAction(WidgetTester tester) async {
+    final Finder deleteAction = find.byTooltip('Delete profile');
+    await tester.scrollUntilVisible(deleteAction, 200);
+    await tester.ensureVisible(deleteAction);
+    await tester.pumpAndSettle();
+    await tester.tap(deleteAction);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('deleting the profile asks first, and cancelling does nothing', (
+    WidgetTester tester,
+  ) async {
+    final FakeIdentityGateway identity = FakeIdentityGateway(
+      existingUserId: 'u-1',
+      storedCode: 'ABCDEFGH2345WXYZ',
+    );
+    await tester.pumpWidget(host(identity: identity));
+    await tester.pumpAndSettle();
+
+    await revealDeleteAction(tester);
+
+    // The irreversible warning stands between the tap and any change.
+    expect(find.text('Delete profile?'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(identity.deleteCount, 0);
+    expect(find.text("You're signed in"), findsOneWidget);
+  });
+
+  testWidgets('confirming erases the account and returns to signed out', (
+    WidgetTester tester,
+  ) async {
+    final FakeIdentityGateway identity = FakeIdentityGateway(
+      existingUserId: 'u-1',
+      storedCode: 'ABCDEFGH2345WXYZ',
+    );
+    await tester.pumpWidget(host(identity: identity));
+    await tester.pumpAndSettle();
+
+    await revealDeleteAction(tester);
+
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(identity.deleteCount, 1);
+    expect(
+      find.text('Sign in to create or join shared groups'),
+      findsOneWidget,
+    );
   });
 }

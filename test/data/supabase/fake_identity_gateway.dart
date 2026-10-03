@@ -30,12 +30,17 @@ class FakeIdentityGateway implements IdentityGateway {
   /// How many times a code was used to sign in.
   int signInCount = 0;
 
+  /// How many times the account was erased.
+  int deleteCount = 0;
+
   /// The user id a successful sign-in mints, when the device had none.
   String providerUserId = 'fake-user-1';
 
-  /// Throw to simulate a network/auth failure when creating or signing in.
+  /// Throw to simulate a network/auth failure when creating, signing in or
+  /// deleting.
   Object? createError;
   Object? signInError;
+  Object? deleteError;
 
   @override
   Future<Identity?> current() async {
@@ -79,5 +84,17 @@ class FakeIdentityGateway implements IdentityGateway {
   Future<void> signOut() async {
     existingUserId = null;
     // The account code survives sign-out, as the real gateway keeps it.
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    final Object? error = deleteError;
+    if (error != null) {
+      throw error;
+    }
+    deleteCount++;
+    // The whole account goes, so the code goes with it.
+    existingUserId = null;
+    storedCode = null;
   }
 }

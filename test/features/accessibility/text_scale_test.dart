@@ -171,7 +171,7 @@ void main() {
 
     expect(find.text("You're signed in"), findsOneWidget);
     expect(find.byTooltip('Copy account code'), findsOneWidget);
-    expect(find.byTooltip('Sign out'), findsOneWidget);
+    expect(find.byTooltip('Delete profile'), findsOneWidget);
 
     await disposeApp(tester);
   });

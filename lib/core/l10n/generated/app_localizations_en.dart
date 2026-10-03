@@ -367,7 +367,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountSignedIn => 'You\'re signed in';
 
   @override
-  String get accountSignOut => 'Sign out';
+  String get accountDeleteProfile => 'Delete profile';
+
+  @override
+  String get accountDeleteConfirmTitle => 'Delete profile?';
+
+  @override
+  String get accountDeleteConfirmBody =>
+      'This can\'t be undone. It removes your profile, every group you own, and your membership in other people\'s groups, then signs you out.';
+
+  @override
+  String get accountDeleteConfirmAction => 'Delete';
+
+  @override
+  String get accountDeleteFailed =>
+      'Couldn\'t delete the profile. Please try again.';
 
   @override
   String get settingsActionViewStatistics => 'View statistics';

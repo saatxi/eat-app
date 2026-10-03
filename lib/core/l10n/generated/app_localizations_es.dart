@@ -369,7 +369,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountSignedIn => 'Has iniciado sesión';
 
   @override
-  String get accountSignOut => 'Cerrar sesión';
+  String get accountDeleteProfile => 'Eliminar perfil';
+
+  @override
+  String get accountDeleteConfirmTitle => '¿Eliminar el perfil?';
+
+  @override
+  String get accountDeleteConfirmBody =>
+      'Esto no se puede deshacer. Elimina tu perfil, todos los grupos que posees y tu pertenencia a los grupos de otras personas, y luego cierra la sesión.';
+
+  @override
+  String get accountDeleteConfirmAction => 'Eliminar';
+
+  @override
+  String get accountDeleteFailed =>
+      'No se pudo eliminar el perfil. Inténtalo de nuevo.';
 
   @override
   String get settingsActionViewStatistics => 'Ver estadísticas';

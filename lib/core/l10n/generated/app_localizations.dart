@@ -748,11 +748,35 @@ abstract class AppLocalizations {
   /// **'You\'re signed in'**
   String get accountSignedIn;
 
-  /// No description provided for @accountSignOut.
+  /// No description provided for @accountDeleteProfile.
   ///
   /// In en, this message translates to:
-  /// **'Sign out'**
-  String get accountSignOut;
+  /// **'Delete profile'**
+  String get accountDeleteProfile;
+
+  /// No description provided for @accountDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete profile?'**
+  String get accountDeleteConfirmTitle;
+
+  /// No description provided for @accountDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This can\'t be undone. It removes your profile, every group you own, and your membership in other people\'s groups, then signs you out.'**
+  String get accountDeleteConfirmBody;
+
+  /// No description provided for @accountDeleteConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get accountDeleteConfirmAction;
+
+  /// No description provided for @accountDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete the profile. Please try again.'**
+  String get accountDeleteFailed;
 
   /// No description provided for @settingsActionViewStatistics.
   ///

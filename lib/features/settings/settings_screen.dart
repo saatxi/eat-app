@@ -331,17 +331,52 @@ class _AccountSectionState extends State<_AccountSection> {
     }
   }
 
-  Future<void> _signOut() async {
+  /// Confirms, then erases the account. Nothing happens unless the user
+  /// confirms: the dialog is the only guard on an irreversible action.
+  Future<void> _confirmDeleteProfile() async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: Text(l10n.accountDeleteConfirmTitle),
+        content: Text(l10n.accountDeleteConfirmBody),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              l10n.accountDeleteConfirmAction,
+              style: TextStyle(color: Theme.of(dialogContext).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed ?? false) {
+      await _deleteProfile();
+    }
+  }
+
+  /// Erases the account, then drops the groups from the UI and returns the
+  /// section to its signed-out state.
+  Future<void> _deleteProfile() async {
     final GroupsController? groups = AppScope.of(context).groupsController;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _busy = true);
     try {
-      await widget.identity.signOut();
+      await widget.identity.deleteAccount();
+      await groups?.load();
+    } on Object {
+      // The account is untouched if the erase failed, so stay signed in and
+      // let the user try again.
+      _showMessage(l10n.accountDeleteFailed);
     } finally {
       if (mounted) {
         setState(() => _busy = false);
       }
-      // Signing out must drop the groups from the UI too.
-      await groups?.load();
       await _refresh();
     }
   }
@@ -396,9 +431,12 @@ class _AccountSectionState extends State<_AccountSection> {
                   icon: const Icon(Icons.copy_outlined),
                 ),
                 IconButton(
-                  onPressed: _busy ? null : _signOut,
-                  tooltip: l10n.accountSignOut,
-                  icon: const Icon(Icons.logout),
+                  onPressed: _busy ? null : _confirmDeleteProfile,
+                  tooltip: l10n.accountDeleteProfile,
+                  icon: Icon(
+                    Icons.delete_forever,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                 ),
               ],
             ),

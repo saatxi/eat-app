@@ -52,6 +52,14 @@ abstract class IdentityGateway {
   /// code, stay — signing in again with the same code restores the same
   /// identity and group ownership.
   Future<void> signOut();
+
+  /// Erases the account: the profile, every group the user owns, and their
+  /// memberships in other people's groups, then signs out. Irreversible.
+  ///
+  /// The remote erase runs in the `delete-account` Edge Function — removing the
+  /// auth user needs the service role — while the local session and the
+  /// now-meaningless account code are cleared here once it succeeds.
+  Future<void> deleteAccount();
 }
 
 /// Preference keys the gateway owns. Exposed so tests can pre-seed or assert
@@ -239,6 +247,44 @@ class SupabaseIdentityGateway implements IdentityGateway {
     await _preferences.remove(identityPrefsKey);
     // The account code is deliberately kept: it is the identity, not the
     // session, and the user needs it back to sign in again.
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    await _invokeDeleteAccount();
+    // The account is gone: drop the session and the now-meaningless code, so
+    // the device returns to the never-signed-in state.
+    try {
+      await _client.auth.signOut();
+    } on Object {
+      // The server session went with the user; a failed round-trip must not
+      // leave the device holding one.
+    }
+    _restoredSession = null;
+    _pendingSessionJson = null;
+    await _preferences.remove(identityPrefsKey);
+    await _preferences.remove(accountCodePrefsKey);
+  }
+
+  /// Calls the `delete-account` Edge Function, which erases the server-side
+  /// account. Throws [IdentityException] when it does not succeed, so the UI can
+  /// keep the signed-in state and offer a retry.
+  Future<void> _invokeDeleteAccount() async {
+    try {
+      final FunctionResponse response = await _client.functions.invoke(
+        'delete-account',
+        body: const <String, dynamic>{},
+      );
+      if (response.status < 200 || response.status >= 300) {
+        throw IdentityException('delete-account failed (${response.status})');
+      }
+    } on IdentityException {
+      rethrow;
+    } on FunctionException catch (error) {
+      throw IdentityException('delete-account failed (${error.status})');
+    } on Object catch (error) {
+      throw IdentityException('delete-account request failed: $error');
+    }
   }
 
   Future<void> _store(Session session) async {
