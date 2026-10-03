@@ -51,6 +51,18 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final AppLocalizations l10n = AppLocalizations.of(context);
 
+    // A group needs an account: send a device that never made one to Settings
+    // rather than on to a name field that could not succeed.
+    if (await widget.controller.identity?.current() == null) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.groupsCreateNeedsAccount)),
+      );
+      return;
+    }
+    if (!context.mounted) {
+      return;
+    }
+
     // Pre-validate against the owner cap before anyone types a name: the
     // button is disabled too, but the backend is the authority, so double-check
     // here in case the state is stale.

@@ -335,36 +335,14 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get accountSignInPrompt =>
-      'Inicia sessió per crear o unir-te a grups compartits';
-
-  @override
-  String get accountCodeLabel => 'Codi de compte';
-
-  @override
-  String get accountCodeHint => 'XXXX-XXXX-XXXX-XXXX';
-
-  @override
-  String get accountSignInAction => 'Inicia sessió';
+      'Crea un compte per fer servir grups compartits';
 
   @override
   String get accountCreateAction => 'Crea un compte nou';
 
   @override
-  String get accountCodeInvalid => 'Això no sembla un codi de compte';
-
-  @override
-  String get accountSignInFailed =>
-      'No s\'ha pogut iniciar sessió. Revisa el codi i torna-ho a provar.';
-
-  @override
   String get accountCreateFailed =>
       'No s\'ha pogut crear el compte. Torna-ho a provar.';
-
-  @override
-  String get accountCopyCode => 'Copia el codi de compte';
-
-  @override
-  String get accountCodeCopied => 'Codi de compte copiat';
 
   @override
   String get accountSignedIn => 'Has iniciat sessió';
@@ -900,6 +878,10 @@ class AppLocalizationsCa extends AppLocalizations {
   @override
   String get groupsCreateErrorLimit =>
       'Has arribat al límit de grups que pots crear.';
+
+  @override
+  String get groupsCreateNeedsAccount =>
+      'Crea un compte a Configuració → Compte abans de fer un grup.';
 
   @override
   String get groupsMembersTitle => 'Membres';

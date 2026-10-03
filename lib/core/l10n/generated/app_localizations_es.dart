@@ -334,36 +334,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get accountSignInPrompt =>
-      'Inicia sesión para crear o unirte a grupos compartidos';
-
-  @override
-  String get accountCodeLabel => 'Código de cuenta';
-
-  @override
-  String get accountCodeHint => 'XXXX-XXXX-XXXX-XXXX';
-
-  @override
-  String get accountSignInAction => 'Iniciar sesión';
+      'Crea una cuenta para usar grupos compartidos';
 
   @override
   String get accountCreateAction => 'Crear una cuenta nueva';
 
   @override
-  String get accountCodeInvalid => 'Eso no parece un código de cuenta';
-
-  @override
-  String get accountSignInFailed =>
-      'No se pudo iniciar sesión. Revisa el código e inténtalo de nuevo.';
-
-  @override
   String get accountCreateFailed =>
       'No se pudo crear la cuenta. Inténtalo de nuevo.';
-
-  @override
-  String get accountCopyCode => 'Copiar el código de cuenta';
-
-  @override
-  String get accountCodeCopied => 'Código de cuenta copiado';
 
   @override
   String get accountSignedIn => 'Has iniciado sesión';
@@ -901,6 +879,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get groupsCreateErrorLimit =>
       'Has llegado al límite de grupos que puedes crear.';
+
+  @override
+  String get groupsCreateNeedsAccount =>
+      'Crea una cuenta en Ajustes → Cuenta antes de crear un grupo.';
 
   @override
   String get groupsMembersTitle => 'Miembros';

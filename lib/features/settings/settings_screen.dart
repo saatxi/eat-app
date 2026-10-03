@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../app/app_scope.dart';
 import '../../core/app_version.dart';
@@ -8,7 +7,6 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme_mode.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/repositories/user_preferences_repository.dart';
-import '../../data/supabase/account_code.dart';
 import '../../data/supabase/identity.dart';
 import '../groups/groups_controller.dart';
 import '../import_export/share_service.dart';
@@ -241,12 +239,13 @@ class _LanguageSelector extends StatelessWidget {
   }
 }
 
-/// The account section: create an account, sign in with an account code, or,
-/// once signed in, show the code and offer to sign out. Only ever built when
-/// the build carries an identity gateway.
+/// The account section: create an account, or, once signed in, the signed-in
+/// line with the Delete profile action. Only ever built when the build carries
+/// an identity gateway.
 ///
-/// There is no email: the account code is the whole identity. It is kept across
-/// sign-out so the user can sign back in, and so an account backup can carry it.
+/// There is no email and nothing to type or copy: the account is made with one
+/// tap and its code is kept on the device, never shown. Recovering it on another
+/// phone goes through an account backup, not a typed code.
 class _AccountSection extends StatefulWidget {
   const _AccountSection({required this.identity});
 
@@ -257,10 +256,8 @@ class _AccountSection extends StatefulWidget {
 }
 
 class _AccountSectionState extends State<_AccountSection> {
-  final TextEditingController _code = TextEditingController();
   bool _busy = false;
   bool _signedIn = false;
-  String? _storedCode;
 
   @override
   void initState() {
@@ -268,26 +265,12 @@ class _AccountSectionState extends State<_AccountSection> {
     _refresh();
   }
 
-  @override
-  void dispose() {
-    _code.dispose();
-    super.dispose();
-  }
-
   Future<void> _refresh() async {
     final Identity? me = await widget.identity.current();
-    final String? stored = widget.identity.accountCode();
     if (!mounted) {
       return;
     }
-    setState(() {
-      _signedIn = me != null;
-      _storedCode = stored;
-      // Pre-fill the code so signing back in after a sign-out is one tap.
-      if (!_signedIn && stored != null && _code.text.trim().isEmpty) {
-        _code.text = formatAccountCode(stored);
-      }
-    });
+    setState(() => _signedIn = me != null);
   }
 
   /// Mints a brand-new account, adopting it and signing in.
@@ -295,19 +278,6 @@ class _AccountSectionState extends State<_AccountSection> {
     () => widget.identity.createAccount(),
     AppLocalizations.of(context).accountCreateFailed,
   );
-
-  /// Signs in with the code the user typed, or the one kept from before.
-  Future<void> _signIn() async {
-    final String raw = _code.text.trim();
-    if (!isValidAccountCode(raw)) {
-      _showMessage(AppLocalizations.of(context).accountCodeInvalid);
-      return;
-    }
-    await _run(
-      () => widget.identity.signInWithCode(raw),
-      AppLocalizations.of(context).accountSignInFailed,
-    );
-  }
 
   /// Runs an identity action, reloading the groups on success (a fresh sign-in
   /// must bring the account's groups back) or showing [failureMessage] on
@@ -381,17 +351,6 @@ class _AccountSectionState extends State<_AccountSection> {
     }
   }
 
-  Future<void> _copyCode() async {
-    final String? code = _storedCode;
-    if (code == null) {
-      return;
-    }
-    // Read the label before the await, so no BuildContext crosses the gap.
-    final String message = AppLocalizations.of(context).accountCodeCopied;
-    await Clipboard.setData(ClipboardData(text: formatAccountCode(code)));
-    _showMessage(message);
-  }
-
   void _showMessage(String message) {
     if (!mounted) {
       return;
@@ -426,11 +385,6 @@ class _AccountSectionState extends State<_AccountSection> {
                   ),
                 ),
                 IconButton(
-                  onPressed: _storedCode == null ? null : _copyCode,
-                  tooltip: l10n.accountCopyCode,
-                  icon: const Icon(Icons.copy_outlined),
-                ),
-                IconButton(
                   onPressed: _busy ? null : _confirmDeleteProfile,
                   tooltip: l10n.accountDeleteProfile,
                   icon: Icon(
@@ -458,33 +412,7 @@ class _AccountSectionState extends State<_AccountSection> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: TextField(
-            controller: _code,
-            enabled: !_busy,
-            autocorrect: false,
-            textCapitalization: TextCapitalization.characters,
-            decoration: InputDecoration(
-              labelText: l10n.accountCodeLabel,
-              hintText: l10n.accountCodeHint,
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.sm,
-            AppSpacing.lg,
-            0,
-          ),
           child: FilledButton.icon(
-            onPressed: _busy ? null : _signIn,
-            icon: const Icon(Icons.login_rounded),
-            label: Text(l10n.accountSignInAction),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: TextButton.icon(
             onPressed: _busy ? null : _createAccount,
             icon: const Icon(Icons.add_rounded),
             label: Text(l10n.accountCreateAction),

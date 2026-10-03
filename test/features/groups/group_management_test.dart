@@ -6,6 +6,7 @@ import 'package:eatapp/data/groups/group_gateway.dart';
 import 'package:eatapp/data/groups/group_models.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
+import 'package:eatapp/data/supabase/identity.dart';
 import 'package:eatapp/features/groups/group_scope_button.dart';
 import 'package:eatapp/features/groups/groups_controller.dart';
 import 'package:eatapp/features/groups/groups_screen.dart';
@@ -92,11 +93,14 @@ void main() {
 
   /// A controller with a backend behind it, loaded once so the selector has its
   /// roster before the screen is pumped.
-  Future<GroupsController> ready({required _FakeGroupGateway gateway}) async {
+  Future<GroupsController> ready({
+    required _FakeGroupGateway gateway,
+    IdentityGateway? identity,
+  }) async {
     final GroupsController controller = GroupsController(
       preferences: preferences,
       gateway: gateway,
-      identity: FakeIdentityGateway(existingUserId: 'u1'),
+      identity: identity ?? FakeIdentityGateway(existingUserId: 'u1'),
     );
     addTearDown(controller.dispose);
     await controller.load();
@@ -339,5 +343,36 @@ void main() {
     // when the user belongs to none — while creating one stays available.
     expect(find.text('Change your name'), findsNothing);
     expect(find.byType(FilledButton), findsWidgets);
+  });
+
+  testWidgets('creating without an account points to Settings', (
+    WidgetTester tester,
+  ) async {
+    final _FakeGroupGateway gateway = _FakeGroupGateway();
+    // No session: a device that never created an account.
+    final GroupsController controller = await ready(
+      gateway: gateway,
+      identity: FakeIdentityGateway(),
+    );
+
+    await tester.pumpWidget(
+      host(child: const GroupsScreen(), groups: controller),
+    );
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    await tester.tap(find.byType(FilledButton).first);
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    // No name dialog opens; a message sends the user to Settings instead.
+    expect(find.byType(TextField), findsNothing);
+    expect(
+      find.text('Create an account in Settings → Account before making a group.'),
+      findsOneWidget,
+    );
+    expect(gateway.created, isEmpty);
   });
 }

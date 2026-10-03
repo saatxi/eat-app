@@ -332,36 +332,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editSectionGroups => 'Shared with';
 
   @override
-  String get accountSignInPrompt => 'Sign in to create or join shared groups';
-
-  @override
-  String get accountCodeLabel => 'Account code';
-
-  @override
-  String get accountCodeHint => 'XXXX-XXXX-XXXX-XXXX';
-
-  @override
-  String get accountSignInAction => 'Sign in';
+  String get accountSignInPrompt => 'Create an account to use shared groups';
 
   @override
   String get accountCreateAction => 'Create a new account';
 
   @override
-  String get accountCodeInvalid => 'That doesn\'t look like an account code';
-
-  @override
-  String get accountSignInFailed =>
-      'Couldn\'t sign in. Check the code and try again.';
-
-  @override
   String get accountCreateFailed =>
       'Couldn\'t create the account. Please try again.';
-
-  @override
-  String get accountCopyCode => 'Copy account code';
-
-  @override
-  String get accountCodeCopied => 'Account code copied';
 
   @override
   String get accountSignedIn => 'You\'re signed in';
@@ -890,6 +868,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get groupsCreateErrorLimit =>
       'You\'ve reached the limit of groups you can create.';
+
+  @override
+  String get groupsCreateNeedsAccount =>
+      'Create an account in Settings → Account before making a group.';
 
   @override
   String get groupsMembersTitle => 'Members';

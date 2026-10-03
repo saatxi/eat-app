@@ -217,7 +217,7 @@ void main() {
 
     expect(identity.deleteCount, 1);
     expect(
-      find.text('Sign in to create or join shared groups'),
+      find.text('Create an account to use shared groups'),
       findsOneWidget,
     );
   });

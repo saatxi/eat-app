@@ -685,26 +685,8 @@ abstract class AppLocalizations {
   /// No description provided for @accountSignInPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to create or join shared groups'**
+  /// **'Create an account to use shared groups'**
   String get accountSignInPrompt;
-
-  /// No description provided for @accountCodeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Account code'**
-  String get accountCodeLabel;
-
-  /// No description provided for @accountCodeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'XXXX-XXXX-XXXX-XXXX'**
-  String get accountCodeHint;
-
-  /// No description provided for @accountSignInAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Sign in'**
-  String get accountSignInAction;
 
   /// No description provided for @accountCreateAction.
   ///
@@ -712,35 +694,11 @@ abstract class AppLocalizations {
   /// **'Create a new account'**
   String get accountCreateAction;
 
-  /// No description provided for @accountCodeInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'That doesn\'t look like an account code'**
-  String get accountCodeInvalid;
-
-  /// No description provided for @accountSignInFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t sign in. Check the code and try again.'**
-  String get accountSignInFailed;
-
   /// No description provided for @accountCreateFailed.
   ///
   /// In en, this message translates to:
   /// **'Couldn\'t create the account. Please try again.'**
   String get accountCreateFailed;
-
-  /// No description provided for @accountCopyCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy account code'**
-  String get accountCopyCode;
-
-  /// No description provided for @accountCodeCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'Account code copied'**
-  String get accountCodeCopied;
 
   /// No description provided for @accountSignedIn.
   ///
@@ -1701,6 +1659,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ve reached the limit of groups you can create.'**
   String get groupsCreateErrorLimit;
+
+  /// No description provided for @groupsCreateNeedsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an account in Settings → Account before making a group.'**
+  String get groupsCreateNeedsAccount;
 
   /// No description provided for @groupsMembersTitle.
   ///
