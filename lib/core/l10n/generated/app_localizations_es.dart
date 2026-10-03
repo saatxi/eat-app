@@ -337,22 +337,39 @@ class AppLocalizationsEs extends AppLocalizations {
       'Inicia sesión para crear o unirte a grupos compartidos';
 
   @override
-  String get accountEmailLabel => 'Correo electrónico';
+  String get accountCodeLabel => 'Código de cuenta';
 
   @override
-  String get accountEmailInvalid => 'Introduce una dirección de correo válida';
+  String get accountCodeHint => 'XXXX-XXXX-XXXX-XXXX';
 
   @override
-  String get accountSendCode => 'Envíame un código de acceso';
+  String get accountSignInAction => 'Iniciar sesión';
 
   @override
-  String get accountCodeLabel => 'Código';
+  String get accountCreateAction => 'Crear una cuenta nueva';
 
   @override
-  String get accountVerify => 'Iniciar sesión';
+  String get accountCodeInvalid => 'Eso no parece un código de cuenta';
 
   @override
-  String get accountCodeSent => 'Revisa tu correo para el código';
+  String get accountSignInFailed =>
+      'No se pudo iniciar sesión. Revisa el código e inténtalo de nuevo.';
+
+  @override
+  String get accountCreateFailed =>
+      'No se pudo crear la cuenta. Inténtalo de nuevo.';
+
+  @override
+  String get accountCopyCode => 'Copiar el código de cuenta';
+
+  @override
+  String get accountCodeCopied => 'Código de cuenta copiado';
+
+  @override
+  String get accountCodeReveal => 'Mostrar el código de cuenta';
+
+  @override
+  String get accountCodeHide => 'Ocultar el código de cuenta';
 
   @override
   String get accountSignedIn => 'Has iniciado sesión';
@@ -365,6 +382,32 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsActionExportData => 'Exportar mis datos';
+
+  @override
+  String get settingsActionBackupAccount =>
+      'Copia de seguridad de mis datos y cuenta';
+
+  @override
+  String get accountBackupNeedsAccount =>
+      'Crea una cuenta primero para poder copiarla.';
+
+  @override
+  String get accountBackupAdoptTitle => 'Este archivo incluye una cuenta';
+
+  @override
+  String get accountBackupAdoptBody =>
+      'La copia incluía el código de la cuenta. Inicia sesión con él para recuperar la cuenta y sus grupos.';
+
+  @override
+  String get accountBackupAdoptAction => 'Iniciar sesión con esta cuenta';
+
+  @override
+  String get accountBackupAdoptFailed =>
+      'No se pudo iniciar sesión con la cuenta del archivo.';
+
+  @override
+  String get accountBackupAdopted =>
+      'Sesión iniciada con la cuenta del archivo';
 
   @override
   String get exportDialogTitle => 'Exportar restaurantes';

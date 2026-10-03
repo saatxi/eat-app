@@ -338,22 +338,39 @@ class AppLocalizationsCa extends AppLocalizations {
       'Inicia sessió per crear o unir-te a grups compartits';
 
   @override
-  String get accountEmailLabel => 'Correu electrònic';
+  String get accountCodeLabel => 'Codi de compte';
 
   @override
-  String get accountEmailInvalid => 'Introdueix una adreça de correu vàlida';
+  String get accountCodeHint => 'XXXX-XXXX-XXXX-XXXX';
 
   @override
-  String get accountSendCode => 'Envia\'m un codi d\'accés';
+  String get accountSignInAction => 'Inicia sessió';
 
   @override
-  String get accountCodeLabel => 'Codi';
+  String get accountCreateAction => 'Crea un compte nou';
 
   @override
-  String get accountVerify => 'Inicia sessió';
+  String get accountCodeInvalid => 'Això no sembla un codi de compte';
 
   @override
-  String get accountCodeSent => 'Revisa el correu per el codi';
+  String get accountSignInFailed =>
+      'No s\'ha pogut iniciar sessió. Revisa el codi i torna-ho a provar.';
+
+  @override
+  String get accountCreateFailed =>
+      'No s\'ha pogut crear el compte. Torna-ho a provar.';
+
+  @override
+  String get accountCopyCode => 'Copia el codi de compte';
+
+  @override
+  String get accountCodeCopied => 'Codi de compte copiat';
+
+  @override
+  String get accountCodeReveal => 'Mostra el codi de compte';
+
+  @override
+  String get accountCodeHide => 'Amaga el codi de compte';
 
   @override
   String get accountSignedIn => 'Has iniciat sessió';
@@ -366,6 +383,31 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get settingsActionExportData => 'Exporta les meves dades';
+
+  @override
+  String get settingsActionBackupAccount =>
+      'Còpia de seguretat de les meves dades i compte';
+
+  @override
+  String get accountBackupNeedsAccount =>
+      'Crea un compte primer per poder copiar-lo.';
+
+  @override
+  String get accountBackupAdoptTitle => 'Aquest fitxer inclou un compte';
+
+  @override
+  String get accountBackupAdoptBody =>
+      'La còpia incloïa el codi del compte. Inicia sessió amb ell per recuperar el compte i els seus grups.';
+
+  @override
+  String get accountBackupAdoptAction => 'Inicia sessió amb aquest compte';
+
+  @override
+  String get accountBackupAdoptFailed =>
+      'No s\'ha pogut iniciar sessió amb el compte del fitxer.';
+
+  @override
+  String get accountBackupAdopted => 'Sessió iniciada amb el compte del fitxer';
 
   @override
   String get exportDialogTitle => 'Exporta restaurants';

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:uuid/uuid.dart';
 
 import '../db/app_database.dart';
+import '../supabase/account_code.dart';
 import 'restaurant_share_models.dart';
 
 /// A file bigger than this is rejected before it is even parsed.
@@ -34,13 +35,22 @@ sealed class ImportOutcome {
 }
 
 final class ImportSuccess extends ImportOutcome {
-  const ImportSuccess({required this.restaurants, required this.skippedCount});
+  const ImportSuccess({
+    required this.restaurants,
+    required this.skippedCount,
+    this.accountCode,
+  });
 
   final List<ImportedRestaurant> restaurants;
 
   /// How many rows were dropped by per-row validation rather than failing the
   /// whole file.
   final int skippedCount;
+
+  /// The account code an account backup carries, already validated and
+  /// normalized, or null for every other format. The review screen offers to
+  /// adopt it — never automatically.
+  final String? accountCode;
 }
 
 final class ImportError extends ImportOutcome {
@@ -85,6 +95,7 @@ ImportOutcome readRestaurantImport(String rawJson) {
   if (rawRestaurants is! List<Object?>) {
     return const ImportError(ImportFailureReason.invalidFile);
   }
+  final String? accountCode = _readAccountCode(decoded['account']);
 
   final List<ImportedRestaurant> imported = <ImportedRestaurant>[];
   for (final Object? entry in rawRestaurants) {
@@ -97,7 +108,22 @@ ImportOutcome readRestaurantImport(String rawJson) {
   return ImportSuccess(
     restaurants: imported,
     skippedCount: rawRestaurants.length - imported.length,
+    accountCode: accountCode,
   );
+}
+
+/// The account code an account backup carries, or null when the file has none
+/// or it is malformed. A code that fails validation is dropped rather than
+/// failing the file — the restaurants are still importable without it.
+String? _readAccountCode(Object? account) {
+  if (account is! Map) {
+    return null;
+  }
+  final Object? code = account['code'];
+  if (code is! String || !isValidAccountCode(code)) {
+    return null;
+  }
+  return normalizeAccountCode(code);
 }
 
 /// One row, or null when it fails validation and should be dropped.

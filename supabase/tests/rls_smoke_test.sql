@@ -499,4 +499,36 @@ begin
 end;
 $$;
 
+-- ── 11. adopt-account rate limiting ──────────────────────────────────────
+-- record_account_attempt is service-role only (the adopt-account Edge Function
+-- calls it), so the test steps into that role. The per-code window is 10 per
+-- 10 minutes: ten attempts pass, the eleventh on the same code is refused.
+
+set local role service_role;
+do $$
+declare
+  i integer;
+  blocked boolean := false;
+begin
+  for i in 1..10 loop
+    perform public.record_account_attempt('code-hash', 'client-hash');
+  end loop;
+
+  begin
+    perform public.record_account_attempt('code-hash', 'client-hash');
+  exception when others then
+    if sqlerrm like '%rate_limited%' then
+      blocked := true;
+    else
+      raise;
+    end if;
+  end;
+
+  if not blocked then
+    raise exception 'FAIL: the account rate limit did not trigger';
+  end if;
+end;
+$$;
+reset role;
+
 rollback;

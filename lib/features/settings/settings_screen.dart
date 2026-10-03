@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/app_scope.dart';
 import '../../core/app_version.dart';
@@ -7,6 +8,7 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme_mode.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/repositories/user_preferences_repository.dart';
+import '../../data/supabase/account_code.dart';
 import '../../data/supabase/identity.dart';
 import '../groups/groups_controller.dart';
 import '../import_export/share_service.dart';
@@ -127,6 +129,18 @@ class SettingsScreen extends StatelessWidget {
                   repository: AppScope.of(context).restaurants,
                 ),
               ),
+              // Only offered once there is an account to back up: this is the
+              // one export whose file carries the account code.
+              if (scope.identity != null)
+                ListTile(
+                  leading: const Icon(Icons.backup_outlined),
+                  title: Text(l10n.settingsActionBackupAccount),
+                  onTap: () => exportAndShareAccountBackup(
+                    context,
+                    repository: AppScope.of(context).restaurants,
+                    identity: scope.identity!,
+                  ),
+                ),
               ListTile(
                 leading: Icon(
                   Icons.delete_outline,
@@ -227,9 +241,12 @@ class _LanguageSelector extends StatelessWidget {
   }
 }
 
-/// The account section: sign in with an emailed one-time code, or, once signed
-/// in, show the session and offer to sign out. Only ever built when the build
-/// carries an identity gateway.
+/// The account section: create an account, sign in with an account code, or,
+/// once signed in, show the code and offer to sign out. Only ever built when
+/// the build carries an identity gateway.
+///
+/// There is no email: the account code is the whole identity. It is kept across
+/// sign-out so the user can sign back in, and so an account backup can carry it.
 class _AccountSection extends StatefulWidget {
   const _AccountSection({required this.identity});
 
@@ -240,12 +257,11 @@ class _AccountSection extends StatefulWidget {
 }
 
 class _AccountSectionState extends State<_AccountSection> {
-  final TextEditingController _email = TextEditingController();
   final TextEditingController _code = TextEditingController();
   bool _busy = false;
   bool _signedIn = false;
-  bool _codeSent = false;
-  bool _emailError = false;
+  bool _revealCode = false;
+  String? _storedCode;
 
   @override
   void initState() {
@@ -255,61 +271,59 @@ class _AccountSectionState extends State<_AccountSection> {
 
   @override
   void dispose() {
-    _email.dispose();
     _code.dispose();
     super.dispose();
   }
 
   Future<void> _refresh() async {
     final Identity? me = await widget.identity.current();
+    final String? stored = widget.identity.accountCode();
     if (!mounted) {
       return;
     }
-    setState(() => _signedIn = me != null);
-  }
-
-  /// Mails a one-time code to the typed address. Everything else happens inside
-  /// the app, so no browser and no redirect are involved.
-  Future<void> _sendCode() async {
-    final String email = _email.text.trim();
-    if (!email.contains('@')) {
-      setState(() => _emailError = true);
-      return;
-    }
     setState(() {
-      _busy = true;
-      _emailError = false;
+      _signedIn = me != null;
+      _storedCode = stored;
+      // Pre-fill the code so signing back in after a sign-out is one tap.
+      if (!_signedIn && stored != null && _code.text.trim().isEmpty) {
+        _code.text = formatAccountCode(stored);
+      }
     });
-    try {
-      await widget.identity.sendEmailCode(email);
-      if (mounted) {
-        setState(() => _codeSent = true);
-      }
-    } on Object {
-      // The row stays put; the user can ask for another code.
-    } finally {
-      if (mounted) {
-        setState(() => _busy = false);
-      }
-    }
   }
 
-  Future<void> _verifyCode() async {
-    final String email = _email.text.trim();
-    final String code = _code.text.trim();
-    if (email.isEmpty || code.isEmpty) {
+  /// Mints a brand-new account, adopting it and signing in.
+  Future<void> _createAccount() => _run(
+    () => widget.identity.createAccount(),
+    AppLocalizations.of(context).accountCreateFailed,
+  );
+
+  /// Signs in with the code the user typed, or the one kept from before.
+  Future<void> _signIn() async {
+    final String raw = _code.text.trim();
+    if (!isValidAccountCode(raw)) {
+      _showMessage(AppLocalizations.of(context).accountCodeInvalid);
       return;
     }
+    await _run(
+      () => widget.identity.signInWithCode(raw),
+      AppLocalizations.of(context).accountSignInFailed,
+    );
+  }
+
+  /// Runs an identity action, reloading the groups on success (a fresh sign-in
+  /// must bring the account's groups back) or showing [failureMessage] on
+  /// error, then refreshing the section either way.
+  Future<void> _run(
+    Future<Identity> Function() action,
+    String failureMessage,
+  ) async {
     final GroupsController? groups = AppScope.of(context).groupsController;
     setState(() => _busy = true);
     try {
-      await widget.identity.verifyEmailCode(email: email, code: code);
-      // A fresh sign-in — after a reinstall, say — must bring the account's
-      // groups back, so the roster is reloaded and its shared data can be
-      // pulled.
+      await action();
       await groups?.load();
     } on Object {
-      // A wrong or expired code leaves the fields as they are, to retype.
+      _showMessage(failureMessage);
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -333,16 +347,61 @@ class _AccountSectionState extends State<_AccountSection> {
     }
   }
 
+  Future<void> _copyCode() async {
+    final String? code = _storedCode;
+    if (code == null) {
+      return;
+    }
+    // Read the label before the await, so no BuildContext crosses the gap.
+    final String message = AppLocalizations.of(context).accountCodeCopied;
+    await Clipboard.setData(ClipboardData(text: formatAccountCode(code)));
+    _showMessage(message);
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     if (_signedIn) {
+      final String? code = _storedCode;
       return ListTile(
         leading: const Icon(Icons.account_circle_outlined),
         title: Text(l10n.accountSignedIn),
-        trailing: TextButton(
-          onPressed: _busy ? null : _signOut,
-          child: Text(l10n.accountSignOut),
+        subtitle: code == null
+            ? null
+            : Text(
+                _revealCode ? formatAccountCode(code) : maskAccountCode(code),
+              ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (code != null) ...<Widget>[
+              IconButton(
+                onPressed: () => setState(() => _revealCode = !_revealCode),
+                tooltip: _revealCode
+                    ? l10n.accountCodeHide
+                    : l10n.accountCodeReveal,
+                icon: Icon(
+                  _revealCode ? Icons.visibility_off : Icons.visibility,
+                ),
+              ),
+              IconButton(
+                onPressed: _copyCode,
+                tooltip: l10n.accountCopyCode,
+                icon: const Icon(Icons.copy_outlined),
+              ),
+            ],
+            TextButton(
+              onPressed: _busy ? null : _signOut,
+              child: Text(l10n.accountSignOut),
+            ),
+          ],
         ),
       );
     }
@@ -361,13 +420,13 @@ class _AccountSectionState extends State<_AccountSection> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: TextField(
-            controller: _email,
+            controller: _code,
             enabled: !_busy,
-            keyboardType: TextInputType.emailAddress,
             autocorrect: false,
+            textCapitalization: TextCapitalization.characters,
             decoration: InputDecoration(
-              labelText: l10n.accountEmailLabel,
-              errorText: _emailError ? l10n.accountEmailInvalid : null,
+              labelText: l10n.accountCodeLabel,
+              hintText: l10n.accountCodeHint,
             ),
           ),
         ),
@@ -379,43 +438,19 @@ class _AccountSectionState extends State<_AccountSection> {
             0,
           ),
           child: FilledButton.icon(
-            onPressed: _busy ? null : _sendCode,
-            icon: const Icon(Icons.mail_outline),
-            label: Text(l10n.accountSendCode),
+            onPressed: _busy ? null : _signIn,
+            icon: const Icon(Icons.login_rounded),
+            label: Text(l10n.accountSignInAction),
           ),
         ),
-        if (_codeSent) ...<Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.md,
-              AppSpacing.lg,
-              AppSpacing.sm,
-            ),
-            child: Text(l10n.accountCodeSent),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: TextButton.icon(
+            onPressed: _busy ? null : _createAccount,
+            icon: const Icon(Icons.add_rounded),
+            label: Text(l10n.accountCreateAction),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: TextField(
-              controller: _code,
-              enabled: !_busy,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: l10n.accountCodeLabel),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.sm,
-              AppSpacing.lg,
-              0,
-            ),
-            child: FilledButton(
-              onPressed: _busy ? null : _verifyCode,
-              child: Text(l10n.accountVerify),
-            ),
-          ),
-        ],
+        ),
       ],
     );
   }

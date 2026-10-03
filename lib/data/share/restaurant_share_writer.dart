@@ -132,6 +132,40 @@ Future<File> writeGroupShareFile({
   return file;
 }
 
+/// An account backup's filename — deliberately distinct from a share, so a
+/// file that grants the account is never mistaken for one that only carries
+/// restaurants.
+String accountBackupFileName({DateTime? now}) =>
+    'eatapp-account-${DateFormat('yyyyMMdd_HHmm').format(now ?? DateTime.now())}.eatapp';
+
+/// Writes an account backup — the [accountCode] plus [restaurants] — to a
+/// timestamped `.eatapp` file under `directory/shared/` and returns it. Same
+/// cleanup and naming rules as [writeRestaurantShareFile].
+Future<File> writeAccountBackupFile({
+  required Directory directory,
+  required String accountCode,
+  required List<RestaurantExport> restaurants,
+  DateTime? now,
+}) async {
+  final Directory dir = Directory(p.join(directory.path, shareSubdir));
+  await dir.create(recursive: true);
+  await for (final FileSystemEntity entity in dir.list()) {
+    if (entity is File) {
+      await entity.delete();
+    }
+  }
+  final File file = File(
+    p.join(dir.path, accountBackupFileName(now: now)),
+  );
+  await file.writeAsString(
+    encodeAccountBackupFile(
+      accountCode: accountCode,
+      restaurants: restaurants,
+    ),
+  );
+  return file;
+}
+
 String _trimDashes(String value) {
   int start = 0;
   int end = value.length;

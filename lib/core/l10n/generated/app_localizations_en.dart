@@ -335,22 +335,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountSignInPrompt => 'Sign in to create or join shared groups';
 
   @override
-  String get accountEmailLabel => 'Email';
+  String get accountCodeLabel => 'Account code';
 
   @override
-  String get accountEmailInvalid => 'Enter a valid email address';
+  String get accountCodeHint => 'XXXX-XXXX-XXXX-XXXX';
 
   @override
-  String get accountSendCode => 'Email me a sign-in code';
+  String get accountSignInAction => 'Sign in';
 
   @override
-  String get accountCodeLabel => 'Code';
+  String get accountCreateAction => 'Create a new account';
 
   @override
-  String get accountVerify => 'Sign in';
+  String get accountCodeInvalid => 'That doesn\'t look like an account code';
 
   @override
-  String get accountCodeSent => 'Check your email for the code';
+  String get accountSignInFailed =>
+      'Couldn\'t sign in. Check the code and try again.';
+
+  @override
+  String get accountCreateFailed =>
+      'Couldn\'t create the account. Please try again.';
+
+  @override
+  String get accountCopyCode => 'Copy account code';
+
+  @override
+  String get accountCodeCopied => 'Account code copied';
+
+  @override
+  String get accountCodeReveal => 'Show account code';
+
+  @override
+  String get accountCodeHide => 'Hide account code';
 
   @override
   String get accountSignedIn => 'You\'re signed in';
@@ -363,6 +380,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsActionExportData => 'Export my data';
+
+  @override
+  String get settingsActionBackupAccount => 'Back up my data and account';
+
+  @override
+  String get accountBackupNeedsAccount =>
+      'Create an account first to back it up.';
+
+  @override
+  String get accountBackupAdoptTitle => 'This file carries an account';
+
+  @override
+  String get accountBackupAdoptBody =>
+      'The backup included its account code. Sign in with it to restore the account and its groups.';
+
+  @override
+  String get accountBackupAdoptAction => 'Sign in with this account';
+
+  @override
+  String get accountBackupAdoptFailed =>
+      'Couldn\'t sign in with the account from the file.';
+
+  @override
+  String get accountBackupAdopted => 'Signed in with the account from the file';
 
   @override
   String get exportDialogTitle => 'Export restaurants';

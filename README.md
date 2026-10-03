@@ -151,14 +151,15 @@ Supabase. It stays entirely off unless the build carries the backend
 configuration (see "Building and running"), so a personal install never talks
 to a server.
 
-Using groups needs a verified identity: sign in with an email one-time code
-from **Settings → Account** (see [docs/sign-in.md](docs/sign-in.md)). The same
-address is the stable identity, so signing in again restores your account, your
-groups and their shared restaurants after a reinstall or on a new phone.
+Using groups needs an identity: create an account from **Settings → Account**,
+which mints a random **account code** (see [docs/sign-in.md](docs/sign-in.md)).
+There is no email and no password — the code is the account, so keep it. Typing
+the same code on another phone restores your account, your groups and their
+shared restaurants.
 
 Each member has a role: an **owner** manages the group, its members and its
 invitations; an **editor** may add and edit its restaurants but not manage it;
-a **reader** may only look. Creating a group signs you in; from then on, picking
+a **reader** may only look. Creating a group needs an account; from then on, picking
 a group in the list's scope selector shows that group's restaurants, and every
 write there is attributed and syncs. A restaurant can belong to **more than one
 group at once**, chosen in the add/edit form. Inviting someone (an owner only)
@@ -214,8 +215,8 @@ transfer follows the same rules.
 
 That covers what was only ever on the device. Anything that was shared into a
 group lives on the server instead, so it comes back by **signing in again with
-the same email** (Settings → Account) rather than from the device backup — see
-[docs/sign-in.md](docs/sign-in.md).
+your account code** (Settings → Account) — or by importing an account backup —
+rather than from the device backup — see [docs/sign-in.md](docs/sign-in.md).
 
 Auto Backup needs a Google account with device backup turned on (and Google
 Play Services), and it runs roughly once a day while idle, charging and on

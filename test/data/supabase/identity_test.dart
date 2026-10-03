@@ -85,6 +85,41 @@ void main() {
       expect(await gateway.current(), isNull);
       expect(preferences.containsKey(identityPrefsKey), isFalse);
     });
+
+    test('accountCode reads the stored code', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        accountCodePrefsKey: 'ABCDEFGH2345WXYZ',
+      });
+      final gateway = _gateway(await SharedPreferences.getInstance());
+
+      expect(gateway.accountCode(), 'ABCDEFGH2345WXYZ');
+    });
+
+    test('signOut keeps the account code, only clearing the session', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        identityPrefsKey: jsonEncode(_sessionJson(userId: 'u-123')),
+        accountCodePrefsKey: 'ABCDEFGH2345WXYZ',
+      });
+      final SharedPreferences preferences = await SharedPreferences
+          .getInstance();
+      final gateway = _gateway(preferences);
+
+      await gateway.signOut();
+
+      expect(await gateway.current(), isNull);
+      expect(gateway.accountCode(), 'ABCDEFGH2345WXYZ');
+      expect(preferences.containsKey(accountCodePrefsKey), isTrue);
+    });
+
+    test('a malformed code is rejected before any network call', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final gateway = _gateway(await SharedPreferences.getInstance());
+
+      expect(
+        gateway.signInWithCode('nope'),
+        throwsA(isA<IdentityException>()),
+      );
+    });
   });
 }
 

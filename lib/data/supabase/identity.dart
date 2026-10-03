@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase/supabase.dart';
 
+import 'account_code.dart';
+
 /// The app's remote identity, as the sync layer and the group features see it.
 ///
 /// Deliberately narrower than `supabase`'s `Session`: the rest of the app must
@@ -23,35 +25,42 @@ class Identity {
 /// Everything the app needs from the remote identity provider, and nothing
 /// more.
 ///
-/// Sign-in is by an email one-time code: [sendEmailCode] mails a short code and
-/// [verifyEmailCode] exchanges it for a session. There is no password, no
-/// browser and no redirect — the whole exchange happens inside the app, so the
-/// behaviour is identical on Android and iOS and there is no custom URL
-/// callback to keep in step between them. The verified email is the stable
-/// identity, which is what makes ownership recoverable after a reinstall.
+/// There is no email and no password the user has to remember. The app holds a
+/// random account code and hands it to the `adopt-account` Edge Function, which
+/// derives a synthetic email/password from it; the app then signs in with the
+/// ordinary password grant. [createAccount] mints a fresh code on first use,
+/// [signInWithCode] adopts an existing one on another device, and [accountCode]
+/// exposes the stored code so Settings can show it and a backup can carry it.
 abstract class IdentityGateway {
   /// The current identity, or null when this device has never signed in.
   Future<Identity?> current();
 
-  /// Emails a one-time sign-in code to [email]. Creates the account on first
-  /// use, so the same address works on every device.
-  Future<void> sendEmailCode(String email);
+  /// Mints a fresh account code, adopts it and signs in. The code is the whole
+  /// identity; losing it loses the account.
+  Future<Identity> createAccount();
 
-  /// Exchanges the code the user typed for a session, and returns the identity.
-  Future<Identity> verifyEmailCode({
-    required String email,
-    required String code,
-  });
+  /// Adopts an existing [code] — typed by the user or read from a backup — and
+  /// signs in, bringing that account's groups back.
+  Future<Identity> signInWithCode(String code);
 
-  /// Forgets the session on this device. The remote `auth.users` row stays —
-  /// signing in again with the same email recovers the same identity, which is
-  /// what restores group ownership.
+  /// The stored account code, or null when this device has never had one. Read
+  /// by Settings and by an account backup; never sent anywhere but
+  /// `adopt-account`.
+  String? accountCode();
+
+  /// Forgets the session on this device. The account itself, and its stored
+  /// code, stay — signing in again with the same code restores the same
+  /// identity and group ownership.
   Future<void> signOut();
 }
 
 /// Preference keys the gateway owns. Exposed so tests can pre-seed or assert
 /// on exactly what was written.
 const String identityPrefsKey = 'identity.supabase.session';
+
+/// Where the account code is kept. Survives [IdentityGateway.signOut] — it is
+/// the identity, not the session.
+const String accountCodePrefsKey = 'identity.account.code';
 
 /// The real [IdentityGateway], over the `supabase` client.
 ///
@@ -146,25 +155,73 @@ class SupabaseIdentityGateway implements IdentityGateway {
   }
 
   @override
-  Future<void> sendEmailCode(String email) =>
-      _client.auth.signInWithOtp(email: email, shouldCreateUser: true);
+  String? accountCode() => _preferences.getString(accountCodePrefsKey);
 
   @override
-  Future<Identity> verifyEmailCode({
-    required String email,
-    required String code,
-  }) async {
-    final AuthResponse response = await _client.auth.verifyOTP(
-      type: OtpType.email,
-      email: email,
-      token: code,
+  Future<Identity> createAccount() => _adopt(generateAccountCode());
+
+  @override
+  Future<Identity> signInWithCode(String code) async {
+    final String normalized = normalizeAccountCode(code);
+    if (!isValidAccountCode(normalized)) {
+      throw const IdentityException('not a valid account code');
+    }
+    return _adopt(normalized);
+  }
+
+  /// Swaps [code] for credentials at `adopt-account`, signs in with them, and
+  /// stores both the code and the resulting session.
+  Future<Identity> _adopt(String code) async {
+    final ({String email, String password}) credentials =
+        await _credentialsFor(code);
+    final AuthResponse response = await _client.auth.signInWithPassword(
+      email: credentials.email,
+      password: credentials.password,
     );
     final Session? session = response.session;
     if (session == null) {
-      throw const IdentityException('the code did not produce a session');
+      throw const IdentityException('sign-in produced no session');
     }
+    await _preferences.setString(accountCodePrefsKey, code);
     await _store(session);
     return Identity(userId: session.user.id, isSignedIn: true);
+  }
+
+  /// Calls the `adopt-account` Edge Function for [code].
+  ///
+  /// The function is public (`verify_jwt` off): the caller has no session yet,
+  /// which is the whole point. It derives the credentials from the code and
+  /// returns them; the sign-in itself then happens here, so the session never
+  /// leaves the device.
+  Future<({String email, String password})> _credentialsFor(String code) async {
+    final Object? data;
+    try {
+      final FunctionResponse response = await _client.functions.invoke(
+        'adopt-account',
+        body: <String, dynamic>{'code': code},
+      );
+      if (response.status < 200 || response.status >= 300) {
+        throw IdentityException(
+          'adopt-account refused the code (${response.status})',
+        );
+      }
+      data = response.data;
+    } on IdentityException {
+      rethrow;
+    } on FunctionException catch (error) {
+      throw IdentityException('adopt-account failed (${error.status})');
+    } on Object catch (error) {
+      throw IdentityException('adopt-account request failed: $error');
+    }
+    if (data is! Map) {
+      throw const IdentityException('adopt-account returned no credentials');
+    }
+    final Object? email = data['email'];
+    final Object? password = data['password'];
+    if (email is! String || password is! String) {
+      throw const IdentityException('adopt-account returned no credentials');
+    }
+    return (email: email, password: password);
   }
 
   @override
@@ -180,6 +237,8 @@ class SupabaseIdentityGateway implements IdentityGateway {
     _restoredSession = null;
     _pendingSessionJson = null;
     await _preferences.remove(identityPrefsKey);
+    // The account code is deliberately kept: it is the identity, not the
+    // session, and the user needs it back to sign in again.
   }
 
   Future<void> _store(Session session) async {

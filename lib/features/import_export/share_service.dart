@@ -9,6 +9,7 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../data/repositories/restaurant_repository.dart';
 import '../../data/share/restaurant_share_models.dart';
 import '../../data/share/restaurant_share_writer.dart';
+import '../../data/supabase/identity.dart';
 import 'export_options_dialog.dart';
 
 /// The MIME type of a shared restaurant file.
@@ -117,4 +118,54 @@ Future<ShareResult> shareRestaurants({
       sharePositionOrigin: sharePositionOrigin,
     ),
   );
+}
+
+/// Exports every restaurant together with the account code and opens the share
+/// sheet with the resulting file.
+///
+/// This is the only export that carries the code, and the only one whose file
+/// can hand someone the account — hence the separate action and the "don't
+/// share this" wording. It does nothing when the device has no account yet.
+Future<void> exportAndShareAccountBackup(
+  BuildContext context, {
+  required RestaurantRepository repository,
+  required IdentityGateway identity,
+}) async {
+  final AppLocalizations l10n = AppLocalizations.of(context);
+  final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+
+  final String? code = identity.accountCode();
+  if (code == null) {
+    messenger.showSnackBar(
+      SnackBar(content: Text(l10n.accountBackupNeedsAccount)),
+    );
+    return;
+  }
+
+  final bool? includeVisits = await showExportOptionsDialog(context);
+  if (includeVisits == null || !context.mounted) {
+    return;
+  }
+  final Rect? origin = sharePositionOriginFor(context);
+
+  try {
+    final List<RestaurantExport> exports = await repository.exportRestaurants(
+      includeVisits: includeVisits,
+    );
+    final Directory directory = await getTemporaryDirectory();
+    final File file = await writeAccountBackupFile(
+      directory: directory,
+      accountCode: code,
+      restaurants: exports,
+    );
+    await SharePlus.instance.share(
+      ShareParams(
+        files: <XFile>[XFile(file.path, mimeType: restaurantShareMimeType)],
+        fileNameOverrides: <String>[p.basename(file.path)],
+        sharePositionOrigin: origin,
+      ),
+    );
+  } on Object {
+    messenger.showSnackBar(SnackBar(content: Text(l10n.shareFailed)));
+  }
 }

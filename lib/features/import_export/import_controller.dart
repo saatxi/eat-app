@@ -52,6 +52,7 @@ class ImportUiState {
     this.candidates = const <ImportCandidate>[],
     this.skippedInvalidCount = 0,
     this.isImporting = false,
+    this.accountCode,
   });
 
   final bool isLoading;
@@ -63,12 +64,17 @@ class ImportUiState {
   final int skippedInvalidCount;
   final bool isImporting;
 
+  /// The account code an account backup carried, offered on the review screen
+  /// as an opt-in adopt. Null for every other file.
+  final String? accountCode;
+
   ImportUiState copyWith({
     bool? isLoading,
     ImportFailureReason? error,
     List<ImportCandidate>? candidates,
     int? skippedInvalidCount,
     bool? isImporting,
+    String? accountCode,
   }) => ImportUiState(
     isLoading: isLoading ?? this.isLoading,
     // Only ever set from null to a value, so no "clear the error" sentinel is
@@ -77,6 +83,7 @@ class ImportUiState {
     candidates: candidates ?? this.candidates,
     skippedInvalidCount: skippedInvalidCount ?? this.skippedInvalidCount,
     isImporting: isImporting ?? this.isImporting,
+    accountCode: accountCode ?? this.accountCode,
   );
 }
 
@@ -137,6 +144,7 @@ class ImportController extends ChangeNotifier {
       case ImportSuccess(
         :final List<ImportedRestaurant> restaurants,
         :final int skippedCount,
+        :final String? accountCode,
       ):
         final List<Restaurant> existing = await repository.getAllRestaurants();
         if (_disposed) {
@@ -150,6 +158,7 @@ class ImportController extends ChangeNotifier {
                 _candidateFor(imported, existing),
             ],
             skippedInvalidCount: skippedCount,
+            accountCode: accountCode,
           ),
         );
     }

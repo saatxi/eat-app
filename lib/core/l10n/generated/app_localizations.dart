@@ -688,41 +688,71 @@ abstract class AppLocalizations {
   /// **'Sign in to create or join shared groups'**
   String get accountSignInPrompt;
 
-  /// No description provided for @accountEmailLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Email'**
-  String get accountEmailLabel;
-
-  /// No description provided for @accountEmailInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a valid email address'**
-  String get accountEmailInvalid;
-
-  /// No description provided for @accountSendCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Email me a sign-in code'**
-  String get accountSendCode;
-
   /// No description provided for @accountCodeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Code'**
+  /// **'Account code'**
   String get accountCodeLabel;
 
-  /// No description provided for @accountVerify.
+  /// No description provided for @accountCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'XXXX-XXXX-XXXX-XXXX'**
+  String get accountCodeHint;
+
+  /// No description provided for @accountSignInAction.
   ///
   /// In en, this message translates to:
   /// **'Sign in'**
-  String get accountVerify;
+  String get accountSignInAction;
 
-  /// No description provided for @accountCodeSent.
+  /// No description provided for @accountCreateAction.
   ///
   /// In en, this message translates to:
-  /// **'Check your email for the code'**
-  String get accountCodeSent;
+  /// **'Create a new account'**
+  String get accountCreateAction;
+
+  /// No description provided for @accountCodeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That doesn\'t look like an account code'**
+  String get accountCodeInvalid;
+
+  /// No description provided for @accountSignInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sign in. Check the code and try again.'**
+  String get accountSignInFailed;
+
+  /// No description provided for @accountCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the account. Please try again.'**
+  String get accountCreateFailed;
+
+  /// No description provided for @accountCopyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy account code'**
+  String get accountCopyCode;
+
+  /// No description provided for @accountCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Account code copied'**
+  String get accountCodeCopied;
+
+  /// No description provided for @accountCodeReveal.
+  ///
+  /// In en, this message translates to:
+  /// **'Show account code'**
+  String get accountCodeReveal;
+
+  /// No description provided for @accountCodeHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide account code'**
+  String get accountCodeHide;
 
   /// No description provided for @accountSignedIn.
   ///
@@ -747,6 +777,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export my data'**
   String get settingsActionExportData;
+
+  /// No description provided for @settingsActionBackupAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up my data and account'**
+  String get settingsActionBackupAccount;
+
+  /// No description provided for @accountBackupNeedsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an account first to back it up.'**
+  String get accountBackupNeedsAccount;
+
+  /// No description provided for @accountBackupAdoptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This file carries an account'**
+  String get accountBackupAdoptTitle;
+
+  /// No description provided for @accountBackupAdoptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The backup included its account code. Sign in with it to restore the account and its groups.'**
+  String get accountBackupAdoptBody;
+
+  /// No description provided for @accountBackupAdoptAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with this account'**
+  String get accountBackupAdoptAction;
+
+  /// No description provided for @accountBackupAdoptFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sign in with the account from the file.'**
+  String get accountBackupAdoptFailed;
+
+  /// No description provided for @accountBackupAdopted.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in with the account from the file'**
+  String get accountBackupAdopted;
 
   /// No description provided for @exportDialogTitle.
   ///

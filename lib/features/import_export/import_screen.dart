@@ -8,6 +8,8 @@ import '../../core/utils/address_formatter.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../data/share/restaurant_import_reader.dart';
+import '../../data/supabase/identity.dart';
+import '../groups/groups_controller.dart';
 import 'import_controller.dart';
 
 /// The review screen for an incoming shared restaurant file.
@@ -65,6 +67,29 @@ class _ImportScreenState extends State<ImportScreen> {
   Future<void> _confirm(ImportController controller) async {
     await controller.confirm();
     widget.onDone?.call();
+  }
+
+  /// Adopts the account an imported backup carries — only when the user taps
+  /// the banner, never automatically.
+  Future<void> _adoptAccount(String code) async {
+    final AppScope scope = AppScope.of(context);
+    final IdentityGateway? identity = scope.identity;
+    if (identity == null) {
+      return;
+    }
+    final GroupsController? groups = scope.groupsController;
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    try {
+      await identity.signInWithCode(code);
+      // A restored account's groups come back with it.
+      await groups?.load();
+      messenger.showSnackBar(SnackBar(content: Text(l10n.accountBackupAdopted)));
+    } on Object {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.accountBackupAdoptFailed)),
+      );
+    }
   }
 
   @override
@@ -152,6 +177,18 @@ class _ImportScreenState extends State<ImportScreen> {
               ),
             ),
           ),
+        if (state.accountCode != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              0,
+            ),
+            child: _AccountAdoptCard(
+              onAdopt: () => _adoptAccount(state.accountCode!),
+            ),
+          ),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -207,6 +244,46 @@ class _ImportScreenState extends State<ImportScreen> {
         ImportFailureReason.invalidFile => l10n.importErrorInvalid,
         ImportFailureReason.ioError => l10n.importErrorIo,
       };
+}
+
+/// The opt-in banner an account backup shows on the review screen. Adopting the
+/// account is never automatic: the file carries a credential, and the user has
+/// to choose to use it.
+class _AccountAdoptCard extends StatelessWidget {
+  const _AccountAdoptCard({required this.onAdopt});
+
+  final VoidCallback onAdopt;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return Card(
+      margin: EdgeInsets.zero,
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              l10n.accountBackupAdoptTitle,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(l10n.accountBackupAdoptBody),
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: onAdopt,
+                child: Text(l10n.accountBackupAdoptAction),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// The collapsible row that hides likely duplicates behind one tap.

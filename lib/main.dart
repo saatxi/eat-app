@@ -107,7 +107,19 @@ Future<void> main() async {
   final ({String url, String anonKey})? supabaseConfig = _supabaseConfig();
   final SupabaseClient? supabaseClient = supabaseConfig == null
       ? null
-      : SupabaseClient(supabaseConfig.url, supabaseConfig.anonKey);
+      : SupabaseClient(
+          supabaseConfig.url,
+          supabaseConfig.anonKey,
+          // Sign-in is the emailed one-time code, verified inside the app
+          // (`verifyOTP`) — never a redirect back into the app. gotrue now
+          // defaults to the PKCE flow, whose code-verifier needs an async
+          // storage this client has none of, so `signInWithOtp` would throw
+          // before it ever reached the network. The implicit flow keeps the
+          // code path storage-free, which is all this no-redirect sign-in uses.
+          authOptions: const AuthClientOptions(
+            authFlowType: AuthFlowType.implicit,
+          ),
+        );
   final IdentityGateway? identityGateway = supabaseClient == null
       ? null
       : SupabaseIdentityGateway(

@@ -18,11 +18,18 @@ const String restaurantShareFormat = 'eatapp.restaurants.v2';
 const String restaurantShareFormatV3 = 'eatapp.restaurants.v3';
 const String groupShareFormat = 'eatapp.group.v1';
 
+/// A whole-account backup: the restaurants plus the account code, so restoring
+/// the file also restores the identity behind the groups. Unlike the other
+/// formats this one carries a bearer secret — the code — and must never be
+/// shared casually.
+const String accountBackupFormat = 'eatapp.account.v1';
+
 /// Every format tag the importer accepts.
 const Set<String> acceptedShareFormats = <String>{
   restaurantShareFormat,
   restaurantShareFormatV3,
   groupShareFormat,
+  accountBackupFormat,
 };
 
 /// On-the-wire shape of one visit.
@@ -233,6 +240,42 @@ String encodeGroupShareFile({
   required List<RestaurantExport> restaurants,
 }) => jsonEncode(
   GroupShareFile(groupName: groupName, restaurants: restaurants).toJson(),
+);
+
+/// The top-level shape of an account backup: the account code plus every
+/// restaurant, so a restore on a new device brings both the data and the
+/// identity.
+///
+/// The code is a bearer secret — whoever holds the file can adopt the account —
+/// so this format is written only by the explicit "back up my data and account"
+/// action and never mixed into the shareable restaurant export.
+class AccountBackupFile {
+  const AccountBackupFile({
+    required this.accountCode,
+    required this.restaurants,
+    this.format = accountBackupFormat,
+  });
+
+  final String accountCode;
+  final List<RestaurantExport> restaurants;
+  final String format;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'format': format,
+    'account': <String, Object?>{'code': accountCode},
+    'restaurants': <Map<String, Object?>>[
+      for (final RestaurantExport restaurant in restaurants) restaurant.toJson(),
+    ],
+  };
+}
+
+/// Encodes an account backup — its [accountCode] and [restaurants] — as JSON
+/// text.
+String encodeAccountBackupFile({
+  required String accountCode,
+  required List<RestaurantExport> restaurants,
+}) => jsonEncode(
+  AccountBackupFile(accountCode: accountCode, restaurants: restaurants).toJson(),
 );
 
 /// The exportable shape of one [Restaurant], with the visits that live in their
