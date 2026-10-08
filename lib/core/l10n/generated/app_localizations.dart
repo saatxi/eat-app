@@ -607,7 +607,7 @@ abstract class AppLocalizations {
   /// No description provided for @themeModeSystem.
   ///
   /// In en, this message translates to:
-  /// **'System'**
+  /// **'Auto'**
   String get themeModeSystem;
 
   /// No description provided for @settingsSectionData.

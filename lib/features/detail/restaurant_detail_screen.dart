@@ -699,9 +699,10 @@ class _CuisineHeader extends StatelessWidget {
     final CuisineTint tint = cuisineTint(context, restaurant.cuisineKey);
     final Color bg = tint.container;
     final Color fg = tint.onContainer;
-    // Color.lerp with two non-null colours is always non-null; darken toward
-    // the on-container tone to give the gradient a subtle depth.
-    final Color bgDeep = Color.lerp(bg, fg, 0.12) ?? bg;
+    // Top is the raw container colour; bottom is mixed 30% toward black for a
+    // clear depth gradient, and the name text sits at the bottom where contrast
+    // is highest.
+    final Color bgDeep = Color.lerp(bg, Colors.black, 0.30) ?? bg;
 
     return ClipRRect(
       borderRadius: AppRadius.largeAll,
@@ -715,8 +716,8 @@ class _CuisineHeader extends StatelessWidget {
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: <Color>[bg, bgDeep],
                 ),
               ),

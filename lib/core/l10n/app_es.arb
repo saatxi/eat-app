@@ -97,7 +97,7 @@
   "settingsThemeMode": "Tema",
   "themeModeLight": "Claro",
   "themeModeDark": "Oscuro",
-  "themeModeSystem": "Sistema",
+  "themeModeSystem": "Auto",
   "settingsSectionData": "Datos",
   "settingsSectionAccount": "Cuenta",
   "editSectionGroups": "Compartido con",

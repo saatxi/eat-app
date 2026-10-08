@@ -167,7 +167,7 @@
   "settingsThemeMode": "Theme",
   "themeModeLight": "Light",
   "themeModeDark": "Dark",
-  "themeModeSystem": "System",
+  "themeModeSystem": "Auto",
   "settingsSectionData": "Data",
   "settingsSectionAccount": "Account",
   "editSectionGroups": "Shared with",

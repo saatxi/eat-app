@@ -293,7 +293,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get themeModeDark => 'Oscuro';
 
   @override
-  String get themeModeSystem => 'Sistema';
+  String get themeModeSystem => 'Auto';
 
   @override
   String get settingsSectionData => 'Datos';

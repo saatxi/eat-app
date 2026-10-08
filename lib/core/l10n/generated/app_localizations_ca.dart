@@ -294,7 +294,7 @@ class AppLocalizationsCa extends AppLocalizations {
   String get themeModeDark => 'Fosc';
 
   @override
-  String get themeModeSystem => 'Sistema';
+  String get themeModeSystem => 'Auto';
 
   @override
   String get settingsSectionData => 'Dades';
