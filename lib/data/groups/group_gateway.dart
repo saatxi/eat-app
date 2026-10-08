@@ -81,6 +81,7 @@ class SupabaseGroupGateway implements GroupGateway {
     // back too — the old two-insert flow could leave an orphan group the
     // caller (not yet an owner, so RLS protects it) could not delete.
     try {
+      // ignore: inference_failure_on_function_invocation
       await _client.rpc(
         'create_owned_group',
         params: <String, dynamic>{

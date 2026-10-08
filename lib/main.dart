@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
@@ -59,8 +60,14 @@ const String _supabaseAnonKeyKey = 'SUPABASE_ANON_KEY';
   return (url: url, anonKey: anonKey);
 }
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    FlutterError.onError = FlutterError.dumpErrorToConsole;
+    PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+      debugPrint('$error\n$stack');
+      return true;
+    };
 
   // The preference file is read before the first frame rather than asynchronously
   // afterwards: the light/dark choice and the language all decide
@@ -217,23 +224,26 @@ Future<void> main() async {
       .cast<String>();
 
   runApp(
-    EatApp(
-      preferences: userPreferences,
-      repository: restaurantRepository,
-      photoPicker: ImagePickerPhotoPicker(),
-      appVersion: appVersion,
-      identityGateway: identityGateway,
-      groupGateway: groupGateway,
-      inviteGateway: inviteGateway,
-      syncService: syncService,
-      initialSharedFilePath: initialSharedFilePath,
-      sharedFileStream: sharedFileStream,
-      initialWidgetUri: initialWidgetUri,
-      widgetClickStream: widgetClickStream,
-      initialInviteUri: initialInviteUri,
-      inviteLinkStream: inviteLinkStream,
-    ),
-  );
+      EatApp(
+        preferences: userPreferences,
+        repository: restaurantRepository,
+        photoPicker: ImagePickerPhotoPicker(),
+        appVersion: appVersion,
+        identityGateway: identityGateway,
+        groupGateway: groupGateway,
+        inviteGateway: inviteGateway,
+        syncService: syncService,
+        initialSharedFilePath: initialSharedFilePath,
+        sharedFileStream: sharedFileStream,
+        initialWidgetUri: initialWidgetUri,
+        widgetClickStream: widgetClickStream,
+        initialInviteUri: initialInviteUri,
+        inviteLinkStream: inviteLinkStream,
+      ),
+    );
+  }, (Object error, StackTrace stack) {
+    debugPrint('Unhandled error: $error\n$stack');
+  });
 }
 
 /// The first readable path among [files], or null when the share carried none.

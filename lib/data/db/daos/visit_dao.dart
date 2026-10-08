@@ -1,3 +1,5 @@
+// drift's ResultSetImplementation is an internal raw type we cannot parameterise.
+// ignore_for_file: strict_raw_type
 import 'package:drift/drift.dart';
 
 import '../../models/stats_projections.dart';
