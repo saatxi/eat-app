@@ -89,75 +89,62 @@ class _JournalScreenState extends State<JournalScreen> {
     final GroupsController? groups = AppScope.of(context).groupsController;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.navJournal),
-        actions: <Widget>[
-          // The scope switch lives up here now, rather than in the row that used
-          // to sit above the list: the list, the roulette and the statistics
-          // screen all read the same controller, so a change here moves all
-          // three.
-          if (groups != null && groups.canUseGroups) ...<Widget>[
-            GroupScopeButton(controller: groups),
-            // A one-tap way to pull the selected group, so a member who just
-            // heard a restaurant was added does not have to guess at a gesture.
-            GroupSyncButton(controller: groups),
-          ],
-          // Statistics and "share/export all" used to sit here as well; both are
-          // reached from Settings now, which leaves the title and the scope
-          // switch their room on a narrow phone.
-          //
-          // The add action lives in the app bar rather than in a floating
-          // button: a FAB floats over the very cards it is about and hides the
-          // last rows, which is exactly what it did here.
-          if (widget.onAddRestaurant != null)
-            IconButton(
-              onPressed: widget.onAddRestaurant,
-              tooltip: l10n.listActionAddRestaurant,
-              icon: const Icon(Icons.add_rounded),
+      body: NestedScrollView(
+        headerSliverBuilder: (BuildContext context, bool innerBoxScrolled) {
+          return <Widget>[
+            SliverAppBar.large(
+              pinned: true,
+              title: Text(l10n.navJournal),
+              actions: <Widget>[
+                if (groups != null && groups.canUseGroups) ...<Widget>[
+                  GroupScopeButton(controller: groups),
+                  GroupSyncButton(controller: groups),
+                ],
+                if (widget.onAddRestaurant != null)
+                  IconButton(
+                    onPressed: widget.onAddRestaurant,
+                    tooltip: l10n.listActionAddRestaurant,
+                    icon: const Icon(Icons.add_rounded),
+                  ),
+              ],
             ),
-        ],
-      ),
-      body: ListenableBuilder(
-        listenable: controller,
-        builder: (BuildContext context, Widget? child) {
-          final RestaurantListUiState state = controller.state;
-          // Keep the field in step with the state: clearing the filters resets
-          // the query, and the field has to go blank with it.
-          if (_searchController.text != state.searchQuery) {
-            _searchController.value = TextEditingValue(
-              text: state.searchQuery,
-              selection: TextSelection.collapsed(
-                offset: state.searchQuery.length,
-              ),
-            );
-          }
-          return Column(
-            children: <Widget>[
-              JournalFilterBar(
-                controller: controller,
-                state: state,
-                searchController: _searchController,
-                // Nothing to sort or filter yet during the first load, or before
-                // any restaurant has ever been added. The Favorites segment also
-                // keeps the panel open even when it matches nothing, so the way
-                // back to "All" is not hidden along with the empty list.
-                showFilters: !state.isInitialLoad &&
-                    (state.restaurants.isNotEmpty ||
-                        state.hasActiveFilter ||
-                        state.favoritesOnly),
-              ),
-              Expanded(
-                child: RefreshIndicator(
-                  // Pulling first brings down any restaurant another group
-                  // member just added, then re-runs the local query — see
-                  // _refresh. In Personal mode the pull is a no-op.
-                  onRefresh: () => _refresh(controller, groups),
-                  child: _content(state, controller, l10n),
-                ),
-              ),
-            ],
-          );
+          ];
         },
+        body: ListenableBuilder(
+          listenable: controller,
+          builder: (BuildContext context, Widget? child) {
+            final RestaurantListUiState state = controller.state;
+            // Keep the field in step with the state: clearing the filters resets
+            // the query, and the field has to go blank with it.
+            if (_searchController.text != state.searchQuery) {
+              _searchController.value = TextEditingValue(
+                text: state.searchQuery,
+                selection: TextSelection.collapsed(
+                  offset: state.searchQuery.length,
+                ),
+              );
+            }
+            return Column(
+              children: <Widget>[
+                JournalFilterBar(
+                  controller: controller,
+                  state: state,
+                  searchController: _searchController,
+                  showFilters: !state.isInitialLoad &&
+                      (state.restaurants.isNotEmpty ||
+                          state.hasActiveFilter ||
+                          state.favoritesOnly),
+                ),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () => _refresh(controller, groups),
+                    child: _content(state, controller, l10n),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

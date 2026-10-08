@@ -704,49 +704,61 @@ class _CuisineHeader extends StatelessWidget {
     // is highest.
     final Color bgDeep = Color.lerp(bg, Colors.black, 0.30) ?? bg;
 
-    return ClipRRect(
-      borderRadius: AppRadius.largeAll,
-      child: SizedBox(
-        width: double.infinity,
-        height: 240,
-        child: Stack(
-          fit: StackFit.expand,
-          children: <Widget>[
-            // Gradient: solid at the top, slightly deeper at the bottom.
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: <Color>[bg, bgDeep],
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.largeAll,
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: theme.colorScheme.shadow.withAlpha(50),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: AppRadius.largeAll,
+        child: SizedBox(
+          width: double.infinity,
+          height: 240,
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              // Gradient: solid at the top, slightly deeper at the bottom.
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: <Color>[bg, bgDeep],
+                  ),
                 ),
               ),
-            ),
-            // Large decorative icon — translucent, offset to the right.
-            Positioned(
-              right: -16,
-              top: -8,
-              child: ExcludeSemantics(
-                child: Icon(
-                  cuisineIcon(restaurant.cuisineKey),
-                  size: 180,
-                  color: fg.withAlpha(40),
+              // Large decorative icon — translucent, offset to the right.
+              Positioned(
+                right: -16,
+                top: -8,
+                child: ExcludeSemantics(
+                  child: Icon(
+                    cuisineIcon(restaurant.cuisineKey),
+                    size: 180,
+                    color: fg.withAlpha(40),
+                  ),
                 ),
               ),
-            ),
-            // Restaurant name anchored to the bottom-left.
-            Positioned(
-              left: AppSpacing.lg,
-              right: AppSpacing.lg,
-              bottom: AppSpacing.lg,
-              child: Text(
-                restaurant.name,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.headlineMedium?.copyWith(color: fg),
+              // Restaurant name anchored to the bottom-left.
+              Positioned(
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                bottom: AppSpacing.lg,
+                child: Text(
+                  restaurant.name,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.headlineMedium?.copyWith(color: fg),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

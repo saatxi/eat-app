@@ -12,7 +12,7 @@ import '../../core/widgets/shimmer_box.dart';
 import 'restaurant_ui_model.dart';
 
 /// The thumbnail's edge, in logical pixels.
-const double _thumbSize = 64;
+const double _thumbSize = 88;
 
 /// How many skeleton cards fill the initial-load state — enough for a phone.
 const int skeletonRowCount = 6;

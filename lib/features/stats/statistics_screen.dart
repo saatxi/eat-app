@@ -113,6 +113,7 @@ class _Loaded extends StatelessWidget {
           contentColor: theme.colorScheme.onPrimaryContainer,
           valueStyle: theme.textTheme.displaySmall,
           padding: 20,
+          elevation: 3,
         ),
         const SizedBox(height: AppSpacing.sm),
         IntrinsicHeight(
@@ -233,6 +234,7 @@ class _StatTile extends StatelessWidget {
     required this.contentColor,
     required this.valueStyle,
     required this.padding,
+    this.elevation,
   }) : assert(
           (value == null) != (count == null),
           'a tile shows either a formatted value or a countable one',
@@ -250,6 +252,7 @@ class _StatTile extends StatelessWidget {
   final Color contentColor;
   final TextStyle? valueStyle;
   final double padding;
+  final double? elevation;
 
   @override
   Widget build(BuildContext context) {
@@ -258,6 +261,7 @@ class _StatTile extends StatelessWidget {
     return Card(
       margin: EdgeInsets.zero,
       color: containerColor,
+      elevation: elevation,
       child: Padding(
         padding: EdgeInsets.all(padding),
         child: Column(
