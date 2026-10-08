@@ -100,8 +100,13 @@ void main() {
     await pumpShell(tester);
     expect(syncService.syncedGroups, isEmpty, reason: 'nothing asked yet');
 
-    // The Roulette is scope-aware; opening it is "entering the group".
-    await tester.tap(find.byIcon(Icons.casino_outlined));
+    // Leave the Journal (scope-aware) for Settings (not scope-aware), then
+    // come back — the return tap is "entering the group".
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pump();
+    expect(syncService.syncedGroups, isEmpty, reason: 'settings does not pull');
+
+    await tester.tap(find.byIcon(Icons.menu_book_outlined));
     await tester.pump();
 
     expect(syncService.syncedGroups, <String>[groupId]);

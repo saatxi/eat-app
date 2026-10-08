@@ -16,11 +16,10 @@ import '../import_export/import_screen.dart';
 import '../list/journal_screen.dart';
 import '../list/restaurant_ui_model.dart';
 import '../log_visit/log_visit_screen.dart';
-import '../roulette/roulette_screen.dart';
 import '../settings/settings_screen.dart';
 import '../stats/statistics_screen.dart';
 
-/// The app's root: the three top-level sections, laid out for the window they
+/// The app's root: the top-level sections, laid out for the window they
 /// are given.
 ///
 /// On a phone that is a bottom navigation bar over one section at a time. On a
@@ -28,13 +27,14 @@ import '../stats/statistics_screen.dart';
 /// while the Journal is showing, the selected restaurant's detail sits beside
 /// the list rather than being pushed as a route.
 ///
-/// Three sections, not four: Favorites folded into the Journal as a quick
-/// segment, so the shell is Journal, Roulette and Settings. The sections are one
-/// `IndexedStack` in both shapes, so a screen's state survives a tab switch and
-/// the window crossing the breakpoint. The detail pane sits outside it, since it
-/// belongs to the Journal rather than to the stack.
+/// Two permanent sections (Journal and Settings), with Groups added when the
+/// Supabase backend is configured. Favorites are folded into the Journal as a
+/// quick segment. The sections are one `IndexedStack` in both shapes, so a
+/// screen's state survives a tab switch and the window crossing the breakpoint.
+/// The detail pane sits outside it, since it belongs to the Journal rather than
+/// to the stack.
 ///
-/// Plain `Navigator` rather than a router package — three tabs and a handful of
+/// Plain `Navigator` rather than a router package — a handful of tabs and
 /// pushed screens is well inside what `Navigator` handles.
 class HomeShell extends StatefulWidget {
   const HomeShell({
@@ -175,10 +175,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     }
   }
 
-  /// The sections whose data the selected group scopes: the Journal and the
-  /// Roulette. Groups and Settings read no group-scoped rows, so entering them
-  /// triggers no pull.
-  static bool _sectionReadsGroupScope(int index) => index == 0 || index == 1;
+  /// The sections whose data the selected group scopes: the Journal. Groups and
+  /// Settings read no group-scoped rows, so entering them triggers no pull.
+  static bool _sectionReadsGroupScope(int index) => index == 0;
 
   /// Pulls the selected group's changes, if there is a group and a backend.
   /// [GroupsController.syncNow] owns the guard, so this is safe to fire on every
@@ -325,7 +324,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   /// Whether groups are available in this build (Supabase configured).
   bool get _canUseGroups => _groupsController?.canUseGroups ?? false;
 
-  /// The four sections, stacked so their state survives a tab switch — and a
+  /// The sections, stacked so their state survives a tab switch — and a
   /// window crossing the two-pane breakpoint.
   Widget _sections(AppLocalizations l10n) {
     // When groups are unavailable, skip that tab entirely.
@@ -334,7 +333,6 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         onOpenRestaurant: _openRestaurant,
         onAddRestaurant: _pushEdit,
       ),
-      RouletteScreen(onOpenRestaurant: _openRestaurant),
     ];
     if (_canUseGroups) {
       sections.add(const GroupsScreen());
@@ -387,11 +385,6 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           selectedIcon: const Icon(Icons.menu_book_rounded),
           label: Text(l10n.navJournal),
         ),
-        NavigationRailDestination(
-          icon: const Icon(Icons.casino_outlined),
-          selectedIcon: const Icon(Icons.casino_rounded),
-          label: Text(l10n.navRoulette),
-        ),
         if (_canUseGroups)
           NavigationRailDestination(
             icon: const Icon(Icons.groups_outlined),
@@ -413,11 +406,6 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           icon: const Icon(Icons.menu_book_outlined),
           selectedIcon: const Icon(Icons.menu_book_rounded),
           label: l10n.navJournal,
-        ),
-        NavigationDestination(
-          icon: const Icon(Icons.casino_outlined),
-          selectedIcon: const Icon(Icons.casino_rounded),
-          label: l10n.navRoulette,
         ),
         if (_canUseGroups)
           NavigationDestination(

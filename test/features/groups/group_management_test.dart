@@ -11,7 +11,6 @@ import 'package:eatapp/features/groups/group_scope_button.dart';
 import 'package:eatapp/features/groups/groups_controller.dart';
 import 'package:eatapp/features/groups/groups_screen.dart';
 import 'package:eatapp/features/list/journal_screen.dart';
-import 'package:eatapp/features/roulette/roulette_screen.dart';
 import 'package:eatapp/features/stats/statistics_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -225,15 +224,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   }
 
-  testWidgets('the scope switch also shows on the roulette and the statistics', (
+  testWidgets('the scope switch also shows on the statistics screen', (
     WidgetTester tester,
   ) async {
     final GroupsController controller = await ready(gateway: twoGroups());
-
-    await tester.pumpWidget(
-      host(child: const RouletteScreen(), groups: controller),
-    );
-    await expectScopeButton(tester);
 
     await tester.pumpWidget(
       host(child: const StatisticsScreen(), groups: controller),

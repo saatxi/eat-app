@@ -7,7 +7,7 @@ import 'groups_controller.dart';
 /// The scope selector as an app-bar action: a button naming the scope in force
 /// that opens a menu of Personal and every group.
 ///
-/// Shared by the journal, the roulette and the statistics screens — they all
+/// Shared by the journal and the statistics screens — they all
 /// read the same [GroupsController], so switching here moves all three at once.
 ///
 /// The label is the group's own name, capped by [_labelWidth] and ellipsized:

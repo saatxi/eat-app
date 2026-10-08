@@ -20,7 +20,7 @@ abstract final class AppMotion {
   /// 280ms — the default for a content swap or a card entering.
   static const Duration medium = Duration(milliseconds: 280);
 
-  /// 420ms — the one theatrical reveal (the roulette pick).
+  /// 420ms — for the one theatrical reveal in the app.
   static const Duration long = Duration(milliseconds: 420);
 
   /// Enters ease out, so a thing arriving settles rather than stops dead.
