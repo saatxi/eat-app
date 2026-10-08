@@ -419,9 +419,7 @@ class _EatAppState extends State<EatApp> {
             // outright.
             theme: AppTheme.of(mode: AppThemeMode.light),
             darkTheme: AppTheme.of(mode: AppThemeMode.dark),
-            themeMode: preferences.themeMode.brightness == Brightness.dark
-                ? ThemeMode.dark
-                : ThemeMode.light,
+            themeMode: preferences.themeMode.toThemeMode,
             home: HomeShell(
               initialSharedFilePath: widget.initialSharedFilePath,
               sharedFileStream: widget.sharedFileStream,

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
-/// Light/dark override.
+/// Light/dark/system theme choice.
 ///
-/// There is no "follow the system" entry: the Android app deliberately removed
-/// that choice, and nothing here reopens it. [brightness] is derived here
-/// rather than at the call site so every consumer resolves a mode the same way.
+/// [brightness] is derived here for the palette gallery and contrast tests,
+/// which need a single brightness value; [system] falls back to light there.
+/// [toThemeMode] is what [MaterialApp] consumes at runtime.
 enum AppThemeMode {
   light('light'),
-  dark('dark');
+  dark('dark'),
+  system('system');
 
   const AppThemeMode(this.id);
 
@@ -16,8 +17,18 @@ enum AppThemeMode {
 
   static const AppThemeMode fallback = AppThemeMode.light;
 
+  /// Resolved brightness for gallery/test consumers that need a concrete value.
+  /// [system] falls back to light — only [toThemeMode] triggers the OS query.
   Brightness get brightness =>
       this == AppThemeMode.dark ? Brightness.dark : Brightness.light;
+
+  /// The [ThemeMode] passed to [MaterialApp], so the framework follows the OS
+  /// when [system] is selected.
+  ThemeMode get toThemeMode => switch (this) {
+    AppThemeMode.light => ThemeMode.light,
+    AppThemeMode.dark => ThemeMode.dark,
+    AppThemeMode.system => ThemeMode.system,
+  };
 
   /// Resolves a persisted [id], falling back rather than throwing.
   static AppThemeMode fromId(String? id) {

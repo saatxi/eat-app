@@ -82,6 +82,9 @@ class AppLocalizationsCa extends AppLocalizations {
   String get listActionClearFilters => 'Esborra els filtres';
 
   @override
+  String get listSortLabel => 'Ordena per';
+
+  @override
   String get listSortName => 'Nom (A-Z)';
 
   @override
@@ -239,9 +242,6 @@ class AppLocalizationsCa extends AppLocalizations {
   String get navJournal => 'Restaurants';
 
   @override
-  String get navRoulette => 'Ruleta';
-
-  @override
   String get navGroups => 'Grups';
 
   @override
@@ -279,37 +279,6 @@ class AppLocalizationsCa extends AppLocalizations {
   String get actionRemoveFavorite => 'Elimina dels preferits';
 
   @override
-  String get rouletteTitle => 'Què mengem';
-
-  @override
-  String get roulettePrompt => 'No et decideixes? Deixa que triï l\'app.';
-
-  @override
-  String get rouletteActionPick => 'Tria\'n un';
-
-  @override
-  String get rouletteActionAgain => 'Torna-ho a provar';
-
-  @override
-  String get rouletteOnlyFavorites => 'Només preferits';
-
-  @override
-  String get rouletteFilterRating => 'Puntuació';
-
-  @override
-  String get rouletteFilterStatus => 'Estat';
-
-  @override
-  String get rouletteFilterPrice => 'Preu';
-
-  @override
-  String get rouletteEmptyTitle => 'Res per triar';
-
-  @override
-  String get rouletteEmptyBody =>
-      'Cap restaurant coincideix amb aquests filtres.';
-
-  @override
   String get settingsTitle => 'Configuració';
 
   @override
@@ -323,6 +292,9 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get themeModeDark => 'Fosc';
+
+  @override
+  String get themeModeSystem => 'Sistema';
 
   @override
   String get settingsSectionData => 'Dades';

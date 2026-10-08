@@ -238,6 +238,12 @@ abstract class AppLocalizations {
   /// **'Clear filters'**
   String get listActionClearFilters;
 
+  /// No description provided for @listSortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get listSortLabel;
+
   /// No description provided for @listSortName.
   ///
   /// In en, this message translates to:
@@ -496,12 +502,6 @@ abstract class AppLocalizations {
   /// **'Restaurants'**
   String get navJournal;
 
-  /// No description provided for @navRoulette.
-  ///
-  /// In en, this message translates to:
-  /// **'Roulette'**
-  String get navRoulette;
-
   /// No description provided for @navGroups.
   ///
   /// In en, this message translates to:
@@ -574,66 +574,6 @@ abstract class AppLocalizations {
   /// **'Remove from favorites'**
   String get actionRemoveFavorite;
 
-  /// No description provided for @rouletteTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'What to eat'**
-  String get rouletteTitle;
-
-  /// No description provided for @roulettePrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'Can\'t decide? Let the app pick.'**
-  String get roulettePrompt;
-
-  /// No description provided for @rouletteActionPick.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick one'**
-  String get rouletteActionPick;
-
-  /// No description provided for @rouletteActionAgain.
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get rouletteActionAgain;
-
-  /// No description provided for @rouletteOnlyFavorites.
-  ///
-  /// In en, this message translates to:
-  /// **'Favorites only'**
-  String get rouletteOnlyFavorites;
-
-  /// No description provided for @rouletteFilterRating.
-  ///
-  /// In en, this message translates to:
-  /// **'Rating'**
-  String get rouletteFilterRating;
-
-  /// No description provided for @rouletteFilterStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Status'**
-  String get rouletteFilterStatus;
-
-  /// No description provided for @rouletteFilterPrice.
-  ///
-  /// In en, this message translates to:
-  /// **'Price'**
-  String get rouletteFilterPrice;
-
-  /// No description provided for @rouletteEmptyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing to pick from'**
-  String get rouletteEmptyTitle;
-
-  /// No description provided for @rouletteEmptyBody.
-  ///
-  /// In en, this message translates to:
-  /// **'No restaurant matches these filters.'**
-  String get rouletteEmptyBody;
-
   /// No description provided for @settingsTitle.
   ///
   /// In en, this message translates to:
@@ -663,6 +603,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dark'**
   String get themeModeDark;
+
+  /// No description provided for @themeModeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get themeModeSystem;
 
   /// No description provided for @settingsSectionData.
   ///

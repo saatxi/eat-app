@@ -89,6 +89,11 @@ class SettingsScreen extends StatelessWidget {
                       label: Text(l10n.themeModeDark),
                       icon: const Icon(Icons.dark_mode_outlined),
                     ),
+                    ButtonSegment<AppThemeMode>(
+                      value: AppThemeMode.system,
+                      label: Text(l10n.themeModeSystem),
+                      icon: const Icon(Icons.brightness_auto_outlined),
+                    ),
                   ],
                   selected: <AppThemeMode>{value.themeMode},
                   onSelectionChanged: (Set<AppThemeMode> selection) =>

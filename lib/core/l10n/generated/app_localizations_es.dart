@@ -81,6 +81,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get listActionClearFilters => 'Borrar filtros';
 
   @override
+  String get listSortLabel => 'Ordenar por';
+
+  @override
   String get listSortName => 'Nombre (A-Z)';
 
   @override
@@ -238,9 +241,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navJournal => 'Restaurantes';
 
   @override
-  String get navRoulette => 'Ruleta';
-
-  @override
   String get navGroups => 'Grupos';
 
   @override
@@ -278,37 +278,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get actionRemoveFavorite => 'Quitar de favoritos';
 
   @override
-  String get rouletteTitle => 'Qué comemos';
-
-  @override
-  String get roulettePrompt => '¿No te decides? Deja que elija la app.';
-
-  @override
-  String get rouletteActionPick => 'Elegir uno';
-
-  @override
-  String get rouletteActionAgain => 'Otra vez';
-
-  @override
-  String get rouletteOnlyFavorites => 'Solo favoritos';
-
-  @override
-  String get rouletteFilterRating => 'Puntuación';
-
-  @override
-  String get rouletteFilterStatus => 'Estado';
-
-  @override
-  String get rouletteFilterPrice => 'Precio';
-
-  @override
-  String get rouletteEmptyTitle => 'Nada que elegir';
-
-  @override
-  String get rouletteEmptyBody =>
-      'Ningún restaurante coincide con estos filtros.';
-
-  @override
   String get settingsTitle => 'Ajustes';
 
   @override
@@ -322,6 +291,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get themeModeDark => 'Oscuro';
+
+  @override
+  String get themeModeSystem => 'Sistema';
 
   @override
   String get settingsSectionData => 'Datos';

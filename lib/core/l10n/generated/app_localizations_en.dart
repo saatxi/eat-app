@@ -81,6 +81,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listActionClearFilters => 'Clear filters';
 
   @override
+  String get listSortLabel => 'Sort by';
+
+  @override
   String get listSortName => 'Name (A-Z)';
 
   @override
@@ -238,9 +241,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navJournal => 'Restaurants';
 
   @override
-  String get navRoulette => 'Roulette';
-
-  @override
   String get navGroups => 'Groups';
 
   @override
@@ -278,36 +278,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionRemoveFavorite => 'Remove from favorites';
 
   @override
-  String get rouletteTitle => 'What to eat';
-
-  @override
-  String get roulettePrompt => 'Can\'t decide? Let the app pick.';
-
-  @override
-  String get rouletteActionPick => 'Pick one';
-
-  @override
-  String get rouletteActionAgain => 'Try again';
-
-  @override
-  String get rouletteOnlyFavorites => 'Favorites only';
-
-  @override
-  String get rouletteFilterRating => 'Rating';
-
-  @override
-  String get rouletteFilterStatus => 'Status';
-
-  @override
-  String get rouletteFilterPrice => 'Price';
-
-  @override
-  String get rouletteEmptyTitle => 'Nothing to pick from';
-
-  @override
-  String get rouletteEmptyBody => 'No restaurant matches these filters.';
-
-  @override
   String get settingsTitle => 'Settings';
 
   @override
@@ -321,6 +291,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeModeDark => 'Dark';
+
+  @override
+  String get themeModeSystem => 'System';
 
   @override
   String get settingsSectionData => 'Data';
