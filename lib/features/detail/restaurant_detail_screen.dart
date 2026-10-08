@@ -213,7 +213,6 @@ class _LoadedContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final ThemeData theme = Theme.of(context);
     final RestaurantUiModel restaurant = state.restaurant;
     final String priceLabel = priceRangeLabel(l10n, restaurant.priceRange);
     final String? address = restaurant.formattedAddress;
@@ -229,9 +228,9 @@ class _LoadedContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           // The other end of the journal card's [restaurantHeroTag]: the photo
-          // when there is one, and the restaurant's name otherwise. The name
-          // holds the place the cuisine badge used to, so a long name is shown
-          // in full here rather than being truncated in the app bar.
+          // when there is one, and a cuisine-tinted gradient header otherwise.
+          // The gradient is keyed to the cuisine accent so the header reads as
+          // part of the same visual language as the list card's badge.
           Hero(
             tag: restaurantHeroTag(restaurant.id),
             child: restaurant.photoPath != null
@@ -248,13 +247,7 @@ class _LoadedContent extends StatelessWidget {
                               const SizedBox.shrink(),
                     ),
                   )
-                : Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      restaurant.name,
-                      style: theme.textTheme.headlineMedium,
-                    ),
-                  ),
+                : _CuisineHeader(restaurant: restaurant),
           ),
           const SizedBox(height: AppSpacing.lg),
           _OverviewCard(
@@ -685,6 +678,75 @@ class _DetailSkeleton extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A 240-px tall rounded header shown when a restaurant has no photo yet.
+///
+/// Uses the cuisine's accent pair — container as the background gradient base,
+/// the on-container colour for the icon and the name — so it reads as part of
+/// the same visual vocabulary as the cuisine badge in the list card.
+class _CuisineHeader extends StatelessWidget {
+  const _CuisineHeader({required this.restaurant});
+
+  final RestaurantUiModel restaurant;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final CuisineTint tint = cuisineTint(context, restaurant.cuisineKey);
+    final Color bg = tint.container;
+    final Color fg = tint.onContainer;
+    // Color.lerp with two non-null colours is always non-null; darken toward
+    // the on-container tone to give the gradient a subtle depth.
+    final Color bgDeep = Color.lerp(bg, fg, 0.12) ?? bg;
+
+    return ClipRRect(
+      borderRadius: AppRadius.largeAll,
+      child: SizedBox(
+        width: double.infinity,
+        height: 240,
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            // Gradient: solid at the top, slightly deeper at the bottom.
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: <Color>[bg, bgDeep],
+                ),
+              ),
+            ),
+            // Large decorative icon — translucent, offset to the right.
+            Positioned(
+              right: -16,
+              top: -8,
+              child: ExcludeSemantics(
+                child: Icon(
+                  cuisineIcon(restaurant.cuisineKey),
+                  size: 180,
+                  color: fg.withAlpha(40),
+                ),
+              ),
+            ),
+            // Restaurant name anchored to the bottom-left.
+            Positioned(
+              left: AppSpacing.lg,
+              right: AppSpacing.lg,
+              bottom: AppSpacing.lg,
+              child: Text(
+                restaurant.name,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.headlineMedium?.copyWith(color: fg),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
