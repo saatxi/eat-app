@@ -221,17 +221,18 @@ class _ImportScreenState extends State<ImportScreen> {
                       ),
                     ),
               ],
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.md),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed:
+                        state.isImporting ? null : () => _confirm(controller),
+                    child: Text(l10n.importActionConfirm),
+                  ),
+                ),
+              ),
             ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: state.isImporting ? null : () => _confirm(controller),
-              child: Text(l10n.importActionConfirm),
-            ),
           ),
         ),
       ],
