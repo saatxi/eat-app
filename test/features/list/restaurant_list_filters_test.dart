@@ -11,9 +11,9 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../data/db/db_test_utils.dart';
 import '../../data/photo/photo_fakes.dart';
 
-/// The filter panel's own clear action, driven through the screen: the chips
+/// The filter sheet's own clear action, driven through the screen: the chips
 /// each toggle themselves off, and clearing a stack of them one chip at a time
-/// is exactly what the panel's action exists to avoid.
+/// is exactly what the sheet's action exists to avoid.
 void main() {
   late AppDatabase db;
   late RestaurantRepository repository;
@@ -59,7 +59,7 @@ void main() {
   /// The panel's clear action, which is a `TextButton` like the empty state's.
   Finder clearAction() => find.widgetWithText(TextButton, 'Clear filters');
 
-  testWidgets('the panel clears every filter at once', (
+  testWidgets('the sheet clears every filter at once', (
     WidgetTester tester,
   ) async {
     await repository.insert(
@@ -74,12 +74,14 @@ void main() {
     expect(find.text('Kebab'), findsOneWidget);
     expect(find.text('Sushi'), findsOneWidget);
 
-    // The panel starts folded, and with nothing to clear it has no action.
-    await tester.tap(find.text('Filters'));
+    // Open the filter sheet — the tune icon is the entry point.
+    await tester.tap(find.byIcon(Icons.tune_rounded));
     await pump(tester);
+
+    // With nothing active yet, the clear action is absent.
     expect(clearAction(), findsNothing);
 
-    // Narrow the list with one of the chips.
+    // Narrow the list with one of the chips inside the sheet.
     await tester.tap(find.text('Cuisine'));
     await pump(tester);
     await tester.tap(find.widgetWithText(MenuItemButton, 'Japanese'));
