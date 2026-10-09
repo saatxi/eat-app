@@ -205,6 +205,69 @@ void main() {
       );
     });
 
+    test('a shared visit edit queues it and tombstones a dropped photo', () async {
+      await repository.insert(sharedRestaurant(id: 'r1'));
+      final String visitId = await repository.addVisit(
+        restaurantId: 'r1',
+        visitDate: 10,
+        rating: 4,
+        photoSourcePaths: <String>['old.jpg'],
+        shared: shared,
+      );
+      final Photo dropped =
+          (await repository.observePhotosForVisit(visitId).first).single;
+      await clearQueue();
+
+      await repository.updateVisit(
+        visitId: visitId,
+        visitDate: 20,
+        rating: 5,
+        addedPhotoSourcePaths: <String>['new.jpg'],
+        shared: shared,
+      );
+
+      // The dropped photo survives as a tombstone, never a hard delete, so the
+      // other members learn it is gone.
+      expect(
+        (await db.select(db.photos).get())
+            .firstWhere((Photo photo) => photo.id == dropped.id)
+            .deletedAt,
+        isNotNull,
+      );
+      expect(
+        await repository.observePhotosForVisit(visitId).first,
+        hasLength(1),
+      );
+      // The visit itself and the photo added in its place are queued too.
+      expect(
+        (await queue())
+            .where((PendingSync e) => e.sharedTable == SyncTable.visits.name)
+            .single
+            .rowId,
+        visitId,
+      );
+      expect(
+        (await queue())
+            .where((PendingSync e) => e.sharedTable == SyncTable.photos.name)
+            .map((PendingSync e) => e.rowId)
+            .toSet(),
+        hasLength(2),
+      );
+    });
+
+    test('a private visit edit queues nothing', () async {
+      await repository.insert(restaurant(id: 'p', name: 'Private'));
+      final String visitId = await repository.addVisit(
+        restaurantId: 'p',
+        visitDate: 10,
+        rating: 4,
+      );
+
+      await repository.updateVisit(visitId: visitId, visitDate: 20, rating: 5);
+
+      expect(await queue(), isEmpty);
+    });
+
     test('a shared visit delete tombstones it and queues it', () async {
       await repository.insert(sharedRestaurant(id: 'r1'));
       final String visitId = await repository.addVisit(

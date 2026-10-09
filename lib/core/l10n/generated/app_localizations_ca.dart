@@ -648,7 +648,13 @@ class AppLocalizationsCa extends AppLocalizations {
   String get visitCardPhotoDescription => 'Foto d\'aquesta visita';
 
   @override
+  String get visitCardEditHint => 'Edita aquesta visita';
+
+  @override
   String get logvisitTitle => 'Registrar visita';
+
+  @override
+  String get logvisitEditTitle => 'Editar visita';
 
   @override
   String get logvisitActionSave => 'Desar';
@@ -679,6 +685,12 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get logvisitDatePickerCancel => 'Cancel·la';
+
+  @override
+  String get logvisitActionDelete => 'Eliminar visita';
+
+  @override
+  String get logvisitDeleteConfirmTitle => 'Vols eliminar aquesta visita?';
 
   @override
   String get cuisineMediterranean => 'Mediterrània';

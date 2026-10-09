@@ -1,26 +1,33 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_radius.dart';
 import '../../core/theme/tokens/app_spacing.dart';
+import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/price_range_picker.dart';
 import '../../core/widgets/rating_picker.dart';
 import '../../data/sync/shared_writes.dart';
 import 'log_visit_controller.dart';
 
-/// The "log a visit" form: date, rating, price band and a note.
+/// The visit form: date, rating, price band, a note and the visit's photos.
 ///
-/// Opened from the detail screen for one restaurant. Ported from
-/// `ui/logvisit/LogVisitScreen.kt`; the photo strip arrives with the photos
-/// block.
+/// Opened from the detail screen, either to log a new visit for a restaurant
+/// or — with [visitId] given — to edit one already in its history, which is the
+/// same form prefilled plus a delete action. Ported from
+/// `ui/logvisit/LogVisitScreen.kt`.
 class LogVisitScreen extends StatefulWidget {
-  const LogVisitScreen({super.key, required this.restaurantId});
+  const LogVisitScreen({super.key, required this.restaurantId, this.visitId});
 
   final String restaurantId;
+
+  /// The visit to edit, or null to log a new one.
+  final String? visitId;
 
   @override
   State<LogVisitScreen> createState() => _LogVisitScreenState();
@@ -39,38 +46,72 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
       _controller = LogVisitController(
         repository: scope.restaurants,
         restaurantId: widget.restaurantId,
+        visitId: widget.visitId,
         photoPicker: scope.photoPicker,
         sharedWrites: SharedWrites(
           preferences: scope.preferences,
           identity: scope.identity,
         ),
-      )..addListener(_syncDate);
-      _syncDate();
+      )..addListener(_syncForm);
+      _syncForm();
+      // Edit mode only: fills the form from the stored visit, after which
+      // `_syncForm` copies the loaded note and date into their fields.
+      unawaited(_controller!.load());
     }
   }
 
   @override
   void dispose() {
-    _controller?.removeListener(_syncDate);
+    _controller?.removeListener(_syncForm);
     _notes.dispose();
     _date.dispose();
     _controller?.dispose();
     super.dispose();
   }
 
-  /// Keeps the read-only date field in step with the state. Done from the
-  /// controller's listener rather than in `build`, because writing to a
-  /// `TextEditingController` while the tree is building would notify its
+  /// The last note this screen wrote into [_notes], so a later edit of the
+  /// field is never overwritten by the value it produced.
+  String? _lastPushedNotes;
+
+  /// Keeps the read-only date field and the note in step with the state. Done
+  /// from the controller's listener rather than in `build`, because writing to
+  /// a `TextEditingController` while the tree is building would notify its
   /// `TextField` mid-build.
-  void _syncDate() {
+  ///
+  /// The note is only pushed when the two have actually diverged, which in
+  /// practice means the one load in edit mode: typing already moves the state
+  /// from the field, and writing it back on every keystroke would fight the
+  /// cursor.
+  void _syncForm() {
+    final LogVisitState state = _controller!.state;
     final String next = DateFormat.yMMMd(
       Localizations.localeOf(context).toString(),
-    ).format(
-      DateTime.fromMillisecondsSinceEpoch(_controller!.state.visitDate),
-    );
+    ).format(DateTime.fromMillisecondsSinceEpoch(state.visitDate));
     if (_date.text != next) {
       _date.text = next;
     }
+    if (_notes.text != state.notes && state.notes != _lastPushedNotes) {
+      _lastPushedNotes = state.notes;
+      _notes.text = state.notes;
+    }
+  }
+
+  /// Confirms, then removes the visit and leaves. Edit mode only.
+  Future<void> _delete() async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool confirmed = await showDeleteConfirmDialog(
+      context,
+      title: l10n.logvisitDeleteConfirmTitle,
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+    await HapticFeedback.heavyImpact();
+    await _controller!.delete();
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pop();
   }
 
   Future<void> _save() async {
@@ -108,8 +149,16 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(l10n.logvisitTitle),
+            title: Text(
+              controller.isEditing ? l10n.logvisitEditTitle : l10n.logvisitTitle,
+            ),
             actions: <Widget>[
+              if (controller.isEditing && !state.isSaving)
+                IconButton(
+                  onPressed: _delete,
+                  tooltip: l10n.logvisitActionDelete,
+                  icon: const Icon(Icons.delete_outline),
+                ),
               if (state.isSaving)
                 const Padding(
                   padding: EdgeInsets.all(AppSpacing.md),
@@ -127,93 +176,95 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
                 ),
             ],
           ),
-          body: ListView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            children: <Widget>[
-              Card(
-                margin: EdgeInsets.zero,
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          body: state.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     children: <Widget>[
-                      Text(
-                        l10n.logvisitFieldDate,
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.xs),
-                        child: TextField(
-                          readOnly: true,
-                          controller: _date,
-                          onTap: () => _pickDate(state.visitDate),
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
+                      Card(
+                        margin: EdgeInsets.zero,
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                l10n.logvisitFieldDate,
+                                style: Theme.of(context).textTheme.labelLarge,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                                child: TextField(
+                                  readOnly: true,
+                                  controller: _date,
+                                  onTap: () => _pickDate(state.visitDate),
+                                  decoration: const InputDecoration(
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              Text(
+                                l10n.logvisitFieldRating,
+                                style: Theme.of(context).textTheme.labelLarge,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                                child: RatingPicker(
+                                  rating: state.rating,
+                                  onChanged: controller.onRatingChange,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              Text(
+                                l10n.logvisitFieldPrice,
+                                style: Theme.of(context).textTheme.labelLarge,
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              PriceRangePicker(
+                                priceRange: state.priceRange,
+                                onChanged: controller.onPriceRangeChange,
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              TextField(
+                                controller: _notes,
+                                onChanged: controller.onNotesChange,
+                                minLines: 3,
+                                maxLines: 6,
+                                decoration: InputDecoration(
+                                  labelText: l10n.logvisitFieldNotes,
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              _PhotoStrip(
+                                photos: state.photos,
+                                onAdd: controller.pickPhoto,
+                                onRemove: controller.removePhoto,
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        l10n.logvisitFieldRating,
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.xs),
-                        child: RatingPicker(
-                          rating: state.rating,
-                          onChanged: controller.onRatingChange,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        l10n.logvisitFieldPrice,
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      PriceRangePicker(
-                        priceRange: state.priceRange,
-                        onChanged: controller.onPriceRangeChange,
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      TextField(
-                        controller: _notes,
-                        onChanged: controller.onNotesChange,
-                        minLines: 3,
-                        maxLines: 6,
-                        decoration: InputDecoration(
-                          labelText: l10n.logvisitFieldNotes,
-                          border: const OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      _PhotoStrip(
-                        paths: state.photoSourcePaths,
-                        onAdd: controller.pickPhoto,
-                        onRemove: controller.removePhoto,
-                      ),
                     ],
-                  ),
                 ),
-              ),
-            ],
-          ),
         );
       },
     );
   }
 }
 
-/// The visit's photos: a horizontal strip of staged thumbnails, each removable,
-/// with an "add" button underneath. Staged only — the files are persisted when
-/// the visit is saved.
+/// The visit's photos: a horizontal strip of thumbnails, each removable, with
+/// an "add" button underneath. Stored photos and just-picked ones are drawn the
+/// same; nothing is written either way until the visit is saved.
 class _PhotoStrip extends StatelessWidget {
   const _PhotoStrip({
-    required this.paths,
+    required this.photos,
     required this.onAdd,
     required this.onRemove,
   });
 
-  final List<String> paths;
+  final List<VisitPhoto> photos;
   final VoidCallback onAdd;
   final ValueChanged<String> onRemove;
 
@@ -223,18 +274,18 @@ class _PhotoStrip extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        if (paths.isNotEmpty)
+        if (photos.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: SizedBox(
               height: 96,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: paths.length,
+                itemCount: photos.length,
                 separatorBuilder: (BuildContext context, int index) =>
                     const SizedBox(width: AppSpacing.sm),
                 itemBuilder: (BuildContext context, int index) {
-                  final String path = paths[index];
+                  final String path = photos[index].path;
                   return Stack(
                     children: <Widget>[
                       ClipRRect(

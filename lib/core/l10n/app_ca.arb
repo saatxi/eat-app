@@ -206,8 +206,10 @@
   "detailVisitsEmptyBody": "Registra una visita quan hi hagis anat.",
   "detailActionLogVisit": "Registrar visita",
   "visitCardPhotoDescription": "Foto d'aquesta visita",
+  "visitCardEditHint": "Edita aquesta visita",
 
   "logvisitTitle": "Registrar visita",
+  "logvisitEditTitle": "Editar visita",
   "logvisitActionSave": "Desar",
   "logvisitFieldDate": "Data",
   "logvisitFieldRating": "Puntuació",
@@ -218,6 +220,8 @@
   "logvisitPhotoDescription": "Foto de la visita",
   "logvisitDatePickerConfirm": "D'acord",
   "logvisitDatePickerCancel": "Cancel·la",
+  "logvisitActionDelete": "Eliminar visita",
+  "logvisitDeleteConfirmTitle": "Vols eliminar aquesta visita?",
 
   "cuisineMediterranean": "Mediterrània",
   "cuisineSpanish": "Espanyola",

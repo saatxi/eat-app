@@ -37,7 +37,7 @@ void main() {
   ///
   /// Saving pops the screen, and popping the *only* route is not something a
   /// test can do — so there has to be something underneath to pop back to.
-  Future<void> pumpScreen(WidgetTester tester) async {
+  Future<void> pumpScreen(WidgetTester tester, {String? visitId}) async {
     await tester.pumpWidget(
       AppScope(
         restaurants: repository,
@@ -55,7 +55,7 @@ void main() {
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (BuildContext context) =>
-                          const LogVisitScreen(restaurantId: 'a'),
+                          LogVisitScreen(restaurantId: 'a', visitId: visitId),
                     ),
                   ),
                   child: const Text('open'),
@@ -199,5 +199,94 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 1));
+  });
+
+  group('editing a past visit', () {
+    /// The visit the editor opens on, already in the history.
+    Future<String> seedVisit() => repository.addVisit(
+      restaurantId: 'a',
+      visitDate: DateTime(2026, 1, 2).millisecondsSinceEpoch,
+      rating: 3,
+      notes: 'Decent',
+    );
+
+    testWidgets('opens prefilled, under the edit title', (
+      WidgetTester tester,
+    ) async {
+      final String visitId = await seedVisit();
+
+      await pumpScreen(tester, visitId: visitId);
+      await pumpFrames(tester);
+
+      expect(find.text('Edit visit'), findsOneWidget);
+      expect(find.text('Decent'), findsOneWidget);
+      // The delete action is the edit mode's own; the new-visit form has none.
+      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
+    });
+
+    testWidgets('saving rewrites that visit and leaves the screen', (
+      WidgetTester tester,
+    ) async {
+      final String visitId = await seedVisit();
+      await pumpScreen(tester, visitId: visitId);
+      await pumpFrames(tester);
+
+      await tester.enterText(find.byType(TextField).last, 'Much better');
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.check));
+      await pumpFrames(tester);
+
+      final List<Visit> saved = await visits();
+      expect(saved, hasLength(1), reason: 'edited, not logged a second time');
+      expect(saved.single.id, visitId);
+      expect(saved.single.notes, 'Much better');
+      expect(find.text('open'), findsOneWidget, reason: 'the screen popped');
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
+    });
+
+    testWidgets('deleting asks first, then removes the visit', (
+      WidgetTester tester,
+    ) async {
+      await seedVisit();
+      await pumpScreen(tester, visitId: (await visits()).single.id);
+      await pumpFrames(tester);
+
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+      expect(find.text('Delete this visit?'), findsOneWidget);
+
+      await tester.tap(find.text('Delete'));
+      await pumpFrames(tester);
+
+      expect(await visits(), isEmpty);
+      expect(find.text('open'), findsOneWidget, reason: 'the screen popped');
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
+    });
+
+    testWidgets('cancelling the delete keeps the visit and the form', (
+      WidgetTester tester,
+    ) async {
+      await seedVisit();
+      await pumpScreen(tester, visitId: (await visits()).single.id);
+      await pumpFrames(tester);
+
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await pumpFrames(tester);
+
+      expect(await visits(), hasLength(1));
+      expect(find.text('Edit visit'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
+    });
   });
 }

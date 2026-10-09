@@ -75,8 +75,14 @@ class VisitDao extends DatabaseAccessor<AppDatabase> with _$VisitDaoMixin {
   Future<void> insertVisit(Visit row) => into(visits).insert(row);
 
   /// `UPDATE`, not drift's `replace` — see `RestaurantDao.updateRestaurant`.
+  ///
+  /// `toCompanion(false)` rather than the row itself: writing a data class
+  /// converts it with `nullToAbsent`, which would leave a note the user just
+  /// cleared sitting in the column. The whole row is written, nulls included,
+  /// which is what "update this visit to look like this" has to mean.
   Future<void> updateVisit(Visit row) =>
-      (update(visits)..where((t) => t.id.equals(row.id))).write(row);
+      (update(visits)..where((t) => t.id.equals(row.id)))
+          .write(row.toCompanion(false));
 
   /// Writes a visit back in place, clearing any tombstone. Used when the edit
   /// form rewrites the single visit of a shared restaurant: the row is revived

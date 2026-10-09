@@ -332,6 +332,86 @@ void main() {
       expect(latest['b']!.visitDate, 2000);
     });
 
+    test('updateVisit rewrites the fields and keeps the id', () async {
+      final String id = await repository.addVisit(
+        restaurantId: 'a',
+        visitDate: 1000,
+        rating: 2,
+        notes: 'Too salty',
+        priceRange: 2,
+      );
+
+      await repository.updateVisit(
+        visitId: id,
+        visitDate: 2000,
+        rating: 5,
+        notes: 'Second time was better',
+        priceRange: 4,
+      );
+
+      final Visit visit =
+          (await repository.observeVisitsForRestaurant('a').first).single;
+      expect(visit.id, id);
+      expect(visit.visitDate, 2000);
+      expect(visit.rating, 5);
+      expect(visit.notes, 'Second time was better');
+      expect(visit.priceRange, 4);
+    });
+
+    test('updateVisit clears a note that was emptied', () async {
+      final String id = await repository.addVisit(
+        restaurantId: 'a',
+        visitDate: 1000,
+        rating: 2,
+        notes: 'Too salty',
+      );
+
+      await repository.updateVisit(visitId: id, visitDate: 1000, rating: 2);
+
+      final Visit visit =
+          (await repository.observeVisitsForRestaurant('a').first).single;
+      expect(visit.notes, isNull);
+    });
+
+    test('updateVisit keeps, drops and appends photos', () async {
+      final String id = await repository.addVisit(
+        restaurantId: 'a',
+        visitDate: 1000,
+        rating: 3,
+        photoSourcePaths: <String>['/photos/a.jpg', '/photos/b.jpg'],
+      );
+      final List<Photo> before =
+          await repository.observePhotosForVisit(id).first;
+
+      await repository.updateVisit(
+        visitId: id,
+        visitDate: 1000,
+        rating: 3,
+        keptPhotoIds: <String>[before.last.id],
+        addedPhotoSourcePaths: <String>['/photos/c.jpg'],
+      );
+
+      final List<Photo> after =
+          await repository.observePhotosForVisit(id).first;
+      expect(
+        <String>[for (final Photo photo in after) photo.path],
+        <String>['/photos/b.jpg', '/photos/c.jpg'],
+      );
+      // Appended after the survivor rather than renumbered from zero, so the
+      // strip keeps the order the form showed.
+      expect(<int>[for (final Photo photo in after) photo.position], <int>[1, 2]);
+    });
+
+    test('updateVisit on a visit that is gone writes nothing', () async {
+      await repository.updateVisit(
+        visitId: 'missing',
+        visitDate: 1000,
+        rating: 3,
+      );
+
+      expect(await repository.observeVisitsForRestaurant('a').first, isEmpty);
+    });
+
     test('deleteVisit removes one visit and leaves the rest', () async {
       final String first = await repository.addVisit(
         restaurantId: 'a',

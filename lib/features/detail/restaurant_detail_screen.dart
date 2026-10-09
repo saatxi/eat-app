@@ -34,6 +34,7 @@ class RestaurantDetailScreen extends StatefulWidget {
     required this.restaurantId,
     this.onEdit,
     this.onLogVisit,
+    this.onEditVisit,
     this.embedded = false,
     this.onClose,
   });
@@ -43,6 +44,10 @@ class RestaurantDetailScreen extends StatefulWidget {
   /// Null leaves the action hidden — the case in a bare widget test.
   final ValueChanged<String>? onEdit;
   final ValueChanged<String>? onLogVisit;
+
+  /// Opens one past visit for editing, by visit id. Null leaves the cards
+  /// inert, the same as the other two.
+  final ValueChanged<String>? onEditVisit;
 
   /// True when this screen is the detail half of the tablet two-pane layout
   /// rather than a pushed route. It changes nothing about the layout — the back
@@ -188,6 +193,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                 state: loaded,
                 onOpen: _open,
                 onLogVisit: widget.onLogVisit,
+                onEditVisit: widget.onEditVisit,
               ),
           },
         );
@@ -201,6 +207,7 @@ class _LoadedContent extends StatelessWidget {
     required this.state,
     required this.onOpen,
     this.onLogVisit,
+    this.onEditVisit,
   });
 
   final DetailLoaded state;
@@ -209,6 +216,9 @@ class _LoadedContent extends StatelessWidget {
   /// Null leaves the visits section's action hidden — the case in a bare widget
   /// test, the same as [RestaurantDetailScreen.onEdit].
   final ValueChanged<String>? onLogVisit;
+
+  /// See [RestaurantDetailScreen.onEditVisit].
+  final ValueChanged<String>? onEditVisit;
 
   @override
   Widget build(BuildContext context) {
@@ -276,6 +286,7 @@ class _LoadedContent extends StatelessWidget {
             onAddVisit: onLogVisit == null
                 ? null
                 : () => onLogVisit!(restaurant.id),
+            onEditVisit: onEditVisit,
           ),
         ],
       ),
@@ -497,6 +508,7 @@ class _VisitsSection extends StatelessWidget {
     required this.visits,
     required this.cuisineKey,
     this.onAddVisit,
+    this.onEditVisit,
   });
 
   final List<VisitUiModel> visits;
@@ -504,6 +516,9 @@ class _VisitsSection extends StatelessWidget {
 
   /// Null leaves the action out of the header.
   final VoidCallback? onAddVisit;
+
+  /// Null leaves the cards untappable.
+  final ValueChanged<String>? onEditVisit;
 
   @override
   Widget build(BuildContext context) {
@@ -558,7 +573,13 @@ class _VisitsSection extends StatelessWidget {
               for (final VisitUiModel visit in visits)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: _VisitCard(visit: visit, cuisineKey: cuisineKey),
+                  child: _VisitCard(
+                    visit: visit,
+                    cuisineKey: cuisineKey,
+                    onEdit: onEditVisit == null
+                        ? null
+                        : () => onEditVisit!(visit.id),
+                  ),
                 ),
             ],
           ),
@@ -567,11 +588,21 @@ class _VisitsSection extends StatelessWidget {
   }
 }
 
+/// One past visit. Tapping it reopens the visit form on that visit, which is
+/// the only way back into a visit once it is logged — hence the whole card is
+/// the target rather than a small icon tucked into its corner.
 class _VisitCard extends StatelessWidget {
-  const _VisitCard({required this.visit, required this.cuisineKey});
+  const _VisitCard({
+    required this.visit,
+    required this.cuisineKey,
+    this.onEdit,
+  });
 
   final VisitUiModel visit;
   final String cuisineKey;
+
+  /// Null leaves the card inert, the case in a bare widget test.
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -583,70 +614,78 @@ class _VisitCard extends StatelessWidget {
     ).format(DateTime.fromMillisecondsSinceEpoch(visit.visitDate));
     final String? notes = visit.notes;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: tint.container,
-        borderRadius: AppRadius.mediumAll,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Text(
-                date,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: tint.onContainer,
+    return Material(
+      color: tint.container,
+      borderRadius: AppRadius.mediumAll,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onEdit,
+        child: Semantics(
+          button: onEdit != null,
+          hint: onEdit == null ? null : l10n.visitCardEditHint,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text(
+                      date,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: tint.onContainer,
+                      ),
+                    ),
+                    RatingAndPriceRow(
+                      rating: visit.rating,
+                      priceLabel: priceRangeLabel(l10n, visit.priceRange),
+                      showRatingLabel: false,
+                      starSize: 16,
+                    ),
+                  ],
                 ),
-              ),
-              RatingAndPriceRow(
-                rating: visit.rating,
-                priceLabel: priceRangeLabel(l10n, visit.priceRange),
-                showRatingLabel: false,
-                starSize: 16,
-              ),
-            ],
-          ),
-          if (notes != null)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.sm),
-              child: Text(
-                notes,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: tint.onContainer,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-          if (visit.photoPaths.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: SizedBox(
-                height: 64,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: visit.photoPaths.length,
-                  separatorBuilder: (BuildContext context, int index) =>
-                      const SizedBox(width: AppSpacing.sm),
-                  itemBuilder: (BuildContext context, int index) => ClipRRect(
-                    borderRadius: AppRadius.smallAll,
-                    child: Image.file(
-                      File(visit.photoPaths[index]),
-                      width: 64,
-                      height: 64,
-                      fit: BoxFit.cover,
-                      semanticLabel: l10n.visitCardPhotoDescription,
-                      errorBuilder: (BuildContext context, Object error, StackTrace? stack) =>
-                          const SizedBox.shrink(),
+                if (notes != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    child: Text(
+                      notes,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: tint.onContainer,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
-                ),
-              ),
+                if (visit.photoPaths.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: SizedBox(
+                      height: 64,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: visit.photoPaths.length,
+                        separatorBuilder: (BuildContext context, int index) =>
+                            const SizedBox(width: AppSpacing.sm),
+                        itemBuilder: (BuildContext context, int index) => ClipRRect(
+                          borderRadius: AppRadius.smallAll,
+                          child: Image.file(
+                            File(visit.photoPaths[index]),
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.cover,
+                            semanticLabel: l10n.visitCardPhotoDescription,
+                            errorBuilder: (BuildContext context, Object error, StackTrace? stack) =>
+                                const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }

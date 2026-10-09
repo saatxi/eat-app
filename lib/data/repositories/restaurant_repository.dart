@@ -583,6 +583,99 @@ class RestaurantRepository {
     return visitId;
   }
 
+  /// Rewrites an existing visit in place: its fields, and which photos it
+  /// carries. A no-op when [visitId] names nothing (the visit was deleted from
+  /// under the form).
+  ///
+  /// [keptPhotoIds] are the ids of the photos the form still shows, so anything
+  /// the visit has that is *not* listed was removed by the user;
+  /// [addedPhotoSourcePaths] are the temporary paths the picker returned since,
+  /// persisted through [photoStorage] exactly as [addVisit] does. The visit's
+  /// id, restaurant and group never move: an edit changes what the visit says,
+  /// never whose it is.
+  ///
+  /// The shared branch mirrors [deleteVisit]: a removed photo is tombstoned and
+  /// queued rather than dropped, and its file is left on disk for the sync
+  /// layer, while a private one goes with its file.
+  Future<void> updateVisit({
+    required String visitId,
+    required int visitDate,
+    required int rating,
+    String? notes,
+    int priceRange = 0,
+    List<String> keptPhotoIds = const <String>[],
+    List<String> addedPhotoSourcePaths = const <String>[],
+    SharedWrite? shared,
+  }) async {
+    final Visit? existing = await _visits.getById(visitId);
+    if (existing == null) {
+      return;
+    }
+    final List<Photo> current = await _photos.getPhotosForVisit(visitId);
+    final Set<String> kept = keptPhotoIds.toSet();
+    final List<Photo> removed = <Photo>[
+      for (final Photo photo in current)
+        if (!kept.contains(photo.id)) photo,
+    ];
+    final List<String> storedPaths = <String>[
+      for (final String sourcePath in addedPhotoSourcePaths)
+        await photoStorage?.persist(sourcePath) ?? sourcePath,
+    ];
+    final List<String> photoIds = <String>[
+      for (final String _ in storedPaths) _uuid.v4(),
+    ];
+    // Appended after whatever survived, so the strip keeps the order the form
+    // showed rather than reshuffling on every save.
+    int position = current.fold<int>(
+      -1,
+      (int max, Photo photo) => photo.position > max ? photo.position : max,
+    );
+    final int now = DateTime.now().millisecondsSinceEpoch;
+    await _database.transaction(() async {
+      await _visits.updateVisit(
+        existing.copyWith(
+          visitDate: visitDate,
+          rating: rating,
+          notes: Value<String?>(notes),
+          priceRange: priceRange,
+          updatedAt: now,
+        ),
+      );
+      for (final Photo photo in removed) {
+        if (shared == null) {
+          await _photos.deletePhoto(photo.id);
+        } else {
+          await _photos.softDeletePhoto(photo.id, now);
+          await _pending.enqueue(SyncTable.photos, photo.id, shared.groupId);
+        }
+      }
+      for (final (int index, String path) in storedPaths.indexed) {
+        await _photos.insertPhoto(
+          Photo(
+            id: photoIds[index],
+            visitId: visitId,
+            path: path,
+            position: ++position,
+            groupId: shared?.groupId,
+            createdBy: shared?.createdBy,
+            updatedAt: now,
+          ),
+        );
+      }
+      if (shared != null) {
+        await _pending.enqueue(SyncTable.visits, visitId, shared.groupId);
+        for (final String photoId in photoIds) {
+          await _pending.enqueue(SyncTable.photos, photoId, shared.groupId);
+        }
+      }
+    });
+    if (shared == null) {
+      await _deleteFiles(removed);
+    }
+    await _afterWrite();
+    _notifySharedWrite(shared?.groupId);
+  }
+
   /// For a private visit, the photo rows cascade away with it and their files
   /// are read back first so they can be removed from disk too. A shared visit
   /// and its photos are tombstoned (and queued) instead, never removed.

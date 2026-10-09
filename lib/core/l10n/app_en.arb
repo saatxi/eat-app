@@ -305,8 +305,10 @@
   "detailVisitsEmptyBody": "Log a visit once you've been.",
   "detailActionLogVisit": "Log a visit",
   "visitCardPhotoDescription": "Photo from this visit",
+  "visitCardEditHint": "Edit this visit",
 
   "logvisitTitle": "Log a visit",
+  "logvisitEditTitle": "Edit visit",
   "logvisitActionSave": "Save",
   "logvisitFieldDate": "Date",
   "logvisitFieldRating": "Rating",
@@ -317,6 +319,8 @@
   "logvisitPhotoDescription": "Visit photo",
   "logvisitDatePickerConfirm": "OK",
   "logvisitDatePickerCancel": "Cancel",
+  "logvisitActionDelete": "Delete visit",
+  "logvisitDeleteConfirmTitle": "Delete this visit?",
 
   "cuisineMediterranean": "Mediterranean",
   "cuisineSpanish": "Spanish",

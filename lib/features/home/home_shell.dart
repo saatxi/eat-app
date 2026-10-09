@@ -220,6 +220,18 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     );
   }
 
+  /// The same form on a visit that is already logged. The restaurant comes
+  /// along because the form resolves the visit's group from its parent, exactly
+  /// as the "log a visit" route does.
+  void _pushEditVisit(String restaurantId, String visitId) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) =>
+            LogVisitScreen(restaurantId: restaurantId, visitId: visitId),
+      ),
+    );
+  }
+
   void _pushEdit({String? restaurantId}) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -238,6 +250,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           restaurantId: restaurantId,
           onEdit: (String id) => _pushEdit(restaurantId: id),
           onLogVisit: _pushLogVisit,
+          onEditVisit: (String visitId) =>
+              _pushEditVisit(restaurantId, visitId),
         ),
       ),
     );
@@ -364,6 +378,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       onClose: () => setState(() => _selectedRestaurantId = null),
       onEdit: (String id) => _pushEdit(restaurantId: id),
       onLogVisit: _pushLogVisit,
+      onEditVisit: (String visitId) => _pushEditVisit(restaurantId, visitId),
     );
   }
 

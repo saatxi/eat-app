@@ -61,9 +61,7 @@ void main() {
     final List<String> logged = <String>[];
 
     await tester.pumpWidget(
-      host(
-        RestaurantDetailScreen(restaurantId: 'a', onLogVisit: logged.add),
-      ),
+      host(RestaurantDetailScreen(restaurantId: 'a', onLogVisit: logged.add)),
     );
     await pump(tester);
 
@@ -80,6 +78,59 @@ void main() {
     await tester.pump();
 
     expect(logged, <String>['a']);
+
+    await disposeApp(tester);
+  });
+
+  testWidgets('tapping a past visit opens it for editing', (
+    WidgetTester tester,
+  ) async {
+    await repository.insert(restaurant(id: 'a', name: 'Cal Ferran'));
+    final String visitId = await repository.addVisit(
+      restaurantId: 'a',
+      visitDate: DateTime(2026, 1, 2).millisecondsSinceEpoch,
+      rating: 4,
+      notes: 'Demanar la burrata',
+    );
+    final List<String> edited = <String>[];
+
+    await tester.pumpWidget(
+      host(RestaurantDetailScreen(restaurantId: 'a', onEditVisit: edited.add)),
+    );
+    await pump(tester);
+
+    // The whole card is the target — there is no edit icon to find.
+    final Finder card = find.text('Demanar la burrata');
+    await tester.ensureVisible(card);
+    await tester.tap(card);
+    await tester.pump();
+
+    expect(edited, <String>[visitId]);
+
+    await disposeApp(tester);
+  });
+
+  testWidgets('a visit card is inert with no edit callback', (
+    WidgetTester tester,
+  ) async {
+    await repository.insert(restaurant(id: 'a', name: 'Cal Ferran'));
+    await repository.addVisit(
+      restaurantId: 'a',
+      visitDate: DateTime(2026, 1, 2).millisecondsSinceEpoch,
+      rating: 4,
+      notes: 'Demanar la burrata',
+    );
+
+    await tester.pumpWidget(
+      host(const RestaurantDetailScreen(restaurantId: 'a')),
+    );
+    await pump(tester);
+
+    final Finder card = find.text('Demanar la burrata');
+    await tester.ensureVisible(card);
+    // Nothing to tap through to, and tapping must not throw.
+    await tester.tap(card);
+    await tester.pump();
 
     await disposeApp(tester);
   });

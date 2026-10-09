@@ -1228,11 +1228,23 @@ abstract class AppLocalizations {
   /// **'Photo from this visit'**
   String get visitCardPhotoDescription;
 
+  /// No description provided for @visitCardEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit this visit'**
+  String get visitCardEditHint;
+
   /// No description provided for @logvisitTitle.
   ///
   /// In en, this message translates to:
   /// **'Log a visit'**
   String get logvisitTitle;
+
+  /// No description provided for @logvisitEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit visit'**
+  String get logvisitEditTitle;
 
   /// No description provided for @logvisitActionSave.
   ///
@@ -1293,6 +1305,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get logvisitDatePickerCancel;
+
+  /// No description provided for @logvisitActionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete visit'**
+  String get logvisitActionDelete;
+
+  /// No description provided for @logvisitDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this visit?'**
+  String get logvisitDeleteConfirmTitle;
 
   /// No description provided for @cuisineMediterranean.
   ///
