@@ -9,6 +9,111 @@ tagged at release time. Versioning follows the `vMAJOR.MINOR.PATCH` scheme
 described in [README.md](README.md#versioning) — `versionName`/`versionCode`
 are always derived from git, never hand-edited.
 
+## [4.2.0] - 2026-10-09
+
+Let past visits be edited and stop a cleared field reverting
+
+- A visit was write-once: a wrong date or a note typed in haste could only
+  be undone by wiping the restaurant's whole history, so the visit form now
+  opens on an existing visit as well as a new one, reusing the create/edit
+  split the restaurant form already had rather than growing a second screen
+  beside it
+- Editing covers the photos too, which is why the form distinguishes a
+  stored photo from a just-picked one — the first is kept or dropped by id,
+  the second is a temporary file still to be persisted — and why a shared
+  visit's dropped photo is tombstoned and queued like any other shared
+  delete instead of vanishing for the other members
+- Deleting a single visit finally has an interface: the repository could
+  already do it, but nothing in the app called it, so a mistaken entry had
+  no way out short of deleting the restaurant
+- Both DAOs wrote an updated row as a data class, which drift converts with
+  nullToAbsent, so any column the caller had nulled was dropped from the
+  UPDATE and silently kept its old value — clearing a restaurant's address,
+  city, website or Instagram never saved, a cleared visit note came back,
+  and a restaurant taken out of its last group stayed pointed at it
+- The edit form's "Add photo" and "Remove photo" buttons overflowed a 360dp
+  phone by 429 pixels in Catalan, cutting the second label off, so the
+  destructive action moved onto the photo preview as an icon; the rule
+  behind it is now written down, since this was the third screen to hit it
+- The accessibility suite lays the edit form out in Catalan on a narrow view
+  at 1.3x and 2.0x text, because the overflow was locale-dependent and
+  nothing in the existing cases would ever have caught it
+- Documentation for the iOS widget, the old sign-in process, the
+  account-code identity and the groups redesign is removed now that all four
+  have shipped and the plans no longer describe the code
+
+## [4.1.1] - 2026-10-08
+
+Refresh the journal UI, remove Roulette, and add system theme mode
+
+- Removing the Roulette simplified the navigation shell and cut a screen
+  that was never the right way to pick a restaurant
+- The system/auto theme mode was intentionally absent (see the old
+  doc-comment) but enough users expect it that reopening the decision is
+  warranted
+- A cuisine-tinted gradient header for photo-less restaurants gives every
+  detail screen a visual identity without requiring a photo
+- Moving the filter controls into a bottom sheet frees the list's vertical
+  space and hides complexity until it is asked for
+- The collapsible Journal title and a larger card thumbnail push the visual
+  language toward the bolder direction the design intended
+- Selective shadows on the detail header and the Stats total tile introduce
+  hierarchy without flattening the whole surface palette
+- The import confirm button was pinned to the absolute bottom of the screen,
+  leaving a large empty gap when all candidates were duplicates; it now
+  follows the content
+- CI, global error capture and strict analyzer language flags harden the
+  project against regressions going forward
+
+## [4.1.0] - 2026-10-03
+
+Swap the emailed sign-in for a device account code and add a Delete profile
+flow
+
+- The emailed one-time code needed a Supabase template and an SMTP sender,
+  and gotrue's default PKCE flow made signInWithOtp throw before any request
+  left the device so sign-in silently did nothing; an account the app mints
+  itself removes the whole email path
+- Adoption derives a synthetic email and password from the code with two
+  server-held HMAC secrets and signs in with the ordinary password grant, so
+  the session stays a real one, multi-device keeps working, and no session
+  has to be minted server-side
+- The code is a bearer secret, so it travels only inside a dedicated account
+  backup and never in the shareable restaurant export, or sharing a
+  restaurant would hand over the whole account
+- Removing an auth user needs the service role and is blocked by the
+  created_by foreign keys on the shared tables, so a delete-account Edge
+  Function clears those rows through delete_account_data before deleting the
+  user, and Delete profile sits behind a confirmation dialog that spells out
+  the irreversible loss
+- The account section is now a single signed-in line with the Delete profile
+  action and a one-tap create-account button, since the code is never shown
+  or typed; recovering it on another phone goes through an account backup
+- Creating a group while signed out points the user to Settings instead of
+  opening a name dialog that could not succeed
+- Shared with becomes a multi-select dropdown, so a restaurant can be shared
+  into several groups without a row of chips that crowded the form as the
+  group count grew
+
+## [4.0.0] - 2026-10-02
+
+Ship multi-group sharing with email sign-in
+
+- A restaurant can now belong to several groups at once, chosen where it is
+  added or edited, instead of being pinned to a single list
+- Membership moves to its own table with owner, editor and reader roles, so
+  read-only access can be granted without also handing over the ability to
+  write
+- An emailed one-time code replaces the anonymous identity, so an account,
+  its groups and their restaurants come back after a reinstall or on a new
+  phone, and the flow behaves the same on Android and iOS
+- Share files move to the eatapp.restaurants.v3 format and gain a
+  whole-group export, while ownership and roles stay on the server and never
+  travel in a file
+- The shared-groups schema migration is applied, the local database moves to
+  schema 18, and the RLS smoke test now drives an owner, an editor, a reader
+  and a stranger through every table
+
 ## [3.5.6] - 2026-09-29
 
 Tidy the shared-groups backend and pin down the local schema's migrations
