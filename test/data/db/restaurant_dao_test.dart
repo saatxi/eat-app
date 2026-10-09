@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/models/stats_projections.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -212,6 +213,28 @@ void main() {
         await db.visitDao.observeVisitsForRestaurant('a').first,
         hasLength(1),
       );
+    });
+
+    test('an update clears a field the caller nulled', () async {
+      await seed();
+      final Restaurant row = (await db.restaurantDao.observeById('a').first)!;
+      expect(row.city, isNotNull, reason: 'the seed has one to clear');
+
+      await db.restaurantDao.updateRestaurant(
+        row.copyWith(
+          city: const Value<String?>(null),
+          streetAddress: const Value<String?>(null),
+        ),
+      );
+
+      // Writing the row as a data class would convert it with `nullToAbsent`,
+      // leaving both columns exactly as they were.
+      final Restaurant updated = (await db.restaurantDao
+          .observeById('a')
+          .first)!;
+      expect(updated.city, isNull);
+      expect(updated.streetAddress, isNull);
+      expect(updated.name, row.name, reason: 'the rest of the row is intact');
     });
 
     test('deletes one row and cascades to its visits', () async {

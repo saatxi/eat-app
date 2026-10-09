@@ -172,8 +172,15 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
   /// REPLACE`): replacing the row would delete and re-insert it, and with
   /// foreign keys on that cascades into wiping the restaurant's visits and
   /// photos.
+  ///
+  /// `toCompanion(false)` rather than the row itself: writing a data class
+  /// converts it with `nullToAbsent`, so every column the caller nulled would
+  /// be left untouched — an address the user cleared in the form would stay,
+  /// and `_applyHomeGroup` could never put a restaurant back to no group. The
+  /// whole row is written, nulls included.
   Future<void> updateRestaurant(Restaurant row) =>
-      (update(restaurants)..where((t) => t.id.equals(row.id))).write(row);
+      (update(restaurants)..where((t) => t.id.equals(row.id)))
+          .write(row.toCompanion(false));
 
   Future<void> deleteRestaurant(String id) =>
       (delete(restaurants)..where((t) => t.id.equals(id))).go();

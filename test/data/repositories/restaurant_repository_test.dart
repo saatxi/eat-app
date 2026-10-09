@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/models/restaurant_sort.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
@@ -152,6 +153,51 @@ void main() {
       await repository.update(restaurant(id: 'a', name: 'Renamed'));
 
       expect((await repository.observeById('a').first)!.name, 'Renamed');
+    });
+
+    test('update clears an optional field the form emptied', () async {
+      await repository.insert(
+        restaurant(id: 'a', name: 'First').copyWith(
+          city: const Value<String?>('Barcelona'),
+          website: const Value<String?>('https://example.com'),
+        ),
+      );
+      final Restaurant stored = (await repository.observeById('a').first)!;
+
+      await repository.update(
+        stored.copyWith(
+          city: const Value<String?>(null),
+          website: const Value<String?>(null),
+        ),
+      );
+
+      // Clearing the address in the edit form used to be silently dropped:
+      // drift converts a data class with `nullToAbsent`, so the old value
+      // stayed in the column.
+      final Restaurant updated = (await repository.observeById('a').first)!;
+      expect(updated.city, isNull);
+      expect(updated.website, isNull);
+      expect(updated.name, 'First');
+    });
+
+    test('taking a restaurant out of its last group clears its home group', () async {
+      await repository.insert(restaurant(id: 'a', name: 'First'));
+      await repository.setRestaurantGroups(
+        restaurantId: 'a',
+        groupIds: <String>{'g1'},
+        createdBy: 'u1',
+      );
+      expect((await repository.observeById('a').first)!.groupId, 'g1');
+
+      await repository.setRestaurantGroups(
+        restaurantId: 'a',
+        groupIds: const <String>{},
+        createdBy: 'u1',
+      );
+
+      // `_applyHomeGroup` nulls the column when the last membership goes, which
+      // never reached the database while a null was written as "absent".
+      expect((await repository.observeById('a').first)!.groupId, isNull);
     });
 
     test('delete cascades to the visits and photos', () async {
