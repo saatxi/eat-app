@@ -256,7 +256,7 @@ class _PhotoStrip extends StatelessWidget {
                       Positioned(
                         top: 0,
                         right: 0,
-                        child: IconButton(
+                        child: IconButton.filledTonal(
                           onPressed: () => onRemove(path),
                           tooltip: l10n.logvisitActionRemovePhoto,
                           icon: const Icon(Icons.cancel),

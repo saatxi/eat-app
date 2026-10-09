@@ -434,36 +434,42 @@ class _PhotoField extends StatelessWidget {
           if (path != null)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: ClipRRect(
-                borderRadius: AppRadius.mediumAll,
-                child: Image.file(
-                  File(path),
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  semanticLabel: l10n.editPhotoPreviewDescription,
-                  errorBuilder:
-                      (BuildContext context, Object error, StackTrace? stack) =>
-                          const SizedBox.shrink(),
-                ),
+              child: Stack(
+                children: <Widget>[
+                  ClipRRect(
+                    borderRadius: AppRadius.mediumAll,
+                    child: Image.file(
+                      File(path),
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      semanticLabel: l10n.editPhotoPreviewDescription,
+                      errorBuilder:
+                          (
+                            BuildContext context,
+                            Object error,
+                            StackTrace? stack,
+                          ) => const SizedBox.shrink(),
+                    ),
+                  ),
+                  // Icon-only, over the photo it acts on: two labelled buttons
+                  // side by side overflow the row in the longer locales.
+                  Positioned(
+                    top: AppSpacing.xs,
+                    right: AppSpacing.xs,
+                    child: IconButton.filledTonal(
+                      onPressed: onRemove,
+                      tooltip: l10n.editActionRemovePhoto,
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ),
+                ],
               ),
             ),
-          Row(
-            children: <Widget>[
-              OutlinedButton.icon(
-                onPressed: onAdd,
-                icon: const Icon(Icons.photo_library_outlined),
-                label: Text(l10n.editActionAddPhoto),
-              ),
-              if (path != null) ...<Widget>[
-                const SizedBox(width: AppSpacing.sm),
-                TextButton.icon(
-                  onPressed: onRemove,
-                  icon: const Icon(Icons.delete_outline),
-                  label: Text(l10n.editActionRemovePhoto),
-                ),
-              ],
-            ],
+          OutlinedButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.photo_library_outlined),
+            label: Text(l10n.editActionAddPhoto),
           ),
         ],
       ),

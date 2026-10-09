@@ -281,6 +281,20 @@ lib/
   for the roulette. Dynamic type is supported rather than clamped —
   `test/features/accessibility/text_scale_test.dart` lays the busiest screens
   out at 2x and fails on a render overflow.
+- **Action rows never assume the English label fits**: the Catalan and Spanish
+  strings are routinely half again as long as the English template, so a bare
+  `Row` of two text-labelled buttons that fits `app_en.arb` still overflows on
+  a narrow phone or at a large text scale. Keep one labelled primary action and
+  demote the secondary or destructive one to an icon-only `IconButton` with a
+  `tooltip` — overlaid on the thing it acts on where there is one (the photo
+  previews in `features/edit/` and `features/log_visit/` both do this), or
+  beside an `Expanded` title otherwise (the account card in
+  `features/settings/settings_screen.dart`). Never shorten a translation to
+  make a layout fit, and never size a row on the English label. A new screen
+  with such a row gets a case in
+  `test/features/accessibility/text_scale_test.dart`, in the longest locale and
+  on a narrow view — that file's existing Catalan edit-form case is the shape
+  to copy.
 - The app is the source of truth for its own data: restaurants are created,
   edited and deleted entirely on-device. The one exception is importing a
   restaurant file shared by another EatApp user

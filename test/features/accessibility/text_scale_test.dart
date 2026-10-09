@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:eatapp/app/app_scope.dart';
 import 'package:eatapp/core/l10n/generated/app_localizations.dart';
 import 'package:eatapp/core/theme/app_theme.dart';
@@ -6,6 +10,7 @@ import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
 import 'package:eatapp/data/supabase/identity.dart';
 import 'package:eatapp/features/detail/restaurant_detail_screen.dart';
+import 'package:eatapp/features/edit/restaurant_edit_screen.dart';
 import 'package:eatapp/features/list/journal_screen.dart';
 import 'package:eatapp/features/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
@@ -26,19 +31,36 @@ void main() {
   late AppDatabase db;
   late RestaurantRepository repository;
   late UserPreferencesRepository preferences;
+  late Directory photoDir;
+  late File photoFile;
 
   setUp(() {
     db = createTestDatabase();
     repository = RestaurantRepository(db);
     preferences = UserPreferencesRepository();
+    photoDir = Directory.systemTemp.createTempSync('eatapp_scale_photo');
+    photoFile = File('${photoDir.path}/photo.png')
+      ..writeAsBytesSync(_onePixelPng);
   });
 
-  tearDown(() => db.close());
+  tearDown(() {
+    // Best-effort: Windows keeps a handle on the file the image decoder read,
+    // so the directory is often still locked when the test ends. Leaving a
+    // one-pixel PNG behind in the system temp dir is harmless; failing the
+    // test on it would not be.
+    try {
+      photoDir.deleteSync(recursive: true);
+    } on FileSystemException {
+      // Left for the OS to clean up.
+    }
+    return db.close();
+  });
 
   Widget host(
     Widget screen, {
     required double scale,
     IdentityGateway? identity,
+    Locale locale = const Locale('en'),
   }) => AppScope(
     restaurants: repository,
     preferences: preferences,
@@ -48,7 +70,7 @@ void main() {
       theme: AppTheme.of(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      locale: const Locale('en'),
+      locale: locale,
       home: Builder(
         builder: (BuildContext context) => MediaQuery(
           data: MediaQuery.of(
@@ -88,6 +110,20 @@ void main() {
   Future<void> pump(WidgetTester tester) async {
     for (int i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
+
+  /// The edit form reads its restaurant and its photo off the database, and
+  /// that work lives on the real event loop: pumping alone never lets it
+  /// finish, so the screen would stay on its spinner however many frames were
+  /// pumped. `runAsync` is what gives it the chance, several rounds of it
+  /// because each read is its own turn.
+  Future<void> pumpForm(WidgetTester tester) async {
+    for (int round = 0; round < 4; round++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await pump(tester);
     }
   }
 
@@ -143,6 +179,37 @@ void main() {
 
       await disposeApp(tester);
     });
+
+    // The edit form's photo section on a narrow phone, in the longest locale.
+    //
+    // Catalan's "Afegeix una foto"/"Suprimeix la foto" are half again as long
+    // as the English template, and before the remove action moved onto the
+    // preview as an icon the two labelled buttons overflowed the row at 360dp.
+    testWidgets('the edit form lays out in Catalan at ${scale}x text', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(360, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await seed();
+      // A real file: `Image.file` on a missing path takes its `errorBuilder`
+      // and collapses, which would quietly stop laying the preview out at all.
+      await repository.setRestaurantPhoto('a', photoFile.path);
+
+      await tester.pumpWidget(
+        host(
+          const RestaurantEditScreen(restaurantId: 'a'),
+          scale: scale,
+          locale: const Locale('ca'),
+        ),
+      );
+      await pumpForm(tester);
+
+      expect(find.byTooltip('Suprimeix la foto'), findsOneWidget);
+
+      await disposeApp(tester);
+    });
   }
 
   // A narrow phone at the normal text scale: the signed-in account card has two
@@ -175,3 +242,9 @@ void main() {
     await disposeApp(tester);
   });
 }
+
+/// The smallest valid PNG, so `Image.file` has a real file to decode.
+final Uint8List _onePixelPng = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9'
+  'awAAAABJRU5ErkJggg==',
+);
