@@ -9,6 +9,38 @@ tagged at release time. Versioning follows the `vMAJOR.MINOR.PATCH` scheme
 described in [README.md](README.md#versioning) — `versionName`/`versionCode`
 are always derived from git, never hand-edited.
 
+## [4.3.0] - 2026-10-10
+
+Share restaurants into groups in bulk and add a compact Journal
+
+- Sharing an existing personal collection into a group meant opening and
+  saving every restaurant one by one, so a long press on the Journal now
+  starts a selection mode whose contextual bar adds all ticked restaurants to
+  one or more groups at once; it only ever adds memberships, so a restaurant
+  already shared elsewhere keeps its groups, its home group and its original
+  author
+- Only groups the user may write to are offered, both in the new dialog and
+  in the edit form's selector, since a reader cannot share into a group and a
+  list scoped to a read-only group must not start a new restaurant off inside
+  it
+- The full Journal card fits about four restaurants per screen, which makes a
+  long list slow to scan, so a Compact density in Settings > Appearance keeps
+  only the name, cuisine and town on a much shorter card; it is an option
+  rather than a new default because the photo, address, rating and price are
+  what some users browse by, and the screen-reader description still
+  announces all of them
+- The card's rating and price now wrap instead of overflowing, which they did
+  on a 360dp phone for a fully filled-in restaurant even at normal text size
+- Delete all data now clears only personal restaurants, because group rows
+  are not this device's alone and wiping them locally would leave dangling
+  shared state and surprise the other members
+- The import screen's confirm button sat inside the scrolling list behind the
+  system navigation bar, so it moved to the bottom bar where it stays
+  visible, and its three-way choice no longer wraps "Reemplaça"/"Reemplazar"
+  onto two lines
+- The restaurant list uses a standard app bar, since the large collapsing
+  title hid "Restaurants" from the top bar until the user scrolled
+
 ## [4.2.0] - 2026-10-09
 
 Let past visits be edited and stop a cleared field reverting
@@ -192,7 +224,7 @@ again
   create-invite Edge Function has always minted 16 (128 bits, one character
   per byte), so every join path rejected the token as malformed and never
   reached the server: the scanner read the QR but dropped the payload,
-  manual entry reported the code as invalid, and an eatapp://join/<token>
+  manual entry reported the code as invalid, and an `eatapp://join/<token>`
   deep link arriving from Mail or WhatsApp was silently ignored
 - Align the client contract to the server's real shape instead of changing
   the backend, so invitations already minted work without redeploying the
