@@ -49,6 +49,7 @@ class FilePhotoStorage implements PhotoStorage {
     this.maxDimension = 1600,
     this.jpegQuality = 85,
     this.supportDirectory,
+    this.temporaryDirectory,
   });
 
   /// Longest side of the stored image, in pixels. Large enough for a full-screen
@@ -63,6 +64,23 @@ class FilePhotoStorage implements PhotoStorage {
   /// is what lets the decode-and-bounds pipeline be exercised with no platform
   /// channel and no device.
   final Directory? supportDirectory;
+
+  /// The platform's temporary directory, where the system picker leaves the
+  /// file it hands back. Null — the real case — means `getTemporaryDirectory()`;
+  /// a test passes its own.
+  final Directory? temporaryDirectory;
+
+  /// The image extensions the picker writes, the only files [sweepPickerLeftovers]
+  /// will touch — anything else in the cache belongs to someone else.
+  static const Set<String> _pickedImageExtensions = <String>{
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.heic',
+    '.heif',
+    '.webp',
+    '.gif',
+  };
 
   static const String _directoryName = 'photos';
   static const Uuid _uuid = Uuid();
@@ -87,13 +105,72 @@ class FilePhotoStorage implements PhotoStorage {
           p.extension(sourcePath).isEmpty ? '.img' : p.extension(sourcePath);
       final String path = p.join(directory.path, '${_uuid.v4()}$extension');
       await File(path).writeAsBytes(source, flush: true);
+      await _deleteIfPickerTemp(sourcePath);
       return path;
     }
 
     final String path = p.join(directory.path, '${_uuid.v4()}.jpg');
     await File(path).writeAsBytes(prepared, flush: true);
+    await _deleteIfPickerTemp(sourcePath);
     return path;
   }
+
+  /// Deletes picked images the picker left in the temporary directory more
+  /// than [olderThan] ago, returning how many went.
+  ///
+  /// [persist] removes the file it copied, but a pick the user discarded
+  /// without saving — and every pick made before this cleanup existed — would
+  /// otherwise sit in the cache for good, which is how the app's storage kept
+  /// growing with each photo. Only image files are touched, and only stale
+  /// ones, so a pick still on screen in an open form is never pulled away.
+  Future<int> sweepPickerLeftovers({
+    Duration olderThan = const Duration(days: 1),
+  }) async {
+    final Directory temp = await _temporaryDirectory();
+    if (!await temp.exists()) {
+      return 0;
+    }
+    final DateTime cutoff = DateTime.now().subtract(olderThan);
+    int deleted = 0;
+    await for (final FileSystemEntity entity in temp.list(recursive: true)) {
+      if (entity is! File ||
+          !_pickedImageExtensions.contains(
+            p.extension(entity.path).toLowerCase(),
+          )) {
+        continue;
+      }
+      try {
+        if ((await entity.lastModified()).isBefore(cutoff)) {
+          await entity.delete();
+          deleted++;
+        }
+      } on FileSystemException {
+        // Gone already, or held open by the OS: the next sweep will retry.
+      }
+    }
+    return deleted;
+  }
+
+  /// Removes [sourcePath] once its stored copy exists, but only when it is a
+  /// picker temp file — a path outside the temporary directory (an import, a
+  /// test fixture) is never the app's to delete.
+  ///
+  /// Best-effort: the photo is already stored, so a cleanup that fails (the
+  /// file already gone, or no temporary directory to resolve) must never fail
+  /// the save — the next [sweepPickerLeftovers] will catch the leftover.
+  Future<void> _deleteIfPickerTemp(String sourcePath) async {
+    try {
+      final Directory temp = await _temporaryDirectory();
+      if (p.isWithin(temp.path, sourcePath)) {
+        await File(sourcePath).delete();
+      }
+    } on Exception {
+      // Nothing to reclaim, or nowhere to reclaim it from.
+    }
+  }
+
+  Future<Directory> _temporaryDirectory() async =>
+      temporaryDirectory ?? await getTemporaryDirectory();
 
   @override
   Future<void> delete(String storedPath) async {

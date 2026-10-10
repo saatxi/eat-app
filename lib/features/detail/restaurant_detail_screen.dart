@@ -13,6 +13,7 @@ import '../../core/theme/tokens/cuisine_accents.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/empty_state.dart';
+import '../../core/widgets/photo_decode_size.dart';
 import '../../core/widgets/price_range_label.dart';
 import '../../core/widgets/rating_and_price_row.dart';
 import '../../core/widgets/rating_trend_chart.dart';
@@ -250,6 +251,7 @@ class _LoadedContent extends StatelessWidget {
                       File(restaurant.photoPath!),
                       width: double.infinity,
                       height: 240,
+                      cacheWidth: screenCacheWidth(context),
                       fit: BoxFit.cover,
                       semanticLabel: l10n.detailPhotoDescription,
                       errorBuilder:
@@ -673,6 +675,7 @@ class _VisitCard extends StatelessWidget {
                             File(visit.photoPaths[index]),
                             width: 64,
                             height: 64,
+                            cacheWidth: thumbnailCacheWidth(context, 64),
                             fit: BoxFit.cover,
                             semanticLabel: l10n.visitCardPhotoDescription,
                             errorBuilder: (BuildContext context, Object error, StackTrace? stack) =>

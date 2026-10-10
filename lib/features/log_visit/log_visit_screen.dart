@@ -10,6 +10,7 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_radius.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/delete_confirm_dialog.dart';
+import '../../core/widgets/photo_decode_size.dart';
 import '../../core/widgets/price_range_picker.dart';
 import '../../core/widgets/rating_picker.dart';
 import '../../data/sync/shared_writes.dart';
@@ -294,6 +295,7 @@ class _PhotoStrip extends StatelessWidget {
                           File(path),
                           width: 96,
                           height: 96,
+                          cacheWidth: thumbnailCacheWidth(context, 96),
                           fit: BoxFit.cover,
                           semanticLabel: l10n.logvisitPhotoDescription,
                           errorBuilder:

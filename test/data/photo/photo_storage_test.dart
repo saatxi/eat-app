@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 /// dropped fallback corrupts a user's photo without ever throwing.
 void main() {
   late Directory root;
+  late Directory temp;
   late FilePhotoStorage storage;
 
   /// Small enough that a handful of pixels exercises the bounding path.
@@ -19,10 +20,18 @@ void main() {
 
   setUp(() {
     root = Directory.systemTemp.createTempSync('eatapp-photo-test');
-    storage = FilePhotoStorage(supportDirectory: root, maxDimension: bound);
+    temp = Directory.systemTemp.createTempSync('eatapp-photo-cache');
+    storage = FilePhotoStorage(
+      supportDirectory: root,
+      temporaryDirectory: temp,
+      maxDimension: bound,
+    );
   });
 
-  tearDown(() => root.deleteSync(recursive: true));
+  tearDown(() {
+    root.deleteSync(recursive: true);
+    temp.deleteSync(recursive: true);
+  });
 
   /// Writes [bytes] where a picker would have left them and returns that path.
   Future<String> picked(Uint8List bytes, {String name = 'picked.png'}) async {
@@ -97,5 +106,54 @@ void main() {
 
     // A row whose file is already gone must still delete cleanly.
     await storage.delete(stored);
+  });
+
+  group('picker temp files', () {
+    Uint8List png() =>
+        Uint8List.fromList(img.encodePng(img.Image(width: 8, height: 8)));
+
+    Future<File> inCache(String name, {Duration age = Duration.zero}) async {
+      final File file = File(p.join(temp.path, name));
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(png(), flush: true);
+      await file.setLastModified(DateTime.now().subtract(age));
+      return file;
+    }
+
+    test('persisting a picked file removes it from the cache', () async {
+      final File source = await inCache('image_picker_1.png');
+
+      final String stored = await storage.persist(source.path);
+
+      expect(File(stored).existsSync(), isTrue);
+      expect(source.existsSync(), isFalse);
+    });
+
+    test('a source outside the cache is never deleted', () async {
+      final String source = await picked(png());
+
+      await storage.persist(source);
+
+      expect(File(source).existsSync(), isTrue);
+    });
+
+    test('the sweep removes only stale picked images', () async {
+      final File stale = await inCache(
+        'nested/old.jpg',
+        age: const Duration(days: 3),
+      );
+      final File fresh = await inCache('new.jpg');
+      final File other = await inCache(
+        'share_plus/export.eatapp',
+        age: const Duration(days: 3),
+      );
+
+      final int deleted = await storage.sweepPickerLeftovers();
+
+      expect(deleted, 1);
+      expect(stale.existsSync(), isFalse);
+      expect(fresh.existsSync(), isTrue, reason: 'it may be on screen');
+      expect(other.existsSync(), isTrue, reason: 'not a picked image');
+    });
   });
 }

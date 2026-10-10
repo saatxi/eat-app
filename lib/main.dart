@@ -223,6 +223,13 @@ void main() {
       .where((String? path) => path != null)
       .cast<String>();
 
+  // Reclaims the picked photos earlier versions left in the cache, and any pick
+  // discarded without saving. Not awaited: it is housekeeping, and must never
+  // hold back the first frame.
+  unawaited(
+    const FilePhotoStorage().sweepPickerLeftovers().catchError((Object _) => 0),
+  );
+
   runApp(
       EatApp(
         preferences: userPreferences,

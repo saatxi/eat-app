@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/tokens/cuisine_accents.dart';
 import 'cuisine_visuals.dart';
+import 'photo_decode_size.dart';
 
 /// A restaurant's thumbnail: its photo when it has one, otherwise the
 /// cuisine-derived badge that stands in for it.
@@ -58,6 +59,7 @@ class RestaurantThumbnail extends StatelessWidget {
         File(path),
         width: size,
         height: size,
+        cacheWidth: thumbnailCacheWidth(context, size),
         fit: BoxFit.cover,
         semanticLabel: semanticLabel,
         errorBuilder: (BuildContext context, Object error, StackTrace? stack) =>

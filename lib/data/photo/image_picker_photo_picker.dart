@@ -15,7 +15,17 @@ class ImagePickerPhotoPicker implements PhotoPicker {
 
   @override
   Future<String?> pickFromGallery() async {
-    final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
+    // Bounded natively to the size the app stores at, so the temporary file is
+    // a few hundred KB rather than a multi-megabyte camera original, and the
+    // pure-Dart re-encode in `FilePhotoStorage.persist` decodes a 1600px image
+    // instead of a 12 MP one. The quality is kept above the stored 85 so the
+    // second encode is not compounding a heavy first one.
+    final XFile? file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 90,
+    );
     return file?.path;
   }
 }

@@ -7,6 +7,7 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_radius.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/cuisine_visuals.dart';
+import '../../core/widgets/photo_decode_size.dart';
 import '../../core/widgets/price_range_picker.dart';
 import '../../data/groups/group_models.dart';
 import '../../data/models/cuisine.dart';
@@ -442,6 +443,7 @@ class _PhotoField extends StatelessWidget {
                       File(path),
                       height: 180,
                       width: double.infinity,
+                      cacheWidth: screenCacheWidth(context),
                       fit: BoxFit.cover,
                       semanticLabel: l10n.editPhotoPreviewDescription,
                       errorBuilder:
