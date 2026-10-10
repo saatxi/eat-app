@@ -111,6 +111,7 @@ class _ImportScreenState extends State<ImportScreen> {
             ),
           ),
           body: _body(state, controller, l10n),
+          bottomNavigationBar: _confirmBar(state, controller, l10n),
         );
       },
     );
@@ -221,21 +222,38 @@ class _ImportScreenState extends State<ImportScreen> {
                       ),
                     ),
               ],
-              Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.md),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed:
-                        state.isImporting ? null : () => _confirm(controller),
-                    child: Text(l10n.importActionConfirm),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget? _confirmBar(
+    ImportUiState state,
+    ImportController controller,
+    AppLocalizations l10n,
+  ) {
+    if (state.isLoading || state.error != null || state.candidates.isEmpty) {
+      return null;
+    }
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.lg,
+          AppSpacing.md,
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed:
+                state.isImporting ? null : () => _confirm(controller),
+            child: Text(l10n.importActionConfirm),
+          ),
+        ),
+      ),
     );
   }
 
@@ -428,6 +446,15 @@ class _ImportCandidateCard extends StatelessWidget {
                 // The selected fill already marks the choice; the checkmark
                 // would eat into a three-way split and clip a longer word.
                 showSelectedIcon: false,
+                // With three segments the labels are tighter — shrink the text
+                // so "Reemplaça"/"Reemplazar" fits without wrapping.
+                style: options.length > 2
+                    ? ButtonStyle(
+                        textStyle: WidgetStateProperty.all(
+                          theme.textTheme.labelSmall,
+                        ),
+                      )
+                    : null,
                 onSelectionChanged: (Set<ImportDecision> selection) =>
                     onDecisionChange(selection.first),
               ),
