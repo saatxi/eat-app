@@ -92,7 +92,7 @@ class _JournalScreenState extends State<JournalScreen> {
       body: NestedScrollView(
         headerSliverBuilder: (BuildContext context, bool innerBoxScrolled) {
           return <Widget>[
-            SliverAppBar.large(
+            SliverAppBar(
               pinned: true,
               title: Text(l10n.navJournal),
               actions: <Widget>[
