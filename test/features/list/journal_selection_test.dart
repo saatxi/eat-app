@@ -137,6 +137,53 @@ void main() {
     await disposeApp(tester);
   });
 
+  testWidgets('a look-alike of a group restaurant is asked about, then skipped', (
+    WidgetTester tester,
+  ) async {
+    tallView(tester);
+    final GroupsController groups = await ready();
+    // The group already has its own "Kebab", under another id.
+    await tester.runAsync(() async {
+      await repository.insert(restaurant(id: 'g-kebab', name: 'Kebab'));
+      await repository.addRestaurantsToGroups(
+        restaurantIds: <String>{'g-kebab'},
+        groupIds: <String>{'g1'},
+        createdBy: 'u1',
+      );
+    });
+    await tester.pumpWidget(
+      host(groups: groups, identity: FakeIdentityGateway(existingUserId: 'u1')),
+    );
+    await pump(tester);
+
+    await tester.longPress(find.text('Kebab'));
+    await pump(tester);
+    await tester.tap(find.text('Sushi'));
+    await pump(tester);
+    await tester.tap(find.byTooltip('Add to group'));
+    await pump(tester);
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Família'));
+    await pump(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+    await pump(tester);
+
+    expect(find.text('Already in the group?'), findsOneWidget);
+    expect(find.text('• Kebab'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Skip them'));
+    await pump(tester);
+
+    expect(find.text('1 restaurant added'), findsOneWidget);
+    final Set<String>? shared = await tester.runAsync(
+      () async => <String>{
+        for (final String id in <String>['a', 'b', 'c'])
+          if ((await repository.groupIdsForRestaurant(id)).contains('g1')) id,
+      },
+    );
+    expect(shared, <String>{'b'});
+
+    await disposeApp(tester);
+  });
+
   testWidgets('the close button leaves selection mode', (
     WidgetTester tester,
   ) async {

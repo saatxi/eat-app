@@ -151,6 +151,33 @@ class RestaurantEditController extends ChangeNotifier {
     _set(_state.copyWith(selectedGroupIds: next));
   }
 
+  /// Whether the restaurant as typed looks like one a chosen group already has,
+  /// so the screen can ask before [save] shares a second copy in. Only with the
+  /// group selector in play, and only once there is a name to compare.
+  Future<bool> looksLikeGroupDuplicate() async {
+    final RestaurantEditState state = _state;
+    final String name = state.name.trim();
+    if (groups.isEmpty || state.selectedGroupIds.isEmpty || name.isEmpty) {
+      return false;
+    }
+    final List<Restaurant> duplicates = await repository.likelyGroupDuplicates(
+      candidates: <Restaurant>[
+        Restaurant(
+          // A new row has no id yet; none of the group's rows has this one.
+          id: restaurantId ?? '',
+          name: name,
+          cuisineType: state.cuisineType ?? '',
+          streetAddress: _nonBlank(state.streetAddress),
+          priceRange: state.priceRange,
+          searchText: '',
+          updatedAt: 0,
+        ),
+      ],
+      groupIds: state.selectedGroupIds,
+    );
+    return duplicates.isNotEmpty;
+  }
+
   /// The group that acts as the restaurant's home — the one whose Storage folder
   /// its children use. Prefers the group it already had, else the first choice.
   String? _homeGroup() {

@@ -8,8 +8,10 @@ import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/staggered_entrance.dart';
+import '../../data/db/app_database.dart';
 import '../../data/groups/group_models.dart';
 import '../groups/add_to_groups_dialog.dart';
+import '../groups/group_duplicates_dialog.dart';
 import '../groups/group_scope_button.dart';
 import '../groups/group_sync_button.dart';
 import '../groups/groups_controller.dart';
@@ -106,9 +108,31 @@ class _JournalScreenState extends State<JournalScreen> {
     if (me == null) {
       return;
     }
+    // A look-alike of a restaurant the group already has would land as a
+    // second copy with its own id, so ask first — skipping is the default.
+    final List<Restaurant> duplicates = await controller
+        .selectedGroupDuplicates(chosen);
+    Set<String> excluding = const <String>{};
+    if (duplicates.isNotEmpty) {
+      if (!mounted) {
+        return;
+      }
+      final GroupDuplicatesChoice? choice = await showGroupDuplicatesDialog(
+        context,
+        names: <String>[for (final Restaurant r in duplicates) r.name],
+        allowSkip: true,
+      );
+      if (choice == null) {
+        return;
+      }
+      if (choice == GroupDuplicatesChoice.skip) {
+        excluding = <String>{for (final Restaurant r in duplicates) r.id};
+      }
+    }
     final int added = await controller.addSelectedToGroups(
       chosen,
       createdBy: me,
+      excluding: excluding,
     );
     messenger.showSnackBar(
       SnackBar(content: Text(l10n.listAddedToGroups(added))),

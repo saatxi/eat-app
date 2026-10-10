@@ -279,14 +279,23 @@ class RestaurantListController extends ChangeNotifier {
   /// Leaves selection mode.
   void clearSelection() => _setSelection(const <String>{});
 
-  /// Adds every ticked restaurant to [groupIds] (keeping whatever groups each
-  /// is already in), then leaves selection mode. Returns how many restaurants
-  /// were added, for the confirmation the screen shows.
+  /// The ticked restaurants that look like one [groupIds] already has, so the
+  /// screen can ask before sharing a second copy in.
+  Future<List<Restaurant>> selectedGroupDuplicates(Set<String> groupIds) =>
+      repository.likelyGroupDuplicatesOf(
+        restaurantIds: _selectedIds,
+        groupIds: groupIds,
+      );
+
+  /// Adds every ticked restaurant but [excluding] to [groupIds] (keeping
+  /// whatever groups each is already in), then leaves selection mode. Returns
+  /// how many restaurants were added, for the confirmation the screen shows.
   Future<int> addSelectedToGroups(
     Set<String> groupIds, {
     required String createdBy,
+    Set<String> excluding = const <String>{},
   }) async {
-    final Set<String> selected = _selectedIds;
+    final Set<String> selected = _selectedIds.difference(excluding);
     await repository.addRestaurantsToGroups(
       restaurantIds: selected,
       groupIds: groupIds,

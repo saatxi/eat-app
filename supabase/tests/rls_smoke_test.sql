@@ -22,9 +22,11 @@
 --   6. Only an owner may mint invites; no client may insert into invites.
 --   7. profiles are world-readable but only self-writable.
 --   8. The last owner cannot leave (or be demoted) while members remain.
---   9. A group with no members left is dissolved, cascading its rows away; a
---      restaurant whose last membership goes is deleted with its visits/photos.
---  10. A user may own no more than the configured number of groups.
+--   9. Tombstoning a restaurant's last membership keeps the tombstone (and the
+--      restaurant), so every member can pull the removal.
+--  10. A group with no members left is dissolved, cascading its rows away; a
+--      restaurant whose last membership is deleted goes with its visits/photos.
+--  11. A user may own no more than the configured number of groups.
 
 begin;
 
@@ -392,7 +394,61 @@ begin
 end;
 $$;
 
--- ── 9. Dissolution cascades the junction and its rows ────────────────────
+-- ── 9. A tombstoned last membership is kept for every member to pull ─────
+
+-- Alice shares a third restaurant into group 1, then removes it the way the
+-- app does: the restaurant is tombstoned, then its only membership.
+insert into public.restaurants (
+  id, name, "cuisineType", "priceRange", created_by
+) values (
+  'dddddddd-0000-0000-0000-000000000004',
+  'Alice removed place', 'italian', 1,
+  'aaaaaaaa-0000-0000-0000-000000000001'
+);
+insert into public.restaurant_groups (restaurant_id, group_id, created_by)
+values ('dddddddd-0000-0000-0000-000000000004',
+  'cccccccc-0000-0000-0000-000000000001',
+  'aaaaaaaa-0000-0000-0000-000000000001');
+
+update public.restaurants set deleted_at = now()
+  where id = 'dddddddd-0000-0000-0000-000000000004';
+update public.restaurant_groups set deleted_at = now()
+  where restaurant_id = 'dddddddd-0000-0000-0000-000000000004';
+
+-- Bob, a fellow member, must still see the membership's tombstone: it is what
+-- tells his device to drop the restaurant.
+select set_config('request.jwt.claims',
+  '{"sub":"bbbbbbbb-0000-0000-0000-000000000002"}', true);
+
+do $$
+declare cnt integer;
+begin
+  select count(*) into cnt from public.restaurant_groups
+    where restaurant_id = 'dddddddd-0000-0000-0000-000000000004'
+      and deleted_at is not null;
+  if cnt <> 1 then
+    raise exception 'FAIL: bob sees % membership tombstones, expected 1', cnt;
+  end if;
+end;
+$$;
+
+reset role;
+do $$
+declare cnt integer;
+begin
+  select count(*) into cnt from public.restaurants
+    where id = 'dddddddd-0000-0000-0000-000000000004';
+  if cnt <> 1 then
+    raise exception 'FAIL: a tombstoned membership pruned its restaurant';
+  end if;
+end;
+$$;
+
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"aaaaaaaa-0000-0000-0000-000000000001"}', true);
+
+-- ── 10. Dissolution cascades the junction and its rows ───────────────────
 
 do $$
 declare cnt integer;
@@ -421,6 +477,7 @@ begin
 
   select count(*) into cnt from public.restaurants
     where id in ('dddddddd-0000-0000-0000-000000000001',
+                 'dddddddd-0000-0000-0000-000000000004',
                  'dddddddd-0000-0000-0000-000000000002');
   if cnt <> 0 then raise exception 'FAIL: orphaned restaurants survived'; end if;
 
@@ -430,7 +487,7 @@ begin
 end;
 $$;
 
--- ── 10. A user may own no more than the configured number of groups ──────
+-- ── 11. A user may own no more than the configured number of groups ──────
 
 do $$
 declare
@@ -499,7 +556,7 @@ begin
 end;
 $$;
 
--- ── 11. adopt-account rate limiting ──────────────────────────────────────
+-- ── 12. adopt-account rate limiting ──────────────────────────────────────
 -- record_account_attempt is service-role only (the adopt-account Edge Function
 -- calls it), so the test steps into that role. The per-code window is 10 per
 -- 10 minutes: ten attempts pass, the eleventh on the same code is refused.
@@ -531,7 +588,7 @@ end;
 $$;
 reset role;
 
--- ── 12. delete_account_data erases a user's footprint ────────────────────
+-- ── 13. delete_account_data erases a user's footprint ────────────────────
 -- Runs as service_role (the Edge Function's role). Alice still owns the ten
 -- groups built up in the cap test, so erasing her account must take them with
 -- it, along with her membership rows and her profile.

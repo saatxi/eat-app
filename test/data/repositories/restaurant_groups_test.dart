@@ -155,4 +155,79 @@ void main() {
     expect(await idsIn('g1'), isEmpty);
     expect(await repository.groupIdsForRestaurant('p'), isEmpty);
   });
+
+  group('likelyGroupDuplicates', () {
+    Future<void> shareInto(String groupId, Restaurant row) async {
+      await repository.insert(row);
+      await repository.addRestaurantsToGroups(
+        restaurantIds: <String>{row.id},
+        groupIds: <String>{groupId},
+        createdBy: 'u1',
+      );
+    }
+
+    Future<List<String>> duplicatesOf(
+      Set<String> restaurantIds,
+      Set<String> groupIds,
+    ) async => <String>[
+      for (final Restaurant r in await repository.likelyGroupDuplicatesOf(
+        restaurantIds: restaurantIds,
+        groupIds: groupIds,
+      ))
+        r.id,
+    ];
+
+    test('flags a personal copy of a restaurant the group has', () async {
+      await shareInto('g1', restaurant(id: 'old', name: 'Cal Serrats'));
+      await repository.insert(restaurant(id: 'new', name: ' cal serrats '));
+      await repository.insert(restaurant(id: 'other', name: 'Can Jaume'));
+
+      expect(
+        await duplicatesOf(<String>{'new', 'other'}, <String>{'g1'}),
+        <String>['new'],
+      );
+    });
+
+    test('only looks in the groups asked about', () async {
+      await shareInto('g1', restaurant(id: 'old', name: 'Cal Serrats'));
+      await repository.insert(restaurant(id: 'new', name: 'Cal Serrats'));
+
+      expect(await duplicatesOf(<String>{'new'}, <String>{'g2'}), isEmpty);
+    });
+
+    test('a different address is not a duplicate', () async {
+      await shareInto(
+        'g1',
+        restaurant(id: 'old', name: 'Can Jaume', streetAddress: 'Major 1'),
+      );
+      await repository.insert(
+        restaurant(id: 'new', name: 'Can Jaume', streetAddress: 'Mar 9'),
+      );
+
+      expect(await duplicatesOf(<String>{'new'}, <String>{'g1'}), isEmpty);
+    });
+
+    test('a restaurant already in the group is not asked about', () async {
+      // Two copies already in the group: re-adding either changes nothing.
+      await shareInto('g1', restaurant(id: 'a', name: 'Xeflis'));
+      await shareInto('g1', restaurant(id: 'b', name: 'Xeflis'));
+
+      expect(await duplicatesOf(<String>{'a', 'b'}, <String>{'g1'}), isEmpty);
+    });
+
+    test('a deleted or removed group restaurant does not count', () async {
+      await shareInto('g1', restaurant(id: 'gone', name: 'Pura Brasa'));
+      await repository.delete('gone');
+      await shareInto('g1', restaurant(id: 'left', name: 'Feliz 2'));
+      await repository.setRestaurantGroups(
+        restaurantId: 'left',
+        groupIds: <String>{},
+        createdBy: 'u1',
+      );
+      await repository.insert(restaurant(id: 'n1', name: 'Pura Brasa'));
+      await repository.insert(restaurant(id: 'n2', name: 'Feliz 2'));
+
+      expect(await duplicatesOf(<String>{'n1', 'n2'}, <String>{'g1'}), isEmpty);
+    });
+  });
 }

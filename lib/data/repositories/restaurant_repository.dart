@@ -371,6 +371,69 @@ class RestaurantRepository {
     }
   }
 
+  /// Which of [candidates] look like a restaurant one of [groupIds] already
+  /// has — the same name, and the same address unless either has none (see
+  /// [isLikelyDuplicateOf]) — so the caller can warn before sharing a second
+  /// copy in. Every copy gets its own id, so nothing downstream would merge it.
+  ///
+  /// A group the candidate is itself already in is not asked about: adding it
+  /// there again changes nothing.
+  Future<List<Restaurant>> likelyGroupDuplicates({
+    required Iterable<Restaurant> candidates,
+    required Set<String> groupIds,
+  }) async {
+    if (groupIds.isEmpty) {
+      return const <Restaurant>[];
+    }
+    final List<RestaurantGroup> memberships = await (_database.select(
+      _database.restaurantGroups,
+    )..where((t) => t.groupId.isIn(groupIds) & t.deletedAt.isNull())).get();
+    if (memberships.isEmpty) {
+      return const <Restaurant>[];
+    }
+    final Map<String, Restaurant> members = <String, Restaurant>{
+      for (final Restaurant row
+          in await (_database.select(_database.restaurants)..where(
+                (t) =>
+                    t.id.isIn(
+                      memberships.map((RestaurantGroup rg) => rg.restaurantId),
+                    ) &
+                    t.deletedAt.isNull(),
+              ))
+              .get())
+        row.id: row,
+    };
+    final Map<String, List<Restaurant>> byGroup = <String, List<Restaurant>>{};
+    for (final RestaurantGroup rg in memberships) {
+      final Restaurant? member = members[rg.restaurantId];
+      if (member != null) {
+        (byGroup[rg.groupId] ??= <Restaurant>[]).add(member);
+      }
+    }
+    return <Restaurant>[
+      for (final Restaurant candidate in candidates)
+        if (byGroup.values.any((List<Restaurant> group) {
+          if (group.any((Restaurant m) => m.id == candidate.id)) {
+            return false;
+          }
+          return group.any((Restaurant m) => isLikelyDuplicateOf(candidate, m));
+        }))
+          candidate,
+    ];
+  }
+
+  /// [likelyGroupDuplicates] for restaurants already on this device, by id —
+  /// the Journal's bulk "Add to group" selection.
+  Future<List<Restaurant>> likelyGroupDuplicatesOf({
+    required Set<String> restaurantIds,
+    required Set<String> groupIds,
+  }) async {
+    final List<Restaurant> rows = <Restaurant>[
+      for (final String id in restaurantIds) ?await _restaurants.getById(id),
+    ];
+    return likelyGroupDuplicates(candidates: rows, groupIds: groupIds);
+  }
+
   /// Writes or revives [restaurantId]'s membership in each of [groupIds] and
   /// queues it. A membership that already existed ([byGroup]) keeps its
   /// original author; a new one is attributed to [createdBy].

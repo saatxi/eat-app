@@ -118,6 +118,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get addToGroupsDialogConfirm => 'Añadir';
 
   @override
+  String get groupDuplicatesTitle => '¿Ya está en el grupo?';
+
+  @override
+  String groupDuplicatesMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Estos restaurantes se parecen a otros que el grupo ya tiene. Si los añades, habrá segundas copias:',
+      one: 'Este restaurante se parece a uno que el grupo ya tiene. Si lo añades, habrá una segunda copia:',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get groupDuplicatesSkip => 'Omitirlos';
+
+  @override
+  String get groupDuplicatesAddAnyway => 'Añadir igualmente';
+
+  @override
   String get listSortLabel => 'Ordenar por';
 
   @override

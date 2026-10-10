@@ -57,6 +57,17 @@
   },
   "addToGroupsDialogTitle": "Add to group",
   "addToGroupsDialogConfirm": "Add",
+  "groupDuplicatesTitle": "Already in the group?",
+  "groupDuplicatesMessage": "{count, plural, =1{This restaurant looks like one the group already has. Adding it makes a second copy:} other{These restaurants look like ones the group already has. Adding them makes second copies:}}",
+  "@groupDuplicatesMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupDuplicatesSkip": "Skip them",
+  "groupDuplicatesAddAnyway": "Add anyway",
   "listSortLabel": "Sort by",
   "listSortName": "Name (A-Z)",
   "listSortRating": "Rating (highest first)",

@@ -280,6 +280,30 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get addToGroupsDialogConfirm;
 
+  /// No description provided for @groupDuplicatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Already in the group?'**
+  String get groupDuplicatesTitle;
+
+  /// No description provided for @groupDuplicatesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This restaurant looks like one the group already has. Adding it makes a second copy:} other{These restaurants look like ones the group already has. Adding them makes second copies:}}'**
+  String groupDuplicatesMessage(int count);
+
+  /// No description provided for @groupDuplicatesSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip them'**
+  String get groupDuplicatesSkip;
+
+  /// No description provided for @groupDuplicatesAddAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Add anyway'**
+  String get groupDuplicatesAddAnyway;
+
   /// No description provided for @listSortLabel.
   ///
   /// In en, this message translates to:

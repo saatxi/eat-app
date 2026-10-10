@@ -246,5 +246,22 @@ void main() {
       });
       expect(withGroups(initialGroupId: 'g3').state.selectedGroupIds, isEmpty);
     });
+
+    test('notices a look-alike of a restaurant the chosen group has', () async {
+      await repository.insert(restaurant(id: 'old', name: 'Can Gallart'));
+      await repository.addRestaurantsToGroups(
+        restaurantIds: <String>{'old'},
+        groupIds: <String>{'g1'},
+        createdBy: 'u1',
+      );
+      final RestaurantEditController controller = withGroups(
+        initialGroupId: 'g2',
+      )..onNameChange('can gallart');
+
+      expect(await controller.looksLikeGroupDuplicate(), isFalse);
+
+      controller.onToggleGroup('g1');
+      expect(await controller.looksLikeGroupDuplicate(), isTrue);
+    });
   });
 }

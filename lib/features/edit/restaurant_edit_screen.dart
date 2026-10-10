@@ -12,6 +12,7 @@ import '../../core/widgets/price_range_picker.dart';
 import '../../data/groups/group_models.dart';
 import '../../data/models/cuisine.dart';
 import '../../data/sync/shared_writes.dart';
+import '../groups/group_duplicates_dialog.dart';
 import 'restaurant_edit_controller.dart';
 import 'restaurant_edit_state.dart';
 
@@ -99,7 +100,22 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
   }
 
   Future<void> _save() async {
-    final bool saved = await _controller!.save();
+    final RestaurantEditController controller = _controller!;
+    // A look-alike of a restaurant the chosen group already has would be
+    // shared in as a second copy with its own id, so ask first.
+    if (await controller.looksLikeGroupDuplicate()) {
+      if (!mounted) {
+        return;
+      }
+      final GroupDuplicatesChoice? choice = await showGroupDuplicatesDialog(
+        context,
+        names: <String>[controller.state.name.trim()],
+      );
+      if (choice != GroupDuplicatesChoice.addAnyway) {
+        return;
+      }
+    }
+    final bool saved = await controller.save();
     if (!mounted || !saved) {
       return;
     }

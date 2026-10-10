@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/sync/pending_sync_store.dart';
 import 'package:eatapp/data/sync/remote_models.dart';
@@ -252,6 +253,142 @@ void main() {
     expect(transport.pushedRestaurants.map((r) => r.id), <String>['r1']);
     expect((await db.select(db.visits).get()).single.id, 'v9');
     expect(await pending.pendingForGroup('g1'), isEmpty);
+  });
+
+  group('memberships', () {
+    RemoteRestaurantGroup membership({
+      String restaurantId = 'r9',
+      String groupId = 'g1',
+      String updatedAt = '2026-09-27T10:00:00.000Z',
+      String? deletedAt,
+    }) => RemoteRestaurantGroup(
+      restaurantId: restaurantId,
+      groupId: groupId,
+      createdBy: 'u1',
+      updatedAt: updatedAt,
+      deletedAt: deletedAt,
+    );
+
+    Future<void> insertMembership(
+      String restaurantId,
+      String groupId, {
+      int? deletedAt,
+    }) => db.into(db.restaurantGroups).insert(
+      RestaurantGroupsCompanion.insert(
+        restaurantId: restaurantId,
+        groupId: groupId,
+        createdBy: 'u1',
+        deletedAt: Value<int?>(deletedAt),
+      ),
+    );
+
+    test('a new restaurant pulls in with its membership', () async {
+      // The membership references the restaurant, so it can only land once the
+      // restaurant has — the order a fresh device depends on.
+      transport.restaurants['g1'] = <RemoteRestaurant>[remoteRestaurant()];
+      transport.restaurantGroups['g1'] = <RemoteRestaurantGroup>[membership()];
+
+      await engine.pullGroup('g1');
+
+      expect((await db.select(db.restaurants).get()).single.groupId, 'g1');
+      expect((await db.select(db.restaurantGroups).get()).single.groupId, 'g1');
+    });
+
+    test('a tombstone for a restaurant this device never had is skipped', () async {
+      transport.restaurantGroups['g1'] = <RemoteRestaurantGroup>[
+        membership(deletedAt: '2026-09-27T10:00:00.000Z'),
+      ];
+
+      await engine.pullGroup('g1');
+
+      expect(await db.select(db.restaurantGroups).get(), isEmpty);
+      expect(await cursors.read('g1'), '2026-09-27T10:00:00.000Z');
+    });
+
+    test('a removed last membership purges the restaurant here', () async {
+      await db.into(db.restaurants).insert(sharedRestaurant());
+      await insertMembership('r1', 'g1');
+      await db.into(db.visits).insert(sharedVisit());
+      await db.into(db.photos).insert(sharedPhoto());
+      await pending.enqueue(SyncTable.visits, 'v1', 'g1');
+      transport.restaurantGroups['g1'] = <RemoteRestaurantGroup>[
+        membership(restaurantId: 'r1', deletedAt: '2026-09-27T10:00:00.000Z'),
+      ];
+
+      await engine.pullGroup('g1');
+
+      expect(await db.select(db.restaurants).get(), isEmpty);
+      expect(await db.select(db.visits).get(), isEmpty);
+      expect(await db.select(db.photos).get(), isEmpty);
+      expect(await db.select(db.restaurantGroups).get(), isEmpty);
+      expect(await pending.pendingForGroup('g1'), isEmpty);
+      expect(photoStorage.deleted, <String>['stored/local.jpg']);
+    });
+
+    test('its author keeps a restaurant they took out of every group', () async {
+      // The author's own device already cleared the home group when they
+      // made it personal again; the pulled tombstone must not take it away.
+      await db.into(db.restaurants).insert(
+        sharedRestaurant().copyWith(groupId: const Value<String?>(null)),
+      );
+      await insertMembership('r1', 'g1', deletedAt: 1000);
+      transport.restaurants['g1'] = <RemoteRestaurant>[remoteRestaurant(id: 'r1')];
+      transport.restaurantGroups['g1'] = <RemoteRestaurantGroup>[
+        membership(restaurantId: 'r1', deletedAt: '2026-09-27T10:00:00.000Z'),
+      ];
+
+      await engine.pullGroup('g1');
+
+      final Restaurant row = (await db.select(db.restaurants).get()).single;
+      expect(row.id, 'r1');
+      expect(row.groupId, isNull);
+    });
+
+    test('a restaurant still in another group moves its home there', () async {
+      await db.into(db.restaurants).insert(sharedRestaurant());
+      await insertMembership('r1', 'g1');
+      await insertMembership('r1', 'g2');
+      transport.restaurantGroups['g1'] = <RemoteRestaurantGroup>[
+        membership(restaurantId: 'r1', deletedAt: '2026-09-27T10:00:00.000Z'),
+      ];
+
+      await engine.pullGroup('g1');
+
+      expect((await db.select(db.restaurants).get()).single.groupId, 'g2');
+    });
+
+    test('pushGroup sends a removed membership after its children', () async {
+      await db.into(db.restaurants).insert(
+        sharedRestaurant().copyWith(deletedAt: const Value<int?>(2000)),
+      );
+      await insertMembership('r1', 'g1', deletedAt: 2000);
+      await db.into(db.restaurants).insert(
+        sharedRestaurant().copyWith(id: 'r2'),
+      );
+      await insertMembership('r2', 'g1');
+      await db.into(db.visits).insert(
+        sharedVisit().copyWith(deletedAt: const Value<int?>(2000)),
+      );
+      await pending.enqueue(SyncTable.restaurantGroups, 'r1', 'g1');
+      await pending.enqueue(SyncTable.restaurantGroups, 'r2', 'g1');
+      await pending.enqueue(SyncTable.visits, 'v1', 'g1');
+
+      await engine.pushGroup('g1');
+
+      // Live memberships before the visits that need them; the removed one
+      // last, once the server has taken the visit's tombstone.
+      expect(transport.pushLog, <String>[
+        'restaurants',
+        'restaurantGroups',
+        'visits',
+        'restaurantGroups',
+      ]);
+      expect(
+        transport.pushedRestaurantGroups.map((rg) => rg.restaurantId),
+        <String>['r2', 'r1'],
+      );
+      expect(await pending.pendingForGroup('g1'), isEmpty);
+    });
   });
 
   test('syncGroup still pulls when the push fails', () async {

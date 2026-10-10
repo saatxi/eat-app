@@ -128,8 +128,11 @@ Optional detailed explanation
   while a reader may only read, and only an owner manages the group, its members
   and its invitations. A restaurant's membership is a many-to-many
   `restaurant_groups` junction, so one canonical restaurant can be shared into
-  several groups at once, and a restaurant removed from its last group is
-  deleted with its visits and photos. A new policy or migration should extend
+  several groups at once. A removal is a tombstone (`deleted_at`) that must stay
+  in the junction, since the pull is driven by those rows and it is how every
+  member's device learns to drop the restaurant; only a hard delete of a
+  restaurant's last membership (a group dissolving, an account being erased)
+  deletes it with its visits and photos. A new policy or migration should extend
   `supabase/tests/rls_smoke_test.sql`, which drives an owner, an editor, a
   reader and a stranger through every table and rolls back.
 - **Build**: the Flutter tool over the Android project in `android/` (its own

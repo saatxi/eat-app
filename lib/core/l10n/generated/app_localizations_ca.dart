@@ -119,6 +119,26 @@ class AppLocalizationsCa extends AppLocalizations {
   String get addToGroupsDialogConfirm => 'Afegeix';
 
   @override
+  String get groupDuplicatesTitle => 'Ja és al grup?';
+
+  @override
+  String groupDuplicatesMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Aquests restaurants s\'assemblen a d\'altres que el grup ja té. Si els afegeixes, n\'hi haurà segones còpies:',
+      one: 'Aquest restaurant s\'assembla a un que el grup ja té. Si l\'afegeixes, n\'hi haurà una segona còpia:',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get groupDuplicatesSkip => 'Omet-los';
+
+  @override
+  String get groupDuplicatesAddAnyway => 'Afegeix igualment';
+
+  @override
   String get listSortLabel => 'Ordena per';
 
   @override
