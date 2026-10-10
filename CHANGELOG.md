@@ -9,6 +9,29 @@ tagged at release time. Versioning follows the `vMAJOR.MINOR.PATCH` scheme
 described in [README.md](README.md#versioning) — `versionName`/`versionCode`
 are always derived from git, never hand-edited.
 
+## [4.3.1] - 2026-10-10
+
+Make photos cheap to show and stop them filling the phone
+
+- Every photo was decoded at its stored 1600px, about 7.7 MB of memory each
+  even for a 48px Journal thumbnail, which made a long list heavy to scroll;
+  each image is now decoded at the size it is drawn, so a thumbnail costs
+  roughly a twentieth of that
+- The picker handed back the full camera original, which the app copied and
+  then never deleted, so storage grew with every photo picked; the original
+  is now removed once stored, and a background sweep at startup reclaims
+  picked images over a day old, covering discarded picks and everything
+  earlier versions left behind
+- The sweep touches only image files and the copy step only files inside the
+  temporary directory, so nothing else in the cache or an imported file is
+  ever deleted, and a failed cleanup never fails the save
+- The system picker now bounds a photo to 1600px natively, which made the
+  pure-Dart decode, orientation bake and re-encode redundant, so the image
+  package is gone with its 0.8 MB of decoder code and a photo is stored byte
+  for byte; the EXIF orientation tag survives the resize and Flutter applies
+  it wherever a stored photo is drawn, on this phone or another member's
+- The unused cupertino_icons package no longer ships its font in the bundle
+
 ## [4.3.0] - 2026-10-10
 
 Share restaurants into groups in bulk and add a compact Journal
