@@ -355,6 +355,76 @@ void main() {
     );
   });
 
+  group('selection', () {
+    Future<RestaurantListController> loaded() async {
+      await repository.insert(restaurant(id: 'a', name: 'Kebab'));
+      await repository.insert(restaurant(id: 'b', name: 'Sushi'));
+      await repository.insert(restaurant(id: 'c', name: 'Tacos'));
+      final RestaurantListController controller = buildController();
+      await waitFor(
+        () => controller.state.restaurants.length == 3,
+        description: 'the three restaurants',
+      );
+      return controller;
+    }
+
+    test('a long press starts it and unticking the last ends it', () async {
+      final RestaurantListController controller = await loaded();
+      expect(controller.state.isSelecting, isFalse);
+
+      controller.startSelection('a');
+      controller.toggleSelection('b');
+      expect(controller.state.selectedIds, <String>{'a', 'b'});
+      expect(controller.state.isSelecting, isTrue);
+
+      controller.toggleSelection('a');
+      controller.toggleSelection('b');
+      expect(controller.state.isSelecting, isFalse);
+    });
+
+    test('select all ticks every visible row and clear drops them', () async {
+      final RestaurantListController controller = await loaded();
+
+      controller.startSelection('a');
+      controller.selectAllVisible();
+      expect(controller.state.selectedIds, <String>{'a', 'b', 'c'});
+
+      controller.clearSelection();
+      expect(controller.state.selectedIds, isEmpty);
+    });
+
+    test('a row filtered out of the list is dropped from it', () async {
+      final RestaurantListController controller = await loaded();
+      controller.startSelection('a');
+      controller.toggleSelection('b');
+
+      controller.onSearchQueryChange('sushi');
+      await waitFor(
+        () => controller.state.restaurants.length == 1,
+        description: 'the narrowed list',
+      );
+
+      expect(controller.state.selectedIds, <String>{'b'});
+    });
+
+    test('adding to a group writes every ticked row and ends it', () async {
+      final RestaurantListController controller = await loaded();
+      controller.startSelection('a');
+      controller.toggleSelection('c');
+
+      final int added = await controller.addSelectedToGroups(
+        <String>{'g1'},
+        createdBy: 'u1',
+      );
+
+      expect(added, 2);
+      expect(controller.state.isSelecting, isFalse);
+      expect(await repository.groupIdsForRestaurant('a'), <String>['g1']);
+      expect(await repository.groupIdsForRestaurant('b'), isEmpty);
+      expect(await repository.groupIdsForRestaurant('c'), <String>['g1']);
+    });
+  });
+
   test('stops publishing once disposed', () async {
     await repository.insert(restaurant(id: 'a', name: 'Kebab'));
     final RestaurantListController controller = buildController();

@@ -1,4 +1,5 @@
 import 'package:eatapp/data/db/app_database.dart';
+import 'package:eatapp/data/groups/group_models.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/features/edit/restaurant_edit_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -208,6 +209,42 @@ void main() {
       expect(storage.persistCount, 0);
       expect(storage.deleted, isEmpty);
       expect(await repository.getRestaurantPhotoPath('a'), '/photos/old.jpg');
+    });
+  });
+
+  group('group selector', () {
+    const List<Group> groups = <Group>[
+      Group(id: 'g1', name: 'Família', role: GroupRole.owner),
+      Group(id: 'g2', name: 'Amics', role: GroupRole.editor),
+      Group(id: 'g3', name: 'Feina', role: GroupRole.reader),
+    ];
+
+    RestaurantEditController withGroups({String? initialGroupId}) {
+      final RestaurantEditController controller = RestaurantEditController(
+        repository: repository,
+        groups: groups,
+        initialGroupId: initialGroupId,
+      );
+      controllers.add(controller);
+      return controller;
+    }
+
+    test('offers only the groups the user may write to', () {
+      final RestaurantEditController controller = withGroups();
+
+      expect(
+        <String>[
+          for (final Group group in controller.selectableGroups) group.id,
+        ],
+        <String>['g1', 'g2'],
+      );
+    });
+
+    test('pre-selects the scoped group only when it is writable', () {
+      expect(withGroups(initialGroupId: 'g2').state.selectedGroupIds, <String>{
+        'g2',
+      });
+      expect(withGroups(initialGroupId: 'g3').state.selectedGroupIds, isEmpty);
     });
   });
 }

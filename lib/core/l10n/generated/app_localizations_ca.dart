@@ -82,6 +82,43 @@ class AppLocalizationsCa extends AppLocalizations {
   String get listActionClearFilters => 'Esborra els filtres';
 
   @override
+  String get listActionSelectAll => 'Selecciona-ho tot';
+
+  @override
+  String get listActionAddToGroup => 'Afegeix a un grup';
+
+  @override
+  String get listActionCancelSelection => 'Cancel·la la selecció';
+
+  @override
+  String listSelectionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seleccionats',
+      one: '$count seleccionat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listAddedToGroups(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count restaurants afegits',
+      one: '$count restaurant afegit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addToGroupsDialogTitle => 'Afegeix a un grup';
+
+  @override
+  String get addToGroupsDialogConfirm => 'Afegeix';
+
+  @override
   String get listSortLabel => 'Ordena per';
 
   @override

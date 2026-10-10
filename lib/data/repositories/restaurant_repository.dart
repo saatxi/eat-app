@@ -301,27 +301,103 @@ class RestaurantRepository {
       }
 
       // Add (or revive) the memberships the user kept.
-      for (final String groupId in groupIds) {
-        final RestaurantGroup? prior = byGroup[groupId];
-        await _database.into(_database.restaurantGroups).insertOnConflictUpdate(
-          RestaurantGroupsCompanion.insert(
-            restaurantId: restaurantId,
-            groupId: groupId,
-            createdBy: prior?.createdBy ?? createdBy,
-            updatedAt: Value<int>(now),
-            deletedAt: const Value<int?>(null),
-          ),
-        );
-        await _pending.enqueue(
-          SyncTable.restaurantGroups,
-          restaurantId,
-          groupId,
-        );
-      }
+      await _upsertMemberships(
+        restaurantId: restaurantId,
+        groupIds: groupIds,
+        byGroup: byGroup,
+        createdBy: createdBy,
+        now: now,
+      );
     });
 
     await _applyHomeGroup(restaurantId);
     await _afterWrite();
+  }
+
+  /// Adds every one of [restaurantIds] to every one of [groupIds], attributed
+  /// to [createdBy] — the Journal's bulk "Add to group" action.
+  ///
+  /// Add-only: a membership the restaurant already has is kept (and keeps its
+  /// original author), and none is ever removed. A personal restaurant gains
+  /// its first group as its home, exactly as the edit form's save would give
+  /// it, so its visits and photos have a Storage folder to sync into.
+  Future<void> addRestaurantsToGroups({
+    required Set<String> restaurantIds,
+    required Set<String> groupIds,
+    required String createdBy,
+  }) async {
+    if (restaurantIds.isEmpty || groupIds.isEmpty) {
+      return;
+    }
+    final int now = DateTime.now().millisecondsSinceEpoch;
+
+    await _database.transaction(() async {
+      for (final String restaurantId in restaurantIds) {
+        final Restaurant? row = await _restaurants.getById(restaurantId);
+        if (row == null || row.deletedAt != null) {
+          continue;
+        }
+        if (row.groupId == null) {
+          final String home = groupIds.first;
+          await _restaurants.updateRestaurant(
+            row.copyWith(
+              groupId: Value<String?>(home),
+              createdBy: Value<String?>(row.createdBy ?? createdBy),
+              updatedAt: now,
+            ),
+          );
+          await _pending.enqueue(SyncTable.restaurants, restaurantId, home);
+        }
+
+        final List<RestaurantGroup> existing = await (_database
+                .select(_database.restaurantGroups)
+              ..where((t) => t.restaurantId.equals(restaurantId)))
+            .get();
+        await _upsertMemberships(
+          restaurantId: restaurantId,
+          groupIds: groupIds,
+          byGroup: <String, RestaurantGroup>{
+            for (final RestaurantGroup rg in existing) rg.groupId: rg,
+          },
+          createdBy: createdBy,
+          now: now,
+        );
+      }
+    });
+
+    await _afterWrite();
+    for (final String groupId in groupIds) {
+      _notifySharedWrite(groupId);
+    }
+  }
+
+  /// Writes or revives [restaurantId]'s membership in each of [groupIds] and
+  /// queues it. A membership that already existed ([byGroup]) keeps its
+  /// original author; a new one is attributed to [createdBy].
+  Future<void> _upsertMemberships({
+    required String restaurantId,
+    required Set<String> groupIds,
+    required Map<String, RestaurantGroup> byGroup,
+    required String createdBy,
+    required int now,
+  }) async {
+    for (final String groupId in groupIds) {
+      final RestaurantGroup? prior = byGroup[groupId];
+      await _database.into(_database.restaurantGroups).insertOnConflictUpdate(
+        RestaurantGroupsCompanion.insert(
+          restaurantId: restaurantId,
+          groupId: groupId,
+          createdBy: prior?.createdBy ?? createdBy,
+          updatedAt: Value<int>(now),
+          deletedAt: const Value<int?>(null),
+        ),
+      );
+      await _pending.enqueue(
+        SyncTable.restaurantGroups,
+        restaurantId,
+        groupId,
+      );
+    }
   }
 
   /// Points the restaurant's home group (its `groupId` column) at one of its

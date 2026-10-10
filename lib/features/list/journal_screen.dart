@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
@@ -6,6 +7,8 @@ import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/staggered_entrance.dart';
+import '../../data/groups/group_models.dart';
+import '../groups/add_to_groups_dialog.dart';
 import '../groups/group_scope_button.dart';
 import '../groups/group_sync_button.dart';
 import '../groups/groups_controller.dart';
@@ -75,6 +78,42 @@ class _JournalScreenState extends State<JournalScreen> {
     await _controller?.deleteRestaurant(restaurant.id);
   }
 
+  /// Whether a long press may start the bulk "Add to group" selection: only
+  /// with groups in play and at least one group the user may write to.
+  bool _canAddToGroups(GroupsController? groups) =>
+      groups != null &&
+      groups.canUseGroups &&
+      groups.state.groups.any((Group group) => group.role.canEdit);
+
+  /// Asks which groups the ticked restaurants go into, adds them, and confirms
+  /// with a snackbar. Dismissing the dialog leaves the selection as it was.
+  Future<void> _addSelectedToGroups(
+    RestaurantListController controller,
+    GroupsController groups,
+  ) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppScope scope = AppScope.of(context);
+    final Set<String>? chosen = await showAddToGroupsDialog(
+      context,
+      groups: groups.state.groups,
+    );
+    if (chosen == null || chosen.isEmpty) {
+      return;
+    }
+    final String? me = (await scope.identity?.current())?.userId;
+    if (me == null) {
+      return;
+    }
+    final int added = await controller.addSelectedToGroups(
+      chosen,
+      createdBy: me,
+    );
+    messenger.showSnackBar(
+      SnackBar(content: Text(l10n.listAddedToGroups(added))),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // The scope selector listens to the groups controller itself, so the screen
@@ -88,64 +127,115 @@ class _JournalScreenState extends State<JournalScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final GroupsController? groups = AppScope.of(context).groupsController;
 
-    return Scaffold(
-      body: NestedScrollView(
-        headerSliverBuilder: (BuildContext context, bool innerBoxScrolled) {
-          return <Widget>[
-            SliverAppBar(
-              pinned: true,
-              title: Text(l10n.navJournal),
-              actions: <Widget>[
-                if (groups != null && groups.canUseGroups) ...<Widget>[
-                  GroupScopeButton(controller: groups),
-                  GroupSyncButton(controller: groups),
-                ],
-                if (widget.onAddRestaurant != null)
-                  IconButton(
-                    onPressed: widget.onAddRestaurant,
-                    tooltip: l10n.listActionAddRestaurant,
-                    icon: const Icon(Icons.add_rounded),
-                  ),
-              ],
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (BuildContext context, Widget? child) {
+        final RestaurantListUiState state = controller.state;
+        // Keep the field in step with the state: clearing the filters resets
+        // the query, and the field has to go blank with it.
+        if (_searchController.text != state.searchQuery) {
+          _searchController.value = TextEditingValue(
+            text: state.searchQuery,
+            selection: TextSelection.collapsed(
+              offset: state.searchQuery.length,
             ),
-          ];
-        },
-        body: ListenableBuilder(
-          listenable: controller,
-          builder: (BuildContext context, Widget? child) {
-            final RestaurantListUiState state = controller.state;
-            // Keep the field in step with the state: clearing the filters resets
-            // the query, and the field has to go blank with it.
-            if (_searchController.text != state.searchQuery) {
-              _searchController.value = TextEditingValue(
-                text: state.searchQuery,
-                selection: TextSelection.collapsed(
-                  offset: state.searchQuery.length,
-                ),
-              );
+          );
+        }
+        // Back leaves selection mode before it leaves the screen.
+        return PopScope(
+          canPop: !state.isSelecting,
+          onPopInvokedWithResult: (bool didPop, Object? result) {
+            if (!didPop) {
+              controller.clearSelection();
             }
-            return Column(
-              children: <Widget>[
-                JournalFilterBar(
-                  controller: controller,
-                  state: state,
-                  searchController: _searchController,
-                  showFilters: !state.isInitialLoad &&
-                      (state.restaurants.isNotEmpty ||
-                          state.hasActiveFilter ||
-                          state.favoritesOnly),
-                ),
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: () => _refresh(controller, groups),
-                    child: _content(state, controller, l10n),
-                  ),
-                ),
-              ],
-            );
           },
-        ),
+          child: Scaffold(
+            body: NestedScrollView(
+              headerSliverBuilder:
+                  (BuildContext context, bool innerBoxScrolled) => <Widget>[
+                    if (state.isSelecting && groups != null)
+                      _selectionAppBar(state, controller, groups, l10n)
+                    else
+                      _appBar(groups, l10n),
+                  ],
+              body: Column(
+                children: <Widget>[
+                  JournalFilterBar(
+                    controller: controller,
+                    state: state,
+                    searchController: _searchController,
+                    showFilters: !state.isInitialLoad &&
+                        (state.restaurants.isNotEmpty ||
+                            state.hasActiveFilter ||
+                            state.favoritesOnly),
+                  ),
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: () => _refresh(controller, groups),
+                      child: _content(state, controller, groups, l10n),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _appBar(GroupsController? groups, AppLocalizations l10n) {
+    return SliverAppBar(
+      pinned: true,
+      title: Text(l10n.navJournal),
+      actions: <Widget>[
+        if (groups != null && groups.canUseGroups) ...<Widget>[
+          GroupScopeButton(controller: groups),
+          GroupSyncButton(controller: groups),
+        ],
+        if (widget.onAddRestaurant != null)
+          IconButton(
+            onPressed: widget.onAddRestaurant,
+            tooltip: l10n.listActionAddRestaurant,
+            icon: const Icon(Icons.add_rounded),
+          ),
+      ],
+    );
+  }
+
+  /// The contextual bar shown while restaurants are ticked. Its actions are
+  /// icon-only, with tooltips, so the count in the title never has to compete
+  /// with a translated button label for the width.
+  Widget _selectionAppBar(
+    RestaurantListUiState state,
+    RestaurantListController controller,
+    GroupsController groups,
+    AppLocalizations l10n,
+  ) {
+    return SliverAppBar(
+      pinned: true,
+      leading: IconButton(
+        onPressed: controller.clearSelection,
+        tooltip: l10n.listActionCancelSelection,
+        icon: const Icon(Icons.close_rounded),
       ),
+      title: Text(
+        l10n.listSelectionCount(state.selectedIds.length),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      actions: <Widget>[
+        IconButton(
+          onPressed: controller.selectAllVisible,
+          tooltip: l10n.listActionSelectAll,
+          icon: const Icon(Icons.select_all_rounded),
+        ),
+        IconButton(
+          onPressed: () => _addSelectedToGroups(controller, groups),
+          tooltip: l10n.listActionAddToGroup,
+          icon: const Icon(Icons.group_add_rounded),
+        ),
+      ],
     );
   }
 
@@ -163,6 +253,7 @@ class _JournalScreenState extends State<JournalScreen> {
   Widget _content(
     RestaurantListUiState state,
     RestaurantListController controller,
+    GroupsController? groups,
     AppLocalizations l10n,
   ) {
     if (state.isInitialLoad) {
@@ -265,9 +356,19 @@ class _JournalScreenState extends State<JournalScreen> {
           index: index,
           child: RestaurantCard(
             restaurant: restaurant,
-            onTap: widget.onOpenRestaurant == null
+            selectionMode: state.isSelecting,
+            selected: state.selectedIds.contains(restaurant.id),
+            onTap: state.isSelecting
+                ? () => controller.toggleSelection(restaurant.id)
+                : widget.onOpenRestaurant == null
                 ? null
                 : () => widget.onOpenRestaurant!(restaurant),
+            onLongPress: _canAddToGroups(groups)
+                ? () {
+                    HapticFeedback.selectionClick();
+                    controller.startSelection(restaurant.id);
+                  }
+                : null,
             onFavoriteToggle: controller.toggleFavorite,
             onDeleteRequest: () => _confirmDelete(restaurant),
           ),

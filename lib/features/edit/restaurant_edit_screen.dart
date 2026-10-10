@@ -178,11 +178,11 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                       onAdd: controller.pickPhoto,
                       onRemove: controller.removePhoto,
                     ),
-                    if (controller.groups.isNotEmpty) ...<Widget>[
+                    if (controller.selectableGroups.isNotEmpty) ...<Widget>[
                       const SizedBox(height: AppSpacing.lg),
                       _SectionLabel(l10n.editSectionGroups),
                       _GroupsField(
-                        groups: controller.groups,
+                        groups: controller.selectableGroups,
                         selectedIds: state.selectedGroupIds,
                         onToggle: controller.onToggleGroup,
                       ),

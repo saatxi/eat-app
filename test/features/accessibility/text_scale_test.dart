@@ -6,17 +6,20 @@ import 'package:eatapp/app/app_scope.dart';
 import 'package:eatapp/core/l10n/generated/app_localizations.dart';
 import 'package:eatapp/core/theme/app_theme.dart';
 import 'package:eatapp/data/db/app_database.dart';
+import 'package:eatapp/data/groups/group_models.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
 import 'package:eatapp/data/supabase/identity.dart';
 import 'package:eatapp/features/detail/restaurant_detail_screen.dart';
 import 'package:eatapp/features/edit/restaurant_edit_screen.dart';
+import 'package:eatapp/features/groups/groups_controller.dart';
 import 'package:eatapp/features/list/journal_screen.dart';
 import 'package:eatapp/features/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../data/db/db_test_utils.dart';
+import '../../data/groups/fake_group_gateway.dart';
 import '../../data/photo/photo_fakes.dart';
 import '../../data/supabase/fake_identity_gateway.dart';
 
@@ -61,11 +64,13 @@ void main() {
     required double scale,
     IdentityGateway? identity,
     Locale locale = const Locale('en'),
+    GroupsController? groups,
   }) => AppScope(
     restaurants: repository,
     preferences: preferences,
     photoPicker: FakePhotoPicker(),
     identity: identity,
+    groupsController: groups,
     child: MaterialApp(
       theme: AppTheme.of(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -207,6 +212,49 @@ void main() {
       await pumpForm(tester);
 
       expect(find.byTooltip('Suprimeix la foto'), findsOneWidget);
+
+      await disposeApp(tester);
+    });
+
+    // The Journal's selection bar on a narrow phone, in the longest locale: the
+    // count in the title shares the bar with the close button and two actions,
+    // which stay icon-only so a translated label never crowds it out. The fully
+    // filled card below it is the narrowest place the rating and price pill have
+    // to share a line, and they wrap rather than overflow.
+    testWidgets('the selection bar lays out in Catalan at ${scale}x text', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(360, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await seed();
+      final GroupsController groups = GroupsController(
+        preferences: preferences,
+        gateway: FakeGroupGateway(
+          groups: const <Group>[
+            Group(id: 'g1', name: 'Família', role: GroupRole.owner),
+          ],
+        ),
+        identity: FakeIdentityGateway(existingUserId: 'u1'),
+      );
+      addTearDown(groups.dispose);
+      await groups.load();
+
+      await tester.pumpWidget(
+        host(
+          const JournalScreen(),
+          scale: scale,
+          locale: const Locale('ca'),
+          groups: groups,
+        ),
+      );
+      await pump(tester);
+      await tester.longPress(find.text('Cal Ferran'));
+      await pump(tester);
+
+      expect(find.text('1 seleccionat'), findsOneWidget);
+      expect(find.byTooltip('Afegeix a un grup'), findsOneWidget);
 
       await disposeApp(tester);
     });

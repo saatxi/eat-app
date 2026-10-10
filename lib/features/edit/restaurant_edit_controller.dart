@@ -35,7 +35,14 @@ class RestaurantEditController extends ChangeNotifier {
   }) {
     _state = RestaurantEditState(
       isLoading: restaurantId != null,
-      selectedGroupIds: <String>{?initialGroupId},
+      // Pre-selected only when the user may share into it: a list scoped to a
+      // group they only read must not start a new restaurant off inside it.
+      selectedGroupIds: <String>{
+        if (groups.any(
+          (Group group) => group.id == initialGroupId && group.role.canEdit,
+        ))
+          initialGroupId!,
+      },
     );
     _subscriptions.addAll(<StreamSubscription<Object>>[
       repository.observeCities().listen((List<String> value) {
@@ -72,6 +79,14 @@ class RestaurantEditController extends ChangeNotifier {
   /// The groups the user may share this restaurant into. Empty whenever groups
   /// are off — the form then shows no selector and the write stays private.
   final List<Group> groups;
+
+  /// The subset of [groups] the selector offers: the ones the user may write
+  /// to. A membership in a group they only read is kept as it is — it is still
+  /// in the selection, just not offered to toggle.
+  List<Group> get selectableGroups => <Group>[
+    for (final Group group in groups)
+      if (group.role.canEdit) group,
+  ];
 
   /// The group the list is scoped to, used to pre-select a group for a new
   /// restaurant. Null in Personal mode.

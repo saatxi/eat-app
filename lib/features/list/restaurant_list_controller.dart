@@ -28,6 +28,7 @@ class RestaurantListUiState {
     this.restaurants = const <RestaurantUiModel>[],
     this.favoritesOnly = false,
     this.isInitialLoad = true,
+    this.selectedIds = const <String>{},
   });
 
   final RestaurantFilters filters;
@@ -45,6 +46,14 @@ class RestaurantListUiState {
 
   /// True until the database has emitted for the first time.
   final bool isInitialLoad;
+
+  /// The restaurants ticked in the Journal's selection mode, always a subset of
+  /// [restaurants]. Empty whenever the list is not in selection mode.
+  final Set<String> selectedIds;
+
+  /// True while at least one restaurant is ticked: the list's contextual
+  /// selection mode, entered by a long press and left once nothing is ticked.
+  bool get isSelecting => selectedIds.isNotEmpty;
 
   String get searchQuery => filters.query;
   int? get minRating => filters.minRating;
@@ -81,7 +90,8 @@ class RestaurantListUiState {
           listEquals(other.availableCountries, availableCountries) &&
           listEquals(other.restaurants, restaurants) &&
           other.favoritesOnly == favoritesOnly &&
-          other.isInitialLoad == isInitialLoad;
+          other.isInitialLoad == isInitialLoad &&
+          setEquals(other.selectedIds, selectedIds);
 
   @override
   int get hashCode => Object.hash(
@@ -93,6 +103,7 @@ class RestaurantListUiState {
     Object.hashAll(restaurants),
     favoritesOnly,
     isInitialLoad,
+    Object.hashAllUnordered(selectedIds),
   );
 
   @override
@@ -174,6 +185,7 @@ class RestaurantListController extends ChangeNotifier {
   Map<String, Visit> _latestVisitByRestaurantId = const <String, Visit>{};
   Map<String, String> _photoPathsByRestaurantId = const <String, String>{};
   Set<String> _favoriteIds = const <String>{};
+  Set<String> _selectedIds = const <String>{};
 
   /// The scope the list is showing: a group id, or null for Personal. Kept in
   /// step with the preference, and every collection subscription is rebuilt
@@ -243,6 +255,51 @@ class RestaurantListController extends ChangeNotifier {
   /// The caller has already shown a confirmation dialog before calling this.
   Future<void> deleteRestaurant(String restaurantId) =>
       repository.delete(restaurantId);
+
+  /// Enters selection mode with [restaurantId] ticked — the card's long press.
+  void startSelection(String restaurantId) =>
+      _setSelection(<String>{..._selectedIds, restaurantId});
+
+  /// Ticks or unticks [restaurantId]. Unticking the last one leaves selection
+  /// mode.
+  void toggleSelection(String restaurantId) {
+    final Set<String> next = <String>{..._selectedIds};
+    if (!next.add(restaurantId)) {
+      next.remove(restaurantId);
+    }
+    _setSelection(next);
+  }
+
+  /// Ticks every restaurant the list is currently showing.
+  void selectAllVisible() => _setSelection(<String>{
+    for (final RestaurantUiModel restaurant in _state.restaurants)
+      restaurant.id,
+  });
+
+  /// Leaves selection mode.
+  void clearSelection() => _setSelection(const <String>{});
+
+  /// Adds every ticked restaurant to [groupIds] (keeping whatever groups each
+  /// is already in), then leaves selection mode. Returns how many restaurants
+  /// were added, for the confirmation the screen shows.
+  Future<int> addSelectedToGroups(
+    Set<String> groupIds, {
+    required String createdBy,
+  }) async {
+    final Set<String> selected = _selectedIds;
+    await repository.addRestaurantsToGroups(
+      restaurantIds: selected,
+      groupIds: groupIds,
+      createdBy: createdBy,
+    );
+    clearSelection();
+    return selected.length;
+  }
+
+  void _setSelection(Set<String> next) {
+    _selectedIds = next;
+    _publish();
+  }
 
   /// Re-runs the list query against the database and waits for its answer.
   ///
@@ -408,23 +465,35 @@ class RestaurantListController extends ChangeNotifier {
     if (_disposed) {
       return;
     }
+    final List<RestaurantUiModel> restaurants = <RestaurantUiModel>[
+      for (final Restaurant restaurant in _restaurants)
+        if (!_favoritesOnly || _favoriteIds.contains(restaurant.id))
+          restaurant.toUiModel(
+            isFavorite: _favoriteIds.contains(restaurant.id),
+            latestVisit: _latestVisitByRestaurantId[restaurant.id],
+            photoPath: _photoPathsByRestaurantId[restaurant.id],
+          ),
+    ];
+    // A ticked restaurant that the list no longer shows (filtered out, deleted,
+    // or the scope moved) is dropped, so a bulk action never reaches a row the
+    // user cannot see.
+    if (_selectedIds.isNotEmpty) {
+      _selectedIds = _selectedIds
+          .intersection(<String>{
+            for (final RestaurantUiModel restaurant in restaurants)
+              restaurant.id,
+          });
+    }
     final RestaurantListUiState next = RestaurantListUiState(
       filters: _filters,
       availableCuisines: _availableCuisines,
       availableCities: _availableCities,
       availableRegions: _availableRegions,
       availableCountries: _availableCountries,
-      restaurants: <RestaurantUiModel>[
-        for (final Restaurant restaurant in _restaurants)
-          if (!_favoritesOnly || _favoriteIds.contains(restaurant.id))
-            restaurant.toUiModel(
-              isFavorite: _favoriteIds.contains(restaurant.id),
-              latestVisit: _latestVisitByRestaurantId[restaurant.id],
-              photoPath: _photoPathsByRestaurantId[restaurant.id],
-            ),
-      ],
+      restaurants: restaurants,
       favoritesOnly: _favoritesOnly,
       isInitialLoad: !_loaded,
+      selectedIds: _selectedIds,
     );
     if (next == _state) {
       return;

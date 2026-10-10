@@ -36,6 +36,27 @@
   "listActionAddRestaurant": "Add restaurant",
   "listActionShareAll": "Share all restaurants",
   "listActionClearFilters": "Clear filters",
+  "listActionSelectAll": "Select all",
+  "listActionAddToGroup": "Add to group",
+  "listActionCancelSelection": "Cancel selection",
+  "listSelectionCount": "{count, plural, =1{{count} selected} other{{count} selected}}",
+  "@listSelectionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listAddedToGroups": "{count, plural, =1{{count} restaurant added} other{{count} restaurants added}}",
+  "@listAddedToGroups": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addToGroupsDialogTitle": "Add to group",
+  "addToGroupsDialogConfirm": "Add",
   "listSortLabel": "Sort by",
   "listSortName": "Name (A-Z)",
   "listSortRating": "Rating (highest first)",

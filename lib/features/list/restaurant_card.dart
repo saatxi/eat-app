@@ -26,19 +26,30 @@ const int skeletonRowCount = 6;
 /// gestures are kept — a right swipe toggles the favourite, a left swipe asks
 /// to delete — but the card never removes itself: a left swipe only calls
 /// [onDeleteRequest] and the screen decides whether and how to confirm.
+///
+/// In the list's selection mode ([selectionMode]) the swipes are switched off,
+/// so a drag can't delete a card the user meant to tick, and a check sits over
+/// the thumbnail of a [selected] card. What a tap or [onLongPress] does is the
+/// screen's call.
 class RestaurantCard extends StatelessWidget {
   const RestaurantCard({
     super.key,
     required this.restaurant,
     this.onTap,
+    this.onLongPress,
     required this.onFavoriteToggle,
     required this.onDeleteRequest,
+    this.selectionMode = false,
+    this.selected = false,
   });
 
   final RestaurantUiModel restaurant;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final ValueChanged<String> onFavoriteToggle;
   final VoidCallback onDeleteRequest;
+  final bool selectionMode;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +83,9 @@ class RestaurantCard extends StatelessWidget {
 
     return Dismissible(
       key: ValueKey<String>('restaurant-card-${restaurant.id}'),
-      direction: DismissDirection.horizontal,
+      direction: selectionMode
+          ? DismissDirection.none
+          : DismissDirection.horizontal,
       background: _SwipeHint(
         alignment: Alignment.centerLeft,
         containerColor: scheme.primaryContainer,
@@ -105,11 +118,15 @@ class RestaurantCard extends StatelessWidget {
       child: Semantics(
         label: description,
         button: true,
+        selected: selectionMode ? selected : null,
         onTap: onTap,
+        onLongPress: onLongPress,
         child: ExcludeSemantics(
           child: Card(
+            color: selected ? scheme.secondaryContainer : null,
             child: InkWell(
               onTap: onTap,
+              onLongPress: onLongPress,
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Row(
@@ -118,13 +135,33 @@ class RestaurantCard extends StatelessWidget {
                     // Paired with the detail screen's header by
                     // [restaurantHeroTag], so tapping a card flies the image
                     // across rather than swapping screens outright.
-                    Hero(
-                      tag: restaurantHeroTag(restaurant.id),
-                      child: RestaurantThumbnail(
-                        cuisineKey: restaurant.cuisineKey,
-                        photoPath: restaurant.photoPath,
-                        size: _thumbSize,
-                      ),
+                    Stack(
+                      children: <Widget>[
+                        Hero(
+                          tag: restaurantHeroTag(restaurant.id),
+                          child: RestaurantThumbnail(
+                            cuisineKey: restaurant.cuisineKey,
+                            photoPath: restaurant.photoPath,
+                            size: _thumbSize,
+                          ),
+                        ),
+                        if (selected)
+                          Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: scheme.primary.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(
+                                  _thumbSize * 0.28,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.check_rounded,
+                                size: 40,
+                                color: scheme.onPrimary,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
@@ -259,6 +296,7 @@ class _Details extends StatelessWidget {
           priceLabel: priceLabel,
           starCount: 1,
           starSize: 16,
+          wrap: true,
           priceContainerColor: scheme.primaryContainer,
           priceContentColor: scheme.onPrimaryContainer,
         ),

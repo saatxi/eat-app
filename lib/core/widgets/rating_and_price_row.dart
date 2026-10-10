@@ -30,6 +30,7 @@ class RatingAndPriceRow extends StatelessWidget {
     this.starSize = 18,
     this.showRatingLabel = true,
     this.stacked = false,
+    this.wrap = false,
     this.mainAxisAlignment = MainAxisAlignment.start,
     this.pricePadding = const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
     this.ratingContentDescription,
@@ -48,6 +49,11 @@ class RatingAndPriceRow extends StatelessWidget {
   final double starSize;
   final bool showRatingLabel;
   final bool stacked;
+
+  /// Lets the price pill drop below the stars when the two don't fit side by
+  /// side — the list card's narrow details column on a small phone, or a large
+  /// text scale. Ignores [mainAxisAlignment]; the pieces always start-align.
+  final bool wrap;
   final MainAxisAlignment mainAxisAlignment;
   final EdgeInsets pricePadding;
 
@@ -92,6 +98,14 @@ class RatingAndPriceRow extends StatelessWidget {
             child: price,
           ),
         ],
+      );
+    }
+    if (wrap) {
+      return Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.xxs,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[stars, if (priceLabel.isNotEmpty) price],
       );
     }
     return Row(

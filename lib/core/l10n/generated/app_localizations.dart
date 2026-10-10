@@ -238,6 +238,48 @@ abstract class AppLocalizations {
   /// **'Clear filters'**
   String get listActionClearFilters;
 
+  /// No description provided for @listActionSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get listActionSelectAll;
+
+  /// No description provided for @listActionAddToGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to group'**
+  String get listActionAddToGroup;
+
+  /// No description provided for @listActionCancelSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel selection'**
+  String get listActionCancelSelection;
+
+  /// No description provided for @listSelectionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} selected} other{{count} selected}}'**
+  String listSelectionCount(int count);
+
+  /// No description provided for @listAddedToGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} restaurant added} other{{count} restaurants added}}'**
+  String listAddedToGroups(int count);
+
+  /// No description provided for @addToGroupsDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to group'**
+  String get addToGroupsDialogTitle;
+
+  /// No description provided for @addToGroupsDialogConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addToGroupsDialogConfirm;
+
   /// No description provided for @listSortLabel.
   ///
   /// In en, this message translates to:

@@ -2,7 +2,6 @@ import 'package:eatapp/app/app_scope.dart';
 import 'package:eatapp/core/l10n/generated/app_localizations.dart';
 import 'package:eatapp/core/theme/app_theme.dart';
 import 'package:eatapp/data/db/app_database.dart';
-import 'package:eatapp/data/groups/group_gateway.dart';
 import 'package:eatapp/data/groups/group_models.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
@@ -16,66 +15,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../data/db/db_test_utils.dart';
+import '../../data/groups/fake_group_gateway.dart';
 import '../../data/photo/photo_fakes.dart';
 import '../../data/supabase/fake_identity_gateway.dart';
-
-/// A hand-written [GroupGateway] fake — no mocking package, per the project's
-/// convention.
-class _FakeGroupGateway implements GroupGateway {
-  _FakeGroupGateway({this.groups = const <Group>[]});
-
-  List<Group> groups;
-
-  /// The groups [createGroup] minted, for assertions.
-  final List<Group> created = <Group>[];
-
-  @override
-  Future<Group> createGroup({
-    required String id,
-    required String name,
-  }) async {
-    final Group group = Group(id: id, name: name, role: GroupRole.owner);
-    groups = <Group>[...groups, group];
-    created.add(group);
-    return group;
-  }
-
-  @override
-  Future<int> ownerGroupLimit() async => 2;
-
-  @override
-  Future<List<Group>> listGroups(String userId) async => groups;
-
-  @override
-  Future<List<GroupMember>> listMembers(String groupId) async =>
-      const <GroupMember>[];
-
-  @override
-  Future<void> leaveGroup(String groupId, String userId) async {}
-
-  @override
-  Future<void> removeMember(String groupId, String userId) async {}
-
-  @override
-  Future<void> setRole(String groupId, String userId, GroupRole role) async {}
-
-  @override
-  Future<void> editGroup(String groupId, String name) async {
-    groups = <Group>[
-      for (final Group group in groups)
-        group.id == groupId ? Group(id: group.id, name: name, role: group.role) : group,
-    ];
-  }
-
-  @override
-  Future<void> deleteGroup(String groupId) async {}
-
-  @override
-  Future<void> setDisplayName({
-    required String userId,
-    required String displayName,
-  }) async {}
-}
 
 void main() {
   late AppDatabase db;
@@ -93,7 +35,7 @@ void main() {
   /// A controller with a backend behind it, loaded once so the selector has its
   /// roster before the screen is pumped.
   Future<GroupsController> ready({
-    required _FakeGroupGateway gateway,
+    required FakeGroupGateway gateway,
     IdentityGateway? identity,
   }) async {
     final GroupsController controller = GroupsController(
@@ -120,7 +62,7 @@ void main() {
     ),
   );
 
-  _FakeGroupGateway twoGroups() => _FakeGroupGateway(
+  FakeGroupGateway twoGroups() => FakeGroupGateway(
     groups: const <Group>[
       Group(id: 'g1', name: 'Família', role: GroupRole.owner),
       Group(id: 'g2', name: 'Amics', role: GroupRole.editor),
@@ -174,7 +116,7 @@ void main() {
     // A deliberately long name: the label has to ellipsize rather than push the
     // title and the other actions off the bar.
     final GroupsController controller = await ready(
-      gateway: _FakeGroupGateway(
+      gateway: FakeGroupGateway(
         groups: const <Group>[
           Group(
             id: 'g1',
@@ -261,7 +203,7 @@ void main() {
   testWidgets('the groups screen creates and selects a group', (
     WidgetTester tester,
   ) async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway();
+    final FakeGroupGateway gateway = FakeGroupGateway();
     final GroupsController controller = await ready(gateway: gateway);
 
     await tester.pumpWidget(
@@ -296,7 +238,7 @@ void main() {
     WidgetTester tester,
   ) async {
     // Two owned groups already — the fake's cap is 2.
-    final _FakeGroupGateway gateway = _FakeGroupGateway(
+    final FakeGroupGateway gateway = FakeGroupGateway(
       groups: const <Group>[
         Group(id: 'g1', name: 'Família', role: GroupRole.owner),
         Group(id: 'g2', name: 'Amics', role: GroupRole.owner),
@@ -325,7 +267,7 @@ void main() {
   testWidgets('the change-your-name row is hidden with no groups', (
     WidgetTester tester,
   ) async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway();
+    final FakeGroupGateway gateway = FakeGroupGateway();
     final GroupsController controller = await ready(gateway: gateway);
 
     await tester.pumpWidget(
@@ -342,7 +284,7 @@ void main() {
   testWidgets('creating without an account points to Settings', (
     WidgetTester tester,
   ) async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway();
+    final FakeGroupGateway gateway = FakeGroupGateway();
     // No session: a device that never created an account.
     final GroupsController controller = await ready(
       gateway: gateway,
