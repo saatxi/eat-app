@@ -3,29 +3,23 @@ import 'dart:typed_data';
 
 import 'package:eatapp/data/photo/photo_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 
-/// The real photo pipeline, on a temp directory instead of the app's support
-/// directory — the one part of `FilePhotoStorage` that has no platform channel
-/// in it. Worth holding down because it fails silently: a wrong bound or a
-/// dropped fallback corrupts a user's photo without ever throwing.
+/// The real photo store, on temp directories instead of the app's support and
+/// cache directories — the part of `FilePhotoStorage` that has no platform
+/// channel in it. The picker has already bounded a photo by the time it gets
+/// here, so the store's job is to keep the bytes exactly as they are and to
+/// clean up after the picker; a slip in either loses or leaks a user's photo
+/// without ever throwing.
 void main() {
   late Directory root;
   late Directory temp;
   late FilePhotoStorage storage;
 
-  /// Small enough that a handful of pixels exercises the bounding path.
-  const int bound = 64;
-
   setUp(() {
     root = Directory.systemTemp.createTempSync('eatapp-photo-test');
     temp = Directory.systemTemp.createTempSync('eatapp-photo-cache');
-    storage = FilePhotoStorage(
-      supportDirectory: root,
-      temporaryDirectory: temp,
-      maxDimension: bound,
-    );
+    storage = FilePhotoStorage(supportDirectory: root, temporaryDirectory: temp);
   });
 
   tearDown(() {
@@ -33,73 +27,54 @@ void main() {
     temp.deleteSync(recursive: true);
   });
 
-  /// Writes [bytes] where a picker would have left them and returns that path.
-  Future<String> picked(Uint8List bytes, {String name = 'picked.png'}) async {
+  /// Stands in for a photo: the store never decodes it, so any bytes will do.
+  Uint8List photoBytes() => Uint8List.fromList(<int>[0xFF, 0xD8, 1, 2, 3, 4]);
+
+  /// Writes [bytes] outside the cache (an import, a fixture) and returns the
+  /// path.
+  Future<String> picked(Uint8List bytes, {String name = 'picked.jpg'}) async {
     final File file = File(p.join(root.path, name));
     await file.writeAsBytes(bytes, flush: true);
     return file.path;
   }
 
-  img.Image storedImage(String storedPath) =>
-      img.decodeImage(File(storedPath).readAsBytesSync())!;
+  test('stores the photo byte for byte under a photos/ directory', () async {
+    final Uint8List bytes = photoBytes();
 
-  test('stores a JPEG under a photos/ directory beside the database', () async {
+    final String stored = await storage.persist(await picked(bytes));
+
+    expect(p.basename(p.dirname(stored)), 'photos');
+    expect(p.extension(stored), '.jpg');
+    expect(File(stored).readAsBytesSync(), bytes);
+  });
+
+  test('keeps the source extension, so a HEIC stays a HEIC', () async {
     final String stored = await storage.persist(
-      await picked(Uint8List.fromList(img.encodePng(img.Image(width: 8, height: 8)))),
+      await picked(photoBytes(), name: 'IMG_0001.HEIC'),
+    );
+
+    expect(p.extension(stored), '.heic');
+  });
+
+  test('gives an extensionless source a .jpg name', () async {
+    final String stored = await storage.persist(
+      await picked(photoBytes(), name: 'picked'),
     );
 
     expect(p.extension(stored), '.jpg');
-    expect(p.basename(p.dirname(stored)), 'photos');
-    expect(File(stored).existsSync(), isTrue);
   });
 
-  test('bounds a landscape photo by its width, keeping the ratio', () async {
-    final String stored = await storage.persist(
-      await picked(Uint8List.fromList(img.encodePng(img.Image(width: 200, height: 100)))),
-    );
+  test('each stored copy gets its own name', () async {
+    final String source = await picked(photoBytes());
 
-    final img.Image decoded = storedImage(stored);
-    expect(decoded.width, bound);
-    expect(decoded.height, bound ~/ 2);
-  });
+    final String first = await storage.persist(source);
+    final String second = await storage.persist(source);
 
-  test('bounds a portrait photo by its height, keeping the ratio', () async {
-    final String stored = await storage.persist(
-      await picked(Uint8List.fromList(img.encodePng(img.Image(width: 100, height: 300)))),
-    );
-
-    final img.Image decoded = storedImage(stored);
-    expect(decoded.height, bound);
-    expect(decoded.width, closeTo(21, 1));
-  });
-
-  test('leaves an image already inside the bound at its own size', () async {
-    final String stored = await storage.persist(
-      await picked(Uint8List.fromList(img.encodePng(img.Image(width: 20, height: 10)))),
-    );
-
-    final img.Image decoded = storedImage(stored);
-    expect(decoded.width, 20);
-    expect(decoded.height, 10);
-  });
-
-  test('keeps bytes it cannot decode rather than losing the photo', () async {
-    final Uint8List notAnImage = Uint8List.fromList(<int>[1, 2, 3, 4, 5]);
-
-    final String stored = await storage.persist(
-      await picked(notAnImage, name: 'mystery.heic'),
-    );
-
-    // Stored verbatim, under its own extension: an unreadable format is still
-    // the user's photo.
-    expect(p.extension(stored), '.heic');
-    expect(File(stored).readAsBytesSync(), notAnImage);
+    expect(first, isNot(second));
   });
 
   test('delete removes the file and tolerates one that is already gone', () async {
-    final String stored = await storage.persist(
-      await picked(Uint8List.fromList(img.encodePng(img.Image(width: 8, height: 8)))),
-    );
+    final String stored = await storage.persist(await picked(photoBytes()));
 
     await storage.delete(stored);
     expect(File(stored).existsSync(), isFalse);
@@ -109,13 +84,10 @@ void main() {
   });
 
   group('picker temp files', () {
-    Uint8List png() =>
-        Uint8List.fromList(img.encodePng(img.Image(width: 8, height: 8)));
-
     Future<File> inCache(String name, {Duration age = Duration.zero}) async {
       final File file = File(p.join(temp.path, name));
       await file.parent.create(recursive: true);
-      await file.writeAsBytes(png(), flush: true);
+      await file.writeAsBytes(photoBytes(), flush: true);
       await file.setLastModified(DateTime.now().subtract(age));
       return file;
     }
@@ -130,7 +102,7 @@ void main() {
     });
 
     test('a source outside the cache is never deleted', () async {
-      final String source = await picked(png());
+      final String source = await picked(photoBytes());
 
       await storage.persist(source);
 
