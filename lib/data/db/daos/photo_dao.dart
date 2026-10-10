@@ -12,7 +12,7 @@ part 'photo_dao.g.dart';
 /// Soft-deleted rows are excluded throughout: a photo tombstoned by a shared
 /// delete must not draw a thumbnail or a gallery entry, and a visit's
 /// tombstoned photos must go with it.
-@DriftAccessor(tables: <Type>[Photos, Visits])
+@DriftAccessor(tables: <Type>[Photos, Visits, Restaurants])
 class PhotoDao extends DatabaseAccessor<AppDatabase> with _$PhotoDaoMixin {
   PhotoDao(super.db);
 
@@ -110,9 +110,15 @@ class PhotoDao extends DatabaseAccessor<AppDatabase> with _$PhotoDaoMixin {
         readsFrom: <ResultSetImplementation>{photos, visits},
       ).get().then(_mapPhotos);
 
-  /// Every stored photo, for the whole-list wipe.
-  Future<List<Photo>> getAllPhotos() =>
-      (select(photos)..where((t) => t.deletedAt.isNull())).get();
+  /// Every stored photo belonging to personal (non-shared) restaurants, for
+  /// the personal-profile wipe.
+  Future<List<Photo>> getAllPersonalPhotos() => customSelect(
+    'SELECT p.* FROM photos p '
+    'LEFT JOIN visits v ON p.visitId = v.id '
+    'LEFT JOIN restaurants r ON COALESCE(p.restaurantId, v.restaurantId) = r.id '
+    'WHERE p.deletedAt IS NULL AND r.groupId IS NULL',
+    readsFrom: <ResultSetImplementation>{photos, visits, restaurants},
+  ).get().then(_mapPhotos);
 
   Future<Photo?> getById(String id) => customSelect(
     'SELECT * FROM photos WHERE id = ? AND deletedAt IS NULL',

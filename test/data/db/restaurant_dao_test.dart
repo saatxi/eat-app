@@ -246,10 +246,10 @@ void main() {
       expect(await db.visitDao.observeVisitsForRestaurant('a').first, isEmpty);
     });
 
-    test('deleteAll clears the table', () async {
+    test('deleteAll clears only personal restaurants', () async {
       await seed();
 
-      await db.restaurantDao.deleteAllRestaurants();
+      await db.restaurantDao.deleteAllPersonalRestaurants();
 
       expect(await db.restaurantDao.observeTotalCount().first, 0);
       expect(await filteredIds(db), isEmpty);

@@ -185,7 +185,8 @@ class RestaurantDao extends DatabaseAccessor<AppDatabase>
   Future<void> deleteRestaurant(String id) =>
       (delete(restaurants)..where((t) => t.id.equals(id))).go();
 
-  Future<void> deleteAllRestaurants() => delete(restaurants).go();
+  Future<void> deleteAllPersonalRestaurants() =>
+      (delete(restaurants)..where((t) => t.groupId.isNull())).go();
 
   /// One-shot lookup by id, tombstones *included*: the repository needs a row's
   /// own `groupId` to decide whether a delete is the shared soft kind, and this

@@ -203,8 +203,8 @@ class RestaurantRepository {
   }
 
   Future<void> deleteAll() async {
-    final List<Photo> photos = await _photos.getAllPhotos();
-    await _restaurants.deleteAllRestaurants();
+    final List<Photo> photos = await _photos.getAllPersonalPhotos();
+    await _restaurants.deleteAllPersonalRestaurants();
     await _deleteFiles(photos);
     await _afterWrite();
   }
