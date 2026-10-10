@@ -14,6 +14,9 @@ import 'restaurant_ui_model.dart';
 /// The thumbnail's edge, in logical pixels.
 const double _thumbSize = 88;
 
+/// The thumbnail's edge on a compact card.
+const double _compactThumbSize = 48;
+
 /// How many skeleton cards fill the initial-load state — enough for a phone.
 const int skeletonRowCount = 6;
 
@@ -31,6 +34,12 @@ const int skeletonRowCount = 6;
 /// so a drag can't delete a card the user meant to tick, and a check sits over
 /// the thumbnail of a [selected] card. What a tap or [onLongPress] does is the
 /// screen's call.
+///
+/// A [compact] card is the Journal's "Compact" density: a smaller photo, the
+/// name on one line and cuisine and town on another. The street, rating, price
+/// and visit status are left to the detail screen — they are still announced
+/// by the screen-reader description, which is the same in both, as are the
+/// gestures and the selection.
 class RestaurantCard extends StatelessWidget {
   const RestaurantCard({
     super.key,
@@ -41,6 +50,7 @@ class RestaurantCard extends StatelessWidget {
     required this.onDeleteRequest,
     this.selectionMode = false,
     this.selected = false,
+    this.compact = false,
   });
 
   final RestaurantUiModel restaurant;
@@ -50,6 +60,7 @@ class RestaurantCard extends StatelessWidget {
   final VoidCallback onDeleteRequest;
   final bool selectionMode;
   final bool selected;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +91,7 @@ class RestaurantCard extends StatelessWidget {
       // and every card already implies it by omission.
       if (!restaurant.visited) visitStatus,
     ].join(', ');
+    final double thumbSize = compact ? _compactThumbSize : _thumbSize;
 
     return Dismissible(
       key: ValueKey<String>('restaurant-card-${restaurant.id}'),
@@ -128,9 +140,16 @@ class RestaurantCard extends StatelessWidget {
               onTap: onTap,
               onLongPress: onLongPress,
               child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
+                padding: compact
+                    ? const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
+                      )
+                    : const EdgeInsets.all(AppSpacing.md),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: compact
+                      ? CrossAxisAlignment.center
+                      : CrossAxisAlignment.start,
                   children: <Widget>[
                     // Paired with the detail screen's header by
                     // [restaurantHeroTag], so tapping a card flies the image
@@ -142,7 +161,7 @@ class RestaurantCard extends StatelessWidget {
                           child: RestaurantThumbnail(
                             cuisineKey: restaurant.cuisineKey,
                             photoPath: restaurant.photoPath,
-                            size: _thumbSize,
+                            size: thumbSize,
                           ),
                         ),
                         if (selected)
@@ -151,12 +170,12 @@ class RestaurantCard extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: scheme.primary.withValues(alpha: 0.6),
                                 borderRadius: BorderRadius.circular(
-                                  _thumbSize * 0.28,
+                                  thumbSize * 0.28,
                                 ),
                               ),
                               child: Icon(
                                 Icons.check_rounded,
-                                size: 40,
+                                size: thumbSize * 0.45,
                                 color: scheme.onPrimary,
                               ),
                             ),
@@ -165,11 +184,16 @@ class RestaurantCard extends StatelessWidget {
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
-                      child: _Details(
-                        restaurant: restaurant,
-                        cuisine: cuisine,
-                        visitStatus: visitStatus,
-                      ),
+                      child: compact
+                          ? _CompactDetails(
+                              restaurant: restaurant,
+                              cuisine: cuisine,
+                            )
+                          : _Details(
+                              restaurant: restaurant,
+                              cuisine: cuisine,
+                              visitStatus: visitStatus,
+                            ),
                     ),
                     IconButton(
                       onPressed: () {
@@ -305,6 +329,42 @@ class _Details extends StatelessWidget {
   }
 }
 
+/// The compact card's two lines: the name, and the cuisine with the most
+/// specific place known.
+class _CompactDetails extends StatelessWidget {
+  const _CompactDetails({required this.restaurant, required this.cuisine});
+
+  final RestaurantUiModel restaurant;
+  final String cuisine;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final String? place = restaurant.city ?? restaurant.region ?? restaurant.country;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          restaurant.name,
+          style: theme.textTheme.titleMedium,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          <String>[cuisine, ?place].join(' · '),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.text});
 
@@ -337,18 +397,35 @@ class _StatusPill extends StatelessWidget {
 /// same thumbnail-plus-lines shape, pulsing instead of drawing real content, so
 /// the journal reads as loading rather than empty.
 class RestaurantCardSkeleton extends StatelessWidget {
-  const RestaurantCardSkeleton({super.key});
+  const RestaurantCardSkeleton({super.key, this.compact = false});
+
+  /// Matches a compact [RestaurantCard], so the list keeps its row height
+  /// when the real cards replace the skeletons.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return const Card(
+    final double thumbSize = compact ? _compactThumbSize : _thumbSize;
+    final double lineGap = compact ? AppSpacing.xs : AppSpacing.sm;
+    return Card(
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.md),
+        padding: compact
+            ? const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              )
+            : const EdgeInsets.all(AppSpacing.md),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: compact
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
           children: <Widget>[
-            ShimmerBox(width: _thumbSize, height: _thumbSize, borderRadius: AppRadius.mediumAll),
-            SizedBox(width: AppSpacing.md),
+            ShimmerBox(
+              width: thumbSize,
+              height: thumbSize,
+              borderRadius: AppRadius.mediumAll,
+            ),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,25 +433,27 @@ class RestaurantCardSkeleton extends StatelessWidget {
                   FractionallySizedBox(
                     alignment: Alignment.centerLeft,
                     widthFactor: 0.55,
-                    child: ShimmerBox(height: 20),
+                    child: ShimmerBox(height: compact ? 16 : 20),
                   ),
-                  SizedBox(height: AppSpacing.sm),
-                  FractionallySizedBox(
+                  SizedBox(height: lineGap),
+                  const FractionallySizedBox(
                     alignment: Alignment.centerLeft,
                     widthFactor: 0.35,
                     child: ShimmerBox(height: 14),
                   ),
-                  SizedBox(height: AppSpacing.sm),
-                  FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: 0.7,
-                    child: ShimmerBox(height: 14),
-                  ),
+                  if (!compact) ...<Widget>[
+                    SizedBox(height: lineGap),
+                    const FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: 0.7,
+                      child: ShimmerBox(height: 14),
+                    ),
+                  ],
                 ],
               ),
             ),
-            SizedBox(width: AppSpacing.sm),
-            ShimmerBox(width: 28, height: 28, borderRadius: AppRadius.pill),
+            const SizedBox(width: AppSpacing.sm),
+            const ShimmerBox(width: 28, height: 28, borderRadius: AppRadius.pill),
           ],
         ),
       ),

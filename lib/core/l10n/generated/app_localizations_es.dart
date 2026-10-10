@@ -333,6 +333,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get themeModeSystem => 'Auto';
 
   @override
+  String get settingsJournalDensity => 'Densidad de la lista';
+
+  @override
+  String get densityComfortable => 'Normal';
+
+  @override
+  String get densityCompact => 'Compacta';
+
+  @override
   String get settingsSectionData => 'Datos';
 
   @override

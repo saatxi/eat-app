@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:eatapp/app/app_scope.dart';
 import 'package:eatapp/core/l10n/generated/app_localizations.dart';
 import 'package:eatapp/core/theme/app_theme.dart';
+import 'package:eatapp/core/theme/journal_density.dart';
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/groups/group_models.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
@@ -255,6 +256,38 @@ void main() {
 
       expect(find.text('1 seleccionat'), findsOneWidget);
       expect(find.byTooltip('Afegeix a un grup'), findsOneWidget);
+
+      await disposeApp(tester);
+    });
+
+    // The compact Journal card on a narrow phone, in the longest locale: the
+    // name and the cuisine-and-town line each have to ellipsize within the
+    // shorter card rather than overflow.
+    testWidgets('the compact list lays out in Catalan at ${scale}x text', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(360, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await seed();
+      await repository.insert(
+        restaurant(
+          id: 'b',
+          name: 'Restaurant amb un nom especialment llarg de debò',
+          cuisineType: 'mediterranean',
+          city: 'Sant Cugat del Vallès',
+          priceRange: 6,
+        ),
+      );
+      await preferences.setJournalDensity(JournalDensity.compact);
+
+      await tester.pumpWidget(
+        host(const JournalScreen(), scale: scale, locale: const Locale('ca')),
+      );
+      await pump(tester);
+
+      expect(find.text('Cal Ferran'), findsOneWidget);
 
       await disposeApp(tester);
     });

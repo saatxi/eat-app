@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
+import '../../core/theme/journal_density.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/delete_confirm_dialog.dart';
 import '../../core/widgets/empty_state.dart';
@@ -125,12 +126,20 @@ class _JournalScreenState extends State<JournalScreen> {
   Widget _scaffold(BuildContext context) {
     final RestaurantListController controller = _controller!;
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final GroupsController? groups = AppScope.of(context).groupsController;
+    final AppScope scope = AppScope.of(context);
+    final GroupsController? groups = scope.groupsController;
 
+    // The preferences are listened to as well, so switching the list density
+    // in Settings re-lays the cards out without rebuilding the controller.
     return ListenableBuilder(
-      listenable: controller,
+      listenable: Listenable.merge(<Listenable>[
+        controller,
+        scope.preferences.listenable,
+      ]),
       builder: (BuildContext context, Widget? child) {
         final RestaurantListUiState state = controller.state;
+        final bool compact =
+            scope.preferences.current.journalDensity == JournalDensity.compact;
         // Keep the field in step with the state: clearing the filters resets
         // the query, and the field has to go blank with it.
         if (_searchController.text != state.searchQuery) {
@@ -172,7 +181,7 @@ class _JournalScreenState extends State<JournalScreen> {
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: () => _refresh(controller, groups),
-                      child: _content(state, controller, groups, l10n),
+                      child: _content(state, controller, groups, l10n, compact: compact),
                     ),
                   ),
                 ],
@@ -254,8 +263,9 @@ class _JournalScreenState extends State<JournalScreen> {
     RestaurantListUiState state,
     RestaurantListController controller,
     GroupsController? groups,
-    AppLocalizations l10n,
-  ) {
+    AppLocalizations l10n, {
+    required bool compact,
+  }) {
     if (state.isInitialLoad) {
       // The database has not emitted yet, so an empty list here means "not
       // loaded", not "nothing to show" — painting the empty state would flash it
@@ -272,7 +282,7 @@ class _JournalScreenState extends State<JournalScreen> {
         separatorBuilder: (BuildContext context, int index) =>
             const SizedBox(height: AppSpacing.sm),
         itemBuilder: (BuildContext context, int index) =>
-            const RestaurantCardSkeleton(),
+            RestaurantCardSkeleton(compact: compact),
       );
     }
 
@@ -356,6 +366,7 @@ class _JournalScreenState extends State<JournalScreen> {
           index: index,
           child: RestaurantCard(
             restaurant: restaurant,
+            compact: compact,
             selectionMode: state.isSelecting,
             selected: state.selectedIds.contains(restaurant.id),
             onTap: state.isSelecting

@@ -1,5 +1,6 @@
 import 'package:eatapp/core/l10n/app_language.dart';
 import 'package:eatapp/core/theme/app_theme_mode.dart';
+import 'package:eatapp/core/theme/journal_density.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +18,7 @@ void main() {
       expect(repository.current.language, isNull);
       expect(repository.current.favoriteIds, isEmpty);
       expect(repository.current.selectedGroupId, isNull);
+      expect(repository.current.journalDensity, JournalDensity.comfortable);
     });
 
     test('still changes and notifies, so tests and previews can drive it', () async {
@@ -135,6 +137,21 @@ void main() {
       expect(UserPreferencesRepository(store: store).current.selectedGroupId, isNull);
     });
 
+    test('persists the Journal density', () async {
+      await openStore();
+      final UserPreferencesRepository repository = UserPreferencesRepository(
+        store: store,
+      );
+
+      await repository.setJournalDensity(JournalDensity.compact);
+
+      expect(store.getString('journal_density'), 'compact');
+      expect(
+        UserPreferencesRepository(store: store).current.journalDensity,
+        JournalDensity.compact,
+      );
+    });
+
     test('a stored file with no language key keeps following the device', () async {
       await openStore(<String, Object>{'theme_mode': 'dark'});
 
@@ -154,6 +171,7 @@ void main() {
       await openStore(<String, Object>{
         'theme_mode': 'sepia',
         'language': 'de',
+        'journal_density': 'cosy',
       });
 
       final UserPreferencesRepository repository = UserPreferencesRepository(
@@ -162,6 +180,7 @@ void main() {
 
       expect(repository.current.themeMode, AppThemeMode.fallback);
       expect(repository.current.language, isNull);
+      expect(repository.current.journalDensity, JournalDensity.fallback);
     });
 
     test('clearing the language removes the key rather than storing a fallback', () async {

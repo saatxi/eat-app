@@ -334,6 +334,15 @@ class AppLocalizationsCa extends AppLocalizations {
   String get themeModeSystem => 'Auto';
 
   @override
+  String get settingsJournalDensity => 'Densitat de la llista';
+
+  @override
+  String get densityComfortable => 'Normal';
+
+  @override
+  String get densityCompact => 'Compacta';
+
+  @override
   String get settingsSectionData => 'Dades';
 
   @override

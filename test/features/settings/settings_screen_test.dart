@@ -4,6 +4,7 @@ import 'package:eatapp/core/l10n/app_language.dart';
 import 'package:eatapp/core/l10n/generated/app_localizations.dart';
 import 'package:eatapp/core/theme/app_theme.dart';
 import 'package:eatapp/core/theme/app_theme_mode.dart';
+import 'package:eatapp/core/theme/journal_density.dart';
 import 'package:eatapp/data/db/app_database.dart';
 import 'package:eatapp/data/repositories/restaurant_repository.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
@@ -63,6 +64,19 @@ void main() {
     await tester.pump();
 
     expect(preferences.current.themeMode, AppThemeMode.dark);
+  });
+
+  testWidgets('picking the compact list density stores it', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(host());
+
+    expect(preferences.current.journalDensity, JournalDensity.comfortable);
+
+    await tester.tap(find.text('Compact'));
+    await tester.pump();
+
+    expect(preferences.current.journalDensity, JournalDensity.compact);
   });
 
   testWidgets('the selector offers only the shipped languages, and stores one', (

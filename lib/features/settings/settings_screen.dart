@@ -5,6 +5,7 @@ import '../../core/app_version.dart';
 import '../../core/l10n/app_language.dart';
 import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/app_theme_mode.dart';
+import '../../core/theme/journal_density.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../data/repositories/user_preferences_repository.dart';
 import '../../data/supabase/identity.dart';
@@ -98,6 +99,38 @@ class SettingsScreen extends StatelessWidget {
                   selected: <AppThemeMode>{value.themeMode},
                   onSelectionChanged: (Set<AppThemeMode> selection) =>
                       preferences.setThemeMode(selection.first),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                ),
+                child: Text(
+                  l10n.settingsJournalDensity,
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: SegmentedButton<JournalDensity>(
+                  segments: <ButtonSegment<JournalDensity>>[
+                    ButtonSegment<JournalDensity>(
+                      value: JournalDensity.comfortable,
+                      label: Text(l10n.densityComfortable),
+                      icon: const Icon(Icons.view_agenda_outlined),
+                    ),
+                    ButtonSegment<JournalDensity>(
+                      value: JournalDensity.compact,
+                      label: Text(l10n.densityCompact),
+                      icon: const Icon(Icons.view_headline_rounded),
+                    ),
+                  ],
+                  selected: <JournalDensity>{value.journalDensity},
+                  onSelectionChanged: (Set<JournalDensity> selection) =>
+                      preferences.setJournalDensity(selection.first),
                 ),
               ),
               _SectionHeader(l10n.settingsSectionLanguage),

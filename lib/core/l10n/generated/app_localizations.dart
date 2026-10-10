@@ -652,6 +652,24 @@ abstract class AppLocalizations {
   /// **'Auto'**
   String get themeModeSystem;
 
+  /// No description provided for @settingsJournalDensity.
+  ///
+  /// In en, this message translates to:
+  /// **'List density'**
+  String get settingsJournalDensity;
+
+  /// No description provided for @densityComfortable.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get densityComfortable;
+
+  /// No description provided for @densityCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get densityCompact;
+
   /// No description provided for @settingsSectionData.
   ///
   /// In en, this message translates to:

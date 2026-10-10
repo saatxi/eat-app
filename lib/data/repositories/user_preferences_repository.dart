@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/l10n/app_language.dart';
 import '../../core/theme/app_theme_mode.dart';
+import '../../core/theme/journal_density.dart';
 
 /// Everything the user has chosen, as opposed to everything that was synced.
 ///
@@ -16,6 +17,7 @@ class UserPreferences {
     required this.language,
     required this.favoriteIds,
     required this.selectedGroupId,
+    this.journalDensity = JournalDensity.fallback,
   });
 
   final AppThemeMode themeMode;
@@ -37,6 +39,9 @@ class UserPreferences {
   /// trip.
   final String? selectedGroupId;
 
+  /// How much each Journal card shows. A fresh install gets the full card.
+  final JournalDensity journalDensity;
+
   /// What the app shows before the stored values have been read back.
   static const UserPreferences defaults = UserPreferences(
     themeMode: AppThemeMode.fallback,
@@ -56,6 +61,7 @@ class UserPreferences {
     Set<String>? favoriteIds,
     String? selectedGroupId,
     bool clearSelectedGroup = false,
+    JournalDensity? journalDensity,
   }) => UserPreferences(
     themeMode: themeMode ?? this.themeMode,
     language: clearLanguage ? null : (language ?? this.language),
@@ -63,6 +69,7 @@ class UserPreferences {
     selectedGroupId: clearSelectedGroup
         ? null
         : (selectedGroupId ?? this.selectedGroupId),
+    journalDensity: journalDensity ?? this.journalDensity,
   );
 }
 
@@ -96,6 +103,7 @@ class UserPreferencesRepository {
   static const String _languageKey = 'language';
   static const String _favoriteIdsKey = 'favorite_ids';
   static const String _selectedGroupIdKey = 'selected_group_id';
+  static const String _journalDensityKey = 'journal_density';
 
   final SharedPreferences? _store;
   final ValueNotifier<UserPreferences> _value = ValueNotifier<UserPreferences>(
@@ -113,6 +121,11 @@ class UserPreferencesRepository {
     final UserPreferences next = current.copyWith(themeMode: themeMode);
     _value.value = next;
     await _store?.setString(_themeModeKey, themeMode.id);
+  }
+
+  Future<void> setJournalDensity(JournalDensity density) async {
+    _value.value = current.copyWith(journalDensity: density);
+    await _store?.setString(_journalDensityKey, density.id);
   }
 
   /// Passing null goes back to following the device's language.
@@ -173,5 +186,6 @@ class UserPreferencesRepository {
     favoriteIds: (store.getStringList(_favoriteIdsKey) ?? const <String>[])
         .toSet(),
     selectedGroupId: store.getString(_selectedGroupIdKey),
+    journalDensity: JournalDensity.fromId(store.getString(_journalDensityKey)),
   );
 }
