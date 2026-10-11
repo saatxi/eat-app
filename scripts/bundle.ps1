@@ -217,8 +217,8 @@ if ($supabaseUrl -and $supabaseAnonKey) {
     )
 }
 
-Write-Step 'Building release App Bundle (flutter build appbundle --release --obfuscate --split-debug-info)...'
-& flutter build appbundle --release --obfuscate --split-debug-info=$dartSymbolsDir @dartDefines
+Write-Step 'Building release App Bundle (flutter build appbundle --release --obfuscate --split-debug-info --strip)...'
+& flutter build appbundle --release --obfuscate --split-debug-info=$dartSymbolsDir --extra-gen-snapshot-options=--strip @dartDefines
 if ($LASTEXITCODE -ne 0) {
     Fail 'flutter build appbundle failed.'
 }

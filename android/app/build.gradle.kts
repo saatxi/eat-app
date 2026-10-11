@@ -69,7 +69,7 @@ val hasReleaseSigning = releaseKeystoreFile?.exists() == true &&
 
 android {
     namespace = "com.saatxi.eatapp"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
