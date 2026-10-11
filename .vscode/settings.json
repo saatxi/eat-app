@@ -13,5 +13,6 @@
             "default": true
         }
     ],
-    "java.compile.nullAnalysis.mode": "automatic"
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.import.gradle.projectLocator": "${workspaceFolder}/android"
 }
