@@ -25,8 +25,20 @@ abstract class SyncTransport {
   Future<void> pushPhotos(List<RemotePhoto> rows);
 
   /// Fetches every row in [groupId] whose `updated_at` is strictly newer than
-  /// [since], across the three shared tables, in one request.
-  Future<GroupPull> pullGroup({required String groupId, String? since});
+  /// [since]: the memberships that changed, and the restaurants, visits and
+  /// photos of every restaurant the group holds — not only of the ones whose
+  /// membership changed, or an edit or a new visit would never reach the rest
+  /// of the group.
+  ///
+  /// With [restaurantIds], the pull is instead scoped to those restaurants and
+  /// ignores [since] altogether: their memberships in [groupId] and all of
+  /// their rows, whatever their age. The engine uses it to fetch restaurants it
+  /// finds missing behind a cursor that has already moved past them.
+  Future<GroupPull> pullGroup({
+    required String groupId,
+    String? since,
+    List<String>? restaurantIds,
+  });
 }
 
 /// One pull's answer: the changed rows plus the cursor to store next.
@@ -37,6 +49,7 @@ class GroupPull {
     required this.visits,
     required this.photos,
     required this.cursor,
+    this.liveRestaurantIds = const <String>[],
   });
 
   final List<RemoteRestaurant> restaurants;
@@ -51,4 +64,9 @@ class GroupPull {
   /// store as the next [since]. Null when no table had a row newer than the
   /// requested [since], in which case the previous cursor stands.
   final String? cursor;
+
+  /// Every restaurant with a live membership in the group right now, however
+  /// long ago it was added — what the device must hold for the group to be
+  /// complete, whatever its cursor says.
+  final List<String> liveRestaurantIds;
 }

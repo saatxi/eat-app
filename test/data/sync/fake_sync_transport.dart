@@ -20,6 +20,10 @@ class FakeSyncTransport implements SyncTransport {
   /// sync (and how many times).
   final List<String> pullLog = <String>[];
 
+  /// The restaurant ids of every scoped pull — the engine fetching restaurants
+  /// it found missing behind its cursor.
+  final List<List<String>> scopedPulls = <List<String>>[];
+
   /// The remote's rows, keyed by group id.
   final Map<String, List<RemoteRestaurant>> restaurants =
       <String, List<RemoteRestaurant>>{};
@@ -64,22 +68,43 @@ class FakeSyncTransport implements SyncTransport {
   Future<GroupPull> pullGroup({
     required String groupId,
     String? since,
+    List<String>? restaurantIds,
   }) async {
     pullLog.add(groupId);
-    final List<RemoteRestaurantGroup> rgs = (restaurantGroups[groupId] ??
-            const <RemoteRestaurantGroup>[])
-        .where((RemoteRestaurantGroup rg) => _after(rg.updatedAt, since))
+    if (restaurantIds != null) {
+      scopedPulls.add(restaurantIds);
+    }
+    // A scoped pull ignores the cursor and keeps only the named restaurants.
+    final String? after = restaurantIds == null ? since : null;
+    bool inScope(String? restaurantId) =>
+        restaurantIds == null || restaurantIds.contains(restaurantId);
+
+    final List<RemoteRestaurantGroup> allRgs =
+        restaurantGroups[groupId] ?? const <RemoteRestaurantGroup>[];
+    final List<RemoteRestaurantGroup> rgs = allRgs
+        .where(
+          (RemoteRestaurantGroup rg) =>
+              inScope(rg.restaurantId) && _after(rg.updatedAt, after),
+        )
         .toList();
     final List<RemoteRestaurant> rs = (restaurants[groupId] ??
             const <RemoteRestaurant>[])
-        .where((RemoteRestaurant r) => _after(r.updatedAt, since))
+        .where(
+          (RemoteRestaurant r) => inScope(r.id) && _after(r.updatedAt, after),
+        )
         .toList();
     final List<RemoteVisit> vs =
         (visits[groupId] ?? const <RemoteVisit>[])
-            .where((RemoteVisit v) => _after(v.updatedAt, since))
+            .where(
+              (RemoteVisit v) =>
+                  inScope(v.restaurantId) && _after(v.updatedAt, after),
+            )
             .toList();
     final List<RemotePhoto> ps = (photos[groupId] ?? const <RemotePhoto>[])
-        .where((RemotePhoto p) => _after(p.updatedAt, since))
+        .where(
+          (RemotePhoto p) =>
+              inScope(p.restaurantId) && _after(p.updatedAt, after),
+        )
         .toList();
     return GroupPull(
       restaurants: rs,
@@ -92,6 +117,10 @@ class FakeSyncTransport implements SyncTransport {
         ...vs.map((RemoteVisit v) => v.updatedAt),
         ...ps.map((RemotePhoto p) => p.updatedAt),
       ]),
+      liveRestaurantIds: <String>[
+        for (final RemoteRestaurantGroup rg in allRgs)
+          if (rg.deletedAt == null && inScope(rg.restaurantId)) rg.restaurantId,
+      ],
     );
   }
 

@@ -389,6 +389,52 @@ void main() {
       );
       expect(await pending.pendingForGroup('g1'), isEmpty);
     });
+
+    test('a membership behind the cursor that never landed is fetched whole', () async {
+      // The cursor already moved past the restaurant (an older build skipped
+      // it), so an incremental pull alone would never bring it back.
+      await cursors.advance('g1', '2026-09-28T00:00:00.000Z');
+      transport.restaurants['g1'] = <RemoteRestaurant>[remoteRestaurant()];
+      transport.restaurantGroups['g1'] = <RemoteRestaurantGroup>[membership()];
+      transport.visits['g1'] = <RemoteVisit>[remoteVisit()];
+
+      await engine.pullGroup('g1');
+
+      expect(transport.scopedPulls, <List<String>>[
+        <String>['r9'],
+      ]);
+      expect((await db.select(db.restaurants).get()).single.id, 'r9');
+      expect((await db.select(db.restaurantGroups).get()).single.groupId, 'g1');
+      expect((await db.select(db.visits).get()).single.id, 'v9');
+      expect(await cursors.read('g1'), '2026-09-28T00:00:00.000Z');
+    });
+
+    test('a complete device makes no repair pull', () async {
+      transport.restaurants['g1'] = <RemoteRestaurant>[remoteRestaurant()];
+      transport.restaurantGroups['g1'] = <RemoteRestaurantGroup>[membership()];
+
+      await engine.pullGroup('g1');
+      await engine.pullGroup('g1');
+
+      expect(transport.scopedPulls, isEmpty);
+    });
+
+    test('a local removal waiting to be pushed is not undone by the repair', () async {
+      await db.into(db.restaurants).insert(sharedRestaurant());
+      await insertMembership('r1', 'g1', deletedAt: 2000);
+      await cursors.advance('g1', '2026-09-28T00:00:00.000Z');
+      transport.restaurantGroups['g1'] = <RemoteRestaurantGroup>[
+        membership(restaurantId: 'r1'),
+      ];
+
+      await engine.pullGroup('g1');
+
+      expect(transport.scopedPulls, isEmpty);
+      expect(
+        (await db.select(db.restaurantGroups).get()).single.deletedAt,
+        2000,
+      );
+    });
   });
 
   test('syncGroup still pulls when the push fails', () async {

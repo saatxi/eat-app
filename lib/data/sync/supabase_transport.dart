@@ -9,8 +9,8 @@ import 'sync_transport.dart';
 /// run against, so everything testable — the JSON mapping below — lives in
 /// plain top-level functions the tests exercise directly. Pushes upsert by
 /// `id` (idempotent, the same protocol the file-sharing path already uses);
-/// pulls filter `group_id` and `updated_at > since` so each pull is
-/// incremental and scoped to one group.
+/// pulls are scoped to one group's restaurants and filter `updated_at > since`
+/// so each pull is incremental.
 class SupabaseSyncTransport implements SyncTransport {
   SupabaseSyncTransport(this._client);
 
@@ -66,25 +66,42 @@ class SupabaseSyncTransport implements SyncTransport {
   Future<GroupPull> pullGroup({
     required String groupId,
     String? since,
+    List<String>? restaurantIds,
   }) async {
     // The junction names which restaurants belong to this group (and which
     // were removed, as tombstones); the restaurants themselves and their
     // visits/photos are then pulled by the ids it yields. A restaurant's own
     // row carries no group, so it can be shared into several groups at once.
+    //
+    // A scoped pull fetches the named restaurants whole, ignoring the cursor.
+    final String? after = restaurantIds == null ? since : null;
     final List<RemoteRestaurantGroup> junction = await _pullRestaurantGroups(
       groupId,
-      since,
+      after,
+      restaurantIds,
     );
-    final List<String> restaurantIds = <String>[
+
+    // The junction's updated_at only moves when the membership itself does,
+    // so the restaurants whose membership changed are not the only ones with
+    // news: an edit, a visit or a photo of one shared long ago leaves its
+    // membership untouched. Every live membership's restaurant is asked for.
+    final List<String> liveIds = after == null
+        ? <String>[
+            for (final RemoteRestaurantGroup j in junction)
+              if (j.deletedAt == null) j.restaurantId,
+          ]
+        : await _liveRestaurantIds(groupId);
+    final List<String> ids = <String>{
       for (final RemoteRestaurantGroup j in junction) j.restaurantId,
-    ];
+      ...liveIds,
+    }.toList();
 
     final List<RemoteRestaurant> restaurants = await _pullRestaurants(
-      restaurantIds,
-      since,
+      ids,
+      after,
     );
-    final List<RemoteVisit> visits = await _pullVisits(restaurantIds, since);
-    final List<RemotePhoto> photos = await _pullPhotos(restaurantIds, since);
+    final List<RemoteVisit> visits = await _pullVisits(ids, after);
+    final List<RemotePhoto> photos = await _pullPhotos(ids, after);
     return GroupPull(
       restaurants: restaurants,
       restaurantGroups: junction,
@@ -96,23 +113,41 @@ class SupabaseSyncTransport implements SyncTransport {
         ...visits.map((RemoteVisit v) => v.updatedAt),
         ...photos.map((RemotePhoto p) => p.updatedAt),
       ]),
+      liveRestaurantIds: liveIds,
     );
   }
 
   Future<List<RemoteRestaurantGroup>> _pullRestaurantGroups(
     String groupId,
     String? since,
+    List<String>? restaurantIds,
   ) async {
     var query = _client
         .from('restaurant_groups')
         .select()
         .eq('group_id', groupId);
+    if (restaurantIds != null) {
+      query = query.inFilter('restaurant_id', restaurantIds);
+    }
     if (since != null) {
       query = query.gt('updated_at', since);
     }
     final rows = await query;
     return <RemoteRestaurantGroup>[
       for (final Map<String, dynamic> row in rows) restaurantGroupFromJson(row),
+    ];
+  }
+
+  /// The ids of every restaurant with a live membership in [groupId].
+  Future<List<String>> _liveRestaurantIds(String groupId) async {
+    final rows = await _client
+        .from('restaurant_groups')
+        .select('restaurant_id')
+        .eq('group_id', groupId)
+        .isFilter('deleted_at', null);
+    return <String>[
+      for (final Map<String, dynamic> row in rows)
+        row['restaurant_id'] as String,
     ];
   }
 

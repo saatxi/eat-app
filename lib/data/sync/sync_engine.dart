@@ -219,13 +219,39 @@ class SyncEngine {
 
   /// Applies everything in [groupId] that is newer than this device's cursor,
   /// then advances the cursor to the newest `updated_at` seen.
+  ///
+  /// The cursor alone cannot vouch that the device holds the whole group — a
+  /// membership skipped or lost behind it is never newer than it again — so
+  /// every pull also checks the group's live memberships against the local
+  /// rows, and fetches whatever is missing whole, regardless of its age.
   Future<void> pullGroup(String groupId) async {
     final String? since = await _cursors.read(groupId);
     final GroupPull pull = await _transport.pullGroup(
       groupId: groupId,
       since: since,
     );
+    await _apply(groupId, pull);
 
+    final String? cursor = pull.cursor;
+    if (cursor != null) {
+      await _cursors.advance(groupId, cursor);
+    }
+
+    final List<String> missing = await _missingRestaurantIds(
+      groupId,
+      pull.liveRestaurantIds,
+    );
+    if (missing.isNotEmpty) {
+      await _apply(
+        groupId,
+        await _transport.pullGroup(groupId: groupId, restaurantIds: missing),
+      );
+    }
+  }
+
+  /// Writes [pull] into drift in one transaction, downloading its photo
+  /// binaries first.
+  Future<void> _apply(String groupId, GroupPull pull) async {
     // Download every binary *before* opening the transaction: a network call
     // inside it would hold the database open for its whole duration. A
     // tombstone has no binary, and with no blob store configured the photos are
@@ -276,11 +302,40 @@ class SyncEngine {
       purgedPhotos.addAll(await _settleMemberships(membershipRestaurantIds));
     });
     await _deletePhotoFiles(purgedPhotos);
+  }
 
-    final String? cursor = pull.cursor;
-    if (cursor != null) {
-      await _cursors.advance(groupId, cursor);
+  /// The ids among [liveRestaurantIds] that this device lacks: no restaurant
+  /// row, or no membership row in [groupId] at all.
+  ///
+  /// A membership this device holds in *any* state counts as present — a local
+  /// tombstone is a removal still waiting to be pushed, and fetching the live
+  /// remote row would undo it.
+  Future<List<String>> _missingRestaurantIds(
+    String groupId,
+    List<String> liveRestaurantIds,
+  ) async {
+    if (liveRestaurantIds.isEmpty) {
+      return const <String>[];
     }
+    final List<RestaurantGroup> held = await (_database
+            .select(_database.restaurantGroups)
+          ..where(
+            (t) =>
+                t.groupId.equals(groupId) &
+                t.restaurantId.isIn(liveRestaurantIds),
+          ))
+        .get();
+    final List<Restaurant> restaurants = await (_database
+            .select(_database.restaurants)
+          ..where((t) => t.id.isIn(liveRestaurantIds)))
+        .get();
+    final Set<String> present = <String>{
+      for (final RestaurantGroup rg in held) rg.restaurantId,
+    }.intersection(<String>{for (final Restaurant r in restaurants) r.id});
+    return <String>[
+      for (final String id in liveRestaurantIds)
+        if (!present.contains(id)) id,
+    ];
   }
 
   Future<Restaurant?> _restaurantById(String id) => (_database
