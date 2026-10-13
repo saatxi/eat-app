@@ -5,6 +5,11 @@ See [README.md](README.md) for the full project overview, the restaurant
 sharing/import feature, versioning scheme, and release process — this file
 only covers things specific to *how an agent should work in this repo*.
 
+An overhaul is in progress on the `overhaul` branch; its phases and status
+live in [docs/overhaul-plan.md](docs/overhaul-plan.md). Where this file and
+the plan disagree, a phase not yet ticked there hasn't landed, so this file
+still describes the code as it is.
+
 ## Commit and tag messages
 
 ### When an agent may act on git history
