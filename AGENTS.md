@@ -69,13 +69,13 @@ Optional detailed explanation
 
 ## Tech stack & tools
 
-- **Language**: Dart, plus native code only where a platform demands it. UI is
-  Flutter + Material 3; the native Android app this project grew out of was
+- **Language**: Dart, plus native code only where the platform demands it. UI
+  is Flutter + Material 3; the native Android app this project grew out of was
   removed once the Flutter rewrite shipped (see "Migrating from the old
   Android app" below). The one exception is the home-screen widget, whose
   Android half is a Kotlin `AppWidgetProvider` plus a few XML resources under
-  `android/app/src/main/`, and whose iOS half is a Swift WidgetKit extension
-  under `ios/EatAppWidget/`. Nothing else is native.
+  `android/app/src/main/`. Nothing else is native. The app is Android-only;
+  there is no `ios/` project.
 - **State**: one `ChangeNotifier` controller per screen under
   `lib/features/*/…_controller.dart`, each publishing an immutable `*UiState`
   snapshot the widgets rebuild from. There is no state-management package (no
@@ -110,7 +110,7 @@ Optional detailed explanation
 - **Invitations**: `qr_flutter` draws the QR an owner shows, `mobile_scanner`
   reads one back on the joining side, and `app_links` delivers the
   `eatapp://join/<token>` deep link (the scheme is registered in the Android
-  manifest's intent-filter and iOS's `CFBundleURLTypes`). The token's shape and
+  manifest's intent-filter). The token's shape and
   parsing live in `lib/data/groups/invite_link.dart`; minting and redeeming go
   through the `create-invite` / `join-group` Edge Functions
   (`supabase/functions/`), never a client write to `invites`. The scanner is
@@ -141,8 +141,8 @@ Optional detailed explanation
   `supabase/tests/rls_smoke_test.sql`, which drives an owner, an editor, a
   reader and a stranger through every table and rolls back.
 - **Build**: the Flutter tool over the Android project in `android/` (its own
-  Gradle wrapper and `android/gradle.properties`) and the iOS project in
-  `ios/`. There is no longer a root Gradle build to run.
+  Gradle wrapper and `android/gradle.properties`). There is no longer a root
+  Gradle build to run.
 - **Tests**: `flutter test`, mirroring the `lib/` structure under `test/`.
   Databases are exercised against an in-memory drift database
   (`AppDatabase.memory()`), so the whole suite runs on the Dart VM with no
@@ -155,22 +155,19 @@ Optional detailed explanation
   itself a tall viewport (`tester.view.physicalSize`). `pumpAndSettle` is also
   out whenever the screen shows a `CircularProgressIndicator` — those never
   settle; pump frames by hand instead.
-- **Home-screen widget**: `home_widget`, with a thin native renderer on each
-  side — a Kotlin `AppWidgetProvider`
+- **Home-screen widget**: `home_widget`, with a thin native renderer — a
+  Kotlin `AppWidgetProvider`
   (`android/app/src/main/kotlin/com/saatxi/eatapp/EatAppHomeWidgetProvider.kt`)
-  over the layout/xml/drawable resources beside it, and a Swift WidgetKit
-  extension in `ios/EatAppWidget/`. Keep the native halves
+  over the layout/xml/drawable resources beside it. Keep it
   presentation-only: which restaurant, which language and what every string
   says is decided in `lib/widget/`, and the `HomeWidgetKeys` there are the
-  contract the native code reads. The iOS extension is a one-time Xcode
-  step that no tool outside Xcode can do — `docs/ios-widget.md`.
+  contract the native code reads.
 - **Launcher icon and splash screen**: one artwork, living in the two Android
   vector drawables the native app's adaptive icon was built from
   (`android/app/src/main/res/drawable/ic_launcher_background.xml` and
   `…_foreground.xml`). The adaptive icon XML and the pre-12 launch screen take
-  those directly; the raster copies each store needs — the Android `mipmap-*`
-  PNGs and iOS's AppIcon and LaunchImage sets — come from
-  `scripts/generate_app_icons.dart`, run by hand with
+  those directly; the raster copies the store needs — the Android `mipmap-*`
+  PNGs — come from `scripts/generate_app_icons.dart`, run by hand with
   `flutter test scripts/generate_app_icons.dart` after touching either vector.
   Don't edit one of those PNGs directly: it will be overwritten.
 
@@ -223,10 +220,9 @@ regenerate the drift code with:
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-The home-screen widget's Android half is Kotlin and Android resources, so
+The home-screen widget's native half is Kotlin and Android resources, so
 `flutter build apk` is what checks it — `flutter analyze`/`flutter test`
-only reach its Dart side. Its iOS half is a WidgetKit target that no tool
-outside Xcode can create; `docs/ios-widget.md` has the one-time steps.
+only reach its Dart side.
 
 ## Project structure
 
@@ -280,13 +276,9 @@ lib/
   `restaurantHeroTag`, so keep the two ends paired; and keep the two-pane row
   inside its `HeroMode(enabled: false)`, or the selected row and the detail
   header would put the same tag on one route, which a Hero flight rejects.
-- **Behaviour adapts, looks don't**: colours, type and layout are identical on
-  every platform; only behaviour changes. iOS gets its edge swipe-back from the
-  framework's default `PageTransitionsTheme`, so don't add an override that
-  restates it (`test/core/theme/page_transitions_test.dart` holds that
-  decision). `HapticFeedback` is used deliberately, not everywhere: a selection
-  click for favourites, a heavy impact for a confirmed delete, a medium impact
-  for the roulette. Dynamic type is supported rather than clamped —
+- **`HapticFeedback` is used deliberately, not everywhere**: a selection click
+  for favourites, a heavy impact for a confirmed delete, a medium impact for
+  the roulette. Dynamic type is supported rather than clamped —
   `test/features/accessibility/text_scale_test.dart` lays the busiest screens
   out at 2x and fails on a render overflow.
 - **Action rows never assume the English label fits**: the Catalan and Spanish
@@ -348,8 +340,8 @@ lib/
   are per-Intent, not a permission). Don't add any other permission (network,
   location, contacts, storage, etc.) without an explicit, discussed reason.
 - The home-screen widget's data leaves the app through a platform store, not
-  the network: an Android shared-preferences file and an iOS App Group. Its
-  background `BroadcastReceiver` is `exported` (the `home_widget` plugin's
+  the network: an Android shared-preferences file. Its background
+  `BroadcastReceiver` is `exported` (the `home_widget` plugin's
   design) so the launcher can ask for a redraw, but it only re-reads local
   data, and the URI it carries chooses between "shuffle" and "redraw" and
   nothing else. Keep it read-only.

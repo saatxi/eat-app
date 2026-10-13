@@ -16,10 +16,6 @@
 // What it writes:
 //   android/app/src/main/res/mipmap-*/ic_launcher.png   (API 23 to 25, which
 //                                                        have no adaptive icon)
-//   ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png (every size Contents.json
-//                                                        asks for)
-//   ios/Runner/Assets.xcassets/LaunchImage.imageset/*.png (the logo the launch
-//                                                        storyboard centres)
 //
 // Android 26 and up draws `mipmap-anydpi-v26/ic_launcher.xml` instead, and the
 // pre-12 splash is the layer-list in `drawable/launch_background.xml`: both take
@@ -70,7 +66,6 @@ class _Artwork {
 const String _resDirectory = 'android/app/src/main/res';
 const String _backgroundVector = '$_resDirectory/drawable/ic_launcher_background.xml';
 const String _foregroundVector = '$_resDirectory/drawable/ic_launcher_foreground.xml';
-const String _iosAssets = 'ios/Runner/Assets.xcassets';
 
 /// Every launcher size Android asks for below API 26, in pixels.
 const Map<String, int> _androidLegacySizes = <String, int>{
@@ -79,32 +74,6 @@ const Map<String, int> _androidLegacySizes = <String, int>{
   'mipmap-xhdpi': 96,
   'mipmap-xxhdpi': 144,
   'mipmap-xxxhdpi': 192,
-};
-
-/// Every size `AppIcon.appiconset/Contents.json` asks for, in pixels.
-const Map<String, int> _iosIconSizes = <String, int>{
-  'Icon-App-20x20@1x.png': 20,
-  'Icon-App-20x20@2x.png': 40,
-  'Icon-App-20x20@3x.png': 60,
-  'Icon-App-29x29@1x.png': 29,
-  'Icon-App-29x29@2x.png': 58,
-  'Icon-App-29x29@3x.png': 87,
-  'Icon-App-40x40@1x.png': 40,
-  'Icon-App-40x40@2x.png': 80,
-  'Icon-App-40x40@3x.png': 120,
-  'Icon-App-60x60@2x.png': 120,
-  'Icon-App-60x60@3x.png': 180,
-  'Icon-App-76x76@1x.png': 76,
-  'Icon-App-76x76@2x.png': 152,
-  'Icon-App-83.5x83.5@2x.png': 167,
-  'Icon-App-1024x1024@1x.png': 1024,
-};
-
-/// The launch screen's logo, at the three scales the imageset carries.
-const Map<String, int> _iosLaunchSizes = <String, int>{
-  'LaunchImage.png': 120,
-  'LaunchImage@2x.png': 240,
-  'LaunchImage@3x.png': 360,
 };
 
 void main() {
@@ -120,28 +89,14 @@ void main() {
         entry.value,
       );
     }
-    for (final MapEntry<String, int> entry in _iosIconSizes.entries) {
-      await _write(
-        '$_iosAssets/AppIcon.appiconset/${entry.key}',
-        artwork,
-        entry.value,
-      );
-    }
-    for (final MapEntry<String, int> entry in _iosLaunchSizes.entries) {
-      await _write(
-        '$_iosAssets/LaunchImage.imageset/${entry.key}',
-        artwork,
-        entry.value,
-      );
-    }
   });
 }
 
 /// Paints one flat icon of [size] pixels and writes it to [path].
 ///
-/// Flat means what a launcher shows below API 26 and what iOS masks with its own
-/// squircle itself: the plate as the whole square, with the cutlery over it at
-/// [flatScale]. No transparency anywhere — neither store accepts it.
+/// Flat means what a launcher shows below API 26: the plate as the whole
+/// square, with the cutlery over it at [flatScale]. No transparency
+/// anywhere — the store doesn't accept it.
 Future<void> _write(String path, _Artwork artwork, int size) async {
   final ui.PictureRecorder recorder = ui.PictureRecorder();
   final Canvas canvas = Canvas(recorder);

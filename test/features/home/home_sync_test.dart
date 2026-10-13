@@ -66,7 +66,6 @@ void main() {
     preferences: preferences,
     photoPicker: FakePhotoPicker(),
     groupsController: controller,
-    sync: syncService,
     child: MaterialApp(
       theme: AppTheme.of(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,

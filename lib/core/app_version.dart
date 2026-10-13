@@ -3,11 +3,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 /// The running app's own version.
 ///
-/// On Android it is `git describe --tags --always` with its leading `v`
-/// stripped, which `android/app/build.gradle.kts` stamps into the manifest at
-/// build time; on iOS it is the bundle's `CFBundleShortVersionString`. Either
-/// way the platform is carrying it, and this reads it back rather than keeping
-/// a copy in Dart that could disagree with the build it is running in.
+/// It is `git describe --tags --always` with its leading `v` stripped, which
+/// `android/app/build.gradle.kts` stamps into the manifest at build time —
+/// the platform is carrying it, and this reads it back rather than keeping a
+/// copy in Dart that could disagree with the build it is running in.
 ///
 /// What `describe` adds past the tag — how many commits, which sha, a `-dirty`
 /// for a modified working tree — is build detail rather than version, so

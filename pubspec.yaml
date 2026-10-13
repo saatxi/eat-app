@@ -76,15 +76,15 @@ dependencies:
   # Flutter's KGP deprecation warning under AGP 9+.
   receive_sharing_intent: ^1.9.0
 
-  # The system photo picker (Android Photo Picker / iOS PHPicker). It also
-  # bounds the photo natively to the size the app stores — see
+  # The system photo picker (the Android Photo Picker). It also bounds the
+  # photo natively to the size the app stores — see
   # data/photo/image_picker_photo_picker.dart — and the app copies the file it
   # returns into its own private storage.
   image_picker: ^1.2.3
 
-  # Publishes the home-screen widget's data to the platform's own widget store:
-  # an Android shared-preferences file and an iOS App Group. The native halves
-  # are presentation-only — see lib/widget/ and android/app/src/main/.
+  # Publishes the home-screen widget's data to the platform's own widget
+  # store, an Android shared-preferences file. The native half is
+  # presentation-only — see lib/widget/ and android/app/src/main/.
   home_widget: ^0.10.0
 
   # The version line Settings shows. It reads the values the platform carries

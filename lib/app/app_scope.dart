@@ -7,7 +7,6 @@ import '../data/photo/photo_picker.dart';
 import '../data/repositories/restaurant_repository.dart';
 import '../data/repositories/user_preferences_repository.dart';
 import '../data/supabase/identity.dart';
-import '../data/sync/sync_service.dart';
 import '../features/groups/groups_controller.dart';
 
 /// Hands the app's long-lived collaborators to any screen that needs them.
@@ -33,7 +32,6 @@ class AppScope extends InheritedWidget {
     this.identity,
     this.groups,
     this.invites,
-    this.sync,
     this.groupsController,
     required super.child,
   });
@@ -47,11 +45,11 @@ class AppScope extends InheritedWidget {
   /// bare tree — and every screen must cope with that rather than assume it.
   final IdentityGateway? identity;
 
-  /// The groups backend, and the sync driver that talks to it. Both null
-  /// whenever the build carries no Supabase configuration, exactly like
-  /// [identity]; personal mode never builds or touches them.
+  /// The groups backend. Null whenever the build carries no Supabase
+  /// configuration, exactly like [identity]; personal mode never builds or
+  /// touches it. The sync driver itself is not published here — it lives on
+  /// [groupsController], the only reader of it.
   final GroupGateway? groups;
-  final SyncService? sync;
 
   /// The invitation backend, over the `create-invite` / `join-group` Edge
   /// Functions. Null under the same condition as [groups].
@@ -87,6 +85,5 @@ class AppScope extends InheritedWidget {
       oldWidget.identity != identity ||
       oldWidget.groups != groups ||
       oldWidget.invites != invites ||
-      oldWidget.sync != sync ||
       oldWidget.groupsController != groupsController;
 }

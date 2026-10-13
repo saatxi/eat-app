@@ -7,11 +7,10 @@ import '../data/models/cuisine.dart';
 /// The keys the home-screen widget's data is stored under.
 ///
 /// Shared verbatim between the Dart side that writes them
-/// (`lib/widget/home_widget_service.dart`) and the two native readers — the
-/// Android `AppWidgetProvider` and the iOS WidgetKit extension — so all three
-/// have to agree on every string here. They are plain strings rather than an
-/// enum because the native side can only ever see the stored value, not the
-/// name its writer used.
+/// (`lib/widget/home_widget_service.dart`) and the native reader — the
+/// Android `AppWidgetProvider` — so the two have to agree on every string
+/// here. They are plain strings rather than an enum because the native side
+/// can only ever see the stored value, not the name its writer used.
 abstract final class HomeWidgetKeys {
   /// The shown restaurant's id, or empty when there is nothing to try.
   static const String restaurantId = 'restaurantId';

@@ -18,8 +18,8 @@ abstract interface class BackupWriter {
 /// Writes the snapshot to `backup.json` in the app's support directory.
 ///
 /// That is the same directory the database file lives in — so the snapshot
-/// travels with the data on an Android Auto Backup or iOS device restore, and
-/// a user never has to have pressed "export" for it to be current.
+/// travels with the data on an Android Auto Backup, and a user never has to
+/// have pressed "export" for it to be current.
 class FileBackupWriter implements BackupWriter {
   const FileBackupWriter();
 

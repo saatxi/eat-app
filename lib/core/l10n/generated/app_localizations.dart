@@ -106,12 +106,6 @@ abstract class AppLocalizations {
   /// **'EatApp'**
   String get appName;
 
-  /// No description provided for @listTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'My Restaurants'**
-  String get listTitle;
-
   /// No description provided for @listSearchPlaceholder.
   ///
   /// In en, this message translates to:
@@ -123,18 +117,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear search'**
   String get listSearchClear;
-
-  /// No description provided for @listSuggestionsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Try one of these'**
-  String get listSuggestionsTitle;
-
-  /// No description provided for @listSuggestionTopRated.
-  ///
-  /// In en, this message translates to:
-  /// **'Top rated'**
-  String get listSuggestionTopRated;
 
   /// No description provided for @listFilterMinRating.
   ///
@@ -154,24 +136,6 @@ abstract class AppLocalizations {
   /// **'Cuisine'**
   String get listFilterCuisine;
 
-  /// No description provided for @listFilterVisitStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Status'**
-  String get listFilterVisitStatus;
-
-  /// No description provided for @listFilterLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'Location'**
-  String get listFilterLocation;
-
-  /// No description provided for @listFilterCity.
-  ///
-  /// In en, this message translates to:
-  /// **'City'**
-  String get listFilterCity;
-
   /// No description provided for @listFilterRegion.
   ///
   /// In en, this message translates to:
@@ -189,12 +153,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All'**
   String get listFilterAll;
-
-  /// The Location chip's label once at least one of city/region/country is set; count is how many of the three.
-  ///
-  /// In en, this message translates to:
-  /// **'Location · {count}'**
-  String listFilterLocationActive(int count);
 
   /// No description provided for @listEmptyTitle.
   ///
@@ -225,12 +183,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add restaurant'**
   String get listActionAddRestaurant;
-
-  /// No description provided for @listActionShareAll.
-  ///
-  /// In en, this message translates to:
-  /// **'Share all restaurants'**
-  String get listActionShareAll;
 
   /// No description provided for @listActionClearFilters.
   ///
@@ -322,35 +274,11 @@ abstract class AppLocalizations {
   /// **'Rating (highest first)'**
   String get listSortRating;
 
-  /// No description provided for @listSortNameShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Name'**
-  String get listSortNameShort;
-
-  /// No description provided for @listSortRatingShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Rating'**
-  String get listSortRatingShort;
-
   /// No description provided for @listFiltersTitle.
   ///
   /// In en, this message translates to:
   /// **'Filters'**
   String get listFiltersTitle;
-
-  /// No description provided for @listFiltersExpand.
-  ///
-  /// In en, this message translates to:
-  /// **'Expand filters'**
-  String get listFiltersExpand;
-
-  /// No description provided for @listFiltersCollapse.
-  ///
-  /// In en, this message translates to:
-  /// **'Collapse filters'**
-  String get listFiltersCollapse;
 
   /// No description provided for @listFiltersActiveCount.
   ///
@@ -376,12 +304,6 @@ abstract class AppLocalizations {
   /// **'Go back'**
   String get actionGoBack;
 
-  /// No description provided for @actionRetry.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry'**
-  String get actionRetry;
-
   /// No description provided for @actionCancel.
   ///
   /// In en, this message translates to:
@@ -399,12 +321,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export'**
   String get actionExport;
-
-  /// No description provided for @actionDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get actionDone;
 
   /// No description provided for @actionOk.
   ///
@@ -454,12 +370,6 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get detailActionDelete;
 
-  /// No description provided for @detailActionMore.
-  ///
-  /// In en, this message translates to:
-  /// **'More options'**
-  String get detailActionMore;
-
   /// No description provided for @detailDeleteConfirmTitle.
   ///
   /// In en, this message translates to:
@@ -471,18 +381,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This can\'t be undone.'**
   String get detailDeleteConfirmBody;
-
-  /// No description provided for @detailPlaceholderTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a restaurant'**
-  String get detailPlaceholderTitle;
-
-  /// No description provided for @detailPlaceholderBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose one from the list to see its details here.'**
-  String get detailPlaceholderBody;
 
   /// Shown for a dirty dev build, where the git revision is worth seeing.
   ///
@@ -609,12 +507,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Favorites'**
   String get journalSegmentFavorites;
-
-  /// No description provided for @favoritesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Favorites'**
-  String get favoritesTitle;
 
   /// No description provided for @favoritesEmptyTitle.
   ///
@@ -886,12 +778,6 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get settingsSectionLanguage;
 
-  /// No description provided for @settingsSectionGroups.
-  ///
-  /// In en, this message translates to:
-  /// **'Groups'**
-  String get settingsSectionGroups;
-
   /// No description provided for @languageEnglish.
   ///
   /// In en, this message translates to:
@@ -909,90 +795,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Catalan'**
   String get languageCatalan;
-
-  /// No description provided for @helpTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'How to use EatApp'**
-  String get helpTitle;
-
-  /// No description provided for @helpIntro.
-  ///
-  /// In en, this message translates to:
-  /// **'A quick guide to everything EatApp can do — tap a topic to open it.'**
-  String get helpIntro;
-
-  /// No description provided for @helpTopicAddTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Adding a restaurant'**
-  String get helpTopicAddTitle;
-
-  /// No description provided for @helpTopicAddBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap the + button on the list screen. Fill in the name, cuisine and address — everything else is optional. It\'s saved straight to your device, no account needed.'**
-  String get helpTopicAddBody;
-
-  /// No description provided for @helpTopicFavoritesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Favorites & want-to-try'**
-  String get helpTopicFavoritesTitle;
-
-  /// No description provided for @helpTopicFavoritesBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap the heart on a restaurant to mark it a favorite — a place you love. Tap the bookmark to add it to want-to-try — somewhere you\'re planning to visit. Both show up in their own tab at the bottom.'**
-  String get helpTopicFavoritesBody;
-
-  /// No description provided for @helpTopicRouletteTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Roulette: can\'t decide?'**
-  String get helpTopicRouletteTitle;
-
-  /// No description provided for @helpTopicRouletteBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Open the Roulette tab and spin — it picks a random restaurant from your want-to-try list. Filter by cuisine first if you\'re after something specific.'**
-  String get helpTopicRouletteBody;
-
-  /// No description provided for @helpTopicSharingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Sharing a restaurant'**
-  String get helpTopicSharingTitle;
-
-  /// No description provided for @helpTopicSharingBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Open a restaurant\'s details and tap Share to send it to a friend who also has EatApp. When they open the file, they\'ll get a review screen to check the details before it\'s added to their own list.'**
-  String get helpTopicSharingBody;
-
-  /// No description provided for @helpTopicWidgetTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Home-screen widget'**
-  String get helpTopicWidgetTitle;
-
-  /// No description provided for @helpTopicWidgetBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Add the \"Want to try\" widget from your home screen\'s widget picker to see a random pick from that list without opening the app.'**
-  String get helpTopicWidgetBody;
-
-  /// No description provided for @helpTopicExportTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Exporting your data'**
-  String get helpTopicExportTitle;
-
-  /// No description provided for @helpTopicExportBody.
-  ///
-  /// In en, this message translates to:
-  /// **'In Settings → Data → Export my data, you can save a copy of everything you\'ve entered as a file, to back it up or move it to another device.'**
-  String get helpTopicExportBody;
 
   /// No description provided for @editTitleAdd.
   ///
@@ -1024,12 +826,6 @@ abstract class AppLocalizations {
   /// **'Links'**
   String get editSectionLinks;
 
-  /// No description provided for @editSectionTags.
-  ///
-  /// In en, this message translates to:
-  /// **'Tags'**
-  String get editSectionTags;
-
   /// No description provided for @editActionAddPhoto.
   ///
   /// In en, this message translates to:
@@ -1053,12 +849,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Name'**
   String get editFieldName;
-
-  /// No description provided for @editFieldCuisine.
-  ///
-  /// In en, this message translates to:
-  /// **'Cuisine'**
-  String get editFieldCuisine;
 
   /// No description provided for @editCuisinePlaceholder.
   ///
@@ -1107,18 +897,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Instagram (optional)'**
   String get editFieldInstagram;
-
-  /// No description provided for @editFieldTags.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a tag'**
-  String get editFieldTags;
-
-  /// No description provided for @editActionRemoveTag.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove tag {tag}'**
-  String editActionRemoveTag(String tag);
 
   /// No description provided for @editErrorNameRequired.
   ///
@@ -1252,18 +1030,6 @@ abstract class AppLocalizations {
   /// **'Restaurant photo'**
   String get detailPhotoDescription;
 
-  /// No description provided for @detailLinkWebsite.
-  ///
-  /// In en, this message translates to:
-  /// **'Website'**
-  String get detailLinkWebsite;
-
-  /// No description provided for @detailLinkInstagram.
-  ///
-  /// In en, this message translates to:
-  /// **'Instagram'**
-  String get detailLinkInstagram;
-
   /// An Instagram handle rendered with its leading @.
   ///
   /// In en, this message translates to:
@@ -1377,18 +1143,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Visit photo'**
   String get logvisitPhotoDescription;
-
-  /// No description provided for @logvisitDatePickerConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'OK'**
-  String get logvisitDatePickerConfirm;
-
-  /// No description provided for @logvisitDatePickerCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get logvisitDatePickerCancel;
 
   /// No description provided for @logvisitActionDelete.
   ///
@@ -1612,12 +1366,6 @@ abstract class AppLocalizations {
   /// **'Average rating over time'**
   String get statsSectionRatingTrend;
 
-  /// No description provided for @statsSectionTopTags.
-  ///
-  /// In en, this message translates to:
-  /// **'Top tags'**
-  String get statsSectionTopTags;
-
   /// No description provided for @statsPriceNotSet.
   ///
   /// In en, this message translates to:
@@ -1660,23 +1408,11 @@ abstract class AppLocalizations {
   /// **'Shuffle'**
   String get widgetActionShuffle;
 
-  /// No description provided for @groupsScopeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Group'**
-  String get groupsScopeLabel;
-
   /// No description provided for @groupsScopePersonal.
   ///
   /// In en, this message translates to:
   /// **'Personal'**
   String get groupsScopePersonal;
-
-  /// No description provided for @groupsErrorLoad.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t load your groups.'**
-  String get groupsErrorLoad;
 
   /// No description provided for @groupsActionCreate.
   ///
@@ -1702,12 +1438,6 @@ abstract class AppLocalizations {
   /// **'Create'**
   String get groupsCreateAction;
 
-  /// No description provided for @groupsCreateErrorRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a group name'**
-  String get groupsCreateErrorRequired;
-
   /// No description provided for @groupsCreateErrorFailed.
   ///
   /// In en, this message translates to:
@@ -1725,12 +1455,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create an account in Settings → Account before making a group.'**
   String get groupsCreateNeedsAccount;
-
-  /// No description provided for @groupsMembersTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Members'**
-  String get groupsMembersTitle;
 
   /// No description provided for @groupsMembersError.
   ///
@@ -1894,12 +1618,6 @@ abstract class AppLocalizations {
   /// **'Invite to {name}'**
   String groupsInviteTitle(String name);
 
-  /// No description provided for @groupsInviteLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Creating an invitation…'**
-  String get groupsInviteLoading;
-
   /// No description provided for @groupsInviteCreateFailed.
   ///
   /// In en, this message translates to:
@@ -1953,12 +1671,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Join'**
   String get groupsJoinAction;
-
-  /// No description provided for @groupsJoinLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Joining…'**
-  String get groupsJoinLoading;
 
   /// No description provided for @groupsJoinCodeLabel.
   ///

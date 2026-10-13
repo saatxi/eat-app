@@ -2,11 +2,11 @@ import 'package:image_picker/image_picker.dart';
 
 import 'photo_picker.dart';
 
-/// The real [PhotoPicker], backed by `image_picker`'s system picker (the Android
-/// Photo Picker on modern Android, `PHPickerViewController` on iOS).
+/// The real [PhotoPicker], backed by `image_picker`'s system picker (the
+/// Android Photo Picker on modern Android).
 ///
-/// Both use the system picker rather than a broad library read, which is why the
-/// app needs no runtime permission for this.
+/// It uses the system picker rather than a broad library read, which is why
+/// the app needs no runtime permission for this.
 class ImagePickerPhotoPicker implements PhotoPicker {
   ImagePickerPhotoPicker({ImagePicker? picker})
       : _picker = picker ?? ImagePicker();

@@ -95,8 +95,7 @@ Future<File> writeRestaurantShareFile({
 ///
 /// Unlike [writeRestaurantShareFile], this is meant to live in the app's own
 /// persistent support directory — next to the database, so Android's Auto
-/// Backup and iOS's device backup cover it — never in a temp directory that
-/// the OS is free to clear.
+/// Backup covers it — never in a temp directory that the OS is free to clear.
 Future<File> writeBackupFile({
   required Directory directory,
   required List<RestaurantExport> restaurants,

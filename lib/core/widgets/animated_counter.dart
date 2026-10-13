@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/tokens/app_typography.dart';
+
 /// Counts from zero up to [value] when it first appears, and from the old value
 /// to the new one when [value] changes — the "growing count-up" the statistics
 /// tiles use, so a number arriving reads as an amount rather than a static
@@ -75,7 +77,7 @@ class _AnimatedCounterState extends State<AnimatedCounter>
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final String Function(int) format = widget.format ?? (int v) => '$v';
     final TextStyle? style = widget.style?.copyWith(
-      fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+      fontFeatures: AppTypography.tabularFigures,
     );
 
     if (reduceMotion) {

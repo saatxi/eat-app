@@ -68,23 +68,23 @@ void main() {
 
     test('translates a plain string in every locale', () {
       expect(
-        lookupAppLocalizations(const Locale('en')).listTitle,
-        'My Restaurants',
+        lookupAppLocalizations(const Locale('en')).editFieldName,
+        'Name',
       );
       expect(
-        lookupAppLocalizations(const Locale('es')).listTitle,
-        'Mis restaurantes',
+        lookupAppLocalizations(const Locale('es')).editFieldName,
+        'Nombre',
       );
       expect(
-        lookupAppLocalizations(const Locale('ca')).listTitle,
-        'Els meus restaurants',
+        lookupAppLocalizations(const Locale('ca')).editFieldName,
+        'Nom',
       );
     });
 
     test('interpolates placeholders positionally', () {
       expect(
-        lookupAppLocalizations(const Locale('en')).listFilterLocationActive(2),
-        'Location · 2',
+        lookupAppLocalizations(const Locale('en')).ratingFormat(4),
+        '4/5',
       );
       expect(
         lookupAppLocalizations(

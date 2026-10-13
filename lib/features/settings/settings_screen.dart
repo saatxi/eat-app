@@ -138,8 +138,7 @@ class SettingsScreen extends StatelessWidget {
                 // Nothing stored means "follow the device", which is what the
                 // app is already showing, so the selector opens on the language
                 // that was actually resolved rather than on a fourth,
-                // non-language row. The same resolution `theme_gallery.dart`
-                // uses to name its own language switch.
+                // non-language row.
                 value:
                     value.language ??
                     AppLanguage.resolveDeviceLocale(

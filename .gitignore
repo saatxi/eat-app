@@ -20,13 +20,16 @@
 .pub-cache/
 .pub/
 **/doc/api/
-**/ios/Flutter/.last_build_id
 app.*.symbols
 app.*.map.json
 
 # Gradle/Kotlin build caches created by Flutter's Android build
 .gradle/
 .kotlin/
+
+# The app is Android-only (no ios/ project); the Flutter tool regenerates a
+# stub ios/ directory of ephemeral build glue on `pub get`/`build` even so.
+/ios/
 
 # Widget Preview related
 .widget_preview/

@@ -13,19 +13,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get appName => 'EatApp';
 
   @override
-  String get listTitle => 'Mis restaurantes';
-
-  @override
   String get listSearchPlaceholder => 'Buscar restaurantes';
 
   @override
   String get listSearchClear => 'Borrar búsqueda';
-
-  @override
-  String get listSuggestionsTitle => 'Prueba una de estas';
-
-  @override
-  String get listSuggestionTopRated => 'Mejor valorados';
 
   @override
   String get listFilterMinRating => 'Puntuación';
@@ -37,15 +28,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get listFilterCuisine => 'Cocina';
 
   @override
-  String get listFilterVisitStatus => 'Estado';
-
-  @override
-  String get listFilterLocation => 'Ubicación';
-
-  @override
-  String get listFilterCity => 'Ciudad';
-
-  @override
   String get listFilterRegion => 'Región';
 
   @override
@@ -53,11 +35,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get listFilterAll => 'Todos';
-
-  @override
-  String listFilterLocationActive(int count) {
-    return 'Ubicación · $count';
-  }
 
   @override
   String get listEmptyTitle => 'Aún no hay restaurantes';
@@ -73,9 +50,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get listActionAddRestaurant => 'Añadir restaurante';
-
-  @override
-  String get listActionShareAll => 'Compartir todos los restaurantes';
 
   @override
   String get listActionClearFilters => 'Borrar filtros';
@@ -147,19 +121,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get listSortRating => 'Puntuación (de mayor a menor)';
 
   @override
-  String get listSortNameShort => 'Nombre';
-
-  @override
-  String get listSortRatingShort => 'Puntuación';
-
-  @override
   String get listFiltersTitle => 'Filtros';
-
-  @override
-  String get listFiltersExpand => 'Mostrar filtros';
-
-  @override
-  String get listFiltersCollapse => 'Ocultar filtros';
 
   @override
   String listFiltersActiveCount(int count) {
@@ -190,9 +152,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get actionGoBack => 'Volver';
 
   @override
-  String get actionRetry => 'Reintentar';
-
-  @override
   String get actionCancel => 'Cancelar';
 
   @override
@@ -200,9 +159,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get actionExport => 'Exportar';
-
-  @override
-  String get actionDone => 'Hecho';
 
   @override
   String get actionOk => 'Aceptar';
@@ -230,20 +186,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detailActionDelete => 'Eliminar';
 
   @override
-  String get detailActionMore => 'Más opciones';
-
-  @override
   String get detailDeleteConfirmTitle => '¿Eliminar este restaurante?';
 
   @override
   String get detailDeleteConfirmBody => 'Esta acción no se puede deshacer.';
-
-  @override
-  String get detailPlaceholderTitle => 'Selecciona un restaurante';
-
-  @override
-  String get detailPlaceholderBody =>
-      'Elige uno de la lista para ver aquí sus detalles.';
 
   @override
   String aboutVersionTemplate(String version, int build, String revision) {
@@ -317,9 +263,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get journalSegmentFavorites => 'Favoritos';
-
-  @override
-  String get favoritesTitle => 'Favoritos';
 
   @override
   String get favoritesEmptyTitle => 'Aún no hay favoritos';
@@ -469,9 +412,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsSectionLanguage => 'Idioma';
 
   @override
-  String get settingsSectionGroups => 'Grupos';
-
-  @override
   String get languageEnglish => 'Inglés';
 
   @override
@@ -479,55 +419,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get languageCatalan => 'Catalán';
-
-  @override
-  String get helpTitle => 'Cómo usar EatApp';
-
-  @override
-  String get helpIntro =>
-      'Una guía rápida de todo lo que puede hacer EatApp — toca un tema para abrirlo.';
-
-  @override
-  String get helpTopicAddTitle => 'Añadir un restaurante';
-
-  @override
-  String get helpTopicAddBody =>
-      'Toca el botón + en la pantalla de la lista. Rellena el nombre, la cocina y la dirección — el resto es opcional. Se guarda directamente en tu dispositivo, sin necesidad de cuenta.';
-
-  @override
-  String get helpTopicFavoritesTitle => 'Favoritos y quiero probar';
-
-  @override
-  String get helpTopicFavoritesBody =>
-      'Toca el corazón de un restaurante para marcarlo como favorito — un sitio que te encanta. Toca el marcador para añadirlo a quiero probar — un sitio que planeas visitar. Ambos aparecen en su propia pestaña en la parte inferior.';
-
-  @override
-  String get helpTopicRouletteTitle => 'Ruleta: ¿no te decides?';
-
-  @override
-  String get helpTopicRouletteBody =>
-      'Abre la pestaña Ruleta y gira — elige un restaurante al azar de tu lista de quiero probar. Filtra por cocina antes si buscas algo concreto.';
-
-  @override
-  String get helpTopicSharingTitle => 'Compartir un restaurante';
-
-  @override
-  String get helpTopicSharingBody =>
-      'Abre los detalles de un restaurante y toca Compartir para enviarlo a un amigo que también tenga EatApp. Cuando abra el archivo, verá una pantalla de revisión para comprobar los detalles antes de añadirlo a su propia lista.';
-
-  @override
-  String get helpTopicWidgetTitle => 'Widget de pantalla de inicio';
-
-  @override
-  String get helpTopicWidgetBody =>
-      'Añade el widget \"Quiero probar\" desde el selector de widgets de tu pantalla de inicio para ver una selección aleatoria de esa lista sin abrir la aplicación.';
-
-  @override
-  String get helpTopicExportTitle => 'Exportar tus datos';
-
-  @override
-  String get helpTopicExportBody =>
-      'En Ajustes → Datos → Exportar mis datos, puedes guardar una copia de todo lo que has introducido como archivo, para hacer una copia de seguridad o moverlo a otro dispositivo.';
 
   @override
   String get editTitleAdd => 'Añadir restaurante';
@@ -545,9 +436,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editSectionLinks => 'Enlaces';
 
   @override
-  String get editSectionTags => 'Etiquetas';
-
-  @override
   String get editActionAddPhoto => 'Añadir foto';
 
   @override
@@ -559,9 +447,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get editFieldName => 'Nombre';
-
-  @override
-  String get editFieldCuisine => 'Cocina';
 
   @override
   String get editCuisinePlaceholder => 'Selecciona una cocina';
@@ -586,14 +471,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get editFieldInstagram => 'Instagram (opcional)';
-
-  @override
-  String get editFieldTags => 'Añadir una etiqueta';
-
-  @override
-  String editActionRemoveTag(String tag) {
-    return 'Quitar etiqueta $tag';
-  }
 
   @override
   String get editErrorNameRequired => 'El nombre es obligatorio';
@@ -682,12 +559,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detailPhotoDescription => 'Foto del restaurante';
 
   @override
-  String get detailLinkWebsite => 'Web';
-
-  @override
-  String get detailLinkInstagram => 'Instagram';
-
-  @override
   String detailLinkHandleFormat(String handle) {
     return '@$handle';
   }
@@ -745,12 +616,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get logvisitPhotoDescription => 'Foto de la visita';
-
-  @override
-  String get logvisitDatePickerConfirm => 'Aceptar';
-
-  @override
-  String get logvisitDatePickerCancel => 'Cancelar';
 
   @override
   String get logvisitActionDelete => 'Eliminar visita';
@@ -874,9 +739,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Puntuación media a lo largo del tiempo';
 
   @override
-  String get statsSectionTopTags => 'Etiquetas más usadas';
-
-  @override
   String get statsPriceNotSet => 'Sin definir';
 
   @override
@@ -901,13 +763,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get widgetActionShuffle => 'Otro';
 
   @override
-  String get groupsScopeLabel => 'Grupo';
-
-  @override
   String get groupsScopePersonal => 'Personal';
-
-  @override
-  String get groupsErrorLoad => 'No se pudieron cargar tus grupos.';
 
   @override
   String get groupsActionCreate => 'Nuevo grupo';
@@ -922,9 +778,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get groupsCreateAction => 'Crear';
 
   @override
-  String get groupsCreateErrorRequired => 'Escribe un nombre para el grupo';
-
-  @override
   String get groupsCreateErrorFailed =>
       'No se pudo crear el grupo. Inténtalo de nuevo.';
 
@@ -935,9 +788,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get groupsCreateNeedsAccount =>
       'Crea una cuenta en Ajustes → Cuenta antes de crear un grupo.';
-
-  @override
-  String get groupsMembersTitle => 'Miembros';
 
   @override
   String get groupsMembersError => 'No se pudieron cargar los miembros.';
@@ -1028,9 +878,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get groupsInviteLoading => 'Creando una invitación…';
-
-  @override
   String get groupsInviteCreateFailed =>
       'No se pudo crear la invitación. Vuelve a intentarlo.';
 
@@ -1059,9 +906,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get groupsJoinAction => 'Unirse';
-
-  @override
-  String get groupsJoinLoading => 'Uniéndose…';
 
   @override
   String get groupsJoinCodeLabel => 'Código de invitación';

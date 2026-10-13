@@ -13,19 +13,10 @@ class AppLocalizationsCa extends AppLocalizations {
   String get appName => 'EatApp';
 
   @override
-  String get listTitle => 'Els meus restaurants';
-
-  @override
   String get listSearchPlaceholder => 'Cerca restaurants';
 
   @override
   String get listSearchClear => 'Esborra la cerca';
-
-  @override
-  String get listSuggestionsTitle => 'Prova\'n una';
-
-  @override
-  String get listSuggestionTopRated => 'Millor valorats';
 
   @override
   String get listFilterMinRating => 'Puntuació';
@@ -37,15 +28,6 @@ class AppLocalizationsCa extends AppLocalizations {
   String get listFilterCuisine => 'Cuina';
 
   @override
-  String get listFilterVisitStatus => 'Estat';
-
-  @override
-  String get listFilterLocation => 'Ubicació';
-
-  @override
-  String get listFilterCity => 'Poble / ciutat';
-
-  @override
   String get listFilterRegion => 'Regió';
 
   @override
@@ -53,11 +35,6 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get listFilterAll => 'Tots';
-
-  @override
-  String listFilterLocationActive(int count) {
-    return 'Ubicació · $count';
-  }
 
   @override
   String get listEmptyTitle => 'Encara no hi ha restaurants';
@@ -74,9 +51,6 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get listActionAddRestaurant => 'Afegeix un restaurant';
-
-  @override
-  String get listActionShareAll => 'Comparteix tots els restaurants';
 
   @override
   String get listActionClearFilters => 'Esborra els filtres';
@@ -148,19 +122,7 @@ class AppLocalizationsCa extends AppLocalizations {
   String get listSortRating => 'Puntuació (de més a menys)';
 
   @override
-  String get listSortNameShort => 'Nom';
-
-  @override
-  String get listSortRatingShort => 'Puntuació';
-
-  @override
   String get listFiltersTitle => 'Filtres';
-
-  @override
-  String get listFiltersExpand => 'Mostra els filtres';
-
-  @override
-  String get listFiltersCollapse => 'Amaga els filtres';
 
   @override
   String listFiltersActiveCount(int count) {
@@ -191,9 +153,6 @@ class AppLocalizationsCa extends AppLocalizations {
   String get actionGoBack => 'Torna';
 
   @override
-  String get actionRetry => 'Torna-ho a provar';
-
-  @override
   String get actionCancel => 'Cancel·la';
 
   @override
@@ -201,9 +160,6 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get actionExport => 'Exporta';
-
-  @override
-  String get actionDone => 'Fet';
 
   @override
   String get actionOk => 'D\'acord';
@@ -231,20 +187,10 @@ class AppLocalizationsCa extends AppLocalizations {
   String get detailActionDelete => 'Elimina';
 
   @override
-  String get detailActionMore => 'Més opcions';
-
-  @override
   String get detailDeleteConfirmTitle => 'Vols eliminar aquest restaurant?';
 
   @override
   String get detailDeleteConfirmBody => 'Aquesta acció no es pot desfer.';
-
-  @override
-  String get detailPlaceholderTitle => 'Selecciona un restaurant';
-
-  @override
-  String get detailPlaceholderBody =>
-      'Tria\'n un de la llista per veure\'n els detalls aquí.';
 
   @override
   String aboutVersionTemplate(String version, int build, String revision) {
@@ -318,9 +264,6 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get journalSegmentFavorites => 'Preferits';
-
-  @override
-  String get favoritesTitle => 'Preferits';
 
   @override
   String get favoritesEmptyTitle => 'Encara no hi ha preferits';
@@ -469,9 +412,6 @@ class AppLocalizationsCa extends AppLocalizations {
   String get settingsSectionLanguage => 'Idioma';
 
   @override
-  String get settingsSectionGroups => 'Grups';
-
-  @override
   String get languageEnglish => 'Anglès';
 
   @override
@@ -479,55 +419,6 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get languageCatalan => 'Català';
-
-  @override
-  String get helpTitle => 'Com s\'utilitza EatApp';
-
-  @override
-  String get helpIntro =>
-      'Una guia ràpida de tot el que pot fer EatApp — toca un tema per obrir-lo.';
-
-  @override
-  String get helpTopicAddTitle => 'Afegir un restaurant';
-
-  @override
-  String get helpTopicAddBody =>
-      'Toca el botó + a la pantalla de la llista. Omple el nom, la cuina i l\'adreça — la resta és opcional. Es desa directament al teu dispositiu, sense necessitat de compte.';
-
-  @override
-  String get helpTopicFavoritesTitle => 'Favorits i vull provar';
-
-  @override
-  String get helpTopicFavoritesBody =>
-      'Toca el cor d\'un restaurant per marcar-lo com a favorit — un lloc que t\'encanta. Toca el marcador per afegir-lo a vull provar — un lloc que planeges visitar. Tots dos apareixen a la seva pròpia pestanya a la part inferior.';
-
-  @override
-  String get helpTopicRouletteTitle => 'Ruleta: no et decideixes?';
-
-  @override
-  String get helpTopicRouletteBody =>
-      'Obre la pestanya Ruleta i gira — tria un restaurant a l\'atzar de la teva llista de vull provar. Filtra per cuina abans si busques alguna cosa concreta.';
-
-  @override
-  String get helpTopicSharingTitle => 'Compartir un restaurant';
-
-  @override
-  String get helpTopicSharingBody =>
-      'Obre els detalls d\'un restaurant i toca Comparteix per enviar-lo a un amic que també tingui EatApp. Quan obri el fitxer, veurà una pantalla de revisió per comprovar els detalls abans d\'afegir-lo a la seva pròpia llista.';
-
-  @override
-  String get helpTopicWidgetTitle => 'Widget de pantalla d\'inici';
-
-  @override
-  String get helpTopicWidgetBody =>
-      'Afegeix el widget \"Vull provar\" des del selector de widgets de la teva pantalla d\'inici per veure una selecció a l\'atzar d\'aquesta llista sense obrir l\'aplicació.';
-
-  @override
-  String get helpTopicExportTitle => 'Exportar les teves dades';
-
-  @override
-  String get helpTopicExportBody =>
-      'A Configuració → Dades → Exporta les meves dades, pots desar una còpia de tot el que has introduït com a fitxer, per fer-ne una còpia de seguretat o moure-la a un altre dispositiu.';
 
   @override
   String get editTitleAdd => 'Afegeix un restaurant';
@@ -545,9 +436,6 @@ class AppLocalizationsCa extends AppLocalizations {
   String get editSectionLinks => 'Enllaços';
 
   @override
-  String get editSectionTags => 'Etiquetes';
-
-  @override
   String get editActionAddPhoto => 'Afegeix una foto';
 
   @override
@@ -559,9 +447,6 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get editFieldName => 'Nom';
-
-  @override
-  String get editFieldCuisine => 'Cuina';
 
   @override
   String get editCuisinePlaceholder => 'Selecciona una cuina';
@@ -586,14 +471,6 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get editFieldInstagram => 'Instagram (opcional)';
-
-  @override
-  String get editFieldTags => 'Afegeix una etiqueta';
-
-  @override
-  String editActionRemoveTag(String tag) {
-    return 'Suprimeix l\'etiqueta $tag';
-  }
 
   @override
   String get editErrorNameRequired => 'El nom és obligatori';
@@ -682,12 +559,6 @@ class AppLocalizationsCa extends AppLocalizations {
   String get detailPhotoDescription => 'Foto del restaurant';
 
   @override
-  String get detailLinkWebsite => 'Web';
-
-  @override
-  String get detailLinkInstagram => 'Instagram';
-
-  @override
   String detailLinkHandleFormat(String handle) {
     return '@$handle';
   }
@@ -745,12 +616,6 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get logvisitPhotoDescription => 'Foto de la visita';
-
-  @override
-  String get logvisitDatePickerConfirm => 'D\'acord';
-
-  @override
-  String get logvisitDatePickerCancel => 'Cancel·la';
 
   @override
   String get logvisitActionDelete => 'Eliminar visita';
@@ -873,9 +738,6 @@ class AppLocalizationsCa extends AppLocalizations {
   String get statsSectionRatingTrend => 'Puntuació mitjana al llarg del temps';
 
   @override
-  String get statsSectionTopTags => 'Etiquetes més usades';
-
-  @override
   String get statsPriceNotSet => 'Sense definir';
 
   @override
@@ -900,13 +762,7 @@ class AppLocalizationsCa extends AppLocalizations {
   String get widgetActionShuffle => 'Un altre';
 
   @override
-  String get groupsScopeLabel => 'Grup';
-
-  @override
   String get groupsScopePersonal => 'Personal';
-
-  @override
-  String get groupsErrorLoad => 'No s\'han pogut carregar els teus grups.';
 
   @override
   String get groupsActionCreate => 'Grup nou';
@@ -921,9 +777,6 @@ class AppLocalizationsCa extends AppLocalizations {
   String get groupsCreateAction => 'Crea';
 
   @override
-  String get groupsCreateErrorRequired => 'Escriu un nom per al grup';
-
-  @override
   String get groupsCreateErrorFailed =>
       'No s\'ha pogut crear el grup. Torna-ho a provar.';
 
@@ -934,9 +787,6 @@ class AppLocalizationsCa extends AppLocalizations {
   @override
   String get groupsCreateNeedsAccount =>
       'Crea un compte a Configuració → Compte abans de fer un grup.';
-
-  @override
-  String get groupsMembersTitle => 'Membres';
 
   @override
   String get groupsMembersError => 'No s\'han pogut carregar els membres.';
@@ -1027,9 +877,6 @@ class AppLocalizationsCa extends AppLocalizations {
   }
 
   @override
-  String get groupsInviteLoading => 'S\'està creant la invitació…';
-
-  @override
   String get groupsInviteCreateFailed =>
       'No s\'ha pogut crear la invitació. Torna-ho a provar.';
 
@@ -1058,9 +905,6 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get groupsJoinAction => 'Uneix-te';
-
-  @override
-  String get groupsJoinLoading => 'S\'està unint…';
 
   @override
   String get groupsJoinCodeLabel => 'Codi d\'invitació';

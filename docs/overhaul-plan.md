@@ -9,8 +9,8 @@ its own line in the checklist below.
 ## Status
 
 - [x] Phase 0 — Put this plan in the repo
-- [ ] Phase 1 — Design mockup (approval gate)
-- [ ] Phase 2 — Remove iOS and purge what isn't needed
+- [x] Phase 1 — Design mockup (approval gate)
+- [x] Phase 2 — Remove iOS and purge what isn't needed
 - [ ] Phase 3 — Upgrade dependencies, SDK and toolchain
 - [ ] Phase 4 — Structural refactor (behaviour unchanged)
 - [ ] Phase 5 — Riverpod for state and dependency injection
@@ -53,6 +53,12 @@ The proposed direction, "Paprika", sits between vibrant/playful and premium:
   text to clear AA), a saffron secondary with a dark on-colour, a deep
   aubergine tertiary, warm ivory light neutrals and an espresso near-black dark
   mode, plus eight more saturated cuisine accents.
+- **Light only, no dark mode.** Two dark directions were tried in the mockup
+  (an espresso near-black, then a warmer "mocha" with more separation between
+  surface layers) and rejected. The app always renders the light theme,
+  regardless of the system setting; dropping it removes `AppThemeMode`, the
+  Settings theme picker, the dark half of every token and test, and the
+  native dark variants.
 - **Type**: Fraunces (variable) for display, headline and `titleLarge`; Plus
   Jakarta Sans (variable) for body and labels. Both OFL and bundled.
 - **Shape and motion**: Material 3 Expressive radii, pill buttons, squircle
@@ -125,12 +131,16 @@ once.
 
 - New palette, typography (Fraunces, Plus Jakarta Sans), radii and component
   themes; the palette supplies its own on-colours.
+- Light only: `AppThemeMode`, the Settings theme picker, and every dark-mode
+  branch (token pairs, `values-night` resources, the dark half of
+  `color_contrast_test.dart` and `app_theme_test.dart`) are removed rather than
+  reworked.
 - Hardcoded colours, radii, text styles and durations replaced by tokens.
 - New shared `RestaurantCover`, status chip and stat tile; every screen rebuilt
   to the approved mockup.
-- Android widget (with a dark variant), launcher icon and splash colours kept
-  in step.
-- Contrast, theme and text-scale tests updated and extended.
+- Android widget, launcher icon and splash colours kept in step (single light
+  variant each).
+- Contrast and text-scale tests updated and extended.
 
 ## Phase 8 — Wishlist and status
 

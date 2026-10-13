@@ -1,6 +1,6 @@
 # EatApp
 
-A Flutter app (Android and iOS) to browse restaurants you've visited — name,
+A Flutter app (Android) to browse restaurants you've visited — name,
 cuisine type, address (street, town, region and country), the visits you've
 logged (each with its own date, rating, price band and note), an optional
 photo, free-form tags and your own notes.
@@ -27,8 +27,8 @@ install's data is imported automatically on first launch — see
   button and a tap that opens that restaurant.
 - A tablet-width layout: a navigation rail, and the list beside the selected
   restaurant's detail instead of the detail replacing the list.
-- Respects the system text size, and follows each platform's own gestures —
-  pull-to-refresh, and the edge swipe-back on iOS.
+- Respects the system text size, and follows the platform's own gestures —
+  pull-to-refresh among them.
 - Share one restaurant, or your whole list, through the normal share sheet;
   opening a shared file shows a review screen before anything is saved.
 - A single colour scheme, with a light/dark choice in Settings.
@@ -235,13 +235,10 @@ It is not a second copy of your data: the widget is redrawn from the same
 on-device database the app uses, whenever a restaurant is added, edited or
 deleted, and it follows the language you've chosen in Settings.
 
-This is the one feature with native code on both platforms — an Android
-`AppWidgetProvider` and an iOS WidgetKit extension, each a thin renderer
-driven from Dart through the
-[`home_widget`](https://pub.dev/packages/home_widget) plugin. The Android half
-is committed under `android/` and builds with the app. The iOS half needs a
-one-time Xcode step to create its widget extension target, which no tool
-outside Xcode can do; see [docs/ios-widget.md](docs/ios-widget.md).
+This is the one feature with native code — an Android `AppWidgetProvider`, a
+thin renderer driven from Dart through the
+[`home_widget`](https://pub.dev/packages/home_widget) plugin, committed under
+`android/` and built with the app.
 
 ## Tech stack
 
@@ -250,7 +247,7 @@ outside Xcode can do; see [docs/ios-widget.md](docs/ios-widget.md).
 - [Supabase](https://supabase.com/) for the optional shared-groups backend
 - `share_plus` and `receive_sharing_intent` for the share/import flows
 - `url_launcher` for links and maps, `shared_preferences` for preferences
-- `home_widget` for the home-screen widget's Android and iOS halves
+- `home_widget` for the home-screen widget
 - Localized with `flutter gen-l10n` (ARB files under `lib/core/l10n/`)
 
 ## Project structure
@@ -279,7 +276,6 @@ lib/
 - Flutter (stable channel) with Dart `^3.13.4`
 - Android: JDK 17 and the Android SDK (compile/target/min SDK come from the
   Flutter Gradle plugin, in `android/`)
-- iOS: Xcode
 
 ## Building and running
 
@@ -292,8 +288,7 @@ flutter build appbundle --release    # release AAB (Play Store)
 
 Release builds compile in the shared-groups backend configuration —
 [`lib/main.dart`](lib/main.dart) reads `SUPABASE_URL` and `SUPABASE_ANON_KEY`
-through `String.fromEnvironment` — so the build commands above, and
-`flutter build ipa` for iOS, need
+through `String.fromEnvironment` — so the build commands above need
 `--dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`; without
 them the shipped app simply has groups dormant. The anon key is public by
 design — the server's row-level security protects the data — but the

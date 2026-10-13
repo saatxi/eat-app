@@ -10,21 +10,10 @@ import '../data/repositories/restaurant_repository.dart';
 import '../data/repositories/user_preferences_repository.dart';
 import 'home_widget_snapshot.dart';
 
-/// The iOS App Group the app and the widget extension share.
-///
-/// Has to be identical in three places — here, `ios/Runner/Runner.entitlements`
-/// and `ios/EatAppWidget/EatAppWidget.entitlements` — because that group is the
-/// only channel between them; see `docs/ios-widget.md`.
-const String homeWidgetAppGroupId = 'group.com.saatxi.eatapp';
-
 /// The Android provider the widget data is published to, fully qualified so the
 /// plugin resolves it without guessing. Matches the `<receiver>` in
 /// `android/app/src/main/AndroidManifest.xml`.
 const String _androidProviderName = 'com.saatxi.eatapp.EatAppHomeWidgetProvider';
-
-/// The iOS widget's `kind`, which has to match the `kind` its Swift
-/// `StaticConfiguration` is built with, in `ios/EatAppWidget/EatAppWidget.swift`.
-const String _iOSWidgetKind = 'EatAppWidget';
 
 /// The service the background callback reuses for the life of its isolate.
 ///
@@ -124,10 +113,7 @@ class HomeWidgetService {
         l10n.widgetActionShuffle,
       );
 
-      await HomeWidget.updateWidget(
-        qualifiedAndroidName: _androidProviderName,
-        iOSName: _iOSWidgetKind,
-      );
+      await HomeWidget.updateWidget(qualifiedAndroidName: _androidProviderName);
     } catch (error, stackTrace) {
       debugPrint('Home-screen widget refresh failed: $error');
       if (kDebugMode) {

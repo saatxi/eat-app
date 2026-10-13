@@ -89,11 +89,9 @@ void main() {
     preferences: preferences,
   ).run();
 
-  // The home-screen widget's two tails: the App Group it shares with the iOS
-  // extension, and the callback its shuffle button runs in the background. The
-  // callback is a top-level function because the plugin launches a second
-  // engine for it, in its own isolate, and finds it by name.
-  await HomeWidget.setAppGroupId(homeWidgetAppGroupId);
+  // The callback the home-screen widget's shuffle button runs in the
+  // background. It's a top-level function because the plugin launches a
+  // second engine for it, in its own isolate, and finds it by name.
   await HomeWidget.registerInteractivityCallback(homeWidgetBackgroundCallback);
 
   // A cold start that came from tapping the widget arrives as one URI, and a
@@ -412,7 +410,6 @@ class _EatAppState extends State<EatApp> {
       identity: widget.identityGateway,
       groups: widget.groupGateway,
       invites: widget.inviteGateway,
-      sync: widget.syncService,
       groupsController: _groupsController,
       // Rebuilding from the repository rather than from local state is what makes
       // a change survive the widget being recreated, and what lets every stored

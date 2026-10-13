@@ -3,10 +3,10 @@
 ///
 /// Two forms are accepted on the way in — the app's own custom scheme
 /// (`eatapp://join/<token>`, what the QR carries, and what the Android
-/// intent-filter and the iOS URL scheme are registered for) and an
-/// `https://<host>/join/<token>` path, ready for the day an App Link / Universal
-/// Link publishes one. A bare alphanumeric code is accepted too: that is the
-/// fallback a user reads out loud or types by hand.
+/// intent-filter is registered for) and an `https://<host>/join/<token>`
+/// path, ready for the day an App Link publishes one. A bare alphanumeric
+/// code is accepted too: that is the fallback a user reads out loud or types
+/// by hand.
 library;
 
 /// The custom URL scheme the app owns (`android:scheme` / `CFBundleURLSchemes`).

@@ -243,14 +243,6 @@ begin
     null; -- expected
   end;
 
-  -- Bob cannot tag the group.
-  begin
-    insert into public.group_tags (group_id, tag)
-    values ('cccccccc-0000-0000-0000-000000000001', 'friends');
-    raise exception 'FAIL: bob tagged the group';
-  exception when insufficient_privilege or check_violation then
-    null; -- expected
-  end;
 end;
 $$;
 

@@ -5,6 +5,7 @@ import '../../app/app_scope.dart';
 import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_radius.dart';
 import '../../core/theme/tokens/app_spacing.dart';
+import '../../core/theme/tokens/app_typography.dart';
 import '../../core/widgets/animated_counter.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/empty_state.dart';
@@ -275,7 +276,7 @@ class _StatTile extends StatelessWidget {
                 style: numberStyle?.copyWith(
                   // Tabular figures keep the digits from shifting width as the
                   // value changes.
-                  fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+                  fontFeatures: AppTypography.tabularFigures,
                 ),
               ),
             const SizedBox(height: AppSpacing.xs),
