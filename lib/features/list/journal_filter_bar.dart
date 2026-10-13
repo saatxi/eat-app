@@ -4,8 +4,8 @@ import '../../core/l10n/generated/app_localizations.dart';
 import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/filter_dropdown_chip.dart';
-import '../../core/widgets/price_range_label.dart';
 import '../../core/widgets/presentation_bounds.dart';
+import '../../core/widgets/price_range_label.dart';
 import '../../data/models/restaurant_sort.dart';
 import 'restaurant_list_controller.dart';
 

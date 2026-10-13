@@ -43,8 +43,8 @@ void main() {
 
   Restaurant sharedRow({String id = 'r1', String name = 'Shared'}) =>
       restaurant(id: id, name: name).copyWith(
-        groupId: Value<String?>(teamGroupId),
-        createdBy: Value<String?>(teamUserId),
+        groupId: const Value<String?>(teamGroupId),
+        createdBy: const Value<String?>(teamUserId),
       );
 
   group('SharedWrites', () {

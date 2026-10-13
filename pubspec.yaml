@@ -40,19 +40,19 @@ dependencies:
   # whatever version flutter_localizations pins.
   intl: any
 
-  drift: ^2.35.0
-  drift_flutter: 0.3.1
+  drift: ^2.35.2
+  drift_flutter: ^0.3.1
   # Directly used by test/data/db/migration_v16_test.dart to build a real v15
   # database file the migration runs against.
-  sqlite3: 3.5.0
+  sqlite3: ^3.7.1
   diacritic: ^0.1.6
   path: ^1.9.1
   path_provider: ^2.1.6
   uuid: ^4.6.0
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.5.6
   # Opens a restaurant's website/Instagram and the address in a map app from the
   # detail screen.
-  url_launcher: ^6.3.1
+  url_launcher: ^6.3.3
 
   # The shared-groups backend (its schema and Edge Functions live in supabase/):
   # anonymous sign-in is the default identity, the sync layer talks to
@@ -61,12 +61,12 @@ dependencies:
   # client (not `supabase_flutter`) on purpose: session persistence is wired
   # through shared_preferences by our own identity gateway, so the Flutter
   # plugin's deep-link OAuth machinery — unused, anonymous-only — stays out.
-  supabase: ^2.16.1
+  supabase: ^2.16.5
 
   # Opens the system share sheet with the restaurant file written by
   # data/share/restaurant_share_writer.dart — from the detail screen (one
   # restaurant), the list's "share all" and Settings' "export my data".
-  share_plus: ^13.3.0
+  share_plus: ^13.3.1
 
   # Delivers a restaurant file opened from outside the app ("Open with EatApp")
   # to the import review screen. On Android it resolves the content:// Uri to a
@@ -80,7 +80,7 @@ dependencies:
   # photo natively to the size the app stores — see
   # data/photo/image_picker_photo_picker.dart — and the app copies the file it
   # returns into its own private storage.
-  image_picker: ^1.2.3
+  image_picker: ^1.2.4
 
   # Publishes the home-screen widget's data to the platform's own widget
   # store, an Android shared-preferences file. The native half is
@@ -91,7 +91,7 @@ dependencies:
   # rather than a copy kept in Dart: on Android those are the git-derived
   # versionName/versionCode from android/app/build.gradle.kts, so the two can
   # never disagree.
-  package_info_plus: ^10.2.1
+  package_info_plus: ^10.2.2
 
   # Invitations. qr_flutter draws
   # the invitation QR the owner shows; mobile_scanner reads one back on the
@@ -101,7 +101,7 @@ dependencies:
   # itself is validated server-side by the join-group Edge Function.
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.4.2
-  app_links: ^7.2.1
+  app_links: ^7.2.2
 
 dev_dependencies:
   flutter_test:
@@ -113,8 +113,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  build_runner: ^2.16.1
-  drift_dev: ^2.35.0
+  build_runner: ^2.16.2
+  drift_dev: ^2.35.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

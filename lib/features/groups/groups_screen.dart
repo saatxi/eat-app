@@ -121,7 +121,7 @@ class _GroupsScreenState extends State<_GroupsScreenBody> {
   Future<void> _changeYourName(BuildContext context) async {
     final String? newName = await showDialog<String>(
       context: context,
-      builder: (BuildContext context) => _RenameMeDialog(),
+      builder: (BuildContext context) => const _RenameMeDialog(),
     );
     if (newName == null) {
       return;

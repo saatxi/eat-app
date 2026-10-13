@@ -11,7 +11,7 @@ import '../photo/photo_fakes.dart';
 import 'fake_photo_blob_store.dart';
 import 'fake_sync_transport.dart';
 
-Restaurant sharedRestaurant() => Restaurant(
+Restaurant sharedRestaurant() => const Restaurant(
   id: 'r1',
   groupId: 'g1',
   name: 'Cal Ferran',
@@ -22,7 +22,7 @@ Restaurant sharedRestaurant() => Restaurant(
   updatedAt: 1000,
 );
 
-Visit sharedVisit() => Visit(
+Visit sharedVisit() => const Visit(
   id: 'v1',
   groupId: 'g1',
   restaurantId: 'r1',
@@ -54,7 +54,7 @@ RemoteRestaurant remoteRestaurant({
   deletedAt: deletedAt,
 );
 
-Photo sharedPhoto() => Photo(
+Photo sharedPhoto() => const Photo(
   id: 'p1',
   groupId: 'g1',
   restaurantId: 'r1',

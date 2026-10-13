@@ -305,7 +305,7 @@ terminal.
 If you edit `lib/data/db/tables.dart` or a DAO, regenerate the drift code:
 
 ```powershell
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
 
 ## Tests

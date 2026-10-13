@@ -3,7 +3,7 @@ import 'package:eatapp/data/sync/supabase_transport.dart';
 import 'package:eatapp/data/sync/sync_mapper.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-RemoteRestaurant restaurant() => RemoteRestaurant(
+RemoteRestaurant restaurant() => const RemoteRestaurant(
   id: 'r1',
   name: 'Cal Ferran',
   cuisineType: 'italian',
@@ -19,7 +19,7 @@ RemoteRestaurant restaurant() => RemoteRestaurant(
   deletedAt: '2026-09-27T11:00:00.000Z',
 );
 
-RemoteVisit visit() => RemoteVisit(
+RemoteVisit visit() => const RemoteVisit(
   id: 'v1',
   groupId: 'g1',
   restaurantId: 'r1',
@@ -32,7 +32,7 @@ RemoteVisit visit() => RemoteVisit(
   deletedAt: null,
 );
 
-RemotePhoto photo() => RemotePhoto(
+RemotePhoto photo() => const RemotePhoto(
   id: 'p1',
   groupId: 'g1',
   restaurantId: 'r1',

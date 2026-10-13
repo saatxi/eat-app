@@ -241,7 +241,7 @@ void main() {
 
   test('a rejected creation records a GroupLimitException', () async {
     final _FakeGroupGateway gateway = _FakeGroupGateway()
-      ..error = GroupLimitException(2);
+      ..error = const GroupLimitException(2);
     final GroupsController controller = GroupsController(
       preferences: preferences,
       gateway: gateway,

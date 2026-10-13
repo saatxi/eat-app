@@ -34,8 +34,8 @@ void main() {
   /// will insert, in contrast to the private `restaurant(...)` test helper.
   Restaurant sharedRestaurant({required String id, String name = 'Shared'}) =>
       restaurant(id: id, name: name).copyWith(
-        groupId: Value<String?>(groupId),
-        createdBy: Value<String?>(userId),
+        groupId: const Value<String?>(groupId),
+        createdBy: const Value<String?>(userId),
       );
 
   Future<List<PendingSync>> queue() => pending.pendingForGroup(groupId);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -119,10 +121,10 @@ class RestaurantCard extends StatelessWidget {
       // heavier and deliberate.
       confirmDismiss: (DismissDirection direction) async {
         if (direction == DismissDirection.startToEnd) {
-          HapticFeedback.selectionClick();
+          unawaited(HapticFeedback.selectionClick());
           onFavoriteToggle(restaurant.id);
         } else {
-          HapticFeedback.heavyImpact();
+          unawaited(HapticFeedback.heavyImpact());
           onDeleteRequest();
         }
         return false;

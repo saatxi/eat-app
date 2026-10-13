@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
-import '../../data/groups/invite_models.dart';
 import '../../data/groups/invite_gateway.dart';
+import '../../data/groups/invite_models.dart';
 import '../../data/supabase/identity.dart';
 
 /// The owner-side invitation flow: mint a token for one group and hold it while

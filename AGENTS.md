@@ -217,8 +217,12 @@ reporting it as done. After editing `lib/data/db/tables.dart` or any DAO,
 regenerate the drift code with:
 
 ```powershell
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
+
+(`build_runner` 2.16 dropped `--delete-conflicting-outputs`: it now replaces a
+conflicting output unprompted, so the flag is a no-op warning rather than an
+error — drop it from the command.)
 
 The home-screen widget's native half is Kotlin and Android resources, so
 `flutter build apk` is what checks it — `flutter analyze`/`flutter test`

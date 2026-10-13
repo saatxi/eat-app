@@ -4,7 +4,7 @@ import 'package:eatapp/data/sync/remote_models.dart';
 import 'package:eatapp/data/sync/sync_mapper.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Restaurant sharedRestaurant() => Restaurant(
+Restaurant sharedRestaurant() => const Restaurant(
   id: 'r1',
   groupId: 'g1',
   name: 'Cal Ferran',
@@ -53,7 +53,7 @@ void main() {
   });
 
   test('toRestaurant rebuilds searchText and converts timestamps', () {
-    final RemoteRestaurant remote = RemoteRestaurant(
+    final RemoteRestaurant remote = const RemoteRestaurant(
       id: 'r9',
       name: 'Remote',
       cuisineType: 'japanese',
@@ -82,7 +82,7 @@ void main() {
   });
 
   test('toRemoteVisit and toVisit round-trip the sync fields', () {
-    final Visit local = Visit(
+    final Visit local = const Visit(
       id: 'v1',
       groupId: 'g1',
       restaurantId: 'r1',

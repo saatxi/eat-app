@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -119,7 +120,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     if (!confirmed || !mounted) {
       return;
     }
-    HapticFeedback.heavyImpact();
+    unawaited(HapticFeedback.heavyImpact());
     await _controller?.deleteRestaurant();
     if (!mounted) {
       return;
@@ -701,11 +702,11 @@ class _DetailSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+    return const Padding(
+      padding: EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const <Widget>[
+        children: <Widget>[
           ShimmerBox(width: 120, height: 20),
           SizedBox(height: AppSpacing.md),
           ShimmerBox(width: 240, height: 16),

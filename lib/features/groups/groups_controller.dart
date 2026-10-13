@@ -129,14 +129,14 @@ class GroupsController extends ChangeNotifier {
     try {
       final Identity? me = await _withTimeout(
         account.current(),
-        Duration(seconds: 10),
+        const Duration(seconds: 10),
         'Identity check timed out',
       );
       final List<Group> loaded = me == null
           ? const <Group>[]
           : await _withTimeout(
               groups.listGroups(me.userId),
-              Duration(seconds: 10),
+              const Duration(seconds: 10),
               'Group list timed out',
             );
       // The owner cap tells the create button whether it can still be offered.
