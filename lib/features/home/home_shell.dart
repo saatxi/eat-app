@@ -268,10 +268,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     _openRestaurantById(restaurantId);
   }
 
-  /// Opens the review screen for a file handed over by another app. Pushed on
-  /// top of whatever is showing, since "Open with" can arrive on any screen.
-  /// Opens the join screen named by an invitation link. A link that isn't one of
-  /// ours (or carries a malformed token) is ignored rather than pushed.
+  /// Opens the join screen named by an invitation link. A link that isn't one
+  /// of ours (or carries a malformed token) is ignored rather than pushed.
   void _openInviteLink(Uri? uri) {
     final String? token = uri == null ? null : inviteTokenFromUri(uri);
     if (!mounted || token == null) {
@@ -284,6 +282,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     );
   }
 
+  /// Opens the review screen for a file handed over by another app. Pushed on
+  /// top of whatever is showing, since "Open with" can arrive on any screen.
   void _openImport(String filePath) {
     if (!mounted) {
       return;

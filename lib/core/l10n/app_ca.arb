@@ -242,6 +242,7 @@
   "widgetActionShuffle": "Un altre",
 
   "groupsScopePersonal": "Personal",
+  "groupsUnavailableBody": "Els grups requereixen el backend compartit.",
   "groupsActionCreate": "Grup nou",
   "groupsCreateTitle": "Grup nou",
   "groupsFieldName": "Nom del grup",

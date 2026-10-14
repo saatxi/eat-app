@@ -139,9 +139,9 @@ void main() {
       await repository.insert(sharedRestaurant(id: 'r1'));
       await clearQueue();
 
-      await repository.addRestaurantPhotos(
+      await repository.setRestaurantPhoto(
         'r1',
-        <String>['p.jpg'],
+        'p.jpg',
         shared: shared,
       );
 
@@ -176,9 +176,9 @@ void main() {
         photoSourcePaths: <String>['v.jpg'],
         shared: shared,
       );
-      await repository.addRestaurantPhotos(
+      await repository.setRestaurantPhoto(
         'r1',
-        <String>['r.jpg'],
+        'r.jpg',
         shared: shared,
       );
       await clearQueue();
@@ -292,57 +292,6 @@ void main() {
     });
   });
 
-  group('the single-visit rewrite', () {
-    test('tombstones a shared visit when the form clears it', () async {
-      await repository.insert(sharedRestaurant(id: 'r1'));
-      await repository.saveSingleVisit(
-        restaurantId: 'r1',
-        visited: true,
-        rating: 4,
-        shared: shared,
-      );
-      final String visitId = (await db.select(db.visits).getSingle()).id;
-      await clearQueue();
-
-      await repository.saveSingleVisit(
-        restaurantId: 'r1',
-        visited: false,
-        rating: 0,
-        shared: shared,
-      );
-
-      final Visit row = await db.select(db.visits).getSingle();
-      expect(row.id, visitId);
-      expect(row.deletedAt, isNotNull);
-      expect((await queue()).single.rowId, visitId);
-    });
-
-    test('revives the same shared visit row when re-saved', () async {
-      await repository.insert(sharedRestaurant(id: 'r1'));
-      await repository.saveSingleVisit(
-        restaurantId: 'r1',
-        visited: true,
-        rating: 3,
-        shared: shared,
-      );
-      final String visitId = (await db.select(db.visits).getSingle()).id;
-
-      await repository.saveSingleVisit(
-        restaurantId: 'r1',
-        visited: true,
-        rating: 5,
-        shared: shared,
-      );
-
-      final List<Visit> rows = await db.select(db.visits).get();
-      expect(rows, hasLength(1));
-      expect(rows.single.id, visitId);
-      expect(rows.single.rating, 5);
-      expect(rows.single.deletedAt, isNull);
-      expect(rows.single.groupId, groupId);
-    });
-  });
-
   group('the auto-push hook', () {
     late List<String> notified;
     late RestaurantRepository notifying;
@@ -400,9 +349,9 @@ void main() {
         photoSourcePaths: <String>['v.jpg'],
         shared: shared,
       );
-      await repository.addRestaurantPhotos(
+      await repository.setRestaurantPhoto(
         'r1',
-        <String>['r.jpg'],
+        'r.jpg',
         shared: shared,
       );
       await SyncCursorStore(db).advance(groupId, '2026-01-01T00:00:00Z');

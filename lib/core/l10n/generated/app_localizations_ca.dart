@@ -765,6 +765,10 @@ class AppLocalizationsCa extends AppLocalizations {
   String get groupsScopePersonal => 'Personal';
 
   @override
+  String get groupsUnavailableBody =>
+      'Els grups requereixen el backend compartit.';
+
+  @override
   String get groupsActionCreate => 'Grup nou';
 
   @override

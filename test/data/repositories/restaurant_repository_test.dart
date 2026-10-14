@@ -208,7 +208,7 @@ void main() {
         rating: 4,
         photoSourcePaths: <String>['/photos/1.jpg'],
       );
-      await repository.addRestaurantPhotos('a', <String>['/photos/2.jpg']);
+      await repository.setRestaurantPhoto('a', '/photos/2.jpg');
 
       await repository.delete('a');
 
@@ -294,73 +294,6 @@ void main() {
         <int>[for (final Photo photo in photos) photo.position],
         <int>[0, 1],
       );
-    });
-
-    test('saveSingleVisit reuses the visit\'s identity, date and price band', () async {
-      final String firstId = await repository.addVisit(
-        restaurantId: 'a',
-        visitDate: 1000,
-        rating: 3,
-        priceRange: 2,
-      );
-
-      await repository.saveSingleVisit(
-        restaurantId: 'a',
-        visited: true,
-        rating: 5,
-        notes: 'Better the second time',
-      );
-
-      final List<Visit> visits = await repository
-          .observeVisitsForRestaurant('a')
-          .first;
-      expect(visits, hasLength(1));
-      expect(
-        visits.single.id,
-        firstId,
-        reason: 're-saving the form must not look like a new visit',
-      );
-      expect(
-        visits.single.visitDate,
-        1000,
-        reason: 'and must not reset the date to now',
-      );
-      expect(visits.single.rating, 5);
-      expect(visits.single.notes, 'Better the second time');
-      expect(
-        visits.single.priceRange,
-        2,
-        reason: 'the form does not ask for it, so it has to be carried over',
-      );
-    });
-
-    test('saveSingleVisit with visited false clears every visit', () async {
-      await repository.addVisit(restaurantId: 'a', visitDate: 1000, rating: 3);
-      await repository.addVisit(restaurantId: 'a', visitDate: 2000, rating: 4);
-
-      await repository.saveSingleVisit(
-        restaurantId: 'a',
-        visited: false,
-        rating: 0,
-      );
-
-      expect(await repository.observeVisitsForRestaurant('a').first, isEmpty);
-    });
-
-    test('saveSingleVisit on a restaurant with no visits starts from now', () async {
-      final int before = DateTime.now().millisecondsSinceEpoch;
-
-      await repository.saveSingleVisit(
-        restaurantId: 'a',
-        visited: true,
-        rating: 4,
-      );
-
-      final Visit visit = (await repository
-          .observeVisitsForRestaurant('a')
-          .first).single;
-      expect(visit.visitDate, greaterThanOrEqualTo(before));
-      expect(visit.priceRange, 0);
     });
 
     test('observeLatestVisitByRestaurantId keys the newest visit by restaurant', () async {
@@ -481,30 +414,6 @@ void main() {
       await repository.insert(restaurant(id: 'a', name: 'First'));
     });
 
-    test('addRestaurantPhotos appends after whatever is already there', () async {
-      await repository.addRestaurantPhotos('a', <String>['/photos/a.jpg']);
-      await repository.addRestaurantPhotos('a', <String>['/photos/b.jpg']);
-
-      final List<Photo> photos = await repository
-          .observePhotosForRestaurant('a')
-          .first;
-      expect(
-        <String>[for (final Photo photo in photos) photo.path],
-        <String>['/photos/a.jpg', '/photos/b.jpg'],
-      );
-      expect(
-        <int>[for (final Photo photo in photos) photo.position],
-        <int>[0, 1],
-      );
-      expect(await repository.getRestaurantPhotoPath('a'), '/photos/a.jpg');
-    });
-
-    test('addRestaurantPhotos with nothing to add is a no-op', () async {
-      await repository.addRestaurantPhotos('a', const <String>[]);
-
-      expect(await repository.observePhotosForRestaurant('a').first, isEmpty);
-    });
-
     test('a visit-level photo is not offered as the restaurant\'s own', () async {
       await repository.addVisit(
         restaurantId: 'a',
@@ -515,20 +424,6 @@ void main() {
 
       expect(await repository.observePhotosForRestaurant('a').first, isEmpty);
       expect(await repository.getRestaurantPhotoPath('a'), isNull);
-    });
-
-    test('deletePhoto removes just that row', () async {
-      await repository.addRestaurantPhotos('a', <String>[
-        '/photos/a.jpg',
-        '/photos/b.jpg',
-      ]);
-      final Photo first = (await repository
-          .observePhotosForRestaurant('a')
-          .first).first;
-
-      await repository.deletePhoto(first.id);
-
-      expect(await repository.getRestaurantPhotoPath('a'), '/photos/b.jpg');
     });
   });
 
@@ -630,7 +525,7 @@ void main() {
 
     test('deleting a restaurant removes its own and its visits\' photos', () async {
       await repository.insert(restaurant(id: 'a', name: 'First'));
-      await repository.addRestaurantPhotos('a', <String>['/photos/own.jpg']);
+      await repository.setRestaurantPhoto('a', '/photos/own.jpg');
       await repository.addVisit(
         restaurantId: 'a',
         visitDate: 1,
@@ -642,13 +537,13 @@ void main() {
 
       expect(
         storage.deleted,
-        containsAll(<String>['/photos/own.jpg', 'stored/visit.jpg']),
+        containsAll(<String>['stored/own.jpg', 'stored/visit.jpg']),
       );
     });
 
     test('deleteAll removes every stored file', () async {
       await repository.insert(restaurant(id: 'a', name: 'First'));
-      await repository.addRestaurantPhotos('a', <String>['/photos/own.jpg']);
+      await repository.setRestaurantPhoto('a', '/photos/own.jpg');
       await repository.addVisit(
         restaurantId: 'a',
         visitDate: 1,
@@ -660,13 +555,13 @@ void main() {
 
       expect(
         storage.deleted,
-        containsAll(<String>['/photos/own.jpg', 'stored/visit.jpg']),
+        containsAll(<String>['stored/own.jpg', 'stored/visit.jpg']),
       );
     });
 
     test('deleting a visit removes only its files', () async {
       await repository.insert(restaurant(id: 'a', name: 'First'));
-      await repository.addRestaurantPhotos('a', <String>['/photos/own.jpg']);
+      await repository.setRestaurantPhoto('a', '/photos/own.jpg');
       final String visitId = await repository.addVisit(
         restaurantId: 'a',
         visitDate: 1,
@@ -679,48 +574,34 @@ void main() {
       expect(storage.deleted, <String>['stored/visit.jpg']);
     });
 
-    test('deleting one photo removes only its file', () async {
-      await repository.insert(restaurant(id: 'a', name: 'First'));
-      await repository.addRestaurantPhotos('a', <String>[
-        '/photos/a.jpg',
-        '/photos/b.jpg',
-      ]);
-      final Photo first = (await repository
-          .observePhotosForRestaurant('a')
-          .first).first;
-
-      await repository.deletePhoto(first.id);
-
-      expect(storage.deleted, <String>['/photos/a.jpg']);
-    });
-
     test('replacing the photo persists the pick and drops the previous file',
         () async {
       await repository.insert(restaurant(id: 'a', name: 'First'));
-      await repository.addRestaurantPhotos('a', <String>['/photos/old.jpg']);
+      await repository.setRestaurantPhoto('a', '/photos/old.jpg');
+      storage.persistCount = 0;
 
       await repository.setRestaurantPhoto('a', '/tmp/pick.jpg');
 
       expect(storage.persistCount, 1);
       expect(await repository.getRestaurantPhotoPath('a'), 'stored/pick.jpg');
-      expect(storage.deleted, <String>['/photos/old.jpg']);
+      expect(storage.deleted, <String>['stored/old.jpg']);
     });
 
     test('clearing the photo with null deletes the file', () async {
       await repository.insert(restaurant(id: 'a', name: 'First'));
-      await repository.addRestaurantPhotos('a', <String>['/photos/old.jpg']);
+      await repository.setRestaurantPhoto('a', '/photos/old.jpg');
 
       await repository.setRestaurantPhoto('a', null);
 
       expect(await repository.getRestaurantPhotoPath('a'), isNull);
-      expect(storage.deleted, <String>['/photos/old.jpg']);
+      expect(storage.deleted, <String>['stored/old.jpg']);
     });
 
     test('the thumbnail map carries restaurant photos only, keyed by id',
         () async {
       await repository.insert(restaurant(id: 'a', name: 'First'));
       await repository.insert(restaurant(id: 'b', name: 'Second'));
-      await repository.addRestaurantPhotos('a', <String>['/photos/a.jpg']);
+      await repository.setRestaurantPhoto('a', '/photos/a.jpg');
       await repository.addVisit(
         restaurantId: 'b',
         visitDate: 1,
@@ -729,7 +610,7 @@ void main() {
       );
 
       expect(await repository.observeRestaurantPhotoPaths().first,
-          <String, String>{'a': '/photos/a.jpg'});
+          <String, String>{'a': 'stored/a.jpg'});
     });
   });
 }

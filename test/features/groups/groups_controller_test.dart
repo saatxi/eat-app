@@ -1,81 +1,10 @@
-import 'package:eatapp/data/groups/group_gateway.dart';
 import 'package:eatapp/data/groups/group_models.dart';
 import 'package:eatapp/data/repositories/user_preferences_repository.dart';
 import 'package:eatapp/features/groups/groups_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../data/groups/fake_group_gateway.dart';
 import '../../data/supabase/fake_identity_gateway.dart';
-
-/// A hand-written [GroupGateway] fake — no mocking package, per the project's
-/// convention.
-class _FakeGroupGateway implements GroupGateway {
-  _FakeGroupGateway({this.groups = const <Group>[]});
-
-  List<Group> groups;
-
-  /// Throw to simulate a backend failure.
-  Object? error;
-
-  /// The groups [createGroup] minted, for assertions.
-  final List<Group> created = <Group>[];
-
-  @override
-  Future<Group> createGroup({
-    required String id,
-    required String name,
-  }) async {
-    final Object? failure = error;
-    if (failure != null) {
-      throw failure;
-    }
-    final Group group = Group(id: id, name: name, role: GroupRole.owner);
-    groups = <Group>[...groups, group];
-    created.add(group);
-    return group;
-  }
-
-  @override
-  Future<int> ownerGroupLimit() async => 2;
-
-  @override
-  Future<List<Group>> listGroups(String userId) async {
-    final Object? failure = error;
-    if (failure != null) {
-      throw failure;
-    }
-    return groups;
-  }
-
-  @override
-  Future<List<GroupMember>> listMembers(String groupId) async =>
-      const <GroupMember>[];
-
-  @override
-  Future<void> leaveGroup(String groupId, String userId) async {}
-
-  @override
-  Future<void> removeMember(String groupId, String userId) async {}
-
-  @override
-  Future<void> setRole(String groupId, String userId, GroupRole role) async {}
-
-  @override
-  Future<void> editGroup(String groupId, String name) async {
-    groups = <Group>[
-      for (final Group group in groups)
-        group.id == groupId ? Group(id: group.id, name: name, role: group.role) : group,
-    ];
-  }
-
-  @override
-  Future<void> deleteGroup(String groupId) async {}
-
-  @override
-  Future<void> setDisplayName({
-    required String userId,
-    required String displayName,
-  }) async {}
-}
 
 void main() {
   late UserPreferencesRepository preferences;
@@ -98,7 +27,7 @@ void main() {
   });
 
   test("loads the signed-in user's groups", () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway(
+    final FakeGroupGateway gateway = FakeGroupGateway(
       groups: const <Group>[
         Group(id: 'g1', name: 'Família', role: GroupRole.owner),
         Group(id: 'g2', name: 'Amics', role: GroupRole.editor),
@@ -118,7 +47,7 @@ void main() {
   });
 
   test('a device that never signed in has no groups yet', () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway(
+    final FakeGroupGateway gateway = FakeGroupGateway(
       groups: const <Group>[
         Group(id: 'g1', name: 'Família', role: GroupRole.owner),
       ],
@@ -138,7 +67,7 @@ void main() {
   test('selecting a group persists it and follows the preference', () async {
     final GroupsController controller = GroupsController(
       preferences: preferences,
-      gateway: _FakeGroupGateway(
+      gateway: FakeGroupGateway(
         groups: const <Group>[
           Group(id: 'g1', name: 'Família', role: GroupRole.owner),
         ],
@@ -159,7 +88,7 @@ void main() {
   });
 
   test('creating a group needs a session, then selects it', () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway();
+    final FakeGroupGateway gateway = FakeGroupGateway();
     final GroupsController controller = GroupsController(
       preferences: preferences,
       gateway: gateway,
@@ -180,7 +109,7 @@ void main() {
   });
 
   test('creating a group without a session is refused', () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway();
+    final FakeGroupGateway gateway = FakeGroupGateway();
     final GroupsController controller = GroupsController(
       preferences: preferences,
       gateway: gateway,
@@ -193,7 +122,7 @@ void main() {
   });
 
   test('a backend failure is recorded rather than thrown', () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway()
+    final FakeGroupGateway gateway = FakeGroupGateway()
       ..error = Exception('offline');
     final GroupsController controller = GroupsController(
       preferences: preferences,
@@ -209,7 +138,7 @@ void main() {
   });
 
   test('load reads the owner cap and detects when it is reached', () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway(
+    final FakeGroupGateway gateway = FakeGroupGateway(
       groups: const <Group>[
         Group(id: 'g1', name: 'Família', role: GroupRole.owner),
         Group(id: 'g2', name: 'Amics', role: GroupRole.editor),
@@ -240,7 +169,7 @@ void main() {
   });
 
   test('a rejected creation records a GroupLimitException', () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway()
+    final FakeGroupGateway gateway = FakeGroupGateway()
       ..error = const GroupLimitException(2);
     final GroupsController controller = GroupsController(
       preferences: preferences,
@@ -258,7 +187,7 @@ void main() {
   });
 
   test('a selection that no longer exists falls back to Personal', () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway(
+    final FakeGroupGateway gateway = FakeGroupGateway(
       groups: const <Group>[
         Group(id: 'g1', name: 'Família', role: GroupRole.owner),
       ],

@@ -1414,6 +1414,12 @@ abstract class AppLocalizations {
   /// **'Personal'**
   String get groupsScopePersonal;
 
+  /// No description provided for @groupsUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups require the shared backend.'**
+  String get groupsUnavailableBody;
+
   /// No description provided for @groupsActionCreate.
   ///
   /// In en, this message translates to:

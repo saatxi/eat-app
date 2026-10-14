@@ -11,6 +11,7 @@ import '../../data/repositories/user_preferences_repository.dart';
 import '../../data/supabase/identity.dart';
 import '../groups/groups_controller.dart';
 import '../import_export/share_service.dart';
+import 'account_controller.dart';
 
 /// Settings: the appearance choices, the data actions, and which build this is.
 ///
@@ -189,7 +190,10 @@ class SettingsScreen extends StatelessWidget {
               ),
               if (scope.identity != null) ...<Widget>[
                 _SectionHeader(l10n.settingsSectionAccount),
-                _AccountSection(identity: scope.identity!),
+                _AccountSection(
+                identity: scope.identity!,
+                groups: scope.groupsController,
+              ),
               ],
               // Hidden when there is no platform to ask — a bare widget test.
               // Then the bare version only: what the describe string adds past
@@ -284,62 +288,47 @@ class _LanguageSelector extends StatelessWidget {
 /// tap and its code is kept on the device, never shown. Recovering it on another
 /// phone goes through an account backup, not a typed code.
 class _AccountSection extends StatefulWidget {
-  const _AccountSection({required this.identity});
+  const _AccountSection({required this.identity, this.groups});
 
   final IdentityGateway identity;
+  final GroupsController? groups;
 
   @override
   State<_AccountSection> createState() => _AccountSectionState();
 }
 
 class _AccountSectionState extends State<_AccountSection> {
-  bool _busy = false;
-  bool _signedIn = false;
+  late final AccountController _controller;
 
   @override
   void initState() {
     super.initState();
-    _refresh();
+    _controller = AccountController(
+      identity: widget.identity,
+      groups: widget.groups,
+    );
+    _controller.addListener(_onControllerUpdate);
+    _controller.refresh();
   }
 
-  Future<void> _refresh() async {
-    final Identity? me = await widget.identity.current();
-    if (!mounted) {
-      return;
-    }
-    setState(() => _signedIn = me != null);
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerUpdate);
+    _controller.dispose();
+    super.dispose();
   }
 
-  /// Mints a brand-new account, adopting it and signing in.
-  Future<void> _createAccount() => _run(
-    () => widget.identity.createAccount(),
-    AppLocalizations.of(context).accountCreateFailed,
-  );
+  void _onControllerUpdate() => setState(() {});
 
-  /// Runs an identity action, reloading the groups on success (a fresh sign-in
-  /// must bring the account's groups back) or showing [failureMessage] on
-  /// error, then refreshing the section either way.
-  Future<void> _run(
-    Future<Identity> Function() action,
-    String failureMessage,
-  ) async {
-    final GroupsController? groups = AppScope.of(context).groupsController;
-    setState(() => _busy = true);
-    try {
-      await action();
-      await groups?.load();
-    } on Object {
-      _showMessage(failureMessage);
-    } finally {
-      if (mounted) {
-        setState(() => _busy = false);
-      }
-      await _refresh();
+  Future<void> _createAccount() async {
+    final bool ok = await _controller.createAccount();
+    if (!ok && mounted) {
+      _showMessage(AppLocalizations.of(context).accountCreateFailed);
     }
   }
 
-  /// Confirms, then erases the account. Nothing happens unless the user
-  /// confirms: the dialog is the only guard on an irreversible action.
+  /// Confirms, then erases the account. The dialog is the only guard on an
+  /// irreversible action.
   Future<void> _confirmDeleteProfile() async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final bool? confirmed = await showDialog<bool>(
@@ -363,28 +352,12 @@ class _AccountSectionState extends State<_AccountSection> {
       ),
     );
     if (confirmed ?? false) {
-      await _deleteProfile();
-    }
-  }
-
-  /// Erases the account, then drops the groups from the UI and returns the
-  /// section to its signed-out state.
-  Future<void> _deleteProfile() async {
-    final GroupsController? groups = AppScope.of(context).groupsController;
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    setState(() => _busy = true);
-    try {
-      await widget.identity.deleteAccount();
-      await groups?.load();
-    } on Object {
       // The account is untouched if the erase failed, so stay signed in and
       // let the user try again.
-      _showMessage(l10n.accountDeleteFailed);
-    } finally {
-      if (mounted) {
-        setState(() => _busy = false);
+      final bool ok = await _controller.deleteAccount();
+      if (!ok && mounted) {
+        _showMessage(AppLocalizations.of(context).accountDeleteFailed);
       }
-      await _refresh();
     }
   }
 
@@ -398,7 +371,8 @@ class _AccountSectionState extends State<_AccountSection> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    if (_signedIn) {
+    final AccountState accountState = _controller.state;
+    if (accountState.signedIn) {
       // The code is deliberately never shown: it stays on the device and is
       // copied to the clipboard only when the user asks. So the card is just the
       // signed-in line and its two actions.
@@ -422,7 +396,7 @@ class _AccountSectionState extends State<_AccountSection> {
                   ),
                 ),
                 IconButton(
-                  onPressed: _busy ? null : _confirmDeleteProfile,
+                  onPressed: accountState.busy ? null : _confirmDeleteProfile,
                   tooltip: l10n.accountDeleteProfile,
                   icon: Icon(
                     Icons.delete_forever,
@@ -450,7 +424,7 @@ class _AccountSectionState extends State<_AccountSection> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: FilledButton.icon(
-            onPressed: _busy ? null : _createAccount,
+            onPressed: accountState.busy ? null : _createAccount,
             icon: const Icon(Icons.add_rounded),
             label: Text(l10n.accountCreateAction),
           ),

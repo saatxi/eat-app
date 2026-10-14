@@ -9,6 +9,7 @@ import '../../core/theme/tokens/app_spacing.dart';
 import '../../core/widgets/cuisine_visuals.dart';
 import '../../core/widgets/photo_decode_size.dart';
 import '../../core/widgets/price_range_picker.dart';
+import '../../core/widgets/section_label.dart';
 import '../../data/groups/group_models.dart';
 import '../../data/models/cuisine.dart';
 import '../../data/sync/shared_writes.dart';
@@ -174,7 +175,7 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
               : ListView(
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   children: <Widget>[
-                    _SectionLabel(l10n.editSectionBasics),
+                    SectionLabel(l10n.editSectionBasics),
                     _textField(
                       controller: _name,
                       label: l10n.editFieldName,
@@ -197,7 +198,7 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                     ),
                     if (controller.selectableGroups.isNotEmpty) ...<Widget>[
                       const SizedBox(height: AppSpacing.lg),
-                      _SectionLabel(l10n.editSectionGroups),
+                      SectionLabel(l10n.editSectionGroups),
                       _GroupsField(
                         groups: controller.selectableGroups,
                         selectedIds: state.selectedGroupIds,
@@ -237,7 +238,7 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                       onChanged: controller.onPriceRangeChange,
                     ),
                     const SizedBox(height: AppSpacing.xl),
-                    _SectionLabel(l10n.editSectionLinks),
+                    SectionLabel(l10n.editSectionLinks),
                     _textField(
                       controller: _website,
                       label: l10n.editFieldWebsite,
@@ -279,18 +280,6 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
             border: const OutlineInputBorder(),
           ),
         ),
-      );
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Text(
-        text,
-        style: Theme.of(context).textTheme.titleMedium,
       );
 }
 

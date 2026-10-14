@@ -103,9 +103,9 @@ void main() {
         priceRange: 5,
       ),
     );
-    await repository.saveSingleVisit(
+    await repository.addVisit(
       restaurantId: 'a',
-      visited: true,
+      visitDate: DateTime.now().millisecondsSinceEpoch,
       rating: 4,
       notes: 'Demanar la burrata i seure a la terrassa.',
     );

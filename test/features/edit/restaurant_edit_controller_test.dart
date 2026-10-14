@@ -177,26 +177,27 @@ void main() {
 
     test('removing the stored photo clears it on save', () async {
       await repository.insert(restaurant(id: 'a', name: 'Cal Ferran'));
-      await repository.addRestaurantPhotos('a', <String>['/photos/old.jpg']);
+      await repository.setRestaurantPhoto('a', '/photos/old.jpg');
 
       final RestaurantEditController controller = build(restaurantId: 'a');
       await waitFor(
         () => !controller.state.isLoading,
         description: 'the restaurant to load into the form',
       );
-      expect(controller.state.photoPreviewPath, '/photos/old.jpg');
+      expect(controller.state.photoPreviewPath, 'stored/old.jpg');
 
       controller.removePhoto();
       expect(controller.state.photoPreviewPath, isNull);
 
       expect(await controller.save(), isTrue);
       expect(await repository.getRestaurantPhotoPath('a'), isNull);
-      expect(storage.deleted, <String>['/photos/old.jpg']);
+      expect(storage.deleted, <String>['stored/old.jpg']);
     });
 
     test('an untouched photo is neither rewritten nor deleted', () async {
       await repository.insert(restaurant(id: 'a', name: 'Cal Ferran'));
-      await repository.addRestaurantPhotos('a', <String>['/photos/old.jpg']);
+      await repository.setRestaurantPhoto('a', '/photos/old.jpg');
+      storage.persistCount = 0;
 
       final RestaurantEditController controller = build(restaurantId: 'a');
       await waitFor(
@@ -208,7 +209,7 @@ void main() {
 
       expect(storage.persistCount, 0);
       expect(storage.deleted, isEmpty);
-      expect(await repository.getRestaurantPhotoPath('a'), '/photos/old.jpg');
+      expect(await repository.getRestaurantPhotoPath('a'), 'stored/old.jpg');
     });
   });
 

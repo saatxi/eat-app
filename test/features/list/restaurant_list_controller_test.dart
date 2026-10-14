@@ -89,9 +89,9 @@ void main() {
 
   test('folds the favourites and the latest visit into the rows', () async {
     await repository.insert(restaurant(id: 'a', name: 'Kebab'));
-    await repository.saveSingleVisit(
+    await repository.addVisit(
       restaurantId: 'a',
-      visited: true,
+      visitDate: DateTime.now().millisecondsSinceEpoch,
       rating: 4,
       notes: 'Bones',
     );

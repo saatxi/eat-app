@@ -1,109 +1,13 @@
-import 'package:eatapp/data/groups/group_gateway.dart';
 import 'package:eatapp/data/groups/group_models.dart';
 import 'package:eatapp/features/groups/members_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../data/groups/fake_group_gateway.dart';
 import '../../data/supabase/fake_identity_gateway.dart';
-
-/// A hand-written [GroupGateway] fake covering the membership calls.
-class _FakeGroupGateway implements GroupGateway {
-  _FakeGroupGateway({this.members = const <GroupMember>[]});
-
-  List<GroupMember> members;
-  final List<String> removed = <String>[];
-  final List<String> left = <String>[];
-  final List<String> deleted = <String>[];
-
-  /// Throw to simulate a backend failure on [deleteGroup].
-  Object? deleteError;
-
-  @override
-  Future<int> ownerGroupLimit() async => 2;
-
-  @override
-  Future<List<GroupMember>> listMembers(String groupId) async => members;
-
-  @override
-  Future<void> removeMember(String groupId, String userId) async {
-    removed.add(userId);
-    members = <GroupMember>[
-      for (final GroupMember member in members)
-        if (member.userId != userId) member,
-    ];
-  }
-
-  @override
-  Future<void> setRole(String groupId, String userId, GroupRole role) async {}
-
-  @override
-  Future<void> leaveGroup(String groupId, String userId) async {
-    left.add(userId);
-  }
-
-  @override
-  Future<void> deleteGroup(String groupId) async {
-    final Object? failure = deleteError;
-    if (failure != null) {
-      throw failure;
-    }
-    deleted.add(groupId);
-    members = <GroupMember>[];
-  }
-
-  /// The display names [setDisplayName] stored, keyed by user id.
-  final Map<String, String> names = <String, String>{};
-
-  /// Throw to simulate a backend failure on [setDisplayName].
-  Object? nameError;
-
-  @override
-  Future<void> setDisplayName({
-    required String userId,
-    required String displayName,
-  }) async {
-    final Object? failure = nameError;
-    if (failure != null) {
-      throw failure;
-    }
-    names[userId] = displayName;
-    members = <GroupMember>[
-      for (final GroupMember member in members)
-        if (member.userId == userId)
-          GroupMember(
-            userId: member.userId,
-            displayName: displayName,
-            role: member.role,
-          )
-        else
-          member,
-    ];
-  }
-
-  @override
-  Future<void> editGroup(String groupId, String name) async {
-    members = <GroupMember>[
-      for (final GroupMember member in members)
-        GroupMember(
-          userId: member.userId,
-          displayName: member.displayName,
-          role: member.role,
-        ),
-    ];
-  }
-
-  @override
-  Future<Group> createGroup({
-    required String id,
-    required String name,
-  }) async => throw UnimplementedError();
-
-  @override
-  Future<List<Group>> listGroups(String userId) async => const <Group>[];
-}
 
 void main() {
   test('loads the roster and marks the current user', () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway(
+    final FakeGroupGateway gateway = FakeGroupGateway(
       members: const <GroupMember>[
         GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.owner),
         GroupMember(userId: 'u2', displayName: 'Maria', role: GroupRole.editor),
@@ -124,7 +28,7 @@ void main() {
   });
 
   test('a removal drops the member and reloads', () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway(
+    final FakeGroupGateway gateway = FakeGroupGateway(
       members: const <GroupMember>[
         GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.owner),
         GroupMember(userId: 'u2', displayName: 'Maria', role: GroupRole.editor),
@@ -145,7 +49,7 @@ void main() {
   });
 
   test('leaving uses the signed-in user id', () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway();
+    final FakeGroupGateway gateway = FakeGroupGateway();
     final MembersController controller = MembersController(
       groupId: 'g1',
       gateway: gateway,
@@ -160,7 +64,7 @@ void main() {
   });
 
   test('an owner can dissolve the group', () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway(
+    final FakeGroupGateway gateway = FakeGroupGateway(
       members: const <GroupMember>[
         GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.owner),
         GroupMember(userId: 'u2', displayName: 'Maria', role: GroupRole.editor),
@@ -181,7 +85,7 @@ void main() {
   });
 
   test('a failed dissolution leaves the roster and reports it', () async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway()
+    final FakeGroupGateway gateway = FakeGroupGateway()
       ..deleteError = Exception('offline');
     final MembersController controller = MembersController(
       groupId: 'g1',

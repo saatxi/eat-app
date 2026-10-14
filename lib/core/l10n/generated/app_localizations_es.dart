@@ -766,6 +766,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get groupsScopePersonal => 'Personal';
 
   @override
+  String get groupsUnavailableBody =>
+      'Los grupos requieren el backend compartido.';
+
+  @override
   String get groupsActionCreate => 'Nuevo grupo';
 
   @override

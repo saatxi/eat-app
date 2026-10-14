@@ -359,6 +359,7 @@
   "widgetActionShuffle": "Shuffle",
 
   "groupsScopePersonal": "Personal",
+  "groupsUnavailableBody": "Groups require the shared backend.",
   "groupsActionCreate": "New group",
   "groupsCreateTitle": "New group",
   "groupsFieldName": "Group name",

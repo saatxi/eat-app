@@ -29,8 +29,9 @@ class GroupsScreen extends StatelessWidget {
     final GroupsController? controller = scope.groupsController;
     if (controller == null || !controller.canUseGroups) {
       // Personal mode — no groups backend configured.
-      return const Scaffold(
-        body: Center(child: Text('Groups require the shared backend.')),
+      final AppLocalizations l10n = AppLocalizations.of(context);
+      return Scaffold(
+        body: Center(child: Text(l10n.groupsUnavailableBody)),
       );
     }
     return _GroupsScreenBody(controller: controller);

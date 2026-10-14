@@ -12,101 +12,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../data/db/db_test_utils.dart';
+import '../../data/groups/fake_group_gateway.dart';
 import '../../data/photo/photo_fakes.dart';
 import '../../data/supabase/fake_identity_gateway.dart';
-
-/// A hand-written [GroupGateway] fake covering the roster and the membership
-/// calls, and mirroring the server's invariant that a group dissolves when its
-/// last member leaves.
-class _FakeGroupGateway implements GroupGateway {
-  _FakeGroupGateway({
-    this.groups = const <Group>[],
-    this.members = const <GroupMember>[],
-  });
-
-  List<Group> groups;
-  List<GroupMember> members;
-
-  /// The users whose leave went through, for assertions.
-  final List<String> left = <String>[];
-
-  /// The users an owner removed, for assertions.
-  final List<String> removed = <String>[];
-
-  /// The groups an owner dissolved, for assertions.
-  final List<String> deleted = <String>[];
-
-  /// The display names [setDisplayName] stored, keyed by user id.
-  final Map<String, String> names = <String, String>{};
-
-  /// The names [editGroup] stored, keyed by group id.
-  final Map<String, String> renamed = <String, String>{};
-
-  @override
-  Future<List<GroupMember>> listMembers(String groupId) async => members;
-
-  @override
-  Future<int> ownerGroupLimit() async => 2;
-
-  @override
-  Future<List<Group>> listGroups(String userId) async => groups;
-
-  @override
-  Future<void> setRole(String groupId, String userId, GroupRole role) async {}
-
-  @override
-  Future<void> setDisplayName({
-    required String userId,
-    required String displayName,
-  }) async {
-    names[userId] = displayName;
-  }
-
-  @override
-  Future<void> leaveGroup(String groupId, String userId) async {
-    left.add(userId);
-    members = <GroupMember>[
-      for (final GroupMember member in members)
-        if (member.userId != userId) member,
-    ];
-    // The server's `group_members_dissolve_when_empty` trigger: no members
-    // left means the group (and its cascade) go away.
-    if (members.isEmpty) {
-      groups = <Group>[
-        for (final Group group in groups)
-          if (group.id != groupId) group,
-      ];
-    }
-  }
-
-  @override
-  Future<void> removeMember(String groupId, String userId) async {
-    removed.add(userId);
-  }
-
-  @override
-  Future<void> deleteGroup(String groupId) async {
-    deleted.add(groupId);
-    members = const <GroupMember>[];
-  }
-
-  @override
-  Future<void> editGroup(String groupId, String name) async {
-    renamed[groupId] = name;
-    groups = <Group>[
-      for (final Group group in groups)
-        group.id == groupId
-            ? Group(id: group.id, name: name, role: group.role)
-            : group,
-    ];
-  }
-
-  @override
-  Future<Group> createGroup({
-    required String id,
-    required String name,
-  }) async => throw UnimplementedError();
-}
 
 void main() {
   late AppDatabase db;
@@ -144,7 +52,7 @@ void main() {
   testWidgets('member names are informational and open no editor', (
     WidgetTester tester,
   ) async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway(
+    final FakeGroupGateway gateway = FakeGroupGateway(
       members: const <GroupMember>[
         GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.owner),
         GroupMember(
@@ -179,7 +87,7 @@ void main() {
     WidgetTester tester,
   ) async {
     // A single-member roster: leaving means the group disappears too.
-    final _FakeGroupGateway gateway = _FakeGroupGateway(
+    final FakeGroupGateway gateway = FakeGroupGateway(
       members: const <GroupMember>[
         GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.owner),
       ],
@@ -209,7 +117,7 @@ void main() {
   ) async {
     // "Me" is a plain member (not the owner) leaving while the owner remains,
     // so the menu legitimately offers "Leave group".
-    final _FakeGroupGateway gateway = _FakeGroupGateway(
+    final FakeGroupGateway gateway = FakeGroupGateway(
       members: const <GroupMember>[
         GroupMember(userId: 'u1', displayName: 'Me', role: GroupRole.editor),
         GroupMember(userId: 'u2', displayName: 'Alice', role: GroupRole.owner),
@@ -242,7 +150,7 @@ void main() {
     'leaving as the last member dissolves the group and drops it from the list',
     (WidgetTester tester) async {
       // A single-member group, currently selected.
-      final _FakeGroupGateway gateway = _FakeGroupGateway(
+      final FakeGroupGateway gateway = FakeGroupGateway(
         groups: const <Group>[
           Group(id: 'g1', name: 'Solo', role: GroupRole.owner),
         ],
@@ -317,7 +225,7 @@ void main() {
   testWidgets('an owner renames the group from the overflow menu', (
     WidgetTester tester,
   ) async {
-    final _FakeGroupGateway gateway = _FakeGroupGateway(
+    final FakeGroupGateway gateway = FakeGroupGateway(
       groups: const <Group>[
         Group(id: 'g1', name: 'Família', role: GroupRole.owner),
       ],

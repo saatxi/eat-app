@@ -16,6 +16,7 @@ import '../groups/group_scope_button.dart';
 import '../groups/group_sync_button.dart';
 import '../groups/groups_controller.dart';
 import 'journal_filter_bar.dart';
+import 'list_state.dart';
 import 'restaurant_card.dart';
 import 'restaurant_list_controller.dart';
 import 'restaurant_ui_model.dart';

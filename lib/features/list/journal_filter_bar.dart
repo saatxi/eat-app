@@ -7,6 +7,7 @@ import '../../core/widgets/filter_dropdown_chip.dart';
 import '../../core/widgets/presentation_bounds.dart';
 import '../../core/widgets/price_range_label.dart';
 import '../../data/models/restaurant_sort.dart';
+import 'list_state.dart';
 import 'restaurant_list_controller.dart';
 
 /// The list's quick view: everything / visited / want-to-try / favourites.
