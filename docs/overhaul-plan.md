@@ -12,7 +12,7 @@ its own line in the checklist below.
 - [x] Phase 1 — Design mockup (approval gate)
 - [x] Phase 2 — Remove iOS and purge what isn't needed
 - [x] Phase 3 — Upgrade dependencies, SDK and toolchain
-- [ ] Phase 4 — Structural refactor (behaviour unchanged)
+- [x] Phase 4 — Structural refactor (behaviour unchanged)
 - [ ] Phase 5 — Riverpod for state and dependency injection
 - [ ] Phase 6 — go_router
 - [ ] Phase 7 — Visual redesign
